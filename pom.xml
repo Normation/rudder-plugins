@@ -3,12 +3,12 @@
   <groupId>com.normation.plugins</groupId>
   <artifactId>hello-world</artifactId>
   <packaging>jar</packaging>
-  <version>0.10.1-SNAPSHOT</version>
+  <version>0.11.0-SNAPSHOT</version>
 
   <parent>
     <groupId>com.normation</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>0.10.1-SNAPSHOT</version>
+    <version>0.11.0-SNAPSHOT</version>
   </parent>
 
   <description>
@@ -43,7 +43,7 @@
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>
-      <version>0.10.1-SNAPSHOT</version>
+      <version>0.11.0-SNAPSHOT</version>
       <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
       <classifier>classes</classifier>
       <scope>provided</scope>
