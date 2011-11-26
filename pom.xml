@@ -3,7 +3,6 @@
   <groupId>com.normation.plugins</groupId>
   <artifactId>hello-world</artifactId>
   <packaging>jar</packaging>
-  <version>0.11.0-SNAPSHOT</version>
 
   <parent>
     <groupId>com.normation</groupId>
