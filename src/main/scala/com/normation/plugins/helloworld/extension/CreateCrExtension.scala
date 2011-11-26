@@ -3,7 +3,7 @@ package com.normation.plugins.helloworld.extension
 import com.normation.plugins.{SnippetExtensionKey,SnippetExtensionPoint}
 import com.normation.rudder.web.components.popup.CreateConfigurationRulePopup
 import scala.xml.NodeSeq
-import com.normation.rudder.web.snippet.ConfigurationRuleManagement
+import com.normation.rudder.web.snippet.configuration.ConfigurationRuleManagement
 import com.normation.rudder.web.components.ConfigurationRuleEditForm
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
