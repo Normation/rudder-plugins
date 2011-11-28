@@ -42,7 +42,7 @@
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>
-      <version>0.11.0-SNAPSHOT</version>
+      <version>${rudder-version}</version>
       <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
       <classifier>classes</classifier>
       <scope>provided</scope>
@@ -50,7 +50,7 @@
     
     <dependency>
       <groupId>org.squeryl</groupId>
-      <artifactId>squeryl_2.9.0-1</artifactId>
+      <artifactId>squeryl_${scala-version}</artifactId>
       <version>0.9.4</version>
     </dependency>
 

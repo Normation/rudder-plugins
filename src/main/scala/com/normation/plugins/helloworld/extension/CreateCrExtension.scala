@@ -115,7 +115,7 @@ class CreateCrEditFormExtension(
     
   
   def logTabContent = {
-    ".nodeId" #> dbLogService.getLog( (new DateTime).withYear(2000), (new DateTime).plusDays(1) ).map { log => 
+    ".nodeId" #> dbLogService.getLog( (DateTime.now).withYear(2000), (DateTime.now).plusDays(1) ).map { log => 
       val date = DateFormaterService.getFormatedDate(new DateTime(log.date.getTime))
       <tr><td>{log.id.toString}</td><td>{log.user}</td><td>{date}</td></tr> 
     }
