@@ -7,13 +7,13 @@
     <format>jar</format>
     <format>dir</format>
   </formats>
-  <includeBaseDirectory>true</includeBaseDirectory>
+  <includeBaseDirectory>false</includeBaseDirectory>
   
   <dependencySets>
     <dependencySet>
       <outputDirectory>/</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>
-      <unpack>false</unpack>
+      <unpack>true</unpack>
       <scope>runtime</scope>
       <useTransitiveDependencies>true</useTransitiveDependencies>
       <excludes>
