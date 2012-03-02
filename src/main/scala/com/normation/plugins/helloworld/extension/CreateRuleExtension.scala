@@ -1,14 +1,14 @@
 package com.normation.plugins.helloworld.extension
 
 import com.normation.plugins.{SnippetExtensionKey,SnippetExtensionPoint}
-import com.normation.rudder.web.components.popup.CreateConfigurationRulePopup
+import com.normation.rudder.web.components.popup.CreateRulePopup
 import scala.xml.NodeSeq
-import com.normation.rudder.web.snippet.configuration.ConfigurationRuleManagement
-import com.normation.rudder.web.components.ConfigurationRuleEditForm
+import com.normation.rudder.web.snippet.configuration.RuleManagement
+import com.normation.rudder.web.components.RuleEditForm
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
-import com.normation.rudder.domain.policies.ConfigurationRule
-import com.normation.rudder.services.policies.PolicyInstanceTargetService
+import com.normation.rudder.domain.policies.Rule
+import com.normation.rudder.services.policies.RuleTargetService
 import bootstrap.liftweb.LiftSpringApplicationContext.inject
 import net.liftweb.common._
 import com.normation.plugins.helloworld.service.LogAccessInDb
@@ -17,13 +17,13 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.joda.time.DateTime
 import com.normation.rudder.web.components.DateFormaterService
 
-class CreateCrExtension extends SnippetExtensionPoint[ConfigurationRuleManagement] with Loggable {
+class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Loggable {
 
-  val extendsAt = SnippetExtensionKey(classOf[ConfigurationRuleManagement].getSimpleName)
+  val extendsAt = SnippetExtensionKey(classOf[RuleManagement].getSimpleName)
 
-  def compose(snippet:ConfigurationRuleManagement) : Map[String, NodeSeq => NodeSeq] = Map(
+  def compose(snippet:RuleManagement) : Map[String, NodeSeq => NodeSeq] = Map(
       "head" -> display _
-    , "viewConfigurationRules" -> viewConfigurationRules _
+    , "viewRules" -> viewRules _
   )
   
   
@@ -32,31 +32,31 @@ class CreateCrExtension extends SnippetExtensionPoint[ConfigurationRuleManagemen
     xml
   }
   
-  def viewConfigurationRules(xml:NodeSeq) : NodeSeq = {
-    logger.info("viewConfigurationRules: I'm called !!!!!!!!!!" )
+  def viewRules(xml:NodeSeq) : NodeSeq = {
+    logger.info("viewRules: I'm called !!!!!!!!!!" )
     xml
   }
 
 }
 
 
-class CreateCrEditFormExtension(
-    targetInfoService:PolicyInstanceTargetService,
-    dbLogService: LogAccessInDb
-  ) extends SnippetExtensionPoint[ConfigurationRuleEditForm] with Loggable {
+class CreateRuleEditFormExtension(
+      targetInfoService :RuleTargetService
+    , dbLogService      : LogAccessInDb
+  ) extends SnippetExtensionPoint[RuleEditForm] with Loggable {
 
-  val extendsAt = SnippetExtensionKey(classOf[ConfigurationRuleEditForm].getSimpleName)
+  val extendsAt = SnippetExtensionKey(classOf[RuleEditForm].getSimpleName)
 
-  def compose(snippet:ConfigurationRuleEditForm) : Map[String, NodeSeq => NodeSeq] = Map(
+  def compose(snippet:RuleEditForm) : Map[String, NodeSeq => NodeSeq] = Map(
       "showForm" -> addAnOtherTab(snippet) _
   )
   
   /**
    * Add a tab: 
-   * - add an li in ul with id=configRuleDetailsTabMenu
-   * - add the actual tab after the div with id=configRuleDetailsEditTab
+   * - add an li in ul with id=ruleDetailsTabMenu
+   * - add the actual tab after the div with id=ruleDetailsEditTab
    */
-  def addAnOtherTab(snippet:ConfigurationRuleEditForm)(xml:NodeSeq) = {
+  def addAnOtherTab(snippet:RuleEditForm)(xml:NodeSeq) = {
     logger.info("I'm called !!!!!!!!!!" )
     
     //add a log entry
@@ -66,22 +66,22 @@ class CreateCrEditFormExtension(
     })
     
     (
-      "#configRuleDetailsTabMenu *" #> { x => x ++  (
+      "#ruleDetailsTabMenu *" #> { x => x ++  (
         <li><a href="#anOtherTab">An other tab, add by a plugin</a></li> 
         <li><a href="#aLogTab">Access log for that cr</a></li> 
       )} &
-      "#configRuleDetailsEditTab" #> { x => x ++
-          tabContent(snippet.configurationRule)(myXml) ++
+      "#ruleDetailsEditTab" #> { x => x ++
+          tabContent(snippet.rule)(myXml) ++
           logTabContent(logXml) 
       }
     )(xml)
   }
 
-  def tabContent(cr:ConfigurationRule) = {
-    "#cfInfos" #> cr.name &
-    "#nodeListTableForCr" #> { xml:NodeSeq =>
+  def tabContent(cr:Rule) = {
+    "#ruleInfos" #> cr.name &
+    "#nodeListTableForRule" #> { xml:NodeSeq =>
       cr.target match {
-        case None => <span>No target is defined for that configuration rule</span>
+        case None => <span>No target is defined for that rule</span>
         case Some(target) => targetInfoService.getNodeIds(target) match {
           case e:EmptyBox => 
             logger.error("Error when trying to find node ids for target: " + target, e) 
@@ -94,14 +94,14 @@ class CreateCrEditFormExtension(
 
   private val myXml = 
     <div id="anOtherTab">
-      <h3>This tab list all the node on wich that configuration rule is applied</h3>
+      <h3>This tab list all the node on wich that rule is applied</h3>
       <br/>
       <p>This is an other tab which is provided by a plugin. Cool, isn't it ?</p>
       <br/>
       <div>
-        We are currently processing <span id="cfInfos"/>
+        We are currently processing <span id="ruleInfos"/>
       </div>
-      <table id="nodeListTableForCr">
+      <table id="nodeListTableForRule">
         <thead>
           <tr><th>Node ID</th></tr>
         </thead>

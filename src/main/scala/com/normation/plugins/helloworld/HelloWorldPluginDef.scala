@@ -30,7 +30,7 @@ class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with 
 
   override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
     val helloLoc = 
-      Menu("HelloPLuginConfig") / "secure" / "administration" / "helloplugin" >> 
+      Menu("HelloPluginConfig") / "secure" / "administration" / "helloplugin" >> 
         Title( x => <span>HelloPlugin</span>) >> 
         LocGroup("administrationGroup") >> 
         Template(() => 

@@ -15,7 +15,7 @@ import org.springframework.beans.factory.InitializingBean
 import com.normation.plugins.helloworld.extension._
 import com.normation.plugins._
 import bootstrap.liftweb.AppConfig
-import com.normation.rudder.services.policies.PolicyInstanceTargetService
+import com.normation.rudder.services.policies.RuleTargetService
 import com.normation.plugins.helloworld.service.LogAccessInDb
 import bootstrap.liftweb.PropertyPlaceholderConfig
 
@@ -49,9 +49,9 @@ class HelloWorldConf extends Loggable with  ApplicationContextAware with Initial
   
   @Bean def moduleDef2 = new HelloWorldPluginDef(dbService)
   
-  @Bean def ext1 = new CreateCrExtension()
+  @Bean def ext1 = new CreateRuleExtension()
   
-  @Bean def ext2 = new CreateCrEditFormExtension(appContext.getBean(classOf[PolicyInstanceTargetService]),dbService)
+  @Bean def ext2 = new CreateRuleEditFormExtension(appContext.getBean(classOf[RuleTargetService]),dbService)
 
   @Bean def dbService = new LogAccessInDb(jdbcUrl, jdbcUsername, jdbcPassword)
 }
