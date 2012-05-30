@@ -51,7 +51,7 @@
     <dependency>
       <groupId>org.squeryl</groupId>
       <artifactId>squeryl_${scala-version}</artifactId>
-      <version>0.9.4</version>
+      <version>${squeryl-version}</version>
     </dependency>
 
   </dependencies>
