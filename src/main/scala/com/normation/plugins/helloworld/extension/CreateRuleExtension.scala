@@ -77,18 +77,10 @@ class CreateRuleEditFormExtension(
     )(xml)
   }
 
-  def tabContent(cr:Rule) = {
-    "#ruleInfos" #> cr.name &
+  def tabContent(rule:Rule) = {
+    "#ruleInfos" #> rule.name &
     "#nodeListTableForRule" #> { xml:NodeSeq =>
-      cr.target match {
-        case None => <span>No target is defined for that rule</span>
-        case Some(target) => targetInfoService.getNodeIds(target) match {
-          case e:EmptyBox => 
-            logger.error("Error when trying to find node ids for target: " + target, e) 
-            <span class="error">Error when trying to find target</span>
-          case Full(ids) => (".nodeId" #> ids.map(s => <tr><td>{s.value}</td></tr>))(xml)
-        }
-      }
+      (".nodeId" #> rule.targets.map(target => <tr><td>{target.target}</td></tr>))(xml)
     }
   }
 
