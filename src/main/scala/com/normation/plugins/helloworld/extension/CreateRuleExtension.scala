@@ -1,7 +1,7 @@
 package com.normation.plugins.helloworld.extension
 
 import com.normation.plugins.{SnippetExtensionKey,SnippetExtensionPoint}
-import com.normation.rudder.web.components.popup.CreateRulePopup
+import com.normation.rudder.web.components.popup.CreateOrCloneRulePopup
 import scala.xml.NodeSeq
 import com.normation.rudder.web.snippet.configuration.RuleManagement
 import com.normation.rudder.web.components.RuleEditForm
