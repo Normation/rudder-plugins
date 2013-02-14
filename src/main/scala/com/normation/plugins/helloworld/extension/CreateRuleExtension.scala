@@ -25,13 +25,13 @@ class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Log
       "head" -> display _
     , "viewRules" -> viewRules _
   )
-  
-  
+
+
   def display(xml:NodeSeq) = {
     logger.info("display: I'm called !!!!!!!!!!" )
     xml
   }
-  
+
   def viewRules(xml:NodeSeq) : NodeSeq = {
     logger.info("viewRules: I'm called !!!!!!!!!!" )
     xml
@@ -50,29 +50,29 @@ class CreateRuleEditFormExtension(
   def compose(snippet:RuleEditForm) : Map[String, NodeSeq => NodeSeq] = Map(
       "showForm" -> addAnOtherTab(snippet) _
   )
-  
+
   /**
-   * Add a tab: 
+   * Add a tab:
    * - add an li in ul with id=ruleDetailsTabMenu
    * - add the actual tab after the div with id=ruleDetailsEditTab
    */
   def addAnOtherTab(snippet:RuleEditForm)(xml:NodeSeq) = {
     logger.info("I'm called !!!!!!!!!!" )
-    
+
     //add a log entry
     dbLogService.logAccess(SecurityContextHolder.getContext.getAuthentication.getPrincipal match {
-      case u:UserDetails =>  u.getUsername 
+      case u:UserDetails =>  u.getUsername
       case x => "unknown user"
     })
-    
+
     (
-      "#ruleDetailsTabMenu *" #> { x => x ++  (
-        <li><a href="#anOtherTab">An other tab, add by a plugin</a></li> 
-        <li><a href="#aLogTab">Access log for that cr</a></li> 
+      "#ruleDetailsTabMenu *" #> { (x:NodeSeq) => x ++  (
+        <li><a href="#anOtherTab">An other tab, add by a plugin</a></li>
+        <li><a href="#aLogTab">Access log for that cr</a></li>
       )} &
-      "#ruleDetailsEditTab" #> { x => x ++
+      "#ruleDetailsEditTab" #> { (x:NodeSeq) => x ++
           tabContent(snippet.rule)(myXml) ++
-          logTabContent(logXml) 
+          logTabContent(logXml)
       }
     )(xml)
   }
@@ -80,11 +80,11 @@ class CreateRuleEditFormExtension(
   def tabContent(rule:Rule) = {
     "#ruleInfos" #> rule.name &
     "#nodeListTableForRule" #> { xml:NodeSeq =>
-      (".nodeId" #> rule.targets.map(target => <tr><td>{target.target}</td></tr>))(xml)
+      (".nodeId" #> rule.targets.map(target => <tr><td>{target.target}</td></tr>)).apply(xml)
     }
   }
 
-  private val myXml = 
+  private val myXml =
     <div id="anOtherTab">
       <h3>This tab list all the node on wich that rule is applied</h3>
       <br/>
@@ -104,16 +104,16 @@ class CreateRuleEditFormExtension(
         </tbody>
       </table>
     </div>
-    
-  
+
+
   def logTabContent = {
-    ".nodeId" #> dbLogService.getLog( (DateTime.now).withYear(2000), (DateTime.now).plusDays(1) ).map { log => 
+    ".nodeId" #> dbLogService.getLog( (DateTime.now).withYear(2000), (DateTime.now).plusDays(1) ).map { log =>
       val date = DateFormaterService.getFormatedDate(new DateTime(log.date.getTime))
-      <tr><td>{log.id.toString}</td><td>{log.user}</td><td>{date}</td></tr> 
+      <tr><td>{log.id.toString}</td><td>{log.user}</td><td>{date}</td></tr>
     }
   }
-  
-  private val logXml = 
+
+  private val logXml =
     <div id="aLogTab">
       <h3>This tab list all access date and time to that CR</h3>
       <br/>
@@ -130,5 +130,5 @@ class CreateRuleEditFormExtension(
         </tbody>
       </table>
     </div>
-    
+
 }
