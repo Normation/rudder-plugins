@@ -1,21 +1,20 @@
 package com.normation.plugins.helloworld.extension
 
-import com.normation.plugins.{SnippetExtensionKey,SnippetExtensionPoint}
-import com.normation.rudder.web.components.popup.CreateOrCloneRulePopup
 import scala.xml.NodeSeq
-import com.normation.rudder.web.snippet.configuration.RuleManagement
-import com.normation.rudder.web.components.RuleEditForm
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import com.normation.rudder.domain.policies.Rule
-import com.normation.rudder.services.policies.RuleTargetService
-import bootstrap.liftweb.LiftSpringApplicationContext.inject
-import net.liftweb.common._
-import com.normation.plugins.helloworld.service.LogAccessInDb
+
+import org.joda.time.DateTime
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
-import org.joda.time.DateTime
-import com.normation.rudder.web.components.DateFormaterService
+
+import com.normation.plugins.{ SnippetExtensionKey, SnippetExtensionPoint }
+import com.normation.plugins.helloworld.service.LogAccessInDb
+import com.normation.rudder.domain.policies.Rule
+import com.normation.rudder.services.policies.RuleTargetService
+import com.normation.rudder.web.components.{ DateFormaterService, RuleEditForm }
+import com.normation.rudder.web.snippet.configuration.RuleManagement
+
+import net.liftweb.common.Loggable
+import net.liftweb.util.Helpers.{ strToCssBindPromoter, strToSuperArrowAssoc }
 
 class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Loggable {
 
@@ -38,7 +37,6 @@ class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Log
   }
 
 }
-
 
 class CreateRuleEditFormExtension(
       targetInfoService :RuleTargetService
