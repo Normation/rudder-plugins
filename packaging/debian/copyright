@@ -16,7 +16,10 @@ Copyright:
 
 License:
 
-    Proprietary. All rights reserved.
+    GNU General Public Licence version 3
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
 
 The Debian packaging is:
 

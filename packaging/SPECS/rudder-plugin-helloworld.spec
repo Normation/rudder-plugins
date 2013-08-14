@@ -41,7 +41,8 @@ Name: %{real_name}
 Version: %{real_version}
 Release: 1%{?dist}
 Epoch: 1299256513
-License: Proprietary
+License: GPLv3
+URL: http://www.rudder-project.org
 
 Group: Applications/System
 
