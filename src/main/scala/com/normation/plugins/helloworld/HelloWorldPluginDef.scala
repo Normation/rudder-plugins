@@ -16,7 +16,7 @@ class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with 
 
   val name = PluginName("hello world")
   val basePackage = "com.normation.plugins.helloworld"
-  val version = PluginVersion(0,0,1)
+  val version = PluginVersion(1,0,0)
   val description : NodeSeq  =
     <div>
     An <b>Hello World !</b> template plugin"
