@@ -36,7 +36,7 @@ class HelloWorldConf extends Loggable with  ApplicationContextAware with Initial
 
   @Bean def ext1 = new CreateRuleExtension()
 
-  @Bean def ext2 = new CreateRuleEditFormExtension(RudderConfig.ruleTargetService, dbService)
+  @Bean def ext2 = new CreateRuleEditFormExtension(dbService)
 
   @Bean def dbService = new LogAccessInDb(
       RudderConfig.RUDDER_JDBC_URL
