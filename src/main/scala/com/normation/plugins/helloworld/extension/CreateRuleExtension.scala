@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails
 import com.normation.plugins.{ SnippetExtensionKey, SnippetExtensionPoint }
 import com.normation.plugins.helloworld.service.LogAccessInDb
 import com.normation.rudder.domain.policies.Rule
-import com.normation.rudder.services.policies.RuleTargetService
 import com.normation.rudder.web.components.{ DateFormaterService, RuleEditForm }
 import com.normation.rudder.web.snippet.configuration.RuleManagement
 
@@ -39,8 +38,7 @@ class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Log
 }
 
 class CreateRuleEditFormExtension(
-      targetInfoService :RuleTargetService
-    , dbLogService      : LogAccessInDb
+    dbLogService      : LogAccessInDb
   ) extends SnippetExtensionPoint[RuleEditForm] with Loggable {
 
   val extendsAt = SnippetExtensionKey(classOf[RuleEditForm].getSimpleName)
