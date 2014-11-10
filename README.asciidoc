@@ -1,0 +1,36 @@
+Rudder plugin: Hello world !
+----------------------------
+
+This project is part of Rudder - configuration management made easy. 
+ 
+See: http://rudder-project.org for more information. 
+
+[horizontal]
+Bug report:: http://www.rudder-project.org/redmine/projects/helloworldplugin/issues
+Mailing list, irc:: http://www.rudder-project.org/foswiki/Community/
+
+=== Authors
+
+Normation http://normation.com
+
+- Francois "fanf" Armand francois.armand@normation.com
+
+=== License
+
+This project is licensed under GNU AGPLv3 license, 
+see the provided "LICENSE" file  or 
+http://www.gnu.org/licenses/agpl-3.0.txt
+
+=== Contributing
+
+Thank you for your interest in your our project!
+The contribution process is detailed here: 
+http://www.rudder-project.org/HowToContribute
+
+=== Synopsis
+
+This plugin allows to add external reports in plain text or HTML for nodes. 
+
+With the plugin, you configure a root directory where are located your reports, and
+if a node contains the report, it will be used. 
+
