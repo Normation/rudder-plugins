@@ -1,0 +1,42 @@
+<lift:surround with="menu/menu-administration" at="content">
+
+  <div class="portlet">
+    <div class="portlet-content">
+      <div class="inner-portlet">
+        <h4 class="inner-portlet-header">External Reports for Node plugin configuration</h4>
+        <div class="portlet-content">
+          <div class="intro">This plugin allows to add external reports on nodes details. You can configure
+            directories where the node hostname or uuid will be look for. If it is found, a link is created in a new tab
+            in node details, allowing to display the report content.
+          </div>
+          <br />
+
+          <div class="lift:PluginInfo">
+
+            <ul>
+              <li>File used to configure the reports: <b><span id="reportsConfigFile">[report confog file]</span></b></li>
+              <li>Name of the tab in node detail: <b><span id="tabTitle">[tab title]</span></b></li>
+            </ul>
+            
+            <br /> <br />
+
+            <div class="oneReportDetails">
+              <h3>
+                Report with key "<span class="reportKey">[key]</span>"
+              </h3>
+              <ul>
+                <li>Title: <span class="reportTitle">[title]</span></li>
+                <li>Description: <span class="reportDescription">[description]</span></li>
+                <li>Root directory: <span class="reportRootDirectory">[root directory]</span></li>
+                <li>Example of file name for node "my-node.local": <span class="reportFilename">[file name
+                    example]</span></li>
+              </ul>
+              <br />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br />
+  </div>
+</lift:surround>
