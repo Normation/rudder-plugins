@@ -37,14 +37,13 @@ package bootstrap.rudder.plugin
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
 import org.springframework.context.annotation.{ Bean, Configuration }
-
 import com.normation.plugins.SnippetExtensionRegister
 import com.normation.plugins.nodeexternalreport.NodeExternalReportPluginDef
 import com.normation.plugins.nodeexternalreport.extension.CreateNodeDetailsExtension
 import com.normation.plugins.nodeexternalreport.service.ReadExternalReports
-
 import bootstrap.liftweb.RudderConfig
 import net.liftweb.common.Loggable
+import com.normation.plugins.nodeexternalreport.service.NodeExternalReportApi
 
 /**
  * Definition of services for the HelloWorld plugin.
@@ -64,13 +63,15 @@ class NodeExternalReportConf extends Loggable with ApplicationContextAware with 
     appContext = applicationContext
   }
 
-  @Bean def nodeExternalReportDef = new NodeExternalReportPluginDef()
-
-  @Bean def tabExtension = new CreateNodeDetailsExtension(readReport)
-
   @Bean def readReport = new ReadExternalReports(
       RudderConfig.nodeInfoService
-    , nodeExternalReportDef.config.getString("plugin.externalReport.configFile")
+    , "/tmp/externalReports.conf"
   )
+
+  @Bean def externalNodeReportApi = new NodeExternalReportApi(readReport)
+
+  @Bean def nodeExternalReportDef = new NodeExternalReportPluginDef(externalNodeReportApi)
+
+  @Bean def tabExtension = new CreateNodeDetailsExtension(readReport)
 
 }

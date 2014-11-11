@@ -39,7 +39,7 @@ import com.normation.plugins.{SnippetExtensionKey, SnippetExtensionPoint}
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import net.liftweb.common._
 import net.liftweb.util.CssSel
-import net.liftweb.util.Helpers.{strToCssBindPromoter, strToSuperArrowAssoc}
+import net.liftweb.util.Helpers.{strToCssBindPromoter, strToSuperArrowAssoc, urlEncode}
 import java.io.File
 import scala.collection.JavaConverters.asScalaSetConverter
 import com.normation.plugins.nodeexternalreport.service.ReadExternalReports
@@ -87,7 +87,7 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports) extends Sn
       & ".reportDescription *" #> report.description
       & ".reportLink"        #> (report.fileName match {
           case None => <span>No report of that type is available</span>
-          case Some(f) => <a href="" target="_blank">Display report in a new window</a>
+          case Some(f) => <a href={s"/secure/nodeManager/externalReport/${urlEncode(f)}/${urlEncode(key)}"} target="_blank">Display report in a new window</a>
         })
       )
     }

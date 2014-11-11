@@ -49,17 +49,19 @@ import net.liftweb.common._
 import net.liftweb.util.Helpers.tryo
 import scala.collection.JavaConverters.asScalaSetConverter
 import com.normation.inventory.domain.NodeId
+import scala.collection.immutable.SortedMap
 
 final case class ExternalReport(
     title        : String
   , description  : String
   , rootDirectory: File
   , reportName   : String => String
+  , contentType  : String
 )
 
 final case class ExternalReports(
     tabTitle : String
-  , reports  : Map[String, ExternalReport]
+  , reports  : SortedMap[String, ExternalReport]
 )
 
 final case class NodeExternalReport(
@@ -70,7 +72,7 @@ final case class NodeExternalReport(
 
 final case class NodeExternalReports(
     tabTitle : String
-  , reports  : Map[String, NodeExternalReport]
+  , reports  : SortedMap[String, NodeExternalReport]
 )
 
 /**
@@ -80,7 +82,7 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
 
   private[this] var config = loadConfig
 
-  def loadConfig(): Box[ExternalReports] = {
+  private[this] def loadConfig(): Box[ExternalReports] = {
     val config = {
       val c = ConfigFactory.parseFile(new File(reportConfigFile))
       ConfigFactory.load(c)
@@ -88,9 +90,7 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
 
     val pluginKey = "plugin.externalReport.reports"
 
-    tryo(ExternalReports(
-        tabTitle = config.getString("plugin.externalReport.tabName")
-      , reports  = (for {
+    val reports = SortedMap[String, ExternalReport]() ++ (for {
                      report <- config.getObject(pluginKey).keySet.asScala
                     } yield {
                       (
@@ -100,10 +100,20 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
                             , description   = config.getString(s"${pluginKey}.${report}.description")
                             , rootDirectory = new File(config.getString(s"${pluginKey}.${report}.rootPath"))
                             , reportName    = x => config.getString(s"${pluginKey}.${report}.reportName").replace("(node)", x)
+                            , contentType   = config.getString(s"${pluginKey}.${report}.contentType")
                           )
                       )
-                    }).toMap
+                    })
+
+    tryo(ExternalReports(
+        tabTitle = config.getString("plugin.externalReport.tabName")
+      , reports  = reports
     ))
+  }
+
+  def loadAndUpdateConfig(): Box[ExternalReports] = {
+    config = loadConfig()
+    config
   }
 
   /**
@@ -134,12 +144,12 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
     }
   }
 
-  def getFileContent(reportType: String, fileName: String): Box[File] = {
+  def getFileContent(reportType: String, fileName: String): Box[(File, String)] = {
     for {
       conf   <- config
       report <- Box(conf.reports.get(reportType))
     } yield {
-      new File(report.rootDirectory, fileName)
+      (new File(report.rootDirectory, fileName), report.contentType)
     }
   }
 

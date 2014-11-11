@@ -54,7 +54,7 @@ class PluginInfo extends DispatchSnippet with Loggable {
 
   def render : CssSel = {
 
-    reportsConfig.loadConfig() match {
+    reportsConfig.loadAndUpdateConfig() match {
       case eb: EmptyBox =>
         val e = eb ?~! "An error occured when trying to read the config file"
 
@@ -71,6 +71,7 @@ class PluginInfo extends DispatchSnippet with Loggable {
           & ".reportDescription"   #> report.description
           & ".reportRootDirectory" #> report.rootDirectory.getAbsolutePath
           & ".reportFilename"      #> report.reportName("my-node.local")
+          & ".reportContentType"   #> report.contentType
           )}
         )
     }

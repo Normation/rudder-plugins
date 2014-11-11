@@ -35,17 +35,17 @@
 package com.normation.plugins.nodeexternalreport
 
 import scala.xml.NodeSeq
-
 import com.normation.plugins.{ PluginName, PluginVersion, RudderPluginDef }
-
 import bootstrap.liftweb.ClassPathResource
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.{ LocGroup, Template, Title }
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.{ Menu }
+import com.normation.plugins.nodeexternalreport.service.NodeExternalReportApi
+import net.liftweb.http.LiftRules
 
-class NodeExternalReportPluginDef() extends RudderPluginDef with Loggable {
+class NodeExternalReportPluginDef(api: NodeExternalReportApi) extends RudderPluginDef with Loggable {
 
   val name = PluginName("node external report")
   val basePackage = "com.normation.plugins.nodeexternalreport"
@@ -60,6 +60,7 @@ class NodeExternalReportPluginDef() extends RudderPluginDef with Loggable {
   def init = {
 
     logger.info("Report plugin correctly loaded")
+    LiftRules.statelessDispatch.append(api)
 
   }
 
