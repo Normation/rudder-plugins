@@ -1,6 +1,6 @@
 This package was debianized by:
 
-    Nicolas Perron <nicolas.perron@normation.com> on Tue, 06 Sep 2011 11:20:26 +0200
+    Rudder packaging team <rudder-packaging@rudder-project.org> on Wed, 12 Nov 2014 15:39:00 +0100
 
 It was downloaded from:
 
@@ -12,7 +12,7 @@ Upstream Author(s):
 
 Copyright:
 
-    Copyright (C) 2011 Normation SAS
+    Copyright (C) 2014 Normation SAS
 
 License:
 
@@ -23,5 +23,5 @@ Public License can be found in `/usr/share/common-licenses/GPL'.
 
 The Debian packaging is:
 
-    Copyright (C) 2011, Normation SAS
+    Copyright (C) 2014, Normation SAS
 

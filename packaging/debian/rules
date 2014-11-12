@@ -23,7 +23,7 @@ build-stamp: configure-stamp
 	cd $(CURDIR)/SOURCES/rudder-sources/ldap-inventory && $(CURDIR)/SOURCES/maven2/bin/mvn -s $(CURDIR)/SOURCES/settings-internal.xml -Dmaven.test.skip=true install
 	cd $(CURDIR)/SOURCES/rudder-sources/cf-clerk && $(CURDIR)/SOURCES/maven2/bin/mvn -s $(CURDIR)/SOURCES/settings-internal.xml -Dmaven.test.skip=true install
 	cd $(CURDIR)/SOURCES/rudder-sources/rudder && $(CURDIR)/SOURCES/maven2/bin/mvn -s $(CURDIR)/SOURCES/settings-internal.xml -Dmaven.test.skip=true install package
-	cd $(CURDIR)/SOURCES/rudder-sources/helloworld-plugin && $(CURDIR)/SOURCES/maven2/bin/mvn -s $(CURDIR)/SOURCES/settings-internal.xml -Dmaven.test.skip=true install package
+	cd $(CURDIR)/SOURCES/rudder-sources/rudder-plugin-external-node-information && $(CURDIR)/SOURCES/maven2/bin/mvn -s $(CURDIR)/SOURCES/settings-internal.xml -Dmaven.test.skip=true install package
 
 	touch $@
 
@@ -49,9 +49,9 @@ binary-arch: install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs
-	cp $(CURDIR)/SOURCES/rudder-sources/helloworld-plugin/target/hello-world-*-plugin-with-own-dependencies.jar $(CURDIR)/SOURCES/hello-world.jar
+	cp $(CURDIR)/SOURCES/rudder-sources/rudder-plugin-external-node-information/target/external-node-information-*-plugin-with-own-dependencies.jar $(CURDIR)/SOURCES/external-node-information.jar
 	#Plugin files
-	dh_install --SOURCEDIR=$(CURDIR)/SOURCES/ hello-world.jar /opt/rudder/jetty7/rudder-plugins/
+	dh_install --SOURCEDIR=$(CURDIR)/SOURCES/ external-node-information.jar /opt/rudder/jetty7/rudder-plugins/
 	dh_installman
 	dh_link
 	dh_strip

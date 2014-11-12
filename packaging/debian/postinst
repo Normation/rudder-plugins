@@ -20,10 +20,17 @@ set -e
 
 case "$1" in
     configure)
-echo "***********************************************************************"
-echo "Rudder plugin 'Advanced Reporting' is now installed but not initialized."
-echo "Please restart jetty to check plugins."
-echo "***********************************************************************"
+      # Register the plugin
+      if [ -x /opt/rudder/bin/rudder-plugin ]; then
+        /opt/rudder/bin/rudder-plugin register external-node-information
+      else
+        echo "********************************************************************************"
+        echo "* Unable to register the plugin automatically. Please enable it                *"
+        echo "* manually by editing your web application container context                   *"
+        echo "* file, adding /opt/rudder/jetty7/rudder-plugins/external-node-information.jar *"
+        echo "* to the <extraClasspath> anchor.                                              *"
+        echo "********************************************************************************"
+      fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

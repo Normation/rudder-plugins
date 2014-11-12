@@ -1,5 +1,5 @@
 #####################################################################################
-# Copyright 2011 Normation SAS
+# Copyright 2014 Normation SAS
 #####################################################################################
 #
 # This program is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@ WGET := $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY)) /usr/bin/wget
 GIT_BRANCH_RUDDER = <put branch or tag name here>
 RUDDER_VERSION_TO_PACKAGE = <put Rudder version or version-snapshot here>
 
-localdepends: ./rudder-sources ./maven2/bin/mvn ./rudder-sources/helloworld-plugin
+localdepends: ./rudder-sources ./maven2/bin/mvn ./rudder-sources/rudder-plugin-external-node-information
 
 /usr/bin/wget:
 	sudo aptitude --assume-yes install wget
@@ -45,10 +45,10 @@ localdepends: ./rudder-sources ./maven2/bin/mvn ./rudder-sources/helloworld-plug
 	tar -xjf rudder-sources.tar.bz2
 	mv rudder-sources-*/ rudder-sources/
 
-./rudder-sources/helloworld-plugin: ./rudder-sources
-	mkdir -p ./rudder-sources/helloworld-plugin
-	cp -a ../../src/ ./rudder-sources/helloworld-plugin/
-	cp -a ../../pom.xml ./rudder-sources/helloworld-plugin
+./rudder-sources/rudder-plugin-external-node-information: ./rudder-sources
+	mkdir -p ./rudder-sources/rudder-plugin-external-node-information
+	cp -a ../../src/ ./rudder-sources/rudder-plugin-external-node-information/
+	cp -a ../../pom.xml ./rudder-sources/rudder-plugin-external-node-information
 
 localclean:
 	rm -rf ./rudder-sources

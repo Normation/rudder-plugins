@@ -20,7 +20,21 @@ set -e
 
 
 case "$1" in
-    purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    
+    ;;
+    purge)
+      # Unregister the plugin
+      if [ -x /opt/rudder/bin/rudder-plugin ]; then
+        /opt/rudder/bin/rudder-plugin unregister external-node-information
+      else
+        echo "***********************************************************************************"
+        echo "* Unable to unregister the plugin automatically. Please disable it                *"
+        echo "* manually by editing your web application container context                      *"
+        echo "* file, removing /opt/rudder/jetty7/rudder-plugins/external-node-information.jar  *"
+        echo "* from the <extraClasspath> anchor.                                               *"
+        echo "***********************************************************************************"
+      fi
     ;;
 
     *)

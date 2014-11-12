@@ -1,5 +1,5 @@
-rudder-plugin-helloworld (2.4.0~alpha5~git-0) squeeze; urgency=low
+rudder-plugin-external-node-information (2.11.4~alpha1~git-0) wheezy; urgency=low
 
   * Initial release
 
- -- Matthieu Cerda <matthieu.cerda@normation.com>  Fri, 17 Feb 2012 14:46:00 +0100
+ -- François Armand <francois.armand@normation.com>  Wed, 12 Nov 2014 15:39:00 +0100
