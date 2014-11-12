@@ -44,6 +44,7 @@ import com.normation.plugins.nodeexternalreport.service.ReadExternalReports
 import bootstrap.liftweb.RudderConfig
 import net.liftweb.common.Loggable
 import com.normation.plugins.nodeexternalreport.service.NodeExternalReportApi
+import com.normation.rudder.domain.logger.ApplicationLogger
 
 /**
  * Definition of services for the HelloWorld plugin.
@@ -63,10 +64,22 @@ class NodeExternalReportConf extends Loggable with ApplicationContextAware with 
     appContext = applicationContext
   }
 
-  @Bean def readReport = new ReadExternalReports(
-      RudderConfig.nodeInfoService
-    , "/tmp/externalReports.conf"
-  )
+  @Bean def readReport = {
+
+    val CONFIG_FILE_KEY = "rudder.plugin.externalNodeInformation.config"
+    val defaultPath = "/opt/rudder/etc/plugins/external-node-information.properties"
+
+    val configPath = System.getProperty(CONFIG_FILE_KEY) match {
+      case null | "" => //use default location in standard plugin place
+        ApplicationLogger.info(s"JVM property -D${CONFIG_FILE_KEY} is not defined, use configuration file at '${defaultPath}'")
+        defaultPath
+      case x => //so, it should be a full path, check it
+        ApplicationLogger.info(s"Use configuration file defined by JVM property -D${CONFIG_FILE_KEY}: ${x}.")
+        x
+    }
+
+    new ReadExternalReports(RudderConfig.nodeInfoService, configPath)
+  }
 
   @Bean def externalNodeReportApi = new NodeExternalReportApi(readReport)
 

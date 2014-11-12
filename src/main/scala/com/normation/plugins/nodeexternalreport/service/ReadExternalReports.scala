@@ -76,13 +76,20 @@ final case class NodeExternalReports(
  */
 class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile: String) extends Loggable {
 
-  private[this] var config = loadConfig
+  private[this] var config: Box[ExternalReports] = null
 
-  private[this] def loadConfig(): Box[ExternalReports] = {
-    val config = {
-      val c = ConfigFactory.parseFile(new File(reportConfigFile))
-      ConfigFactory.load(c)
+  private[this] def loadConfig(): Box[ExternalReports] = tryo {
+
+    val configFile = new File(reportConfigFile)
+
+    if(!configFile.exists) {
+      throw new IllegalArgumentException(s"The configuration file '${reportConfigFile}' does not exist")
     }
+
+    val config = ConfigFactory.parseFile(
+        configFile
+     ,  ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF)
+    )
 
     val pluginKey = "plugin.external-node-information.reports"
 
@@ -101,10 +108,10 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
                       )
                     })
 
-    tryo(ExternalReports(
+    ExternalReports(
         tabTitle = config.getString("plugin.external-node-information.tab-name")
       , reports  = reports
-    ))
+    )
   }
 
   def loadAndUpdateConfig(): Box[ExternalReports] = {
@@ -118,6 +125,8 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
    * A Node says that no file was found
    */
   def getExternalReports(nodeId: NodeId): Box[NodeExternalReports] = {
+    if(config == null) loadAndUpdateConfig()
+
     for {
       conf <- config
       node <- nodeInfoService.getNodeInfo(nodeId)

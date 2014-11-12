@@ -57,29 +57,26 @@ class NodeExternalReportApi(
 
   val requestDispatch : PartialFunction[Req, () => Box[LiftResponse]] = {
 
-    case Get(fileName :: reportType :: Nil, req) => {
+    case Get(reportType :: fileName :: "raw" :: Nil, req) => {
       //capture values
       val tpe =  urlDecode(reportType)
       val name = urlDecode(fileName)
 
-      println("looking for: " + name)
-
-        () =>
-        for {
-          (file, contentType) <- readReport.getFileContent(tpe, name)
-          _ = println("**** file: " + file.getAbsolutePath)
-          stream              <- tryo(new FileInputStream(file))
-          if null ne stream
-        } yield {
-          StreamingResponse(
-              stream
-            , () => stream.close
-            , stream.available
-            , List("Content-Type" -> contentType)
-            , Nil
-            , 200
-          )
-        }
+      () =>
+      for {
+        (file, contentType) <- readReport.getFileContent(tpe, name)
+        stream              <- tryo(new FileInputStream(file))
+        if null ne stream
+      } yield {
+        StreamingResponse(
+            stream
+          , () => stream.close
+          , stream.available
+          , List("Content-Type" -> contentType)
+          , Nil
+          , 200
+        )
+      }
     }
   }
 

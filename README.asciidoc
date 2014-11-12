@@ -53,13 +53,14 @@ This is an example for a "security" report:
     security {
       title=Security Report
       description=This report display pen test results
-      rootPath=/tmp/security
+      dirname=/tmp/security
       filename=@@node@@.html
-      contentType=text/html
+      content-type=text/html
     }
 
 - "security" is a unique key (only used internally)
 - "title" is the name of section in the exeternal document tab
+- "dirname" is the basedirectory on the local file system where documents are stored
 - "description" is a description for what the document is about
 - "filename": the file template name to lookup the document name. @@node@@ will
               be replaced by the node hostname and uuid. 

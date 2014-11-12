@@ -87,7 +87,7 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports) extends Sn
       & ".reportDescription *" #> report.description
       & ".reportLink"        #> (report.fileName match {
           case None => <span>No report of that type is available</span>
-          case Some(f) => <a href={s"/secure/nodeManager/externalReport/${urlEncode(f)}/${urlEncode(key)}"} target="_blank">Display report in a new window</a>
+          case Some(f) => <a href={s"/secure/nodeManager/externalInformation/${urlEncode(key)}/${urlEncode(f)}/raw"} target="_blank">Display report in a new window</a>
         })
       )
     }
