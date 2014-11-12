@@ -34,22 +34,17 @@
 
 package com.normation.plugins.nodeexternalreport.service
 
-import java.sql.Timestamp
-import org.joda.time.DateTime
-import org.squeryl.{ Schema, Session, SessionFactory }
-import org.squeryl.KeyedEntity
-import org.squeryl.PrimitiveTypeMode.{ _ }
-import org.squeryl.adapters.PostgreSqlAdapter
-import org.squeryl.annotations.Column
-import net.liftweb.common.Loggable
 import java.io.File
+
+import scala.collection.immutable.SortedMap
+import scala.collection.JavaConverters.asScalaSetConverter
+
+import com.normation.inventory.domain.NodeId
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.typesafe.config._
+
 import net.liftweb.common._
 import net.liftweb.util.Helpers.tryo
-import scala.collection.JavaConverters.asScalaSetConverter
-import com.normation.inventory.domain.NodeId
-import scala.collection.immutable.SortedMap
 
 final case class ExternalReport(
     title        : String
@@ -76,7 +71,8 @@ final case class NodeExternalReports(
 )
 
 /**
- *
+ * Read the reports configuration file and build the
+ * awaited reports
  */
 class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile: String) extends Loggable {
 
@@ -88,7 +84,7 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
       ConfigFactory.load(c)
     }
 
-    val pluginKey = "plugin.externalReport.reports"
+    val pluginKey = "plugin.external-node-information.reports"
 
     val reports = SortedMap[String, ExternalReport]() ++ (for {
                      report <- config.getObject(pluginKey).keySet.asScala
@@ -98,15 +94,15 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
                         , ExternalReport(
                               title         = config.getString(s"${pluginKey}.${report}.title")
                             , description   = config.getString(s"${pluginKey}.${report}.description")
-                            , rootDirectory = new File(config.getString(s"${pluginKey}.${report}.rootPath"))
-                            , reportName    = x => config.getString(s"${pluginKey}.${report}.reportName").replace("(node)", x)
-                            , contentType   = config.getString(s"${pluginKey}.${report}.contentType")
+                            , rootDirectory = new File(config.getString(s"${pluginKey}.${report}.dirname"))
+                            , reportName    = x => config.getString(s"${pluginKey}.${report}.filename").replace("@@node@@", x)
+                            , contentType   = config.getString(s"${pluginKey}.${report}.content-type")
                           )
                       )
                     })
 
     tryo(ExternalReports(
-        tabTitle = config.getString("plugin.externalReport.tabName")
+        tabTitle = config.getString("plugin.external-node-information.tab-name")
       , reports  = reports
     ))
   }
@@ -130,8 +126,9 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
           tabTitle = conf.tabTitle
         , reports  = conf.reports.map { case (key, report) =>
             val fileName = {
-              val uuidName = report.reportName(node.id.value).toLowerCase
+              val uuidName     = report.reportName(node.id.value).toLowerCase
               val hostnameName = report.reportName(node.hostname).toLowerCase
+
               if((new File(report.rootDirectory, hostnameName)).exists) {
                 Some(hostnameName)
               } else if((new File(report.rootDirectory, uuidName)).exists) {

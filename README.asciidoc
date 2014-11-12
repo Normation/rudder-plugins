@@ -1,13 +1,13 @@
 Rudder plugin: Hello world !
 ----------------------------
 
-This project is part of Rudder - configuration management made easy. 
+This project is part of Rudder - IT infrastructure Automation and Compliance 
  
 See: http://rudder-project.org for more information. 
 
 [horizontal]
 Bug report:: http://www.rudder-project.org/redmine/projects/helloworldplugin/issues
-Mailing list, irc:: http://www.rudder-project.org/foswiki/Community/
+Mailing list, irc, ...:: https://www.rudder-project.org/site/community/mailing-lists/
 
 === Authors
 
@@ -29,8 +29,43 @@ http://www.rudder-project.org/HowToContribute
 
 === Synopsis
 
-This plugin allows to add external reports in plain text or HTML for nodes. 
+This plugin allows to add external, static documents in a new tab in node details. 
 
-With the plugin, you configure a root directory where are located your reports, and
-if a node contains the report, it will be used. 
+With the plugin, you configure one (or several) root directory where are located 
+your documents, and if a node has one for it (based on a regex and its hostname or uuid), 
+the document will be downloadable.  
+
+== Documents name
+
+The document name matching is done based on the hostname of the node or
+its uuid (both will be tested), in LOWER cases. 
+
+== Configuration
+
+The configuration file for the plugin is located at: TODO. 
+
+Example: see TODO
+
+The format allow to declare as many base directory you want. 
+
+This is an example for a "security" report:
+
+    security {
+      title=Security Report
+      description=This report display pen test results
+      rootPath=/tmp/security
+      filename=@@node@@.html
+      contentType=text/html
+    }
+
+- "security" is a unique key (only used internally)
+- "title" is the name of section in the exeternal document tab
+- "description" is a description for what the document is about
+- "filename": the file template name to lookup the document name. @@node@@ will
+              be replaced by the node hostname and uuid. 
+- "contentType": the HTTP content type to use for the new page. It allows to 
+                 direct what the browser will do (open a PDF viewer, display 
+                 an HTML page, etc). 
+
+
 

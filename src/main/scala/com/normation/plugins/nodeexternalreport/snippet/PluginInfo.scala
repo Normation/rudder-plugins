@@ -37,10 +37,10 @@ package com.normation.plugins.nodeexternalreport.snippet
 import com.normation.plugins.nodeexternalreport.service.ReadExternalReports
 
 import bootstrap.liftweb.LiftSpringApplicationContext.inject
+
 import net.liftweb.common._
 import net.liftweb.common.Loggable
 import net.liftweb.http.DispatchSnippet
-import net.liftweb.http.js.JsCmds.jsExpToJsCmd
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 

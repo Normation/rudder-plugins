@@ -83,6 +83,6 @@ class NodeExternalReportApi(
     }
   }
 
-  serve( "secure" / "nodeManager" / "externalReport" prefix requestDispatch)
+  serve( "secure" / "nodeManager" / "externalInformation" prefix requestDispatch)
 
 }
