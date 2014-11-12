@@ -24,7 +24,7 @@ WGET := $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY)) /usr/bin/wget
 GIT_BRANCH_RUDDER = <put branch or tag name here>
 RUDDER_VERSION_TO_PACKAGE = <put Rudder version or version-snapshot here>
 
-localdepends: ./rudder-sources ./maven2/bin/mvn ./rudder-sources/rudder-plugin-external-node-information
+localdepends: ./rudder-sources ./maven2/bin/mvn ./rudder-sources/rudder-plugin-external-node-information ./external-node-information.properties
 
 /usr/bin/wget:
 	sudo aptitude --assume-yes install wget
@@ -49,6 +49,9 @@ localdepends: ./rudder-sources ./maven2/bin/mvn ./rudder-sources/rudder-plugin-e
 	mkdir -p ./rudder-sources/rudder-plugin-external-node-information
 	cp -a ../../src/ ./rudder-sources/rudder-plugin-external-node-information/
 	cp -a ../../pom.xml ./rudder-sources/rudder-plugin-external-node-information
+
+./external-node-information.properties: ./rudder-sources/rudder-plugin-external-node-information
+	cp ./rudder-sources/rudder-plugin-external-node-information/src/main/resources/external-node-information.properties ./external-node-information.properties
 
 localclean:
 	rm -rf ./rudder-sources

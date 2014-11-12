@@ -52,6 +52,7 @@ binary-arch: install
 	cp $(CURDIR)/SOURCES/rudder-sources/rudder-plugin-external-node-information/target/external-node-information-*-plugin-with-own-dependencies.jar $(CURDIR)/SOURCES/external-node-information.jar
 	#Plugin files
 	dh_install --SOURCEDIR=$(CURDIR)/SOURCES/ external-node-information.jar /opt/rudder/jetty7/rudder-plugins/
+	dh_install --SOURCEDIR=$(CURDIR)/SOURCES/ external-node-information.properties /opt/rudder/etc/plugins/
 	dh_installman
 	dh_link
 	dh_strip

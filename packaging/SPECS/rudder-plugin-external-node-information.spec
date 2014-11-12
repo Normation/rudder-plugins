@@ -48,6 +48,7 @@ Group: Applications/System
 
 Source1: settings-external.xml
 Source2: settings-internal.xml
+Source3: external-node-information.properties
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
@@ -88,8 +89,10 @@ cd %{_builddir}/rudder-sources/rudder-plugin-external-node-information && %{_sou
 rm -rf %{buildroot}
 
 mkdir -p %{buildroot}%{rudderdir}/jetty7/rudder-plugins/
+mkdir -p %{buildroot}%{rudderdir}/etc/plugins/
 
 cp %{_builddir}/rudder-sources/rudder-plugin-external-node-information/target/external-node-information-*-plugin-with-own-dependencies.jar %{buildroot}%{rudderdir}/jetty7/rudder-plugins/external-node-information.jar
+cp %{SOURCE3} %{buildroot}%{rudderdir}/etc/plugins/
 
 %pre -n rudder-plugin-external-node-information
 #===============================================================
@@ -122,6 +125,7 @@ rm -rf %{buildroot}
 %files -n rudder-plugin-external-node-information
 %defattr(-, root, root, 0755)
 %{rudderdir}/jetty7/rudder-plugins/external-node-information.jar
+%{rudderdir}/etc/plugins/external-node-information.properties
 
 #===============================================================
 # Changelog

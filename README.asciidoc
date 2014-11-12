@@ -64,7 +64,7 @@ This is an example for a "security" report:
 - "description" is a description for what the document is about
 - "filename": the file template name to lookup the document name. @@node@@ will
               be replaced by the node hostname and uuid. 
-- "contentType": the HTTP content type to use for the new page. It allows to 
+- "content-type": the HTTP content type to use for the new page. It allows to 
                  direct what the browser will do (open a PDF viewer, display 
                  an HTML page, etc). 
 
