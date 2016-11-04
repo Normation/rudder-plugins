@@ -26,10 +26,12 @@
         -->
          <exclude>org.scala-lang:scala-library</exclude>
          <exclude>joda-time:joda-time</exclude>
-         <exclude>net.liftweb:lift-common_${scala-lift-version}</exclude>
+         <exclude>net.liftweb:lift-common_2.11</exclude>
          <exclude>org.slf4j:slf4j-api</exclude>
          <exclude>ch.qos.logback:logback-core</exclude>
          <exclude>ch.qos.logback:logback-classic</exclude>
+         <exclude>ca.mrvisser:sealerate_2.11</exclude>
+         <exclude>org.scala-lang*</exclude>
       </excludes>
     </dependencySet>
   </dependencySets>
