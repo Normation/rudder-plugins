@@ -128,8 +128,12 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
     if(config == null) loadAndUpdateConfig()
 
     for {
-      conf <- config
-      node <- nodeInfoService.getNodeInfo(nodeId)
+      conf    <- config
+      optNode <- nodeInfoService.getNodeInfo(nodeId)
+      node    <- optNode match {
+        case None    => Failure(s"The node with ID '${nodeId}' was not found, we can add external information")
+        case Some(n) => Full(n)
+      }
     } yield {
       NodeExternalReports(
           tabTitle = conf.tabTitle
