@@ -135,3 +135,7 @@ rm -rf %{buildroot}
 
 - Initial package
 
+* Fri, 04 Nov 2016 - Rudder packaging team <rudder-packaging@rudder-project.org> 3.1.16-alpha1
+
+- Update to Rudder 3.1.
+
