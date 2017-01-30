@@ -180,7 +180,7 @@ class HttpQueryDataSourceService(
                         })
                         //connection timeout: 5s ; getdata timeout: freq ?
         property     <- getHttp.getNode(datasourceId, datasource, nodeInfo, policyServer, parameters, datasource.requestTimeOut, datasource.requestTimeOut)
-        newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(Seq(property)), DataSource.providerName)
+        newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(Seq(property)))
         newNode      =  nodeInfo.node.copy(properties = newProps)
         nodeUpdated  <- nodeRepository.updateNode(newNode, cause.modId, cause.actor, cause.reason) ?~! s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
       } yield {
