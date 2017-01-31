@@ -66,8 +66,6 @@ import scalaj.http.Http
 import scalaj.http.HttpOptions
 import scalaz._
 import scalaz.concurrent.Task
-import com.normation.rudder.domain.nodes.NodePropertyProvider
-import com.normation.rudder.domain.nodes.NodePropertyMode
 
 /*
  * This file contain the logic to update dataset from an

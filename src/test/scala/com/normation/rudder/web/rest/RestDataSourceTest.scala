@@ -37,32 +37,27 @@
 
 package com.normation.rudder.web.rest
 
-import org.junit._
-import org.junit.Assert._
-import org.junit.runner._
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration.Duration
+
+import com.normation.rudder.datasources._
+import com.normation.rudder.web.rest.datasource.DataSourceApi9
+import com.normation.rudder.web.rest.datasource.DataSourceApiService
+
 import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
 import org.specs2.mutable._
-import org.specs2.runner._
 
 import RestTestSetUp._
+import net.liftweb.common.Box
+import net.liftweb.common.Failure
 import net.liftweb.common.Full
-import net.liftweb.http.PlainTextResponse
 import net.liftweb.common.Loggable
 import net.liftweb.http.JsonResponse
 import net.liftweb.http.LiftResponse
-import net.liftweb.common.Failure
-import net.liftweb.json.JsonAST
-import net.liftweb.json.JsonAST.JObject
-import net.liftweb.json.JsonAST.JField
-import net.liftweb.json.JsonAST.JArray
 import net.liftweb.json.JValue
-import com.normation.rudder.datasources._
-import net.liftweb.common.Box
-import scala.concurrent.duration.Duration
-import java.util.concurrent.TimeUnit
-import com.normation.rudder.repository.json.DataExtractor.CompleteJson
-import com.normation.rudder.web.rest.datasource.DataSourceApiService
-import com.normation.rudder.web.rest.datasource.DataSourceApi9
+import net.liftweb.json.JsonAST.JArray
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {

@@ -37,17 +37,18 @@
 
 package com.normation.rudder.datasources
 
-import net.liftweb.common._
-import net.liftweb.util.ControlHelpers.tryo
-import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
-import com.normation.rudder.repository.json.JsonExctractorUtils
-import scalaz.Monad
-import scala.concurrent.duration.Duration
-import net.liftweb.json._
-import com.normation.rudder.datasources.HttpRequestMode._
-import com.normation.rudder.datasources.DataSourceSchedule._
+
+import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
+
+import com.normation.rudder.datasources.DataSourceSchedule._
+import com.normation.rudder.datasources.HttpRequestMode._
+import com.normation.rudder.repository.json.JsonExctractorUtils
+
+import net.liftweb.common._
+import net.liftweb.json._
+import net.liftweb.util.ControlHelpers.tryo
 import scalaz.std.option._
 
 object DataSourceJsonSerializer{
@@ -104,7 +105,6 @@ object DataSourceJsonSerializer{
 }
 
 trait DataSourceExtractor[M[+_]] extends JsonExctractorUtils[M] {
-  import com.normation.utils.Control.sequence
 
   case class DataSourceRunParamWrapper(
       schedule     : M[DataSourceSchedule]

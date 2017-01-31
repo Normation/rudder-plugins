@@ -37,26 +37,25 @@
 
 package com.normation.rudder.web.rest.datasource
 
-import com.normation.rudder.datasources._
-import net.liftweb.json.JsonAST.JValue
-import com.normation.rudder.web.rest.RestDataSerializer
-import net.liftweb.common._
-import com.normation.rudder.web.rest.RestUtils
-import com.normation.rudder.web.rest.RestExtractorService
-import scala.concurrent.duration.Duration
-import net.liftweb.http.Req
-import scala.concurrent.duration.FiniteDuration
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
+import com.normation.rudder.datasources._
+import com.normation.rudder.web.rest.RestDataSerializer
+import com.normation.rudder.web.rest.RestExtractorService
+import com.normation.rudder.web.rest.RestUtils
+
+import net.liftweb.common._
+import net.liftweb.http.Req
+import net.liftweb.json.JsonAST.JValue
 
 class DataSourceApiService(
     dataSourceRepo     : DataSourceRepository with DataSourceUpdateCallbacks
   , restDataSerializer : RestDataSerializer
   , restExtractor      : RestExtractorService
 ) extends Loggable {
-  import net.liftweb.json.JsonDSL._
   import restExtractor._
-  import DataSourceExtractor.OptionnalJson._
+  import com.normation.rudder.datasources.DataSourceExtractor.OptionnalJson._
+  import net.liftweb.json.JsonDSL._
 
   def extractReqDataSource(req : Req, base : DataSource) : Box[DataSource] = {
     req.json match {

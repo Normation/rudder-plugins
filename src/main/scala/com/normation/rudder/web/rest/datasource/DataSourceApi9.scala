@@ -37,18 +37,18 @@
 
 package com.normation.rudder.web.rest.datasource
 
+import com.normation.inventory.domain.NodeId
+import com.normation.rudder.datasources._
+import com.normation.rudder.web.rest.ApiVersion
 import com.normation.rudder.web.rest.RestExtractorService
+import com.normation.rudder.web.rest.RestUtils
 import com.normation.rudder.web.rest.RestUtils._
+import com.normation.utils.StringUuidGenerator
+
 import net.liftweb.common._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json.JsonDSL._
-import com.normation.rudder.web.rest.ApiVersion
 import net.liftweb.json.JValue
-import com.normation.rudder.web.rest.RestUtils
-import com.normation.rudder.datasources._
-import com.normation.utils.StringUuidGenerator
-import com.normation.inventory.domain.NodeId
 import net.liftweb.json.JsonAST.JString
 
 class DataSourceApi9 (
@@ -66,7 +66,6 @@ class DataSourceApi9 (
     RestUtils.actionResponse(extractor, kind, uuidGen, id)(function, req, errorMessage)
   }
 
-  import net.liftweb.json.JsonDSL._
   def requestDispatch(apiVersion: ApiVersion) : PartialFunction[Req, () => Box[LiftResponse]] = {
 
     case Get(Nil, req) => {

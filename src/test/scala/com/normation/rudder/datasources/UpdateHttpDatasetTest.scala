@@ -37,22 +37,18 @@
 
 package com.normation.rudder.datasources
 
-import org.junit.runner.RunWith
-import org.specs2.mutable._
-import org.specs2.runner._
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import scala.util.control.NonFatal
 
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
+import com.normation.rudder.datasources.DataSourceSchedule._
+import com.normation.rudder.domain.eventlog._
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
-import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.parameters.ParameterName
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
@@ -63,21 +59,16 @@ import com.normation.utils.StringUuidGeneratorImpl
 
 import org.http4s._
 import org.http4s.dsl._
-import org.http4s.util._
 import org.http4s.server.blaze.BlazeBuilder
-import org.joda.time.DateTime
+import org.http4s.util._
+import org.junit.runner.RunWith
+import org.specs2.mutable._
+import org.specs2.specification.AfterAll
+import org.specs2.runner.JUnitRunner
 
-import monix.eval.Task
-import monix.execution.Cancelable
-import monix.execution.Scheduler
 import monix.execution.atomic.AtomicInt
 import monix.execution.schedulers.TestScheduler
-import monix.reactive.Observable
 import net.liftweb.common._
-import net.liftweb.http.PartialUpdateMsg
-import com.normation.rudder.domain.eventlog._
-import org.specs2.specification.AfterAll
-import com.normation.rudder.datasources.DataSourceSchedule._
 
 
 

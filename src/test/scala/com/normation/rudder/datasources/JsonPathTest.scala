@@ -39,7 +39,7 @@ package com.normation.rudder.datasources
 
 import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner._
+import org.specs2.runner.JUnitRunner
 import net.liftweb.common._
 import net.liftweb.json._
 import com.normation.inventory.domain.PublicKey

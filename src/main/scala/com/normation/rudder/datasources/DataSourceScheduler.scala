@@ -37,35 +37,19 @@
 
 package com.normation.rudder.datasources
 
-import com.normation.inventory.domain.NodeId
-import com.normation.rudder.repository.RoParameterRepository
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
-import com.normation.rudder.domain.eventlog._
-
-import net.liftweb.common.Box
-import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.rudder.repository.WoNodeRepository
-import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import com.normation.utils.Control
-import net.liftweb.common.Failure
-import com.normation.rudder.domain.parameters.Parameter
-import net.liftweb.common.Full
-import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
+import com.normation.rudder.datasources.DataSourceSchedule._
+import com.normation.rudder.domain.eventlog._
+
 import monix.eval.Task
-import monix.execution.Scheduler
-import scala.concurrent.Await
-import com.normation.rudder.domain.nodes.NodeInfo
-import net.liftweb.common.Empty
 import monix.execution.Cancelable
-import scala.util.control.NonFatal
-import org.joda.time.DateTime
+import monix.execution.Scheduler
 import monix.reactive.Observable
 import net.liftweb.common.Loggable
-import scala.concurrent.duration.FiniteDuration
-
-import com.normation.rudder.datasources.DataSourceSchedule._
 
 
 final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String])
