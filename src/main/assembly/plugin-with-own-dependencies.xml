@@ -17,19 +17,6 @@
       <scope>runtime</scope>
       <useTransitiveDependencies>true</useTransitiveDependencies>
       <excludes>
-        <!-- 
-          We have to exclude all dependencies from parent-pom.
-          That seems utterly wrong, and so we seems to have done
-          something bad. 
-          Perhaps these dependencies should be on a "common-dependency" project, 
-          and included on all submodule, even if it seems not really efficient. 
-        -->
-         <exclude>org.scala-lang:scala-library</exclude>
-         <exclude>joda-time:joda-time</exclude>
-         <exclude>net.liftweb:lift-common_${scala-binary-version}</exclude>
-         <exclude>org.slf4j:slf4j-api</exclude>
-         <exclude>ch.qos.logback:logback-core</exclude>
-         <exclude>ch.qos.logback:logback-classic</exclude>
       </excludes>
     </dependencySet>
   </dependencySets>

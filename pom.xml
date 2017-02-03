@@ -3,6 +3,11 @@
   <groupId>com.normation.plugins</groupId>
   <artifactId>datasources</artifactId>
   <packaging>jar</packaging>
+  <!-- 
+    TODO: this must be dependant of both current branch
+    and plugin version
+  -->
+  <version>4.1-0.1</version>
 
   <parent>
     <groupId>com.normation.rudder</groupId>
@@ -38,6 +43,56 @@
     </plugins>
   </build>
 
+  <!-- We need to specify that dependencies comming from parent are provided (they are by rudder-web -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>${scala-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>net.liftweb</groupId>
+        <artifactId>lift-common_${scala-binary-version}</artifactId>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>ca.mrvisser</groupId>
+        <artifactId>sealerate_${scala-binary-version}</artifactId>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+
+
+
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -60,19 +115,7 @@
       <artifactId>scalaj-http_${scala-binary-version}</artifactId>
       <version>2.3.0</version>
     </dependency> 
-    <dependency>
-      <groupId>org.http4s</groupId>
-      <artifactId>http4s-dsl_${scala-binary-version}</artifactId>
-      <version>${http4s-version}</version>
-      <scope>test</scope>
-    </dependency> 
-    <dependency>
-      <groupId>org.http4s</groupId>
-      <artifactId>http4s-blaze-server_${scala-binary-version}</artifactId>
-      <version>${http4s-version}</version>
-      <scope>test</scope>
-    </dependency> 
-    
+
     <!-- Task: monix -->
     <dependency>
       <groupId>io.monix</groupId>
@@ -85,7 +128,21 @@
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
       <version>2.2.0</version>
-    </dependency>    
+    </dependency>
+    
+    <!-- Tests: a rest server -->
+    <dependency>
+      <groupId>org.http4s</groupId>
+      <artifactId>http4s-dsl_${scala-binary-version}</artifactId>
+      <version>${http4s-version}</version>
+      <scope>test</scope>
+    </dependency> 
+    <dependency>
+      <groupId>org.http4s</groupId>
+      <artifactId>http4s-blaze-server_${scala-binary-version}</artifactId>
+      <version>${http4s-version}</version>
+      <scope>test</scope>
+    </dependency> 
   </dependencies>
 
   <repositories>
