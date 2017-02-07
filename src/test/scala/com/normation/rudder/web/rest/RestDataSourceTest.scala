@@ -37,19 +37,10 @@
 
 package com.normation.rudder.web.rest
 
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.duration.Duration
-
-import com.normation.rudder.datasources._
-import com.normation.rudder.web.rest.datasource.DataSourceApi9
-import com.normation.rudder.web.rest.datasource.DataSourceApiService
 
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import org.specs2.mutable._
-
-import RestTestSetUp._
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -58,6 +49,13 @@ import net.liftweb.http.JsonResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST.JArray
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration.Duration
+
+import com.normation.rudder.datasources._
+import com.normation.rudder.web.rest.datasource.DataSourceApi9
+import com.normation.rudder.web.rest.datasource.DataSourceApiService
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {
@@ -77,8 +75,10 @@ class RestDataSourceTest extends Specification with Loggable {
     }
   }
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
-  val dataSourceApiService = new DataSourceApiService(datasourceRepo, restDataSerializer, restExtractorService)
-  val dataSourceApi9 = new DataSourceApi9(restExtractorService, dataSourceApiService, uuidGen)
+  val dataSourceApiService = new DataSourceApiService(datasourceRepo, RestTestSetUp.restDataSerializer, RestTestSetUp.restExtractorService)
+  val dataSourceApi9 = new DataSourceApi9(RestTestSetUp.restExtractorService, dataSourceApiService, RestTestSetUp.uuidGen)
+
+  RestTestSetUp.api.addEndpoints(Map(ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
 
   val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", HttpRequestMode.OneRequestByNode, DataSource.defaultDuration)
   val baseRunParam  = DataSourceRunParameters(DataSourceSchedule.NoSchedule(DataSource.defaultDuration), false,false)
@@ -101,7 +101,7 @@ class RestDataSourceTest extends Specification with Loggable {
   val d2modJson = {
     import net.liftweb.json.JsonDSL._
     ( ( "type" ->
-      ( ( "name" -> "http" )
+      ( ( "name" -> "HTTP" )
       ~ ( "parameters" ->
           ( "headers" -> JArray(
             ( ("name" -> "new header 1") ~ ("value" -> "new value 1") ) ::
@@ -121,7 +121,13 @@ class RestDataSourceTest extends Specification with Loggable {
     ~ ( "message" -> s"Data source ${datasource2.id.value} deleted" )
     )
   }
-  sequential ^ ("Data source api" should {
+
+
+  ///// the actual tests /////
+
+  sequential
+
+  "Data source api" should {
 
     "test backend serialization" in {
        val result = DataSourceExtractor.CompleteJson.extractDataSource(datasource1.id, DataSourceJsonSerializer.serialize(datasource1))
@@ -130,7 +136,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Get all base data source" in {
-      testGET("/api/latest/datasources") { req =>
+      RestTestSetUp.testGET("/api/latest/datasources") { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -143,7 +149,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Accept new data source as json" in {
-      testPUT("/api/latest/datasources", d2Json) { req =>
+      RestTestSetUp.testPUT("/api/latest/datasources", d2Json) { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -156,7 +162,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "List new data source" in {
-      testGET("/api/latest/datasources") { req =>
+      RestTestSetUp.testGET("/api/latest/datasources") { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -169,7 +175,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Accept modification as json" in {
-      testPOST(s"/api/latest/datasources/${datasource2.id.value}", d2modJson) { req =>
+      RestTestSetUp.testPOST(s"/api/latest/datasources/${datasource2.id.value}", d2modJson) { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -182,7 +188,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Get updated data source" in {
-      testGET(s"/api/latest/datasources/${datasource2.id.value}") { req =>
+      RestTestSetUp.testGET(s"/api/latest/datasources/${datasource2.id.value}") { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -195,7 +201,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Delete the newly added data source" in {
-      testDELETE(s"/api/latest/datasources/${datasource2.id.value}") { req =>
+      RestTestSetUp.testDELETE(s"/api/latest/datasources/${datasource2.id.value}") { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -208,7 +214,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Be removed from list of all data sources" in {
-      testGET("/api/latest/datasources") { req =>
+      RestTestSetUp.testGET("/api/latest/datasources") { req =>
        val result = for {
          answer <- RestTestSetUp.api(req)()
          data <- extractDataFromResponse(answer, "datasources")
@@ -219,5 +225,5 @@ class RestDataSourceTest extends Specification with Loggable {
        result.getOrElse(Nil) must contain( exactly(d1Json))
       }
     }
-  })
+  }
 }

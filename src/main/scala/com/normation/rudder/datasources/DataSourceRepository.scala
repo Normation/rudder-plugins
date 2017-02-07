@@ -362,15 +362,15 @@ class DataSourceJdbcRepository(
   }
 
   override def getAllIds(): Box[Set[DataSourceId]] = {
-    query[DataSourceId]("""select id from datasources""").to[Set].attempt.transact(xa).run
+    query[DataSourceId]("""select id from datasources""").to[Set].attempt.transact(xa).unsafePerformSync
   }
 
   override def getAll(): Box[Map[DataSourceId,DataSource]] = {
-    query[DataSource]("""select id, properties from datasources""").vector.map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).run
+    query[DataSource]("""select id, properties from datasources""").vector.map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).unsafePerformSync
   }
 
   override def get(sourceId : DataSourceId): Box[Option[DataSource]] = {
-    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.attempt.transact(xa).run
+    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.attempt.transact(xa).unsafePerformSync
   }
 
   override def save(source : DataSource): Box[DataSource] = {
@@ -387,7 +387,7 @@ class DataSourceJdbcRepository(
       rowsAffected <- Update[(String,String)](update).run((json, source.id.value))
       result       <- rowsAffected match {
                         case 0 =>
-                          logger.warn(s"source ${source.id} is not present in database, create it")
+                          logger.debug(s"source ${source.id} is not present in database, creating it")
                           Update[DataSource](insert).run(source)
                         case 1 => 1.point[ConnectionIO]
                         case n => throw new RuntimeException(s"Expected 0 or 1 change, not ${n} for ${source.id}")
@@ -396,12 +396,19 @@ class DataSourceJdbcRepository(
       result
     }
 
-    sql.map(_ => source).attempt.transact(xa).run
+
+    DataSource.reservedIds.get(source.id) match {
+      case None =>
+        sql.map(_ => source).attempt.transact(xa).run
+
+      case Some(msg) =>
+        Failure(s"You can't use the reserved data sources id '${source.id.value}': ${msg}")
+    }
   }
 
   override def delete(sourceId : DataSourceId): Box[DataSourceId] = {
     val query = sql"""delete from datasources where id = ${sourceId}"""
-    query.update.run.map(_ => sourceId).attempt.transact(xa).run
+    query.update.run.map(_ => sourceId).attempt.transact(xa).unsafePerformSync
   }
 
 }

@@ -55,6 +55,15 @@ final object DataSource {
 
   val providerName = NodePropertyProvider("datasource")
 
+  /*
+   * Name used in both datasource id and "reload" place in
+   * API, that must not be used as id.
+   */
+  val reservedIds = Map(
+      DataSourceId("reload") -> "That id would conflict with API path for reloading datasources"
+  )
+
+
   /**
    * A node property with the correct DataSource metadata
    */

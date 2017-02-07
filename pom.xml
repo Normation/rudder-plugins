@@ -146,6 +146,26 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+    <!-- 
+      Aaaannnnd maven is horrible, so we need to put back needed dependencies, see:
+      https://maven.apache.org/plugins/maven-jar-plugin/examples/create-test-jar.html
+      Perhaps it's time to quit maven. 
+     -->
+     <!-- Testing Liftweb -->
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-testkit_${scala-binary-version}</artifactId>
+      <version>${lift-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- YAML parser, for REST API test -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>1.17</version>
+      <scope>test</scope>
+    </dependency>
+     
 
     <!-- Tests: a rest server -->
     <dependency>

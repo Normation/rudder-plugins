@@ -104,7 +104,7 @@ object DataSourceJsonSerializer{
   }
 }
 
-trait DataSourceExtractor[M[+_]] extends JsonExctractorUtils[M] {
+trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
 
   case class DataSourceRunParamWrapper(
       schedule     : M[DataSourceSchedule]
@@ -243,7 +243,7 @@ trait DataSourceExtractor[M[+_]] extends JsonExctractorUtils[M] {
             duration <- extractJsonBigInt(obj, "duration", extractDuration)
             scheduleBase  <- {
 
-              val t = extractJsonString(obj, "type",  _ match {
+              val t: Box[M[M[DataSourceSchedule]]] = extractJsonString(obj, "type",  _ match {
               case "scheduled" => Full(monad.map(duration)(d => Scheduled(d)))
               case "notscheduled" => Full(monad.map(duration)(d => NoSchedule(d)))
               case _ => Failure("not a valid value for datasource schedule")
@@ -369,7 +369,7 @@ object DataSourceExtractor {
     def getOrElse[T](value : Option[T], default : T) = value.getOrElse(default)
   }
 
-  type Id[+X] = X
+  type Id[X] = X
 
   object CompleteJson extends DataSourceExtractor[Id] {
     def monad = implicitly

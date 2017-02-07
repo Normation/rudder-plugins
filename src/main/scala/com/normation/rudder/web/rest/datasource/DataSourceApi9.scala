@@ -68,6 +68,58 @@ class DataSourceApi9 (
 
   def requestDispatch(apiVersion: ApiVersion) : PartialFunction[Req, () => Box[LiftResponse]] = {
 
+    /* Avoiding POST unreachable endpoint:
+     * (note: datasource must not have id "reload")
+     * 
+     * POST /datasources/reload/node/$nodeid
+     * POST /datasources/reload
+     * POST /datasources/$datasourceid/reload/$nodeid
+     * POST /datasources/$datasourceid/reload
+     * POST /datasources/$datasourceid
+     */ 
+
+    case Post("reload" :: "node" :: nodeId :: Nil, req) => {
+      implicit val prettify = extractor.extractPrettify(req.params)
+      implicit val action = "reloadAllDatasourcesOneNode"
+      val actor = RestUtils.getActor(req)
+
+      apiService.reloadDataOneNode(actor, NodeId(nodeId))
+
+      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))
+    }
+
+
+    case Post( "reload" :: datasourceId :: Nil, req) => {
+      implicit val prettify = extractor.extractPrettify(req.params)
+      implicit val action = "reloadOneDatasourceAllNodes"
+      val actor = RestUtils.getActor(req)
+
+      apiService.reloadDataAllNodesFor(actor, DataSourceId(datasourceId))
+
+      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
+    }
+    
+    case Post("reload" :: datasourceId :: "node" :: nodeId :: Nil, req) => {
+      implicit val prettify = extractor.extractPrettify(req.params)
+      implicit val action = "reloadOneDatasourceOneNode"
+      val actor = RestUtils.getActor(req)
+
+      apiService.reloadDataOneNodeFor(actor, NodeId(nodeId), DataSourceId(datasourceId))
+
+      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))
+    }
+
+
+    case Post( "reload" :: Nil, req) => {
+      implicit val prettify = extractor.extractPrettify(req.params)
+      implicit val action = "reloadAllDatasourcesAllNodes"
+      val actor = RestUtils.getActor(req)
+
+      apiService.reloadDataAllNodes(actor)
+
+      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
+    }
+
     case Get(Nil, req) => {
       response(apiService.getSources(), req, "Could not get data sources", None)("getAllDataSources")
     }
@@ -86,51 +138,6 @@ class DataSourceApi9 (
 
     case Post(sourceId :: Nil, req) => {
       response(apiService.updateSource(DataSourceId(sourceId),req), req, "Could not update data source", None)("updateDataSource")
-    }
-
-    //////////
-    ////////// Here, we have the refreshing part //////////
-    //////////
-
-    case Post( "reloadDatasources" :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadAllDatasourcesAllNodes"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataAllNodes(actor)
-
-      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
-    }
-
-
-    case Post( "reloadDatasources" :: datasourceId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadOneDatasourceAllNodes"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataAllNodesFor(actor, DataSourceId(datasourceId))
-
-      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
-    }
-
-    case Post(nodeId :: "reloadDatasources" :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadAllDatasourcesOneNode"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataOneNode(actor, NodeId(nodeId))
-
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))
-    }
-
-    case Post(nodeId :: "reloadDatasources" :: datasourceId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadOneDatasourceOneNode"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataOneNodeFor(actor, NodeId(nodeId), DataSourceId(datasourceId))
-
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))
     }
 
   }

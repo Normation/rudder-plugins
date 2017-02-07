@@ -69,6 +69,9 @@ import org.specs2.runner.JUnitRunner
 import monix.execution.atomic.AtomicInt
 import monix.execution.schedulers.TestScheduler
 import net.liftweb.common._
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
+import ch.qos.logback.classic.Level
 
 
 
@@ -435,14 +438,16 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
       val t1 = System.currentTimeMillis
 
-      println(infos.updates.toList.sortBy(_._1.value))
-
       res mustFullEq(nodeIds) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       ) and (NodeDataset.counterError.get === 0) and (NodeDataset.counterSuccess.get === nodeIds.size)
     }
 
     "work for odd node even if even nodes fail" in {
+      //but that's chatty, disable datasources logger for that one
+      val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
+      logger.setLevel(Level.OFF)
+
       val ds = NewDataSource(
           "test-even-fail"
         , url  = "http://localhost:8282/datasource/faileven/${rudder.node.id}"
@@ -457,6 +462,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       infos.updates.clear()
 
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
+
+      //set back level
+      logger.setLevel(Level.WARN)
+
       res mustFails() and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       )
