@@ -377,11 +377,7 @@ class DataSourceJdbcRepository(
     import net.liftweb.json.compactRender
     val json = compactRender(DataSourceJsonSerializer.serialize(source))
     val insert = """insert into datasources (id, properties) values (?, ?)"""
-    val update = s"""
-      update datasources
-      set properties= ?
-      where id= ?
-    """
+    val update = s"""update datasources set properties = ? where id = ?"""
 
     val sql = for {
       rowsAffected <- Update[(String,String)](update).run((json, source.id.value))

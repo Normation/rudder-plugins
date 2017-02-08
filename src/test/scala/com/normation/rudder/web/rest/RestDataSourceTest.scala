@@ -37,10 +37,9 @@
 
 package com.normation.rudder.web.rest
 
-
 import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 import org.specs2.mutable._
+import org.specs2.runner.JUnitRunner
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full

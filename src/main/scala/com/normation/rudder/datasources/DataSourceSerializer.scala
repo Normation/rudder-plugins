@@ -71,7 +71,7 @@ object DataSourceJsonSerializer{
                 } )
                 ~ ( "path"           -> path    )
                 ~ ( "checkSsl"       -> checkSsl)
-                ~ ( "requestTimeout" -> timeOut.toMinutes )
+                ~ ( "requestTimeout" -> timeOut.toSeconds )
                 ~ ( "requestMethod"  -> method.name )
                 ~ ( "requestMode"    ->
                   ( ( "name" -> mode.name )
@@ -95,10 +95,10 @@ object DataSourceJsonSerializer{
                           case _:Scheduled => "scheduled"
                           case _:NoSchedule => "notscheduled"
                         } ) )
-        ~ ( "duration" -> source.runParam.schedule.duration.toMinutes)
+        ~ ( "duration" -> source.runParam.schedule.duration.toSeconds)
         ) )
       ) )
-    ~ ( "updateTimeout" -> source.updateTimeOut.toMinutes )
+    ~ ( "updateTimeout" -> source.updateTimeOut.toSeconds )
     ~ ( "enabled"    -> source.enabled )
     )
   }
@@ -189,7 +189,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
     }
   }
 
-  def extractDuration (value : BigInt) = tryo { FiniteDuration(value.toLong, TimeUnit.MINUTES) }
+  def extractDuration (value : BigInt) = tryo { FiniteDuration(value.toLong, TimeUnit.SECONDS) }
 
   def extractDataSource(id : DataSourceId, json : JValue) = {
     for {

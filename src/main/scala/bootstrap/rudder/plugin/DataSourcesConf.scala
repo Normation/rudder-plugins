@@ -18,7 +18,6 @@ import com.normation.rudder.datasources.HttpQueryDataSourceService
 import com.normation.rudder.web.rest.datasource.DataSourceApiService
 import net.liftweb.common.Box
 import org.joda.time.DateTime
-import com.normation.rudder.datasources.InitDataSourceScheduler
 import net.liftweb.common.Full
 import bootstrap.liftweb.RudderConfig
 import com.normation.rudder.web.rest.ApiVersion
@@ -33,7 +32,6 @@ object DatasourcesConf {
     , Cfg.stringUuidGenerator
   )
 
-
   // add data source pre-deployment update hook
   Cfg.deploymentService.appendPreGenCodeHook(new PromiseGenerationHooks() {
     def beforeDeploymentSync(generationTime: DateTime): Box[Unit] = {
@@ -42,13 +40,15 @@ object DatasourcesConf {
     }
   })
 
-  Cfg.allBootstrapChecks.appendBootstrapChecks(new InitDataSourceScheduler(dataSourceRepository))
-
   Cfg.newNodeManager.appendPostAcceptCodeHook(new NewNodeManagerHooks() {
     def afterNodeAcceptedAsync(nodeId: NodeId): Unit = {
       dataSourceRepository.onNewNode(nodeId)
     }
   })
+
+  // initialize datasources to start schedule
+  dataSourceRepository.initialize()
+
 
   val dataSourceApiService = new DataSourceApiService(dataSourceRepository, Cfg.restDataSerializer, Cfg.restExtractorService)
   val dataSourceApi9 = new DataSourceApi9(Cfg.restExtractorService, dataSourceApiService, Cfg.stringUuidGenerator)

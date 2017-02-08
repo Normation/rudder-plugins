@@ -154,7 +154,7 @@ class HttpQueryDataSourceService(
         val e = (eb ?~! errorMsg)
         DataSourceLogger.error(e.messageChain)
         e.rootExceptionCause.foreach(ex =>
-          DataSourceLogger.error("Exception was:", ex)
+          DataSourceLogger.debug("Exception was:", ex)
         )
       case _ =>
         DataSourceLogger.trace(successMsg)

@@ -71,9 +71,9 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
         $scope.datasources[i].newHeader = {"name":"","value":""};
         $scope.datasources[i].newParam  = {"name":"","value":""};
         $scope.datasources[i].modifiedTimes = {
-          'schedule'       : timeConvert($scope.datasources[i].runParameters.schedule.duration)
-        , 'updateTimeout'  : timeConvert($scope.datasources[i].updateTimeout)
-        , 'requestTimeout' : timeConvert($scope.datasources[i].type.parameters.requestTimeout)
+          'schedule'       : convertFromSecond($scope.datasources[i].runParameters.schedule.duration)
+        , 'updateTimeout'  : convertFromSecond($scope.datasources[i].updateTimeout)
+        , 'requestTimeout' : convertFromSecond($scope.datasources[i].type.parameters.requestTimeout)
         };
         //This will need to be changed when Bug #10554 will be fixed
       }
@@ -127,9 +127,9 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
 	  "enabled":false,
 	  "newHeader":{"name":"","value":""},
 	  "modifiedTimes":{
-	    "schedule":{"second":0,"minute":360},
-	    "updateTimeout":{"second":30,"minute":0},
-	    "requestTimeout":{"second":30,"minute":0}
+	    "schedule"      : {"second":0 ,"minute":0, "hour": 6},
+	    "updateTimeout" : {"second":30,"minute":0, "hour": 0},
+	    "requestTimeout": {"second":30,"minute":0, "hour": 0}
 	  },
 	  "isNew":true
 	};
@@ -157,9 +157,9 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
   }
   $scope.saveDatasource = function(){
     //CONVERT TIMES
-    $scope.selectedDatasource.runParameters.schedule.duration = minuteConvert($scope.selectedDatasource.modifiedTimes.schedule)
-    $scope.selectedDatasource.updateTimeout = minuteConvert($scope.selectedDatasource.modifiedTimes.updateTimeout)
-    $scope.selectedDatasource.type.parameters.requestTimeout = minuteConvert($scope.selectedDatasource.modifiedTimes.requestTimeout)
+    $scope.selectedDatasource.runParameters.schedule.duration = convertToSecond($scope.selectedDatasource.modifiedTimes.schedule);
+    $scope.selectedDatasource.updateTimeout = convertToSecond($scope.selectedDatasource.modifiedTimes.updateTimeout);
+    $scope.selectedDatasource.type.parameters.requestTimeout = convertToSecond($scope.selectedDatasource.modifiedTimes.requestTimeout);
     if($scope.selectedDatasource.isNew){
       $http.put(contextPath + '/secure/api/latest/datasources', $scope.selectedDatasource).then(function(response){
         var res = response;
@@ -240,16 +240,26 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
   adjustHeight($scope.treeId, true);
 }]);
 
-function timeConvert(time) {
-  var min = Math.floor(time/60);
-  var sec = time - min*60;
+function convertFromSecond(time) {
+  var hour = Math.floor(time/3600);
+  var min = Math.floor((time-hour*3600)/60);
+  var sec = time - min*60 - hour*3600;
+
   return {
       "second"   : sec
     , "minute"   : min
+    , "hour"     : hour
   }
 }
-function minuteConvert(time) {
-  return time.second + time.minute*60;
+function convertToSecond(time) {
+  var s = 0;
+  if(time.second !== undefined) { s = time.second }
+  var m = 0;
+  if(time.minute !== undefined) { m = time.minute }
+  var h = 0;
+  if(time.hour !== undefined) { h = time.hour}
+  var seconds = s + m*60 + h*3600
+  return seconds;
 }
 function objToArray(obj){
   var arr = [];

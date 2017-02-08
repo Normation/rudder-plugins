@@ -193,10 +193,10 @@
                   </li>
                 </ul>
                 <div class="input-group group-update-frequency" ng-hide="selectedDatasource.runParameters.schedule.type=='notscheduled'">
+                  <input type="number" class="form-control " id="updateFrequency-hours" ng-min="0" ng-model="selectedDatasource.modifiedTimes.schedule.hour">
+                  <label for="updateFrequency-hours" class="input-group-addon">hour<span ng-class="{'invisible' : selectedDatasource.modifiedTimes.schedule.hour<2}">s</span></label>
                   <input type="number" class="form-control " id="updateFrequency-minutes" ng-min="0" ng-model="selectedDatasource.modifiedTimes.schedule.minute">
                   <label for="updateFrequency-minutes" class="input-group-addon">minute<span ng-class="{'invisible' : selectedDatasource.modifiedTimes.schedule.minute<2}">s</span></label>
-                  <input type="number" class="form-control " id="updateFrequency-seconds" ng-min="0" ng-model="selectedDatasource.modifiedTimes.schedule.second">
-                  <label for="updateFrequency-seconds" class="input-group-addon">second<span ng-class="{'invisible' : selectedDatasource.modifiedTimes.schedule.second<2}">s</span></label>
                 </div>
                 <ul class="form-group ">
                   <li class="rudder-form">

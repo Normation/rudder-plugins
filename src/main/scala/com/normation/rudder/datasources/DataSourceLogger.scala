@@ -48,5 +48,5 @@ object DataSourceLogger extends Logger {
 }
 
 object DataSourceTimingLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("datasources-timing")
+  override protected def _logger = LoggerFactory.getLogger("datasources.timing")
 }
