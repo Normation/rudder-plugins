@@ -47,7 +47,7 @@ import net.liftweb.common.Loggable
 import net.liftweb.http.JsonResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.json.JValue
-import net.liftweb.json.JsonAST.JArray
+import net.liftweb.json.JsonAST._
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration.Duration
@@ -55,6 +55,8 @@ import scala.concurrent.duration.Duration
 import com.normation.rudder.datasources._
 import com.normation.rudder.web.rest.datasource.DataSourceApi9
 import com.normation.rudder.web.rest.datasource.DataSourceApiService
+
+
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {
@@ -94,7 +96,7 @@ class RestDataSourceTest extends Specification with Loggable {
   val dataSource2Updated = datasource2.copy(
       description = "new description"
     , sourceType = baseSourceType.copy(headers = Map( ("new header 1" -> "new value 1") , ("new header 2" -> "new value 2")))
-    , runParam = baseRunParam.copy(DataSourceSchedule.Scheduled(Duration(70, TimeUnit.MINUTES))))
+    , runParam = baseRunParam.copy(DataSourceSchedule.Scheduled(Duration(70, TimeUnit.SECONDS))))
   val d2updatedJson = DataSourceJsonSerializer.serialize(dataSource2Updated)
 
   val d2modJson = {
