@@ -237,7 +237,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     el.find('.fa').toggleClass('fa-rotate-90');
     el.parent().parent().find('.well').toggle();
   }
-  adjustHeight($scope.treeId, true);
+  adjustHeight($scope.treeId);
 }]);
 
 function convertFromSecond(time) {
