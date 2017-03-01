@@ -42,7 +42,6 @@ import scala.concurrent.duration.FiniteDuration
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.NodePropertyProvider
-import com.normation.rudder.domain.nodes.NodePropertyRights
 
 import org.joda.time.DateTime
 
@@ -53,7 +52,7 @@ import net.liftweb.json.JsonAST.JValue
 final object DataSource {
   val defaultDuration = FiniteDuration(5,"minutes")
 
-  val providerName = NodePropertyProvider("datasource")
+  val providerName = NodePropertyProvider("datasources")
 
   /*
    * Name used in both datasource id and "reload" place in
@@ -67,8 +66,8 @@ final object DataSource {
   /**
    * A node property with the correct DataSource metadata
    */
-  def nodeProperty(name: String, value: JValue) = NodeProperty(name, value, Some(providerName), Some(NodePropertyRights.ReadOnly))
-  def nodeProperty(name: String, value: String) = NodeProperty(name, value, Some(providerName), Some(NodePropertyRights.ReadOnly))
+  def nodeProperty(name: String, value: JValue) = NodeProperty(name, value, Some(providerName))
+  def nodeProperty(name: String, value: String) = NodeProperty(name, value, Some(providerName))
 }
 
 sealed trait DataSourceType {
