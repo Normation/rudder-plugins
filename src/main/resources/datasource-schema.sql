@@ -36,8 +36,23 @@
 */
 
 -- Create the table for data sources
-CREATE TABLE dataSources (
-  id            text PRIMARY KEY NOT NULL CHECK (id <> '')  
-, properties    text NOT NULL CHECK (properties <> '' )
-, status        text CHECK (status <> '' )
-);
+CREATE OR REPLACE FUNCTION create_datasources ()
+  RETURNS void AS
+$func$
+BEGIN
+   IF EXISTS (SELECT 1 FROM pg_catalog.pg_tables 
+              WHERE tablename  = 'dataSources') THEN
+      RAISE NOTICE 'Table "dataSources" already exists.';
+   ELSE
+      CREATE TABLE dataSources (
+        id            text PRIMARY KEY NOT NULL CHECK (id <> '')  
+      , properties    text NOT NULL CHECK (properties <> '' )
+      , status        text CHECK (status <> '' )
+      );
+   END IF;
+END
+$func$ LANGUAGE plpgsql;
+
+SELECT create_datasources(); 
+
+
