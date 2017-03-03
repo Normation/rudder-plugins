@@ -165,10 +165,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         }
     }
   }
-  //start server
-  val server = BlazeBuilder.bindHttp(8282)
-    .mountService(NodeDataset.service, "/datasource")
+
+  //start server on a free port
+  val server = BlazeBuilder.bindAny()
+    .mountService(NodeDataset.service, "/datasources")
     .run
+
+  val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
 
   override def afterAll(): Unit = {
     server.shutdown
@@ -285,7 +288,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   "Update on datasource" should {
     val datasource = NewDataSource(
         name = "test-scheduler"
-      , url  = "http://localhost:8282/datasource/${rudder.node.id}"
+      , url  = s"${REST_SERVER_URL}/$${rudder.node.id}"
       , path = "$.hostname"
       , schedule = Scheduled(5.minute)
     )
@@ -404,7 +407,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     "work even if nodes don't reply at same speed with GET" in {
       val ds = NewDataSource(
           "test-lot-of-nodes-GET"
-        , url  = "http://localhost:8282/datasource/delay/${rudder.node.id}"
+        , url  = s"${REST_SERVER_URL}/delay/$${rudder.node.id}"
         , path = "$.hostname"
         , headers = Map( "nodeId" -> "${rudder.node.id}" )
       )
@@ -424,7 +427,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     "work even if nodes don't reply at same speed with POST" in {
       val ds = NewDataSource(
           "test-lot-of-nodes-POST"
-        , url  = "http://localhost:8282/datasource/delay"
+        , url  = s"${REST_SERVER_URL}/delay"
         , path = "$.hostname"
         , method = HttpMethod.POST
         , params = Map( "nodeId" -> "${rudder.node.id}" )
@@ -450,7 +453,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       val ds = NewDataSource(
           "test-even-fail"
-        , url  = "http://localhost:8282/datasource/faileven/${rudder.node.id}"
+        , url  = s"${REST_SERVER_URL}/faileven/$${rudder.node.id}"
         , path = "$.hostname"
       )
       val nodeRegEx = "node(.*)".r
@@ -476,7 +479,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   "Getting a node" should {
     val datasource = httpDatasourceTemplate.copy(
-        url  = "http://localhost:8282/datasource/single_${rudder.node.id}"
+        url  = s"${REST_SERVER_URL}/single_$${rudder.node.id}"
       , path = "$.store.${node.properties[get-that]}"
     )
     "get the node" in  {
@@ -497,7 +500,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   "The full http service" should {
     val datasource = NewDataSource(
         "test-http-service"
-      , url  = "http://localhost:8282/datasource/single_node1"
+      , url  = s"${REST_SERVER_URL}/single_node1"
       , path = "$.store.book"
     )
 
