@@ -168,6 +168,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   //start server on a free port
   val server = BlazeBuilder.bindAny()
+    .withConnectorPoolSize(1) //to make the server slow and validate that it still works
     .mountService(NodeDataset.service, "/datasources")
     .run
 

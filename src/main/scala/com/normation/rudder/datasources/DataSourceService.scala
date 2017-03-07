@@ -55,6 +55,7 @@ import net.liftweb.common.Empty
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
+import monix.eval.TaskSemaphore
 
 /*
  * This file contain the hight level logic to update
@@ -195,8 +196,17 @@ class HttpQueryDataSourceService(
     import net.liftweb.util.Helpers.tryo
 
     def tasks(nodes: Map[NodeId, NodeInfo], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Task[List[Box[NodeId]]] = {
+
+      /*
+       * Here, we are executing all the task (one by node) in parallel. We want to limit the number of
+       * parallel task, especially to limit the number of output request. It is not very fair to
+       * do hundreds of simultaneous requests to the output server (and that make tests on macos
+       * fail, see: http://www.rudder-project.org/redmine/issues/10341)
+       */
+      val semaphore = TaskSemaphore(maxParallelism = 50)
+
       Task.gatherUnordered(nodes.values.map { nodeInfo =>
-        buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, parameters, cause)
+        semaphore.greenLight(buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, parameters, cause))
       })
     }
 
