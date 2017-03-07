@@ -81,7 +81,7 @@ class RestDataSourceTest extends Specification with Loggable {
 
   RestTestSetUp.api.addEndpoints(Map(ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
 
-  val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", HttpRequestMode.OneRequestByNode, DataSource.defaultDuration)
+  val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", HttpRequestMode.OneRequestByNode, DataSource.defaultDuration, MissingNodeBehavior.Delete)
   val baseRunParam  = DataSourceRunParameters(DataSourceSchedule.NoSchedule(DataSource.defaultDuration), false,false)
 
   val datasource1 = DataSource(DataSourceId( "datasource1"), DataSourceName(""), baseSourceType, baseRunParam, "", false, DataSource.defaultDuration)

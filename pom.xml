@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.normation.rudder</groupId>
     <artifactId>rudder-parent</artifactId>
-    <version>4.1.0~beta4-SNAPSHOT</version>
+    <version>4.1.0</version>
   </parent>
 
   <description>
@@ -102,7 +102,7 @@
     <test-value>ok</test-value>
   </properties>
 
-  <!-- We need to specify that dependencies comming from parent are provided (they are by rudder-web -->
+  <!-- We need to specify that dependencies comming from parent are provided (they are by rudder-web) -->
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -146,6 +146,11 @@
         <artifactId>logback-classic</artifactId>
         <scope>provided</scope>
       </dependency>
+      <dependency>
+        <groupId>io.monix</groupId>
+        <artifactId>monix-eval_${scala-binary-version}</artifactId>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -175,13 +180,6 @@
       <version>2.3.0</version>
     </dependency> 
 
-    <!-- Task: monix -->
-    <dependency>
-      <groupId>io.monix</groupId>
-      <artifactId>monix_${scala-binary-version}</artifactId>
-      <version>${monix-version}</version>
-    </dependency>
-    
     <!-- selecting sub-json -->
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
@@ -189,6 +187,12 @@
       <version>2.2.0</version>
     </dependency>
     
+    <!-- Task/Observable: monix -->
+    <dependency>
+      <groupId>io.monix</groupId>
+      <artifactId>monix-reactive_${scala-binary-version}</artifactId>
+      <version>${monix-version}</version>
+    </dependency>
 
     <!-- Test: rudder -->
     <dependency>

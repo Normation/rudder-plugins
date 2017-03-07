@@ -94,22 +94,26 @@ final object DataSourceType {
   }
 
   final case class HTTP (
-      url            : String
-    , headers        : Map[String,String]
-    , httpMethod     : HttpMethod
-    , params         : Map[String, String] // query params for GET, form params for POST
-    , sslCheck       : Boolean
-    , path           : String
-    , requestMode    : HttpRequestMode
-    , requestTimeOut : FiniteDuration
+      url                : String
+    , headers            : Map[String,String]
+    , httpMethod         : HttpMethod
+    , params             : Map[String, String] // query params for GET, form params for POST
+    , sslCheck           : Boolean
+    , path               : String
+    , requestMode        : HttpRequestMode
+    , requestTimeOut     : FiniteDuration
+    , missingNodeBehavior: MissingNodeBehavior
   ) extends DataSourceType {
     val name = HTTP.name
   }
 }
 
-sealed trait HttpRequestMode {
-  def name : String
-}
+/**
+ * How to query the target API:
+ * - do one request for each known nodes?
+ * - do one request for all node in one go?
+ */
+sealed trait HttpRequestMode { def name : String }
 
 final object HttpRequestMode {
   final case object OneRequestByNode extends HttpRequestMode {
@@ -124,12 +128,28 @@ final object HttpRequestMode {
       matchingPath  : String
     , nodeAttribute : String
   ) extends HttpRequestMode {
-    val name = HttpRequestMode.OneRequestAllNodes.name
+    val name = OneRequestAllNodes.name
   }
 }
 
-final case class DataSourceName(value : String) extends AnyVal
-final case class DataSourceId  (value : String) extends AnyVal
+/**
+ * Define the behavior to adopt when a node is
+ * in Rudder but not found in the API request result
+ * (i.e not on error, but on 404 for a "by node" request
+ * mode, or actually missing id for a "on request all node".
+ */
+sealed trait MissingNodeBehavior { def name: String }
+
+final object MissingNodeBehavior {
+  // delete is the default behavior is not specified
+  final case object Delete                      extends MissingNodeBehavior { val name = "delete"       }
+  final case object NoChange                    extends MissingNodeBehavior { val name = "noChange"     }
+  final object DefaultValue { val name = "defaultValue" }
+  final case class  DefaultValue(value: JValue) extends MissingNodeBehavior { val name = DefaultValue.name }
+}
+
+final case class DataSourceName(value : String)
+final case class DataSourceId  (value : String)
 
 sealed trait DataSourceSchedule {
   def duration : FiniteDuration

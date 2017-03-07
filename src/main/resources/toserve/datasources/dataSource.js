@@ -96,9 +96,9 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
   // DATASOURCES
   $scope.createNewDatasource = function(){
     if($scope.forms.datasourceForm){
-	  $scope.forms.datasourceForm.$setPristine();
+      $scope.forms.datasourceForm.$setPristine();
     }
-	$scope.selectedDatasource = {
+	  $scope.selectedDatasource = {
       "name"        : "",
       "id"          : "",
       "description" : "",
@@ -112,28 +112,30 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
           "requestTimeout":30,
           "requestMethod":"GET",
           "requestMode":{"name":"byNode"},
-          "url"     :""
+          "url"     :"",
+          "onMissing": { "name":"delete"}
         }
-	  },
-	  "runParameters":{
-	    "onGeneration" :false,
-	    "onNewNode"    :false,
-	    "schedule":{
-	      "type":"scheduled",
-	      "duration":21600
-	    }
-	  },
-	  "updateTimeout":30,
-	  "enabled":false,
-	  "newHeader":{"name":"","value":""},
-	  "modifiedTimes":{
-	    "schedule"      : {"second":0 ,"minute":0, "hour": 6},
-	    "updateTimeout" : {"second":30,"minute":0, "hour": 0},
-	    "requestTimeout": {"second":30,"minute":0, "hour": 0}
-	  },
-	  "isNew":true
-	};
+  	  },
+  	  "runParameters":{
+  	    "onGeneration" :false,
+  	    "onNewNode"    :false,
+  	    "schedule":{
+  	      "type":"scheduled",
+  	      "duration":21600
+  	    }
+  	  },
+  	  "updateTimeout":30,
+  	  "enabled":false,
+  	  "newHeader":{"name":"","value":""},
+  	  "modifiedTimes":{
+  	    "schedule"      : {"second":0 ,"minute":0, "hour": 6},
+  	    "updateTimeout" : {"second":30,"minute":0, "hour": 0},
+  	    "requestTimeout": {"second":30,"minute":0, "hour": 0}
+  	  },
+  	  "isNew":true
+  	};
   }
+  
   $scope.updateKeyName = function(str){
     if($scope.selectedDatasource.isNew){
       if(str){
@@ -177,10 +179,10 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     }
   }
   $scope.selectDatasource = function(id){
-	if($scope.forms.datasourceForm){
-	  $scope.forms.datasourceForm.$setPristine();
-	  $('.well').css('display','none');
-	}
+  	if($scope.forms.datasourceForm){
+  	  $scope.forms.datasourceForm.$setPristine();
+  	  $('.well').css('display','none');
+  	}
     var getDatasource = $scope.getDatasource(id);
     if(getDatasource){
       $scope.selectedDatasource = jQuery.extend(true, {}, getDatasource);
@@ -238,6 +240,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     el.parent().parent().find('.well').toggle();
   }
   adjustHeight($scope.treeId);
+  
 }]);
 
 function convertFromSecond(time) {

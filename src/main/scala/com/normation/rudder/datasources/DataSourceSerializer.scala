@@ -61,7 +61,7 @@ object DataSourceJsonSerializer{
         ( ( "name" -> source.sourceType.name )
         ~ ( "parameters" -> {
             source.sourceType match {
-              case DataSourceType.HTTP(url,headers,method,params,checkSsl,path,mode,timeOut) =>
+              case DataSourceType.HTTP(url, headers, method, params, checkSsl, path, mode, timeOut, missing) =>
                 ( ( "url"            -> url     )
                 ~ ( "headers"        -> headers.map{
                   case (name,value) => ("name" -> name) ~ ("value" -> value)
@@ -74,16 +74,24 @@ object DataSourceJsonSerializer{
                 ~ ( "requestTimeout" -> timeOut.toSeconds )
                 ~ ( "requestMethod"  -> method.name )
                 ~ ( "requestMode"    ->
-                  ( ( "name" -> mode.name )
-                  ~ { mode match {
-                      case OneRequestByNode =>
-                        JObject(Nil)
-                      case OneRequestAllNodes(subPath,nodeAttribute) =>
-                        ( ( "path" -> subPath)
-                        ~ ( "attribute" -> nodeAttribute)
-                        )
-                  } } )
-                ) )
+                    ( ( "name" -> mode.name )
+                    ~ { mode match {
+                        case OneRequestByNode =>
+                          JObject(Nil)
+                        case OneRequestAllNodes(subPath,nodeAttribute) =>
+                          ( ( "path" -> subPath)
+                          ~ ( "attribute" -> nodeAttribute)
+                          )
+                    } } )
+                  )
+                ~ ( "onMissing" ->  (missing match {
+                      case MissingNodeBehavior.Delete              =>  ("name"  -> MissingNodeBehavior.Delete.name):JObject
+                      case MissingNodeBehavior.NoChange            =>  ("name"  -> MissingNodeBehavior.NoChange.name):JObject
+                      case MissingNodeBehavior.DefaultValue(value) => (("name"  -> MissingNodeBehavior.DefaultValue.name) ~
+                                                                       ("value" -> value )):JObject
+                    })
+                  )
+                )
             }
         } ) )
       )
@@ -135,10 +143,11 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   , path           : M[String]
   , requestMode    : M[HttpRequestMode]
   , requestTimeout : M[FiniteDuration]
+  , onMissing      : M[MissingNodeBehavior]
   ) {
     def to = {
-      monad.apply8(url,headers,httpMethod,params,sslCheck,path,requestMode,requestTimeout){
-        case (a,b,c,d,e,f,g,h) => DataSourceType.HTTP(a,b,c,d,e,f,g,h)
+      monad.apply9(url, headers, httpMethod, params, sslCheck, path, requestMode, requestTimeout, onMissing){
+        case (a,b,c,d,e,f,g,h,i) => DataSourceType.HTTP(a,b,c,d,e,f,g,h,i)
       }
     }
     def withBase (base : DataSourceType) : DataSourceType = {
@@ -153,6 +162,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             , getOrElse(path          , httpBase.path)
             , getOrElse(requestMode   , httpBase.requestMode)
             , getOrElse(requestTimeout, httpBase.requestTimeOut)
+            , getOrElse(onMissing     , httpBase.missingNodeBehavior)
           )
       }
     }
@@ -275,7 +285,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
     obj \ "name" match {
       case JString(DataSourceType.HTTP.name) =>
 
-        def extractHttpRequestMode(obj : JObject) : Box[M[HttpRequestMode]] = {
+        def extractHttpRequestMode(obj: JObject) : Box[M[HttpRequestMode]] = {
           obj \ "name" match {
             case JString(OneRequestByNode.name) =>
               Full(monad.point(OneRequestByNode))
@@ -290,28 +300,63 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
           }
         }
 
-        def extractNameValueObject(json : JValue) : Box[M[(String,String)]] = {
+        def extractNameValueObjectArray(json: JValue, key: String) : Box[M[List[(String,String)]]] = {
+          import com.normation.utils.Control.sequence
+          json \ key match {
+            case JArray(values) =>
+              for {
+                converted <- sequence(values) { v =>
+                                for {
+                                  name <- extractJsonString(v, "name", boxedIdentity)
+                                  value <- extractJsonString(v, "value", boxedIdentity)
+                                } yield {
+                                  monad.tuple2(name,value)
+                                }
+                              }
+              } yield {
+                import scalaz.Scalaz.listInstance
+                monad.sequence(converted.toList)
+              }
 
-          for {
-            name <- extractJsonString(json, "name", boxedIdentity)
-            value <- extractJsonString(json, "value", boxedIdentity)
-
-          } yield {
-            monad.tuple2(name,value)
+            case JNothing   => emptyValue
+            case x          => Failure(s"Invalid json to extract a json array, current value is: ${compactRender(x)}")
           }
+        }
+
+        //we need to special case JNothing to take care of previous version of
+        //the plugin that could be missing the attribute
+        def extractMissingNodeBehavior(json: JValue) : Box[M[MissingNodeBehavior]] = {
+          val onMissing: Box[MissingNodeBehavior] = (json \ "onMissing" match {
+            case JNothing => Full(MissingNodeBehavior.Delete)
+            case obj: JObject => (obj \ "name") match {
+              case JString(MissingNodeBehavior.Delete.name)       =>
+                Full(MissingNodeBehavior.Delete)
+              case JString(MissingNodeBehavior.NoChange.name)     =>
+                Full(MissingNodeBehavior.NoChange)
+              case JString(MissingNodeBehavior.DefaultValue.name) =>
+                (obj \ "value") match {
+                  case JNothing => Failure("Missing 'value' field for default value in data source")
+                  case value    => Full(MissingNodeBehavior.DefaultValue(value))
+                }
+              case _                                                                    =>
+                Failure(s"Can not extract onMissingNode behavior from fields ${compactRender(obj)}")
+            }
+            case x => Failure(s"Can not extract onMissingNode behavior from ${compactRender(x)}")
+          })
+          onMissing.map(x => monad.point(x))
         }
 
         def HttpDataSourceParameters (obj : JObject)  = {
           for {
-            url      <- extractJsonString(obj, "url")
-            path     <- extractJsonString(obj, "path")
-            method   <- extractJsonString(obj, "requestMethod", {s => Box(HttpMethod.values.find( _.name == s))})
-            checkSsl <- extractJsonBoolean(obj, "checkSsl")
-            timeout  <- extractJsonBigInt(obj, "requestTimeout", extractDuration)
-            params   <- extractJsonArray(obj, "params")( extractNameValueObject)
-            headers  <- extractJsonArray(obj, "headers")( extractNameValueObject)
+            url         <- extractJsonString(obj, "url")
+            path        <- extractJsonString(obj, "path")
+            method      <- extractJsonString(obj, "requestMethod", {s => Box(HttpMethod.values.find( _.name == s))})
+            checkSsl    <- extractJsonBoolean(obj, "checkSsl")
+            timeout     <- extractJsonBigInt(obj, "requestTimeout", extractDuration)
+            params      <- extractNameValueObjectArray(obj, "params")
+            headers     <- extractNameValueObjectArray(obj, "headers")
             requestMode <- extractJsonObj(obj, "requestMode", extractHttpRequestMode(_))
-
+            onMissing   <- extractMissingNodeBehavior(obj)
           } yield {
 
             import scalaz.std.list._
@@ -328,6 +373,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
               , path
               , unwrapMode
               , timeout
+              , onMissing
             )
           }
         }
@@ -342,6 +388,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
           path = monad.bind(parameters)(_._6)
           mode = monad.bind(parameters)(_._7)
           timeout = monad.bind(parameters)(_._8)
+          onMissing = monad.bind(parameters)(_._9)
         } yield {
           DataSourceTypeWrapper(
               url
@@ -352,6 +399,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             , path
             , mode
             , timeout
+            , onMissing
           )
         }
 

@@ -66,6 +66,7 @@ import scalaj.http.Http
 import scalaj.http.HttpOptions
 import scalaz._
 import scalaz.concurrent.Task
+import net.liftweb.json.JsonAST
 
 /*
  * This file contain the logic to update dataset from an
@@ -89,7 +90,21 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
   val compiler = new InterpolateNode(valueCompiler)
 
 
-  def getNode(datasourceName: DataSourceId, datasource: DataSourceType.HTTP, node: NodeInfo, policyServer: NodeInfo, parameters: Set[Parameter], connectionTimeout: Duration, readTimeOut: Duration): Box[NodeProperty] = {
+  /**
+   * Get the node property for the configured datasource.
+   * Return an Option[NodeProperty], where None mean "don't change
+   * existing state", and Some(nodeProperty) means "change existing
+   * state for node property name to node property value".
+   */
+  def getNode(
+      datasourceName   : DataSourceId
+    , datasource       : DataSourceType.HTTP
+    , node             : NodeInfo
+    , policyServer     : NodeInfo
+    , parameters       : Set[Parameter]
+    , connectionTimeout: Duration
+    , readTimeOut      : Duration
+  ) : Box[Option[NodeProperty]] = {
     //utility to expand both key and values of a map
     def expandMap(expand: String => Box[String], map: Map[String, String]): Box[Map[String, String]] = {
       (sequence(map.toList) { case (key, value) =>
@@ -114,14 +129,23 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
       time_0     =  System.currentTimeMillis
       body       <- QueryHttp.QUERY(datasource.httpMethod, url, headers, httpParams, datasource.sslCheck, connectionTimeout, readTimeOut) ?~! s"Error when fetching data from ${url}"
       _          =  DataSourceTimingLogger.trace(s"[${System.currentTimeMillis - time_0} ms] node '${node.id.value}': GET ${url} // ${path}")
-      json       <- body match {
-                      case Some(body) => JsonSelect.fromPath(path, body) ?~! s"Error when extracting sub-json at path ${path} from ${body}"
-                      case None => Full(Nil)
+      optJson    <- body match {
+                      case Some(body) => JsonSelect.fromPath(path, body).map(x => Some(x)) ?~! s"Error when extracting sub-json at path ${path} from ${body}"
+                      // this mean we got a 404 => choose behavior based on onMissing value
+                      case None => datasource.missingNodeBehavior match {
+                        case MissingNodeBehavior.Delete              => Full(Some(Nil))
+                        case MissingNodeBehavior.DefaultValue(value) => Full(Some(JsonAST.compactRender(value) :: Nil))
+                        case MissingNodeBehavior.NoChange            => Full(None)
+                      }
                     }
     } yield {
-      //we only get the first element from the path.
-      //if list is empty, return "" (remove property).
-      DataSource.nodeProperty(datasourceName.value, json.headOption.getOrElse(""))
+      // optJson is an Option[value :: tails] (None meaning: don't change the existing value, that case is processed elsewhere).
+      // We only get the first element from the path, ignoring if there is several.
+      // And if list is empty, returns "" (remove property).
+      optJson.map {
+        case Nil        => DataSource.nodeProperty(datasourceName.value, ""   )
+        case value :: _ => DataSource.nodeProperty(datasourceName.value, value)
+      }
     }
   }
 

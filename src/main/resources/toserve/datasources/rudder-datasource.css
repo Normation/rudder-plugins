@@ -443,6 +443,14 @@ span.type{
   font-weight: normal;
   float: right;
 }
+
+.page-title .rudder-label.label-sm{
+  font-size: 22px;
+  background-color: #bbb;
+  font-weight: normal;
+  margin-top: -3px;
+}
+
 .detail-datasource{
   color: #999;
   font-size: 12px;

@@ -72,6 +72,11 @@ import net.liftweb.common._
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import ch.qos.logback.classic.Level
+import com.normation.rudder.domain.nodes.NodeProperty
+import net.liftweb.json.JsonAST.JString
+import com.normation.rudder.domain.nodes.CompareProperties
+import org.specs2.matcher.MatchResult
+import net.liftweb.json.JsonAST.JValue
 
 
 
@@ -106,6 +111,15 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           counterSuccess.add(1)
           booksJson
         }
+
+      case GET -> Root / "single_node2" =>
+        Ok{
+          counterSuccess.add(1)
+          """{"foo":"bar"}"""
+        }
+
+      case GET -> Root / "404" =>
+        NotFound {}
 
       case GET -> Root / x =>
         Ok {
@@ -237,6 +251,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     , "CHANGE MY PATH"
     , HttpRequestMode.OneRequestByNode
     , 30.second
+    , MissingNodeBehavior.Delete
   )
   val datasourceTemplate = DataSource(
         DataSourceId("test-my-datasource")
@@ -253,22 +268,22 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
   // create a copy of template, updating some properties
   def NewDataSource(
-      name   : String
-    , url    : String = httpDatasourceTemplate.url
-    , path   : String = httpDatasourceTemplate.path
-    , schedule: DataSourceSchedule = datasourceTemplate.runParam.schedule
-    , method: HttpMethod = httpDatasourceTemplate.httpMethod
-    , params: Map[String, String] = httpDatasourceTemplate.params
-    , headers: Map[String, String] = httpDatasourceTemplate.headers
+      name     : String
+    , url      : String              = httpDatasourceTemplate.url
+    , path     : String              = httpDatasourceTemplate.path
+    , schedule : DataSourceSchedule  = datasourceTemplate.runParam.schedule
+    , method   : HttpMethod          = httpDatasourceTemplate.httpMethod
+    , params   : Map[String, String] = httpDatasourceTemplate.params
+    , headers  : Map[String, String] = httpDatasourceTemplate.headers
+    , onMissing: MissingNodeBehavior = httpDatasourceTemplate.missingNodeBehavior
   ) = {
-    val http = httpDatasourceTemplate.copy(url = url, path = path, httpMethod = method, params = params, headers = headers)
+    val http = httpDatasourceTemplate.copy(url = url, path = path, httpMethod = method, params = params, headers = headers, missingNodeBehavior = onMissing)
     val run  = datasourceTemplate.runParam.copy(schedule = schedule)
-    datasourceTemplate.copy(name = DataSourceName(name), sourceType = http, runParam = run)
+    datasourceTemplate.copy(id = DataSourceId(name), sourceType = http, runParam = run)
 
   }
 
   object MyDatasource {
-
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
     val http = new HttpQueryDataSourceService(
         infos
@@ -276,11 +291,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , infos
       , interpolation
     )
-
-
     val uuidGen = new StringUuidGeneratorImpl()
-
-
   }
 
 
@@ -302,7 +313,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       }
     }
 
-    "does nothing is disabled scheduler" in {
+    "does nothing if scheduler is disabled" in {
       val testScheduler = TestScheduler()
       val dss = new DataSourceScheduler(
           datasource.copy(enabled = false)
@@ -484,17 +495,15 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , path = "$.store.${node.properties[get-that]}"
     )
     "get the node" in  {
-
       val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, Set(), 1.second, 5.seconds)
 
       res mustFullEq(
-          DataSource.nodeProperty("test-get-one-node", compact("""{
+          Some(DataSource.nodeProperty("test-get-one-node", compact("""{
             "category": "reference",
             "author": "Nigel Rees",
             "title": "Sayings of the Century",
             "price": 8.95
-          }""")))
-
+          }"""))))
     }
   }
 
@@ -506,12 +515,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
 
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-    val http = new HttpQueryDataSourceService(
-        infos
-      , parameterRepo
-      , infos
-      , interpolation
-    )
+    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation)
+
 
     "correctly update all nodes" in {
       //all node updated one time
@@ -523,8 +528,90 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       )
     }
+
+    "correctly update one node" in {
+      //all node updated one time
+      val d2 = NewDataSource(
+          "test-http-service"
+        , url  = s"${REST_SERVER_URL}/single_node2"
+        , path = "$.foo"
+      )
+      infos.updates.clear()
+      val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
+
+      res mustFullEq(root.id) and (
+        infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+            NodeProperty("test-http-service", JString("bar"), Some(DataSource.providerName))
+        )
+      )
+    }
   }
 
+  "The behavior on 404 " should {
+
+    /*
+     * Utility method that:
+     * - set a node property to a value (if defined)
+     * - query an url returning 404
+     * - get the props for the value and await a test on them
+     *
+     * In finalStatCond, the implementation ensures that all nodes are in the map, i.e
+     *   PROPS.keySet() == infos.getAll().keySet()
+     */
+    type PROPS = Map[NodeId, Option[JValue]]
+    def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
+      val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
+      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation)
+      val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
+      
+      val nodes = infos.getAll().openOrThrowException("test shall not throw")
+      //set a value for all propName if asked
+      val modId = ModificationId("set-test-404")
+      nodes.values.foreach { node =>
+
+        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse(""), None)))).openOrThrowException("test must be able to set prop")
+        val up = node.node.copy(properties = newProps)
+        infos.updateNode(up, modId, actor, None)
+      }
+
+      infos.updates.clear()
+      val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
+
+      val nodeIds = nodes.keySet
+      res mustFullEq(nodeIds) and (
+        if(expectMod) {
+          infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
+        } else {
+          true === true
+        }
+      ) and ({
+        //none should have "test-404"
+        val props = infos.getAll().openOrThrowException("test shall not throw").map { case(id, n) => (id, n.node.properties.find( _.name == propName ).map( _.value)) }
+        finalStateCond(props)
+      })
+    }
+
+    "have a working 'delete property' option" in {
+      test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.Delete, expectMod = true) { props =>
+        props must havePairs( props.keySet.map(x => (x, None) ).toSeq:_* )
+      }
+    }
+    "have a working 'default value property' option" in {
+      test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.DefaultValue(JString("foo")), expectMod = true) { props =>
+        props must havePairs( props.keySet.map(x => (x, Some(JString("foo"))) ).toSeq:_* )
+      }
+    }
+    "have a working 'don't touch - not exists' option" in {
+      test404prop(propName = "test-404", initValue = None, onMissing = MissingNodeBehavior.NoChange, expectMod = false) { props =>
+        props must havePairs( props.keySet.map(x => (x, None) ).toSeq:_* )
+      }
+    }
+    "have a working 'don't touch - exists' option" in {
+      test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.NoChange, expectMod = false) { props =>
+        props must havePairs( props.keySet.map(x => (x, Some(JString("test-404"))) ).toSeq:_* )
+      }
+    }
+  }
 
   lazy val booksJson = """
   {

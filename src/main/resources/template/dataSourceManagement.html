@@ -31,6 +31,7 @@
             <span ng-if="selectedDatasource.name.length>0">{{selectedDatasource.name}}</span>
             <span ng-if="!selectedDatasource.name && selectedDatasource.isNew">New data source</span>
             <span ng-if="!selectedDatasource.name && !selectedDatasource.isNew" style="font-style:italic; color:#777;">Unnamed</span>
+            <span class="rudder-label label-sm pull-right" ng-if="!selectedDatasource.enabled">Disabled</span>
           </div>
           <!-- <h3 class="section-title">Data source information</h3> -->
           <form class="bloc-body show-details" name="forms.datasourceForm">
@@ -230,6 +231,61 @@
                 </ul>
               </div>
             </div>
+            <div class="form-group">
+              <label class="bloc"><a ng-click="toggleWell($event)">What to do when a query for a Node returns a 404 error?<span class="fa fa-chevron-right"></span></a></label>
+              <div class="well" style="display:none">
+                <ul class="form-group ">
+                  <li class="rudder-form">
+                    <div class="input-group">
+                      <label class="input-group-addon" for="onMissingDelete">
+                        <input type="radio" id="onMissingDelete" ng-model="selectedDatasource.type.parameters.onMissing.name" value="delete">
+                        <label for="onMissingDelete" class="label-radio">
+                          <span class="ion ion-checkmark-round"></span>
+                        </label>
+                        <span class="ion ion-checkmark-round check-icon"></span>
+                      </label>
+                      <label class="form-control" for="onMissingDelete">
+                        Delete the node property corresponding to that data source (default behavior)
+                      </label>
+                    </div>
+                  </li>
+                </ul>
+                <ul class="form-group ">
+                  <li class="rudder-form">
+                    <div class="input-group">
+                      <label class="input-group-addon" for="onMissingNoChange">
+                        <input type="radio" id="onMissingNoChange" ng-model="selectedDatasource.type.parameters.onMissing.name" value="noChange">
+                        <label for="onMissingNoChange" class="label-radio">
+                          <span class="ion ion-checkmark-round"></span>
+                        </label>
+                        <span class="ion ion-checkmark-round check-icon"></span>
+                      </label>
+                      <label class="form-control" for="onMissingNoChange">
+                        Do not change the node property corresponding to that data source
+                      </label>
+                    </div>
+                  </li>
+                  <li class="rudder-form">
+                    <div class="input-group">
+                      <label class="input-group-addon" for="onMissingDefaultValue">
+                        <input type="radio" id="onMissingDefaultValue" ng-model="selectedDatasource.type.parameters.onMissing.name" value="defaultValue">
+                        <label for="onMissingDefaultValue" class="label-radio">
+                          <span class="ion ion-checkmark-round"></span>
+                        </label>
+                        <span class="ion ion-checkmark-round check-icon"></span>
+                      </label>
+                      <label class="form-control" for="onMissingDefaultValue">
+                        Set the node property corresponding to the data source to the following value:
+                      </label>
+                      <div class="input-group group-onmissing-value" ng-hide="selectedDatasource.type.parameters.onMissing.name!='defaultValue'">
+                        <label for="onMissingDefaultValueValue" class="form-control">(string or JSON allowed, empty is equivalent to deleting the property)</label>
+                        <textarea class="form-control " id="onMissingDefaultValueValue" ng-model="selectedDatasource.type.parameters.onMissing.value"></textarea>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </form>
         </div>
         <div class="datasource-toolbar col-xs-12" ng-if="selectedDatasource">
@@ -288,7 +344,7 @@
             <h4 class="text-center">Your changes have been saved</h4>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">OK</button>
           </div>
         </div>
       </div>

@@ -184,6 +184,14 @@ class DataSourceRepoImpl(
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => Unit): Unit = {
     datasources.filter { case(_, dss) => condition(dss.datasource) }.foreach { case (_, dss) => action(dss) }
+    datasources.foreach { case (_, dss) =>
+      if(condition(dss.datasource)) {
+        action(dss)
+      } else {
+        DataSourceLogger.debug(s"Skipping data source '${dss.datasource.name}' (${dss.datasource.id.value}): disabled or trigger not configured")
+      }
+    }
+
   }
   private[this] def updateDataSourceScheduler(source: DataSource, delay: Option[FiniteDuration]): Unit = {
     //need to cancel if one exists
@@ -210,7 +218,10 @@ class DataSourceRepoImpl(
   ///
   override def getAllIds : Box[Set[DataSourceId]] = backend.getAllIds
   override def getAll : Box[Map[DataSourceId,DataSource]] = {
-    DataSourceLogger.debug(s"Live data sources: ${datasources.map(_._2.datasource.name.value).mkString("; ")}")
+    DataSourceLogger.debug(s"Live data sources: ${datasources.map {case(_, dss) =>
+      s"'${dss.datasource.name.value}' (${dss.datasource.id.value}): ${if(dss.datasource.enabled) "enabled" else "disabled"}"
+    }.mkString("; ")}")
+
     backend.getAll
   }
   override def get(id : DataSourceId) : Box[Option[DataSource]] = backend.get(id)

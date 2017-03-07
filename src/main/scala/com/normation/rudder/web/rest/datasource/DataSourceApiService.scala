@@ -112,8 +112,8 @@ class DataSourceApiService(
   def createSource(request : Req) : Box[JValue] = {
 
     val defaultDuration = DataSource.defaultDuration
-    val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false,"", HttpRequestMode.OneRequestByNode, defaultDuration)
-    val baseRunParam  = DataSourceRunParameters.apply(DataSourceSchedule.NoSchedule(defaultDuration), false,false)
+    val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false,"", HttpRequestMode.OneRequestByNode, defaultDuration, MissingNodeBehavior.Delete)
+    val baseRunParam  = DataSourceRunParameters.apply(DataSourceSchedule.NoSchedule(defaultDuration), false, false)
     for {
       sourceId <- restExtractor.extractId(request){ a => val id = DataSourceId(a); Full(id)}.flatMap( Box(_) ?~! "You need to define datasource id to create it via api")
       base = DataSource.apply(sourceId, DataSourceName(""), baseSourceType, baseRunParam, "", false, defaultDuration)

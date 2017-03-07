@@ -178,12 +178,21 @@ class HttpQueryDataSourceService(
                           case Some(p) => Full(p)
                         })
                         //connection timeout: 5s ; getdata timeout: freq ?
-        property     <- getHttp.getNode(datasourceId, datasource, nodeInfo, policyServer, parameters, datasource.requestTimeOut, datasource.requestTimeOut)
-        newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(Seq(property)))
-        newNode      =  nodeInfo.node.copy(properties = newProps)
-        nodeUpdated  <- nodeRepository.updateNode(newNode, cause.modId, cause.actor, cause.reason) ?~! s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
+        optProperty  <- getHttp.getNode(datasourceId, datasource, nodeInfo, policyServer, parameters, datasource.requestTimeOut, datasource.requestTimeOut)
+                        //on none, don't update anything, the life is wonderful
+        nodeId       <- optProperty match {
+                          case None           => Full(nodeInfo.id)
+                          case Some(property) =>
+                            for {
+                              newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(Seq(property)))
+                              newNode      =  nodeInfo.node.copy(properties = newProps)
+                              nodeUpdated  <- nodeRepository.updateNode(newNode, cause.modId, cause.actor, cause.reason) ?~! s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
+                            } yield {
+                              nodeUpdated.id
+                            }
+                        }
       } yield {
-        nodeUpdated.id
+        nodeId
       }) match {
         case Failure(msg, x, y) => Failure(s"Error when getting data from datasource '${datasourceId.value}' for node ${nodeInfo.hostname} (${nodeInfo.id.value}): ${msg}", x, y)
         case x                  => x
