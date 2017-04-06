@@ -76,6 +76,12 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
         , 'requestTimeout' : convertFromSecond($scope.datasources[i].type.parameters.requestTimeout)
         };
         //This will need to be changed when Bug #10554 will be fixed
+        
+        //we always to display a string for the default "onMissing" value (if exists). The backend will
+        //manage the correct parsing. 
+        if(typeof $scope.datasources[i].type.parameters.onMissing.value === 'object') {
+          $scope.datasources[i].type.parameters.onMissing.value = JSON.stringify($scope.datasources[i].type.parameters.onMissing.value)
+        }
       }
     });
   }

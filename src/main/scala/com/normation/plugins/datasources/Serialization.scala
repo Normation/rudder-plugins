@@ -49,6 +49,7 @@ import net.liftweb.util.ControlHelpers.tryo
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import scalaz.std.option._
+import com.normation.rudder.domain.nodes.NodeProperty
 
 object DataSourceJsonSerializer{
   def serialize(source : DataSource) : JValue = {
@@ -323,7 +324,14 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
               case JString(MissingNodeBehavior.DefaultValue.name) =>
                 (obj \ "value") match {
                   case JNothing => Failure("Missing 'value' field for default value in data source")
-                  case value    => Full(MissingNodeBehavior.DefaultValue(value))
+                  case value    =>
+                    value match {
+                      //here, we want to have the same semantic regarding strings and json than
+                      //node property. So we are using a NodeProperty directly.
+                      case JString(string) => Full(MissingNodeBehavior.DefaultValue(NodeProperty("default", string, None).value))
+                      case obj:JObject     => Full(MissingNodeBehavior.DefaultValue(obj))
+                      case x               => Failure(s"Can not extract onMissingNode default value from ${compactRender(x)} (expecting string of JSON")
+                    }
                 }
               case _                                                                    =>
                 Failure(s"Can not extract onMissingNode behavior from fields ${compactRender(obj)}")
