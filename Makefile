@@ -13,7 +13,7 @@ target/metadata:
 	mvn $(MAVEN_OPTS) -Dcommit-id=$$(git rev-parse HEAD 2>/dev/null || true) properties:read-project-properties resources:copy-resources@copy-metadata
 
 files.txz: target/datasources.jar
-	mkdir datasources
+	mkdir -p datasources
 	mv target/datasources.jar datasources/
 	cp ./src/main/resources/datasources-schema.sql datasources/
 	tar cJ -f files.txz datasources

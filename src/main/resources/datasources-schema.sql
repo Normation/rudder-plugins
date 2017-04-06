@@ -41,10 +41,10 @@ CREATE OR REPLACE FUNCTION create_datasources ()
 $func$
 BEGIN
    IF EXISTS (SELECT 1 FROM pg_catalog.pg_tables 
-              WHERE tablename  = 'dataSources') THEN
-      RAISE NOTICE 'Table "dataSources" already exists.';
+              WHERE tablename  = 'datasources') THEN
+      RAISE NOTICE 'Table "datasources" already exists.';
    ELSE
-      CREATE TABLE dataSources (
+      CREATE TABLE datasources (
         id            text PRIMARY KEY NOT NULL CHECK (id <> '')  
       , properties    text NOT NULL CHECK (properties <> '' )
       , status        text CHECK (status <> '' )
