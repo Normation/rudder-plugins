@@ -4,8 +4,7 @@
   <artifactId>datasources</artifactId>
   <packaging>jar</packaging>
   <!-- 
-    TODO: this must be dependant of both current branch
-    and plugin version
+    Do not change version here, update content into: build.conf
   -->
   <version>${plugin-version}</version>
 
