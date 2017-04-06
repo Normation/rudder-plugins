@@ -35,15 +35,14 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
+package com.normation.plugins.datasources
 
+import com.normation.BoxSpecMatcher
+import net.liftweb.common._
+import net.liftweb.json._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
-import net.liftweb.common._
-import net.liftweb.json._
-import com.normation.inventory.domain.PublicKey
-import com.normation.BoxSpecMatcher
 
 @RunWith(classOf[JUnitRunner])
 class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {

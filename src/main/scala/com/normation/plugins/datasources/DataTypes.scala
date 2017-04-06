@@ -35,18 +35,27 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
-
-import scala.concurrent.duration.FiniteDuration
+package com.normation.plugins.datasources
 
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.NodePropertyProvider
-
-import org.joda.time.DateTime
-
+import net.liftweb.common.Logger
 import net.liftweb.json.JsonAST.JValue
+import org.joda.time.DateTime
+import org.slf4j.LoggerFactory
+import scala.concurrent.duration.FiniteDuration
 
+/**
+ * Applicative log of interest for Rudder ops.
+ */
+object DataSourceLogger extends Logger {
+  override protected def _logger = LoggerFactory.getLogger("datasources")
+}
+
+object DataSourceTimingLogger extends Logger {
+  override protected def _logger = LoggerFactory.getLogger("datasources.timing")
+}
 
 
 final object DataSource {

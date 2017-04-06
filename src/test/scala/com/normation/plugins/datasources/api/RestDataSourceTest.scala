@@ -35,11 +35,12 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.web.rest
+package com.normation.plugins.datasources.api
 
-import org.junit.runner.RunWith
-import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
+import com.normation.plugins.datasources._
+import com.normation.rudder.web.rest.ApiVersion
+import com.normation.rudder.web.rest.RestTestSetUp
+import java.util.concurrent.TimeUnit
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -48,13 +49,11 @@ import net.liftweb.http.JsonResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST._
-import java.util.concurrent.TimeUnit
-
+import org.junit.runner.RunWith
+import org.specs2.mutable._
+import org.specs2.runner.JUnitRunner
 import scala.concurrent.duration.Duration
 
-import com.normation.rudder.datasources._
-import com.normation.rudder.web.rest.datasource.DataSourceApi9
-import com.normation.rudder.web.rest.datasource.DataSourceApiService
 
 
 

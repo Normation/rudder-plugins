@@ -1,6 +1,6 @@
 /*
 *************************************************************************************
-* Copyright 2012 Normation SAS
+* Copyright 2016 Normation SAS
 *************************************************************************************
 *
 * This file is part of Rudder.
@@ -35,18 +35,21 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
+package com.normation.plugins.datasources.api
 
-import org.slf4j.LoggerFactory
-import net.liftweb.common.Logger
+import com.normation.rudder.authorization._
+import com.normation.rudder.web.model.CurrentUser
+import com.normation.rudder.web.rest.RestAPI
 
-/**
- * Applicative log of interest for Rudder ops.
- */
-object DataSourceLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("datasources")
-}
+import net.liftweb.http.Req
 
-object DataSourceTimingLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("datasources.timing")
+trait DataSourceApi extends RestAPI {
+  val kind = "datasources"
+
+  override protected def checkSecure : PartialFunction[Req, Boolean] = {
+    case Get(_,_) => CurrentUser.checkRights(Read("administration"))
+    case Post(_,_) | Put(_,_) | Delete(_,_) => CurrentUser.checkRights(Write("administration")) || CurrentUser.checkRights(Edit("administration"))
+    case _=> false
+
+  }
 }

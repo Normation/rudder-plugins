@@ -35,11 +35,22 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.web.rest.datasource
+package com.normation.plugins.datasources.api
 
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.datasources._
+import com.normation.plugins.datasources.DataSource
+import com.normation.plugins.datasources.DataSourceId
+import com.normation.plugins.datasources.DataSourceJsonSerializer
+import com.normation.plugins.datasources.DataSourceName
+import com.normation.plugins.datasources.DataSourceRepository
+import com.normation.plugins.datasources.DataSourceRunParameters
+import com.normation.plugins.datasources.DataSourceSchedule
+import com.normation.plugins.datasources.DataSourceType
+import com.normation.plugins.datasources.DataSourceUpdateCallbacks
+import com.normation.plugins.datasources.HttpMethod
+import com.normation.plugins.datasources.HttpRequestMode
+import com.normation.plugins.datasources.MissingNodeBehavior
 import com.normation.rudder.web.rest.RestDataSerializer
 import com.normation.rudder.web.rest.RestExtractorService
 import com.normation.rudder.web.rest.RestUtils
@@ -54,7 +65,7 @@ class DataSourceApiService(
   , restExtractor      : RestExtractorService
 ) extends Loggable {
   import restExtractor._
-  import com.normation.rudder.datasources.DataSourceExtractor.OptionnalJson._
+  import com.normation.plugins.datasources.DataSourceExtractor.OptionnalJson._
   import net.liftweb.json.JsonDSL._
 
   def extractReqDataSource(req : Req, base : DataSource) : Box[DataSource] = {

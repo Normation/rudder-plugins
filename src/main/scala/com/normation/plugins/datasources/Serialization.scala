@@ -35,20 +35,19 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
+package com.normation.plugins.datasources
 
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
-
-import com.normation.rudder.datasources.DataSourceSchedule._
-import com.normation.rudder.datasources.HttpRequestMode._
+import com.normation.plugins.datasources.DataSourceSchedule._
+import com.normation.plugins.datasources.HttpRequestMode._
 import com.normation.rudder.repository.json.JsonExctractorUtils
-
-import net.liftweb.common._
+import java.util.concurrent.TimeUnit
+import net.liftweb.common.Full
+import net.liftweb.common.Failure
+import net.liftweb.common.Box
 import net.liftweb.json._
 import net.liftweb.util.ControlHelpers.tryo
+import scala.concurrent.duration.FiniteDuration
+import scala.language.higherKinds
 import scalaz.std.option._
 
 object DataSourceJsonSerializer{
@@ -227,27 +226,19 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
 
   def extractDataSourceWrapper(id : DataSourceId, json : JValue) : Box[DataSourceWrapper] = {
     for {
-      name         <- extractJsonString(json, "name",  x => Full(DataSourceName(x)))
-      description  <- extractJsonString(json, "description")
-      sourceType   <- extractJsonObj(json, "type", extractDataSourceTypeWrapper(_))
-      runParam     <- extractJsonObj(json, "runParameters", extractDataSourceRunParameterWrapper(_))
-      timeOut      <- extractJsonBigInt(json, "updateTimeout", extractDuration)
-      enabled      <- extractJsonBoolean(json, "enabled")
+      name         <- extractJsonString( json, "name"         ,  x => Full(DataSourceName(x)))
+      description  <- extractJsonString( json, "description"  )
+      sourceType   <- extractJsonObj(    json, "type"         , extractDataSourceTypeWrapper(_))
+      runParam     <- extractJsonObj(    json, "runParameters", extractDataSourceRunParameterWrapper(_))
+      timeOut      <- extractJsonBigInt( json, "updateTimeout", extractDuration)
+      enabled      <- extractJsonBoolean(json, "enabled"      )
     } yield {
-      DataSourceWrapper(
-        id
-      , name
-      , sourceType
-      , runParam
-      , description
-      , enabled
-      , timeOut
-      )
+      DataSourceWrapper(id, name, sourceType, runParam, description, enabled, timeOut)
     }
   }
 
   def extractDataSourceRunParameterWrapper(obj : JObject) = {
-
+    //the subpart in charge of the Schedule
     def extractSchedule(obj : JObject) = {
         for {
             duration <- extractJsonBigInt(obj, "duration", extractDuration)
@@ -268,13 +259,9 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
     for {
       onGeneration <- extractJsonBoolean(obj, "onGeneration")
       onNewNode    <- extractJsonBoolean(obj, "onNewNode")
-      schedule     <- extractJsonObj(obj, "schedule", extractSchedule(_))
+      schedule     <- extractJsonObj(    obj, "schedule", extractSchedule(_))
     } yield {
-      DataSourceRunParamWrapper(
-          monad.join(schedule)
-        , onGeneration
-        , onNewNode
-      )
+      DataSourceRunParamWrapper(monad.join(schedule), onGeneration, onNewNode)
     }
   }
 

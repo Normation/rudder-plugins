@@ -35,9 +35,7 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
-
-import scala.concurrent.Await
+package com.normation.plugins.datasources
 
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.CompareProperties
@@ -47,15 +45,15 @@ import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-
 import monix.eval.Task
+import monix.eval.TaskSemaphore
 import monix.execution.Scheduler
 import net.liftweb.common.Box
 import net.liftweb.common.Empty
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
-import monix.eval.TaskSemaphore
+import scala.concurrent.Await
 
 /*
  * This file contain the hight level logic to update

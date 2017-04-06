@@ -35,7 +35,7 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
+package com.normation.plugins.datasources
 
 import scala.concurrent.ExecutionContext
 

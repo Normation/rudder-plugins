@@ -35,17 +35,18 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.web.rest.datasource
+package com.normation.plugins.datasources.api
 
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.datasources._
+import com.normation.plugins.datasources.DataSourceId
 import com.normation.rudder.web.rest.ApiVersion
 import com.normation.rudder.web.rest.RestExtractorService
 import com.normation.rudder.web.rest.RestUtils
 import com.normation.rudder.web.rest.RestUtils._
 import com.normation.utils.StringUuidGenerator
 
-import net.liftweb.common._
+import net.liftweb.common.Box
+import net.liftweb.common.Loggable
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.JValue
@@ -70,13 +71,13 @@ class DataSourceApi9 (
 
     /* Avoiding POST unreachable endpoint:
      * (note: datasource must not have id "reload")
-     * 
+     *
      * POST /datasources/reload/node/$nodeid
      * POST /datasources/reload
      * POST /datasources/$datasourceid/reload/$nodeid
      * POST /datasources/$datasourceid/reload
      * POST /datasources/$datasourceid
-     */ 
+     */
 
     case Post("reload" :: "node" :: nodeId :: Nil, req) => {
       implicit val prettify = extractor.extractPrettify(req.params)
@@ -98,7 +99,7 @@ class DataSourceApi9 (
 
       toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
     }
-    
+
     case Post("reload" :: datasourceId :: "node" :: nodeId :: Nil, req) => {
       implicit val prettify = extractor.extractPrettify(req.params)
       implicit val action = "reloadOneDatasourceOneNode"

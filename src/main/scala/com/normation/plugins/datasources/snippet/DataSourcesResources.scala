@@ -47,8 +47,8 @@ class DataSourcesResources extends DispatchSnippet {
 
   override def dispatch = {
     case "css" =>
-      (_:NodeSeq) => <link type="text/css" rel="stylesheet" href={link("rudder-datasource.css")} ></link>
+      (_:NodeSeq) => <link type="text/css" rel="stylesheet" href={link("rudder-datasources.css")} ></link>
     case "js"  =>
-      (_:NodeSeq) => <script type="text/javascript" src={link("dataSource.js")}></script>
+      (_:NodeSeq) => <script type="text/javascript" src={link("rudder-datasources.js")}></script>
   }
 }

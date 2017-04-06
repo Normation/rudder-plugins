@@ -15,7 +15,7 @@ target/metadata:
 files.txz: target/datasources.jar
 	mkdir datasources
 	mv target/datasources.jar datasources/
-	cp ./src/main/resources/datasource-schema.sql datasources/
+	cp ./src/main/resources/datasources-schema.sql datasources/
 	tar cJ -f files.txz datasources
 
 target/datasources.jar:

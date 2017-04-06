@@ -35,21 +35,19 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
-
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
+package com.normation.plugins.datasources
 
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
-import com.normation.rudder.datasources.DataSourceSchedule._
+import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
-
 import monix.eval.Task
 import monix.execution.Cancelable
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import net.liftweb.common.Loggable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 
 final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String])

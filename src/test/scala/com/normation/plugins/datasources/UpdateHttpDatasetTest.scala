@@ -35,20 +35,19 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
+package com.normation.plugins.datasources
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import scala.util.Random
-
+import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.datasources.DataSourceSchedule._
+import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
+import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
+import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.parameters.ParameterName
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
@@ -56,27 +55,24 @@ import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
-
+import monix.execution.atomic.AtomicInt
+import monix.execution.schedulers.TestScheduler
+import net.liftweb.common._
+import net.liftweb.json.JsonAST.JString
+import net.liftweb.json.JsonAST.JValue
 import org.http4s._
 import org.http4s.dsl._
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.util._
 import org.junit.runner.RunWith
+import org.slf4j.LoggerFactory
+import org.specs2.matcher.MatchResult
 import org.specs2.mutable._
 import org.specs2.specification.AfterAll
 import org.specs2.runner.JUnitRunner
-
-import monix.execution.atomic.AtomicInt
-import monix.execution.schedulers.TestScheduler
-import net.liftweb.common._
-import org.slf4j.LoggerFactory
-import org.slf4j.Logger
-import ch.qos.logback.classic.Level
-import com.normation.rudder.domain.nodes.NodeProperty
-import net.liftweb.json.JsonAST.JString
-import com.normation.rudder.domain.nodes.CompareProperties
-import org.specs2.matcher.MatchResult
-import net.liftweb.json.JsonAST.JValue
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+import scala.util.Random
 
 
 
@@ -563,7 +559,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
       val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation)
       val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
-      
+
       val nodes = infos.getAll().openOrThrowException("test shall not throw")
       //set a value for all propName if asked
       val modId = ModificationId("set-test-404")

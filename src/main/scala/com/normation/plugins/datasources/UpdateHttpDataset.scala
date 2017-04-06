@@ -35,11 +35,7 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
-
-import scala.collection.immutable.TreeMap
-import scala.concurrent.duration.Duration
-import scala.util.control.NonFatal
+package com.normation.plugins.datasources
 
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.DocumentContext
@@ -53,20 +49,21 @@ import com.normation.rudder.domain.parameters.ParameterName
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.services.policies.InterpolationContext
 import com.normation.utils.Control._
-
 import net.liftweb.common.Box
 import net.liftweb.common.Empty
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
+import net.liftweb.json.JsonAST
 import net.liftweb.util.Helpers.tryo
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
 import net.minidev.json.JSONValue
+import scala.collection.immutable.TreeMap
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
 import scalaz._
-import scalaz.concurrent.Task
-import net.liftweb.json.JsonAST
 
 /*
  * This file contain the logic to update dataset from an
@@ -153,7 +150,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
    * Get information for many nodes.
    * Policy servers for each node must be in the map.
    */
-  def getMany(datasource: DataSource, nodes: Seq[NodeId], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Box[Task[Box[NodeProperty]]] = {
+  def getMany(datasource: DataSource, nodes: Seq[NodeId], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Seq[Box[NodeProperty]] = {
     ???
   }
 

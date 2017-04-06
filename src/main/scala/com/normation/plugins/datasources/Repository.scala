@@ -35,31 +35,28 @@
 *************************************************************************************
 */
 
-package com.normation.rudder.datasources
+package com.normation.plugins.datasources
 
-import net.liftweb.common.Box
-import ch.qos.logback.core.db.DataSourceConnectionSource
 import com.normation.eventlog.EventActor
-import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.NodeInfo
-import org.joda.time.DateTime
-import net.liftweb.common.EmptyBox
-import net.liftweb.common.Full
-import com.normation.rudder.domain.parameters.Parameter
-import com.normation.utils.StringUuidGenerator
 import com.normation.eventlog.ModificationId
-import com.normation.rudder.domain.eventlog._
-import scala.concurrent.duration._
-import net.liftweb.common.Failure
-import scalaz.concurrent.Task
-import doobie.imports._
-import doobie.postgres.pgtypes._
-import net.liftweb.common.Loggable
+import com.normation.inventory.domain.NodeId
+import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie._
-import scalaz.{Failure => _, _}, Scalaz._
-import net.liftweb.common.Empty
-import com.normation.rudder.datasources.DataSourceSchedule._
+import com.normation.rudder.domain.eventlog._
+import com.normation.rudder.domain.nodes.NodeInfo
+import com.normation.rudder.domain.parameters.Parameter
+import com.normation.utils.StringUuidGenerator
+import doobie.imports._
+import net.liftweb.common.Box
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Failure
+import net.liftweb.common.Full
+import net.liftweb.common.Loggable
+import org.joda.time.DateTime
+import scala.concurrent.duration._
+import scalaz.{ Failure => _, _ }
+import scalaz.Scalaz._
 
 final case class PartialNodeUpdate(
     nodes        : Map[NodeId, NodeInfo] //the node to update
@@ -358,7 +355,7 @@ class DataSourceJdbcRepository(
 
   implicit val DataSourceComposite: Composite[DataSource] = {
     import com.normation.rudder.repository.json.DataExtractor.CompleteJson._
-    import com.normation.rudder.datasources.DataSourceJsonSerializer._
+    import com.normation.plugins.datasources.DataSourceJsonSerializer._
     import net.liftweb.json.compactRender
     import net.liftweb.json.parse
     Composite[(DataSourceId,String)].xmap(
