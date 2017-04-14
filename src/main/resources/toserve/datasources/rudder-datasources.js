@@ -185,10 +185,11 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     }
   }
   $scope.selectDatasource = function(id){
-  	if($scope.forms.datasourceForm){
-  	  $scope.forms.datasourceForm.$setPristine();
-  	  $('.well').css('display','none');
-  	}
+    if($scope.forms.datasourceForm){
+      $scope.forms.datasourceForm.$setPristine();
+      $('.well').css('display','none');
+      $('.show-details .form-group .fa-chevron-right').removeClass('fa-rotate-90');
+    }
     var getDatasource = $scope.getDatasource(id);
     if(getDatasource){
       $scope.selectedDatasource = jQuery.extend(true, {}, getDatasource);
