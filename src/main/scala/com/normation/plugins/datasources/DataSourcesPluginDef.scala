@@ -55,23 +55,25 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import scala.xml.NodeSeq
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 class DataSourcesPluginDef() extends RudderPluginDef with Loggable {
 
-  val properties = {
-    val props = new Properties
-    props.load(this.getClass.getClassLoader.getResourceAsStream("build.conf"))
-    import scala.collection.JavaConverters._
-    props.asScala
-  }
+  //get properties name for the plugin from "build.conf" file
+  //have default string for errors (and avoid "missing prop exception"):
+  val defaults = List("plugin-id", "plugin-name", "plugin-version").map(p => s"$p=missing property with name '$p' in file 'build.conf'").mkString("\n")
+  val buildConf = ConfigFactory.load(this.getClass.getClassLoader, "build.conf").withFallback(ConfigFactory.parseString(defaults))
+
 
   override val basePackage = "com.normation.plugins.datasources"
-  override val name = PluginName(properties("plugin-id"))
-  override val displayName = properties("plugin-name")
+  override val name = PluginName(buildConf.getString("plugin-id"))
+  override val displayName = buildConf.getString("plugin-name")
   override val version = {
-    PluginVersion.from(properties("plugin-version")).getOrElse(
+    val versionString = buildConf.getString("plugin-version")
+    PluginVersion.from(versionString).getOrElse(
       //a version name that indicate an erro
-      PluginVersion(0,0,1, "ERROR-PARSING-VERSION")
+      PluginVersion(0,0,1, s"ERROR-PARSING-VERSION: ${versionString}")
     )
   }
 
@@ -82,7 +84,7 @@ class DataSourcesPluginDef() extends RudderPluginDef with Loggable {
     </div>
 
   def init = {
-    PluginLogger.info(s"loading '${properties("plugin-id")}' plugin")
+    PluginLogger.info(s"loading '${buildConf.getString("plugin-id")}:${version.toString}' plugin")
     LiftRules.statelessDispatch.append(DatasourcesConf.dataSourceApi9)
     // resources in src/main/resources/toserve must be allowed:
     ResourceServer.allow{
