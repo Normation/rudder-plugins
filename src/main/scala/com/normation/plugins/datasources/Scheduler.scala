@@ -94,6 +94,7 @@ class DataSourceScheduler(
     Task{
       val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value})"
       DataSourceLogger.info(msg)
+      DataSourceLogger.trace(s"details: ${datasource}")
       updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))
     }
   }
@@ -135,6 +136,7 @@ class DataSourceScheduler(
   // the cancel method just stop the current time if
   // exists, and clean things up
   def cancel() : Unit = {
+    s"Deleting new scheduled task for data source '${datasource.name}' (${datasource.id.value})"
     scheduledTask.foreach( _.cancel() )
     scheduledTask = None
   }
@@ -153,7 +155,7 @@ class DataSourceScheduler(
     } finally {
       datasource.runParam.schedule match {
         case Scheduled(p)  => startWithDelay(p)
-        case NoSchedule(p) => //nothing
+        case NoSchedule(_) => //nothing
       }
     }
   }

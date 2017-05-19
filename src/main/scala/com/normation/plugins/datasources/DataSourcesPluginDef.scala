@@ -44,7 +44,6 @@ import com.normation.plugins.PluginVersion
 import com.normation.plugins.RudderPluginDef
 import com.normation.rudder.authorization.Read
 import com.normation.rudder.domain.logger.PluginLogger
-import java.util.Properties
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.http.LiftRules
@@ -55,7 +54,6 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import scala.xml.NodeSeq
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 class DataSourcesPluginDef() extends RudderPluginDef with Loggable {

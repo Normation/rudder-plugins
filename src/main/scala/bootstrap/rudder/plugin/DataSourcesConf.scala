@@ -40,7 +40,6 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 
 import com.normation.inventory.domain.NodeId
-import com.normation.plugins.SnippetExtensionRegister
 import com.normation.plugins.datasources.DataSourceJdbcRepository
 import com.normation.plugins.datasources.DataSourceRepoImpl
 import com.normation.plugins.datasources.DataSourcesPluginDef
@@ -107,12 +106,10 @@ class DataSourcesPluginConf extends Loggable with  ApplicationContextAware with 
   // spring thingies
   var appContext : ApplicationContext = null
 
-  override def afterPropertiesSet() : Unit = {
-      val ext = appContext.getBean(classOf[SnippetExtensionRegister])
-    }
+  override def afterPropertiesSet() : Unit = {}
 
-    override def setApplicationContext(applicationContext:ApplicationContext) = {
-      appContext = applicationContext
-    }
+  override def setApplicationContext(applicationContext:ApplicationContext) = {
+    appContext = applicationContext
+  }
 }
 

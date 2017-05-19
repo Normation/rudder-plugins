@@ -143,8 +143,8 @@ class HttpQueryDataSourceService(
     val res = datasource.sourceType match {
       case t:DataSourceType.HTTP =>
         (t.requestMode match {
-          case HttpRequestMode.OneRequestByNode                        => oneByOne
-          case HttpRequestMode.OneRequestAllNodes(path, nodeAttribute) => allInOne
+          case HttpRequestMode.OneRequestByNode         => oneByOne
+          case HttpRequestMode.OneRequestAllNodes(_, _) => allInOne
         })(t)
     }
     DataSourceTimingLogger.debug(s"[${System.currentTimeMillis-time_0} ms] '${actionName}' for data source '${datasource.name.value}' (${datasource.id.value})")

@@ -308,11 +308,11 @@ object JsonSelect {
       jsonValue <- try {
                      Full(json.read[JSONAware](path))
                    } catch {
-                     case ex: ClassCastException =>
+                     case _: ClassCastException =>
                        try {
                          Full(json.read[Any](path).toString)
                        } catch {
-                         case NonFatal(ex2) => Failure(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", Full(ex), Empty)
+                         case NonFatal(ex) => Failure(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", Full(ex), Empty)
                        }
                      case NonFatal(ex) => Failure(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", Full(ex), Empty)
                    }

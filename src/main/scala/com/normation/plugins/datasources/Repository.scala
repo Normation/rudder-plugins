@@ -55,7 +55,7 @@ import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.concurrent.duration._
-import scalaz.{ Failure => _, _ }
+import scalaz.{ Failure => _ }
 import scalaz.Scalaz._
 
 final case class PartialNodeUpdate(
@@ -172,12 +172,20 @@ class DataSourceRepoImpl(
         } yield {
           updateDataSourceScheduler(source, Some(source.runParam.schedule.duration))
         }
-      case eb  => throw new RuntimeException("error when initializing datasources")
+      case eb: EmptyBox  =>
+        val e = eb ?~! "Error when initializing datasources"
+        throw new RuntimeException(e.messageChain)
     }
   }
   // utility methods on datasources
   // stop a datasource - must be called when the datasource still in "datasources"
-  private[this] def stop(id: DataSourceId) = datasources.get(id).foreach( _.cancel() )
+  private[this] def stop(id: DataSourceId) = {
+    DataSourceLogger.debug(s"Stopping data source with id '${id.value}'")
+    datasources.get(id) match {
+      case None      => s"Data source with id ${id.value} was not found running"
+      case Some(dss) => dss.cancel()
+    }
+  }
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => Unit): Unit = {
     datasources.filter { case(_, dss) => condition(dss.datasource) }.foreach { case (_, dss) => action(dss) }
@@ -203,6 +211,7 @@ class DataSourceRepoImpl(
     )
     datasources = datasources + (source.id -> dss)
     //start new
+    DataSourceLogger.debug(s"Starting data source with id '${source.id.value}'")
     delay match {
       case None    => dss.start()
       case Some(d) => dss.startWithDelay(d)
@@ -354,7 +363,6 @@ class DataSourceJdbcRepository(
   import doobie._
 
   implicit val DataSourceComposite: Composite[DataSource] = {
-    import com.normation.rudder.repository.json.DataExtractor.CompleteJson._
     import com.normation.plugins.datasources.DataSourceJsonSerializer._
     import net.liftweb.json.compactRender
     import net.liftweb.json.parse

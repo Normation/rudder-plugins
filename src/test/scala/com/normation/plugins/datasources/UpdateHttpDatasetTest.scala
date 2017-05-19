@@ -304,8 +304,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       // here we need to give him the default scheduler, not the test one,
       // to actually have the fetch logic done
       MyDatasource.http.queryAll(datasource, c) match {
-        case Full(res) => //ok
-        case x         => logger.error(s"oh no! Got a $x")
+        case Full(_) => //ok
+        case x       => logger.error(s"oh no! Got a $x")
       }
     }
 
@@ -423,9 +423,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       //all node updated one time
       infos.updates.clear()
       NodeDataset.reset()
-      val t0 = System.currentTimeMillis
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
-      val t1 = System.currentTimeMillis
 
       res mustFullEq(nodeIds) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
@@ -445,9 +443,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       //all node updated one time
       infos.updates.clear()
       NodeDataset.reset()
-      val t0 = System.currentTimeMillis
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
-      val t1 = System.currentTimeMillis
 
       res mustFullEq(nodeIds) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )

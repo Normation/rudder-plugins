@@ -354,7 +354,6 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             onMissing   <- extractMissingNodeBehavior(obj)
           } yield {
 
-            import scalaz.std.list._
             val headersM =   monad.map(headers)(_.toMap)
             val paramsM = monad.map(params)(_.toMap)
             val unwrapMode = monad.join(requestMode)
