@@ -322,7 +322,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       // before start, nothing is done
       val total_0 = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      dss.start()
+      dss.restartScheduleTask()
       //then, event after days, nothing is done
       testScheduler.tick(1.day)
       val total_1d = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
@@ -344,7 +344,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       // before start, nothing is done
       val total_0 = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      dss.start()
+      dss.restartScheduleTask()
       //then, event after days, nothing is done
       testScheduler.tick(1.day)
       val total_1d = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
@@ -372,7 +372,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       // before start, nothing is done
       val total_0 = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      dss.start()
+      dss.restartScheduleTask()
       //then just after, we have the first exec - it still need at least a ms to tick
       //still nothing here
       val total_0plus = NodeDataset.counterError.get + NodeDataset.counterSuccess.get

@@ -211,9 +211,8 @@ class DataSourceRepoImpl(
     )
     datasources = datasources + (source.id -> dss)
     //start new
-    DataSourceLogger.debug(s"Starting data source with id '${source.id.value}'")
     delay match {
-      case None    => dss.start()
+      case None    => dss.restartScheduleTask()
       case Some(d) => dss.startWithDelay(d)
     }
   }

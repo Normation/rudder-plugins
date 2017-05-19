@@ -108,16 +108,11 @@ class DataSourceScheduler(
 
 
   /*
-   * alias for restartScheduleTask
-   */
-  def start() = restartScheduleTask
-
-  /*
    * start scheduling after given delay
    * (so that the first action is actually done after that delay)
    */
   def startWithDelay(delay: FiniteDuration): Unit = {
-    Task(start()).delayExecution(delay).runAsync
+    Task(restartScheduleTask()).delayExecution(delay).runAsync
   }
 
   /*
@@ -129,15 +124,20 @@ class DataSourceScheduler(
     cancel()
     // actually start the scheduler by subscribing to it
     if(datasource.enabled) {
+      DataSourceLogger.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
       scheduledTask = Some(source.subscribe())
+    } else {
+      DataSourceLogger.trace(s"The datasource with id '${datasource.id.value}' is disabled. Not scheduling future runs for it.")
     }
   }
 
   // the cancel method just stop the current time if
   // exists, and clean things up
   def cancel() : Unit = {
-    s"Deleting new scheduled task for data source '${datasource.name}' (${datasource.id.value})"
-    scheduledTask.foreach( _.cancel() )
+    scheduledTask.foreach{ dss =>
+      DataSourceLogger.trace(s"Removing (if needed) any future scheduled tasks for data source '${datasource.name}' (${datasource.id.value})")
+      dss.cancel()
+    }
     scheduledTask = None
   }
 
