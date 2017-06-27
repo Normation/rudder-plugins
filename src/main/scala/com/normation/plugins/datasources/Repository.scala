@@ -161,7 +161,31 @@ class DataSourceRepoImpl(
   , uuidGen: StringUuidGenerator
 ) extends DataSourceRepository with DataSourceUpdateCallbacks {
 
-  private[this] var datasources = Map[DataSourceId, DataSourceScheduler]()
+  /*
+   * Be careful, ALL modification to datasource must be synchronized
+   */
+  private[this] object datasources extends AnyRef {
+    private[this] var internal = Map[DataSourceId, DataSourceScheduler]()
+    // utility methods on datasources
+    // stop a datasource - must be called when the datasource still in "datasources"
+    private[this] def stop(id: DataSourceId) = {
+      DataSourceLogger.debug(s"Stopping data source with id '${id.value}'")
+      internal.get(id) match {
+        case None      => DataSourceLogger.trace(s"Data source with id ${id.value} was not found running")
+        case Some(dss) => dss.cancel()
+      }
+    }
+    def save(dss: DataSourceScheduler): Unit = synchronized {
+      stop(dss.datasource.id)
+      internal = internal + (dss.datasource.id -> dss)
+    }
+    def delete(id : DataSourceId): Unit = synchronized {
+      stop(id)
+      internal = internal - id
+    }
+    //get alls - return an immutable map
+    def all() = synchronized { internal.toMap }
+  }
 
   // Initialize data sources scheduler, with all sources present in backend
   def initialize() = {
@@ -177,19 +201,11 @@ class DataSourceRepoImpl(
         throw new RuntimeException(e.messageChain)
     }
   }
-  // utility methods on datasources
-  // stop a datasource - must be called when the datasource still in "datasources"
-  private[this] def stop(id: DataSourceId) = {
-    DataSourceLogger.debug(s"Stopping data source with id '${id.value}'")
-    datasources.get(id) match {
-      case None      => s"Data source with id ${id.value} was not found running"
-      case Some(dss) => dss.cancel()
-    }
-  }
+
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => Unit): Unit = {
-    datasources.filter { case(_, dss) => condition(dss.datasource) }.foreach { case (_, dss) => action(dss) }
-    datasources.foreach { case (_, dss) =>
+    datasources.all.filter { case(_, dss) => condition(dss.datasource) }.foreach { case (_, dss) => action(dss) }
+    datasources.all.foreach { case (_, dss) =>
       if(condition(dss.datasource)) {
         action(dss)
       } else {
@@ -199,8 +215,6 @@ class DataSourceRepoImpl(
 
   }
   private[this] def updateDataSourceScheduler(source: DataSource, delay: Option[FiniteDuration]): Unit = {
-    //need to cancel if one exists
-    stop(source.id)
     // create live instance
     import monix.execution.Scheduler.Implicits.global
     val dss = new DataSourceScheduler(
@@ -209,7 +223,7 @@ class DataSourceRepoImpl(
         , () => ModificationId(uuidGen.newUuid)
         , (cause: UpdateCause) => fetch.queryAll(source, cause)
     )
-    datasources = datasources + (source.id -> dss)
+    datasources.save(dss)
     //start new
     delay match {
       case None    => dss.restartScheduleTask()
@@ -223,7 +237,7 @@ class DataSourceRepoImpl(
   ///
   override def getAllIds : Box[Set[DataSourceId]] = backend.getAllIds
   override def getAll : Box[Map[DataSourceId,DataSource]] = {
-    DataSourceLogger.debug(s"Live data sources: ${datasources.map {case(_, dss) =>
+    DataSourceLogger.debug(s"Live data sources: ${datasources.all.map {case(_, dss) =>
       s"'${dss.datasource.name.value}' (${dss.datasource.id.value}): ${if(dss.datasource.enabled) "enabled" else "disabled"}"
     }.mkString("; ")}")
 
@@ -234,15 +248,16 @@ class DataSourceRepoImpl(
   ///
   ///         DB WRITE ONLY
   /// write methods need to manage the "live" scheduler
-  /// write methods need to be synchronised to keep consistancy in
-  /// "live" scheduler and avoid a missed add in a doube save for ex.
-  ///
+  /// write methods need to be synchronised to keep consistancy between
+  /// the backend and the live data (the self-consistancy of live data
+  /// is ensured in the datasources object).
+  /// All the lock are on datasources object.
 
   /*
    * on update, we need to stop the corresponding optionnaly existing
    * scheduler, and update with the new one.
    */
-  override def save(source : DataSource) : Box[DataSource] = synchronized {
+  override def save(source : DataSource) : Box[DataSource] = datasources.synchronized {
     //only create/update the "live" instance if the backend succeed
     backend.save(source) match {
       case eb: EmptyBox =>
@@ -259,10 +274,9 @@ class DataSourceRepoImpl(
   /*
    * delete need to clean existing live resource
    */
-  override def delete(id : DataSourceId) : Box[DataSourceId] = synchronized {
+  override def delete(id : DataSourceId) : Box[DataSourceId] = datasources.synchronized {
     //start by cleaning
-    stop(id)
-    datasources = datasources - (id)
+    datasources.delete(id)
     backend.delete(id)
   }
 
@@ -341,7 +355,7 @@ class DataSourceRepoImpl(
   override def startAll() = {
     //sort by period (the least frequent the last),
     //then start them every minutes
-    val toStart = datasources.values.flatMap { dss =>
+    val toStart = datasources.all.values.flatMap { dss =>
       dss.datasource.runParam.schedule match {
         case Scheduled(d) => Some((d, dss))
         case _            => None
