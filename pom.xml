@@ -50,7 +50,11 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>target/classes</outputDirectory>
+              <!-- we want to copy the build.conf in the plugin own package to allow 
+                   unique identification of build.conf when several plugins presents.  
+                   So build.conf is at the root of "basePackage"
+               -->
+              <outputDirectory>target/classes/com/normation/plugins/datasources</outputDirectory>
               <resources>
                 <resource>
                   <directory>.</directory>

@@ -58,13 +58,16 @@ import com.typesafe.config.ConfigFactory
 
 class DataSourcesPluginDef() extends RudderPluginDef with Loggable {
 
+  override val basePackage = "com.normation.plugins.datasources"
+
   //get properties name for the plugin from "build.conf" file
   //have default string for errors (and avoid "missing prop exception"):
   val defaults = List("plugin-id", "plugin-name", "plugin-version").map(p => s"$p=missing property with name '$p' in file 'build.conf'").mkString("\n")
-  val buildConf = ConfigFactory.load(this.getClass.getClassLoader, "build.conf").withFallback(ConfigFactory.parseString(defaults))
+  // ConfigFactory does not want the "/" at begining nor the ".conf" on the end
+  val buildConfPath = basePackage.replaceAll("""\.""", "/") + "/build.conf"
+  val buildConf = ConfigFactory.load(this.getClass.getClassLoader, buildConfPath).withFallback(ConfigFactory.parseString(defaults))
 
 
-  override val basePackage = "com.normation.plugins.datasources"
   override val name = PluginName(buildConf.getString("plugin-id"))
   override val displayName = buildConf.getString("plugin-name")
   override val version = {
