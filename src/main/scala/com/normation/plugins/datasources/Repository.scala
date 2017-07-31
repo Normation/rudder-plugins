@@ -307,7 +307,7 @@ class DataSourceRepoImpl(
       //for that one, do a scheduler restart
       val msg = s"Getting data for source ${dss.datasource.name.value} for policy generation started at ${generationTimeStamp.toString()}"
       DataSourceLogger.debug(msg)
-      dss.doActionAndSchedule(fetch.queryAll(dss.datasource, UpdateCause(ModificationId(uuidGen.newUuid), RudderEventActor, Some(msg))
+      dss.doActionAndSchedule(fetch.queryAll(dss.datasource, UpdateCause(ModificationId(uuidGen.newUuid), RudderEventActor, Some(msg), true)
       ))
     }
   }

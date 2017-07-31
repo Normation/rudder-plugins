@@ -50,7 +50,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 
-final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String])
+final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String], triggeredByGeneration: Boolean = false)
 
 /**
  * This object represent a statefull scheduler for fetching (or whatever action)

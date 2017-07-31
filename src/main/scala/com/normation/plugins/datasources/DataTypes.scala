@@ -220,3 +220,20 @@ final case class DataSource (
 ) {
   val scope = "all"
 }
+
+/*
+ * A data type to track which nodes were updated and which one were not touched.
+ */
+sealed trait NodeUpdateResult {
+  def nodeId: NodeId
+}
+
+final object NodeUpdateResult {
+
+  // there was a difference between the saved value and the one available
+  // on the remote data source
+  final case class Updated  (nodeId: NodeId) extends NodeUpdateResult
+
+  // the property value was up-to-date.
+  final case class Unchanged(nodeId: NodeId) extends NodeUpdateResult
+}

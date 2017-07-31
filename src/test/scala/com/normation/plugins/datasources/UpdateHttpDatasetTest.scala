@@ -279,6 +279,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   }
 
+  val noPostHook = (nodeIds: Set[NodeId], cause: UpdateCause) => ()
+
   object MyDatasource {
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
     val http = new HttpQueryDataSourceService(
@@ -286,6 +288,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , parameterRepo
       , infos
       , interpolation
+      , noPostHook
     )
     val uuidGen = new StringUuidGeneratorImpl()
   }
@@ -409,6 +412,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , parameterRepo
       , infos
       , interpolation
+      , noPostHook
     )
 
 
@@ -425,7 +429,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds) and (
+      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       ) and (NodeDataset.counterError.get === 0) and (NodeDataset.counterSuccess.get === nodeIds.size)
     }
@@ -445,7 +449,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds) and (
+      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       ) and (NodeDataset.counterError.get === 0) and (NodeDataset.counterSuccess.get === nodeIds.size)
     }
@@ -507,7 +511,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
 
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation)
+    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook)
 
 
     "correctly update all nodes" in {
@@ -516,7 +520,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       infos.updates.clear()
       val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds) and (
+      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       )
     }
@@ -531,7 +535,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       infos.updates.clear()
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
-      res mustFullEq(root.id) and (
+      res mustFullEq(NodeUpdateResult.Updated(root.id)) and (
         infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
             NodeProperty("test-http-service", JString("bar"), Some(DataSource.providerName))
         )
@@ -553,7 +557,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     type PROPS = Map[NodeId, Option[JValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
       val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation)
+      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook)
       val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
       val nodes = infos.getAll().openOrThrowException("test shall not throw")
@@ -570,7 +574,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
       val nodeIds = nodes.keySet
-      res mustFullEq(nodeIds) and (
+      res mustFullEq(nodeIds.map(n =>  if(expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n))) and (
         if(expectMod) {
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         } else {

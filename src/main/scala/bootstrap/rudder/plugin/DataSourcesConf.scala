@@ -58,14 +58,43 @@ import org.springframework.context.annotation.{ Bean, Configuration }
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
+import com.normation.rudder.batch.AutomaticStartDeployment
+import com.normation.eventlog.ModificationId
 
+import com.normation.rudder.domain.eventlog.RudderEventActor
+import com.normation.rudder.batch.AsyncDeploymentAgent
+import com.normation.plugins.datasources.UpdateCause
+
+/*
+ * An update hook which triggers a configuration generation if needed
+ */
+class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentAgent) {
+  def hook(updatedNodeIds: Set[NodeId], cause: UpdateCause): Unit = {
+    // we don't trigger a new update if the update cause was during a generation
+    if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
+      regenerate ! AutomaticStartDeployment(cause.modId, RudderEventActor)
+    }
+  }
+}
+
+/*
+ * Actual configuration of the data sources logic
+ */
 object DatasourcesConf {
 
   import bootstrap.liftweb.{ RudderConfig => Cfg }
 
+  lazy val regenerationHook = new OnUpdatedNodeRegenerate(RudderConfig.asyncDeploymentAgent)
+
   lazy val dataSourceRepository = new DataSourceRepoImpl(
       new DataSourceJdbcRepository(Cfg.doobie)
-    , new HttpQueryDataSourceService(Cfg.nodeInfoService, Cfg.roLDAPParameterRepository, Cfg.woNodeRepository, Cfg.interpolationCompiler)
+    , new HttpQueryDataSourceService(
+          Cfg.nodeInfoService
+        , Cfg.roLDAPParameterRepository
+        , Cfg.woNodeRepository
+        , Cfg.interpolationCompiler
+        , regenerationHook.hook _
+      )
     , Cfg.stringUuidGenerator
   )
 
