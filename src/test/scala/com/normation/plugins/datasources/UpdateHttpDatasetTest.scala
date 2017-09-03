@@ -73,6 +73,7 @@ import org.specs2.runner.JUnitRunner
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
+import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
 
 
 
@@ -293,6 +294,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val uuidGen = new StringUuidGeneratorImpl()
   }
 
+  object Enabled extends CheckRudderPluginDatasourcesEnable {
+    val isEnabled = true
+    val enabledStatus = "enabled"
+  }
+
 
   sequential
 
@@ -317,6 +323,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(enabled = false)
         , testScheduler
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -339,6 +346,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
         , testScheduler
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -366,6 +374,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource
         , testScheduler
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
