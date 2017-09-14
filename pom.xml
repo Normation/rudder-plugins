@@ -344,9 +344,9 @@
     </plugins></build>
     <dependencies>
       <dependency>
-        <groupId>com.normation.rudder</groupId>
-        <artifactId>rudder-license</artifactId>
-        <version>4.1.8-SNAPSHOT</version>
+        <groupId>com.normation</groupId>
+        <artifactId>license-lib</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
       </dependency>
     </dependencies>    
   </profile>
