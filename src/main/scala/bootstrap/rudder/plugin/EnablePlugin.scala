@@ -37,13 +37,48 @@
 
 package bootstrap.rudder.plugin
 
+import org.joda.time.DateTime
+
 /**
- * This file defined an entry point
+ * This file defined an entry point for license information and other
+ * enabling of the plugin
  */
+
+sealed trait DatasourcesStatus
+final object DatasourcesStatus {
+  final case object Enabled extends DatasourcesStatus
+  final case class Disabled(reason: String) extends DatasourcesStatus
+}
+
+/*
+ * This object gives main information about license information.
+ * It is destinated to be read to the user. No string information
+ * should be used for comparison.
+ */
+final case class DatasourcesLicenseInfo(
+    licensee  : String
+  , softwareId: String
+  , minVersion: String
+  , maxVersion: String
+  , startDate : DateTime
+  , endDate   : DateTime
+)
+
 trait CheckRudderPluginDatasourcesEnable {
 
+  /*
+   * Is the plugin currently enabled (at the moment of the request)
+   */
   def isEnabled(): Boolean
 
-  def enabledStatus(): String //not a string actually
+  /*
+   * What is the CURRENT status of the plugin at the moment of the request
+   */
+  def enabledStatus(): DatasourcesStatus
 
+  /*
+   * Information about the license. Maybe none is the plugin
+   * is not a limited version.
+   */
+  def licenseInformation(): Option[DatasourcesLicenseInfo]
 }

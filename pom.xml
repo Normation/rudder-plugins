@@ -346,7 +346,7 @@
       <dependency>
         <groupId>com.normation</groupId>
         <artifactId>license-lib</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
       </dependency>
     </dependencies>    
   </profile>

@@ -74,6 +74,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
+import bootstrap.rudder.plugin.DatasourcesStatus
 
 
 
@@ -296,7 +297,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   object Enabled extends CheckRudderPluginDatasourcesEnable {
     val isEnabled = true
-    val enabledStatus = "enabled"
+    val enabledStatus = DatasourcesStatus.Enabled
+    val licenseInformation = None
   }
 
 

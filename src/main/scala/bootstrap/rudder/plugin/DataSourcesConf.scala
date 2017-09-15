@@ -130,7 +130,7 @@ object DatasourcesConf {
  */
 @Configuration
 class DataSourcesPluginConf extends Loggable with  ApplicationContextAware with InitializingBean {
-  @Bean def datasourceModuleDef = new DataSourcesPluginDef()
+  @Bean def datasourceModuleDef = new DataSourcesPluginDef(DatasourcesConf.pluginStatusService)
 
 
   // spring thingies

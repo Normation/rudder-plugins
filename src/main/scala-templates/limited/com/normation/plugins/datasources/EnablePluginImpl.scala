@@ -42,6 +42,8 @@ import java.util.Formatter.DateTime
 import java.io.InputStreamReader
 import org.joda.time.DateTime
 import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
+import bootstrap.rudder.plugin.DatasourcesStatus
+import bootstrap.rudder.plugin.DatasourcesLicenseInfo
 
 
 /*
@@ -58,14 +60,15 @@ final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDa
   val FS_SIGNED_LICENSE = "${plugin-resource-license}"
   val VERSION           = "${plugin-declared-version}"
 
+  val maybeLicense = LicenseReader.readLicense(FS_SIGNED_LICENSE)
   // for now, we only read license info at load, because it's time consuming
   val maybeInfo = 
     for {
-      unchecked <- LicenseReader.readLicense(FS_SIGNED_LICENSE)
+      unchecked <- maybeLicense
       publicKey <- {
                      val key = this.getClass.getClassLoader.getResourceAsStream(CLASSPATH_KEYFILE)
                      if(key == null) {
-                       Left(LicenseError.IO(s"The resources '${key}' was not found"))
+                       Left(LicenseError.IO(s"The resources '${CLASSPATH_KEYFILE}' was not found"))
                      } else {
                        RSAKeyManagement.readPKCS8PublicKey(new InputStreamReader(key), None) //don't give to much info about path
                      }
@@ -81,9 +84,9 @@ final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDa
 
   maybeInfo.fold( error => DataSourceLogger.error(error) , ok =>  DataSourceLogger.warn("License signature is valid.") )
     
-  def isEnabled = enabledStatus == "enabled"
+  def isEnabled = enabledStatus == DatasourcesStatus.Enabled
 
-  def enabledStatus = {
+  def enabledStatus: DatasourcesStatus = {
     (for {
       info               <- maybeInfo
       (license, version) = info
@@ -91,9 +94,22 @@ final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDa
     } yield {
       check
     }) match {
-      case Right(x) => "enabled"
-      case Left (y) => y.msg
+      case Right(x) => DatasourcesStatus.Enabled
+      case Left (y) => DatasourcesStatus.Disabled(y.msg)
     }
   }
+  
+  def licenseInformation(): Option[DatasourcesLicenseInfo] = maybeLicense match {
+    case Left(_)  => None
+    case Right(l) => Some(DatasourcesLicenseInfo(
+          licensee   = l.content.licensee.value
+        , softwareId = l.content.softwareId.value
+        , minVersion = l.content.minVersion.value.toString
+        , maxVersion = l.content.maxVersion.value.toString
+        , startDate  = l.content.startDate.value
+        , endDate    = l.content.endDate.value
+      ))
+  }
+  
 }
 
