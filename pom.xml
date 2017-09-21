@@ -349,6 +349,20 @@
         <version>1.0.0</version>
       </dependency>
     </dependencies>    
+    <repositories>
+    <repository>
+      <id>rudder-release</id>
+      <url>http://nexus.normation.com/nexus/content/repositories/private-releases/</url>
+      <layout>default</layout>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+    <repository>
+      <id>rudder-snapshot</id>
+      <url>http://nexus.normation.com/nexus/content/repositories/private-snapshots/</url>
+      <layout>default</layout>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+    </repositories>
   </profile>
   </profiles>
 </project>
