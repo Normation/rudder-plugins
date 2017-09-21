@@ -58,11 +58,23 @@ import com.normation.rudder.web.rest.RestUtils
 import net.liftweb.common._
 import net.liftweb.http.Req
 import net.liftweb.json.JsonAST.JValue
+import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.repository.WoNodeRepository
+import com.normation.rudder.domain.nodes.CompareProperties
+import com.normation.rudder.domain.nodes.Node
+import com.normation.plugins.datasources.UpdateCause
+import com.normation.plugins.datasources.NodeUpdateResult
+import com.normation.utils.StringUuidGenerator
+import com.normation.eventlog.ModificationId
+import com.normation.utils.Control
 
 class DataSourceApiService(
     dataSourceRepo     : DataSourceRepository with DataSourceUpdateCallbacks
   , restDataSerializer : RestDataSerializer
   , restExtractor      : RestExtractorService
+  , nodeInfoService    : NodeInfoService
+  , nodeRepos          : WoNodeRepository
+  , newId              : StringUuidGenerator
 ) extends Loggable {
   import restExtractor._
   import com.normation.plugins.datasources.DataSourceExtractor.OptionnalJson._
@@ -161,5 +173,48 @@ class DataSourceApiService(
 
   def reloadDataOneNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): Unit = {
     dataSourceRepo.onUserAskUpdateNodeFor(actor, nodeId, datasourceId)
+  }
+
+  def clearDataAllNodesFor(actor: EventActor, datasourceId: DataSourceId): Box[Seq[NodeUpdateResult]] = {
+    val modId = ModificationId(newId.newUuid)
+    def cause(nodeId: NodeId) = UpdateCause(modId, actor, Some(s"API request to clear '${datasourceId.value}' on node '${nodeId.value}'"), false)
+
+    for {
+      nodes   <- nodeInfoService.getAllNodes()
+      updated <- Control.bestEffort(nodes.values.toSeq) { node =>
+                   erase(cause(node.id), node, datasourceId)
+                 }
+    } yield {
+      updated
+    }
+  }
+
+  def clearDataOneNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): Box[NodeUpdateResult] = {
+    val cause = UpdateCause(ModificationId(newId.newUuid), actor, Some(s"API request to clear '${datasourceId.value}' on node '${nodeId.value}'"), false)
+    for {
+      node    <- nodeInfoService.getNode(nodeId)
+      updated <- erase(cause, node, datasourceId)
+    } yield {
+      updated
+    }
+  }
+
+  private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId) = {
+    val newProp = DataSource.nodeProperty(datasourceId.value, "")
+    node.properties.find(_.name == newProp.name) match {
+      case None    => Full(NodeUpdateResult.Unchanged(node.id))
+      case Some(p) =>
+        if(p.provider == newProp.provider) {
+          for {
+            newProps     <- CompareProperties.updateProperties(node.properties, Some(Seq(newProp)))
+            newNode      =  node.copy(properties = newProps)
+            nodeUpdated  <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason) ?~! s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'"
+          } yield {
+            NodeUpdateResult.Updated(nodeUpdated.id)
+          }
+        } else {
+          Failure(s"Can not update property '${newProp.name}' on node '${node.id.value}': this property is not managed by data sources.")
+        }
+    }
   }
 }

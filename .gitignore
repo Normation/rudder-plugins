@@ -9,5 +9,6 @@ target*
 .externalToolBuilders
 datasources/
 files.txz
+scripts.txz
 rudder-plugin-datasources-*.rpkg
 

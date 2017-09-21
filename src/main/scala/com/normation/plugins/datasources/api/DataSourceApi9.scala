@@ -51,6 +51,8 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST.JString
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Full
 
 class DataSourceApi9 (
     extractor : RestExtractorService
@@ -73,10 +75,11 @@ class DataSourceApi9 (
      * (note: datasource must not have id "reload")
      *
      * POST /datasources/reload/node/$nodeid
+     * POST /datasources/reload/$datasourceid
+     * POST /datasources/reload/$datasourceid/node/$nodeid
      * POST /datasources/reload
-     * POST /datasources/$datasourceid/reload/$nodeid
-     * POST /datasources/$datasourceid/reload
-     * POST /datasources/$datasourceid
+     * POST /datasources/clear/$datasourceid/node/$nodeid
+     * POST /datasources/clear/$datasourceid/
      */
 
     case Post("reload" :: "node" :: nodeId :: Nil, req) => {
@@ -97,7 +100,7 @@ class DataSourceApi9 (
 
       apiService.reloadDataAllNodesFor(actor, DataSourceId(datasourceId))
 
-      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
+      toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', are going to be updated"))
     }
 
     case Post("reload" :: datasourceId :: "node" :: nodeId :: Nil, req) => {
@@ -107,9 +110,30 @@ class DataSourceApi9 (
 
       apiService.reloadDataOneNodeFor(actor, NodeId(nodeId), DataSourceId(datasourceId))
 
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))
+      toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated"))
     }
 
+    case Post( "clear" :: datasourceId :: Nil, req) => {
+      implicit val prettify = extractor.extractPrettify(req.params)
+      implicit val action = "clearValueOneDatasourceAllNodes"
+      val actor = RestUtils.getActor(req)
+
+      apiService.clearDataAllNodesFor(actor, DataSourceId(datasourceId)) match {
+        case Full(_)     => toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', cleared"))
+        case eb:EmptyBox => toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))
+      }
+    }
+
+    case Post("clear" :: datasourceId :: "node" :: nodeId :: Nil, req) => {
+      implicit val prettify = extractor.extractPrettify(req.params)
+      implicit val action = "clearValueOneDatasourceOneNode"
+      val actor = RestUtils.getActor(req)
+
+      apiService.clearDataOneNodeFor(actor, NodeId(nodeId), DataSourceId(datasourceId)) match {
+        case Full(_)     => toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"))
+        case eb:EmptyBox => toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))
+      }
+    }
 
     case Post( "reload" :: Nil, req) => {
       implicit val prettify = extractor.extractPrettify(req.params)
@@ -126,11 +150,11 @@ class DataSourceApi9 (
     }
 
     case Get(sourceId :: Nil, req) => {
-      response(apiService.getSource(DataSourceId(sourceId)), req, "Could not get data sources", None)("getDataSource")
+      response(apiService.getSource(DataSourceId(sourceId)), req, s"Could not get data sources from '${sourceId}'", None)("getDataSource")
     }
 
     case Delete(sourceId :: Nil, req) => {
-      response(apiService.deleteSource(DataSourceId(sourceId)), req, "Could not delete data sources", None)("getDataSource")
+      response(apiService.deleteSource(DataSourceId(sourceId)), req, s"Could not delete data sources '${sourceId}'", None)("deteteDataSource")
     }
 
     case Put(Nil, req) => {
@@ -138,7 +162,7 @@ class DataSourceApi9 (
     }
 
     case Post(sourceId :: Nil, req) => {
-      response(apiService.updateSource(DataSourceId(sourceId),req), req, "Could not update data source", None)("updateDataSource")
+      response(apiService.updateSource(DataSourceId(sourceId),req), req, s"Could not update data source '${sourceId}'", None)("updateDataSource")
     }
 
   }

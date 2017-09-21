@@ -117,7 +117,14 @@ object DatasourcesConf {
   dataSourceRepository.initialize()
 
 
-  val dataSourceApiService = new DataSourceApiService(dataSourceRepository, Cfg.restDataSerializer, Cfg.restExtractorService)
+  val dataSourceApiService = new DataSourceApiService(
+      dataSourceRepository
+    , Cfg.restDataSerializer
+    , Cfg.restExtractorService
+    , Cfg.nodeInfoService
+    , Cfg.woNodeRepository
+    , Cfg.stringUuidGenerator
+  )
   val dataSourceApi9 = new DataSourceApi9(Cfg.restExtractorService, dataSourceApiService, Cfg.stringUuidGenerator)
 
   // data source started with Rudder 4.1 / Api version 9.

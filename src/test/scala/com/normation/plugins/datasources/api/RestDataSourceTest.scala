@@ -75,7 +75,7 @@ class RestDataSourceTest extends Specification with Loggable {
     }
   }
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
-  val dataSourceApiService = new DataSourceApiService(datasourceRepo, RestTestSetUp.restDataSerializer, RestTestSetUp.restExtractorService)
+  val dataSourceApiService = new DataSourceApiService(datasourceRepo, RestTestSetUp.restDataSerializer, RestTestSetUp.restExtractorService, null, null, null)
   val dataSourceApi9 = new DataSourceApi9(RestTestSetUp.restExtractorService, dataSourceApiService, RestTestSetUp.uuidGen)
 
   RestTestSetUp.api.addEndpoints(Map(ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
