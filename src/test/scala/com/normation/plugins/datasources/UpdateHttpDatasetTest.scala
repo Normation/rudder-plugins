@@ -296,6 +296,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   }
 
   object Enabled extends CheckRudderPluginDatasourcesEnable {
+    val hasLicense = false
     val isEnabled = true
     val enabledStatus = DatasourcesStatus.Enabled
     val licenseInformation = None

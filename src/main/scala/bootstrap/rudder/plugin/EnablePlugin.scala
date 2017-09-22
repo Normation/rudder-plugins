@@ -67,6 +67,11 @@ final case class DatasourcesLicenseInfo(
 trait CheckRudderPluginDatasourcesEnable {
 
   /*
+   * Does the plugin has a license to display?
+   */
+  def hasLicense(): Boolean
+
+  /*
    * Is the plugin currently enabled (at the moment of the request)
    */
   def isEnabled(): Boolean

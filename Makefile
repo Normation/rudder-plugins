@@ -12,7 +12,7 @@ MAVEN_OPTS = --batch-mode -U
 
 ## for demo
 # standard destination path for the license file is in module directory, "license.sign"
-TARGET_LICENSE_PATH = /opt/rudder/share/plugins/$(NAME)/
+TARGET_LICENSE_PATH = /opt/rudder/share/plugins/$(NAME)/license
 # standard destination path for the key is at JAR root, name: license.pubkey
 TARGET_KEY_CLASSPATH = license.pubkey
 # SIGNED_LICENSE_PATH: path towards the license file to embed
@@ -37,25 +37,27 @@ $(FULL_NAME)-$(VERSION).rpkg:
 target/metadata:
 	mvn $(MAVEN_OPTS) $(DEMO) -Dcommit-id=$$(git rev-parse HEAD 2>/dev/null || true) properties:read-project-properties resources:copy-resources@copy-metadata
 
-std-files: common-files std-jar files.txz
+std-files: common-files std-jar prepare-files files.txz
 
-demo-files: common-files check-demo demo-jar files.txz
+demo-files: common-files check-demo demo-jar prepare-files add-license files.txz
 
 common-files: target/metadata scripts.txz
 
 check-demo: 
 	test -n "$(SIGNED_LICENSE_PATH)"  # $$SIGNED_LICENSE_PATH must be defined
 	test -n "$(PUBLIC_KEY_PATH)"      # $$PUBLIC_KEY_PATH must be defined
-	$(eval DEMO = 1) # OK, we are in demo build
 
 files.txz: 
+	tar cJ -f files.txz $(NAME)
+
+prepare-files:
 	mkdir -p $(NAME)
 	cp ./src/main/resources/datasources-schema.sql $(NAME)/
-ifdef DEMO
-    # embed license file since we are in demo limited build
-	cp $(SIGNED_LICENSE_FILE) $(NAME)/
-endif
-	tar cJ -f files.txz $(NAME)
+	cp target/$(NAME).jar $(NAME)/
+
+add-license:
+	# embed license file since we are in demo limited build
+	cp $(SIGNED_LICENSE_PATH) $(NAME)/license
 
 std-jar:
 	mvn $(MAVEN_OPTS) package

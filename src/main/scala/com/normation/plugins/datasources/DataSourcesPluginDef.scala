@@ -87,9 +87,9 @@ class DataSourcesPluginDef(info: CheckRudderPluginDatasourcesEnable) extends Rud
      Configuration can be done in <a href="/secure/administration/dataSourceManagement">the dedicated management page</a>
      </p>
      { // license information
-       info.licenseInformation() match {
-         case None    => NodeSeq.Empty
-         case Some(i) =>
+       if(!info.hasLicense) {
+         NodeSeq.Empty
+       } else {
            val (bg, msg) = info.enabledStatus() match {
              case DatasourcesStatus.Enabled => ("info", None)
              case DatasourcesStatus.Disabled(msg) => ("danger", Some(msg))
@@ -99,14 +99,18 @@ class DataSourcesPluginDef(info: CheckRudderPluginDatasourcesEnable) extends Rud
              <h4>License information</h4>
              <p>This binary version of the plugin is submited to a license with the
                 following information:</p>
-             <div class={s"bg-${bg}"}>
-             <dl class="dl-horizontal" style="padding:5px;">
-               <dt>Plugin with ID</dt> <dd>{i.softwareId}</dd>
-               <dt>Licensee</dt> <dd>{i.licensee}</dd>
-               <dt>Supported version</dt> <dd>from {i.minVersion} to {i.maxVersion}</dd>
-               <dt>Validity period</dt> <dd>from {i.startDate.toString("YYYY-MM-dd")} to {i.endDate.toString("YYYY-MM-dd")}</dd>
-             </dl>
-             {msg.map(s => <p class="text-danger">{s}</p>).getOrElse(NodeSeq.Empty)}
+             <div class={s"bg-${bg}"}>{
+               info.licenseInformation() match {
+                 case None    => <p>It was not possible to read information about the license.</p>
+                 case Some(i) =>
+                 <dl class="dl-horizontal" style="padding:5px;">
+                   <dt>Plugin with ID</dt> <dd>{i.softwareId}</dd>
+                   <dt>Licensee</dt> <dd>{i.licensee}</dd>
+                   <dt>Supported version</dt> <dd>from {i.minVersion} to {i.maxVersion}</dd>
+                   <dt>Validity period</dt> <dd>from {i.startDate.toString("YYYY-MM-dd")} to {i.endDate.toString("YYYY-MM-dd")}</dd>
+                 </dl>
+                 }}
+                 {msg.map(s => <p class="text-danger">{s}</p>).getOrElse(NodeSeq.Empty)}
              </div>
            </div></div>
        }

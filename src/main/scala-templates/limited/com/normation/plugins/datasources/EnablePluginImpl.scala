@@ -61,6 +61,8 @@ final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDa
   val VERSION           = "${plugin-declared-version}"
 
   val maybeLicense = LicenseReader.readLicense(FS_SIGNED_LICENSE)
+  val hasLicense = true  
+  
   // for now, we only read license info at load, because it's time consuming
   val maybeInfo = 
     for {

@@ -45,6 +45,7 @@ import bootstrap.rudder.plugin.DatasourcesStatus
  */
 
 final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDatasourcesEnable {
+    val hasLicense = false
     val isEnabled = true
     val enabledStatus = DatasourcesStatus.Enabled
     val licenseInformation = None
