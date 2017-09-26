@@ -11,7 +11,7 @@
   <parent>
     <groupId>com.normation.rudder</groupId>
     <artifactId>rudder-parent</artifactId>
-    <version>4.1.0</version>
+    <version>4.2.0~rc3-SNAPSHOT</version>
   </parent>
 
   <description>

@@ -41,9 +41,9 @@ import com.normation.license._
 import java.util.Formatter.DateTime
 import java.io.InputStreamReader
 import org.joda.time.DateTime
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
-import bootstrap.rudder.plugin.DatasourcesStatus
-import bootstrap.rudder.plugin.DatasourcesLicenseInfo
+import com.normation.plugins.PluginStatus
+import com.normation.plugins.PluginStatusInfo
+import com.normation.plugins.PluginLicenseInfo
 
 
 /*
@@ -54,23 +54,22 @@ import bootstrap.rudder.plugin.DatasourcesLicenseInfo
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDatasourcesEnable {
+final class CheckRudderPluginDatasourcesEnableImpl() extends PluginStatus {
   // here are processed variables
   val CLASSPATH_KEYFILE = "${plugin-resource-publickey}"
   val FS_SIGNED_LICENSE = "${plugin-resource-license}"
   val VERSION           = "${plugin-declared-version}"
 
   val maybeLicense = LicenseReader.readLicense(FS_SIGNED_LICENSE)
-  val hasLicense = true  
   
   // for now, we only read license info at load, because it's time consuming
-  val maybeInfo = 
+  val maybeInfo = {
     for {
       unchecked <- maybeLicense
       publicKey <- {
                      val key = this.getClass.getClassLoader.getResourceAsStream(CLASSPATH_KEYFILE)
                      if(key == null) {
-                       Left(LicenseError.IO(s"The resources '${CLASSPATH_KEYFILE}' was not found"))
+                       Left(LicenseError.IO(s"The classpath resources '${CLASSPATH_KEYFILE}' was not found"))
                      } else {
                        RSAKeyManagement.readPKCS8PublicKey(new InputStreamReader(key), None) //don't give to much info about path
                      }
@@ -83,12 +82,12 @@ final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDa
     } yield {
       (checked, version)
     }
+  } 
 
-  maybeInfo.fold( error => DataSourceLogger.error(error) , ok =>  DataSourceLogger.warn("License signature is valid.") )
+  //log at that point is we read the license information for the plugin
+  maybeInfo.fold( error => DataSourceLogger.error(error) , ok =>  DataSourceLogger.info("Plugin 'datasources' has a license and the license signature is valid.") )
     
-  def isEnabled = enabledStatus == DatasourcesStatus.Enabled
-
-  def enabledStatus: DatasourcesStatus = {
+  def current: PluginStatusInfo = {
     (for {
       info               <- maybeInfo
       (license, version) = info
@@ -96,22 +95,20 @@ final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDa
     } yield {
       check
     }) match {
-      case Right(x) => DatasourcesStatus.Enabled
-      case Left (y) => DatasourcesStatus.Disabled(y.msg)
+      case Right(x) => PluginStatusInfo.EnabledWithLicense(licenseInformation(x))
+      case Left (y) => PluginStatusInfo.Disabled(y.msg, maybeLicense.toOption.map(licenseInformation))
     }
   }
   
-  def licenseInformation(): Option[DatasourcesLicenseInfo] = maybeLicense match {
-    case Left(_)  => None
-    case Right(l) => Some(DatasourcesLicenseInfo(
-          licensee   = l.content.licensee.value
-        , softwareId = l.content.softwareId.value
-        , minVersion = l.content.minVersion.value.toString
-        , maxVersion = l.content.maxVersion.value.toString
-        , startDate  = l.content.startDate.value
-        , endDate    = l.content.endDate.value
-      ))
+  private[this] def licenseInformation(l: License): PluginLicenseInfo = {
+    PluginLicenseInfo(
+        licensee   = l.content.licensee.value
+      , softwareId = l.content.softwareId.value
+      , minVersion = l.content.minVersion.value.toString
+      , maxVersion = l.content.maxVersion.value.toString
+      , startDate  = l.content.startDate.value
+      , endDate    = l.content.endDate.value
+    )
   }
-  
 }
 

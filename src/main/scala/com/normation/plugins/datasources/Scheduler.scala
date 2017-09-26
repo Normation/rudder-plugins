@@ -48,7 +48,7 @@ import monix.reactive.Observable
 import net.liftweb.common.Loggable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
+import com.normation.plugins.PluginStatus
 
 
 final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String], triggeredByGeneration: Boolean = false)
@@ -67,7 +67,7 @@ final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Opt
 class DataSourceScheduler(
              val datasource  : DataSource
   , implicit val scheduler   : Scheduler
-  ,              pluginStatus: CheckRudderPluginDatasourcesEnable
+  ,              pluginStatus: PluginStatus
   ,              newUuid     : ()          => ModificationId
   ,              updateAll   : UpdateCause => Unit
 ) extends Loggable {
@@ -131,7 +131,7 @@ class DataSourceScheduler(
         scheduledTask = Some(source.subscribe())
       } else {
         // the plugin is disabled, does nothing
-        DataSourceLogger.warn(s"The datasource with id '${datasource.id.value}' is enabled but the plugin is disabled (reason: ${pluginStatus.enabledStatus}). Not scheduling future runs for it.")
+        DataSourceLogger.warn(s"The datasource with id '${datasource.id.value}' is enabled but the plugin is disabled (reason: ${pluginStatus.current}). Not scheduling future runs for it.")
       }
     } else {
       DataSourceLogger.trace(s"The datasource with id '${datasource.id.value}' is disabled. Not scheduling future runs for it.")

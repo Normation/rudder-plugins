@@ -57,7 +57,7 @@ import org.joda.time.DateTime
 import scala.concurrent.duration._
 import scalaz.{ Failure => _ }
 import scalaz.Scalaz._
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
+import com.normation.plugins.PluginStatus
 
 final case class PartialNodeUpdate(
     nodes        : Map[NodeId, NodeInfo] //the node to update
@@ -160,7 +160,7 @@ class DataSourceRepoImpl(
     backend     : DataSourceRepository
   , fetch       : QueryDataSourceService
   , uuidGen     : StringUuidGenerator
-  , pluginStatus: CheckRudderPluginDatasourcesEnable
+  , pluginStatus: PluginStatus
 ) extends DataSourceRepository with DataSourceUpdateCallbacks {
 
   /*

@@ -73,8 +73,7 @@ import org.specs2.runner.JUnitRunner
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
-import bootstrap.rudder.plugin.DatasourcesStatus
+import com.normation.plugins.AlwaysEnabledPluginStatus
 
 
 
@@ -295,14 +294,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val uuidGen = new StringUuidGeneratorImpl()
   }
 
-  object Enabled extends CheckRudderPluginDatasourcesEnable {
-    val hasLicense = false
-    val isEnabled = true
-    val enabledStatus = DatasourcesStatus.Enabled
-    val licenseInformation = None
-  }
-
-
   sequential
 
   "Update on datasource" should {
@@ -326,7 +317,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(enabled = false)
         , testScheduler
-        , Enabled
+        , AlwaysEnabledPluginStatus
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -349,7 +340,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
         , testScheduler
-        , Enabled
+        , AlwaysEnabledPluginStatus
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -377,7 +368,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource
         , testScheduler
-        , Enabled
+        , AlwaysEnabledPluginStatus
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )

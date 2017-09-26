@@ -55,10 +55,9 @@ import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import scala.xml.NodeSeq
 import com.typesafe.config.ConfigFactory
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
-import bootstrap.rudder.plugin.DatasourcesStatus
+import com.normation.plugins.PluginStatus
 
-class DataSourcesPluginDef(info: CheckRudderPluginDatasourcesEnable) extends RudderPluginDef with Loggable {
+class DataSourcesPluginDef(info: PluginStatus) extends RudderPluginDef with Loggable {
 
   override val basePackage = "com.normation.plugins.datasources"
 
@@ -81,43 +80,14 @@ class DataSourcesPluginDef(info: CheckRudderPluginDatasourcesEnable) extends Rud
   }
 
   override def description : NodeSeq  = (
-    <div>
      <p>
      Data source plugin allows to get node properties from third parties provider accessible via a REST API.
      Configuration can be done in <a href="/secure/administration/dataSourceManagement">the dedicated management page</a>
      </p>
-     { // license information
-       if(!info.hasLicense) {
-         NodeSeq.Empty
-       } else {
-           val (bg, msg) = info.enabledStatus() match {
-             case DatasourcesStatus.Enabled => ("info", None)
-             case DatasourcesStatus.Disabled(msg) => ("danger", Some(msg))
-           }
-
-           <div class="tw-bs"><div id="license-information" style="padding:5px; margin: 5px;" class={s"bs-callout bs-callout-${bg}"}>
-             <h4>License information</h4>
-             <p>This binary version of the plugin is submited to a license with the
-                following information:</p>
-             <div class={s"bg-${bg}"}>{
-               info.licenseInformation() match {
-                 case None    => <p>It was not possible to read information about the license.</p>
-                 case Some(i) =>
-                 <dl class="dl-horizontal" style="padding:5px;">
-                   <dt>Plugin with ID</dt> <dd>{i.softwareId}</dd>
-                   <dt>Licensee</dt> <dd>{i.licensee}</dd>
-                   <dt>Supported version</dt> <dd>from {i.minVersion} to {i.maxVersion}</dd>
-                   <dt>Validity period</dt> <dd>from {i.startDate.toString("YYYY-MM-dd")} to {i.endDate.toString("YYYY-MM-dd")}</dd>
-                 </dl>
-                 }}
-                 {msg.map(s => <p class="text-danger">{s}</p>).getOrElse(NodeSeq.Empty)}
-             </div>
-           </div></div>
-       }
-     }
-    </div>
 
   )
+
+  val status: PluginStatus = info
 
   def init = {
     PluginLogger.info(s"loading '${buildConf.getString("plugin-id")}:${version.toString}' plugin")
