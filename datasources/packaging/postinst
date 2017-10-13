@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# create table for Rudder data sources plugin:
+# note that if you installed Rudder 4.1~alpha or 4.1~beta1, or a previous version
+# of the plugin, you can skip that step (which would fail with a "table exists" error)
+psql -U rudder -h localhost -d rudder -f /opt/rudder/share/plugins/datasources/datasources-schema.sql
+
