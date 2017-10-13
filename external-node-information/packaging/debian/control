@@ -1,0 +1,17 @@
+Source: rudder-plugin-external-node-information
+Section: web
+Priority: extra
+Maintainer: Rudder packaging team <rudder-packaging@rudder-project.org>
+Build-Depends: debhelper (>= 7), sun-java6-jdk | java7-jdk
+Standards-Version: 3.8.0
+Homepage: http://www.rudder-project.org
+
+Package: rudder-plugin-external-node-information
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, rudder-server-root (= ${binary:Version})
+Description: Configuration management and audit tool - External node information
+ Rudder is an open source configuration management and audit solution.
+ .
+ This package contains a plugin for the main webapp (see rudder-webapp package)
+ that allows linking to documents (typically HTML reports from third party
+ applications) in a new tab in node details. 

@@ -1,0 +1,5 @@
+rudder-plugin-external-node-information (2.11.4~alpha1~git-0) wheezy; urgency=low
+
+  * Initial release
+
+ -- François Armand <francois.armand@normation.com>  Wed, 12 Nov 2014 15:39:00 +0100
