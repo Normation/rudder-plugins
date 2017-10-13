@@ -1,0 +1,17 @@
+Source: rudder-plugin-helloworld
+Section: web
+Priority: extra
+Maintainer: Matthieu Cerda <matthieu.cerda@normation.com>
+Build-Depends: debhelper (>= 7), sun-java6-jdk | java7-jdk
+Standards-Version: 3.8.0
+Homepage: http://www.rudder-project.org
+
+Package: rudder-plugin-helloworld
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, rudder-server-root (= ${binary:Version})
+Description: Configuration management and audit tool - hello world plugin
+ Rudder is an open source configuration management and audit solution.
+ .
+ This package contains a plugin for the main webapp (see rudder-webapp package)
+ that demonstrates how plugins operate, and provides a starting point for every
+ person that would like to develop their own plugin.

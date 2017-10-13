@@ -1,0 +1,73 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.normation.plugins</groupId>
+  <artifactId>hello-world</artifactId>
+  <packaging>jar</packaging>
+
+  <parent>
+    <groupId>com.normation</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>4.1.2-SNAPSHOT</version>
+  </parent>
+
+  <description>
+    This is a HelloWorld plugin for Rudder. Use it as a template to build your own plugin.
+  </description>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <descriptors>
+            <descriptor>src/main/assembly/plugin-with-own-dependencies.xml</descriptor>
+          </descriptors>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.normation.rudder</groupId>
+      <artifactId>rudder-web</artifactId>
+      <version>${rudder-version}</version>
+      <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
+      <classifier>classes</classifier>
+      <scope>provided</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.squeryl</groupId>
+      <artifactId>squeryl_${scala-binary-version}</artifactId>
+      <version>${squeryl-version}</version>
+    </dependency>
+
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <id>maven.normation.com</id>
+      <url>https://maven.normation.com/</url>
+      <layout>default</layout>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+  </repositories>
+
+</project>
