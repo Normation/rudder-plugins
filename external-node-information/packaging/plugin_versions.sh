@@ -17,5 +17,5 @@
 #####################################################################################
 
 
-export PLUGIN_VERSION=${PLUGIN_VERSION:="1.0.0"}
+export PLUGIN_VERSION=${PLUGIN_VERSION:="1.1.0"}
 export PLUGIN_RELEASE=${PLUGIN_RELEASE:="rc1~git"}

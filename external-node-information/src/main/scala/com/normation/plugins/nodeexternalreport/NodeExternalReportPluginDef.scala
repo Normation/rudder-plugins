@@ -53,7 +53,7 @@ class NodeExternalReportPluginDef(api: NodeExternalReportApi) extends RudderPlug
 
   val name = PluginName("node external report")
   val basePackage = "com.normation.plugins.nodeexternalreport"
-  val version = PluginVersion(1,0,0)
+  val version = PluginVersion(1,1,0)
   val description : NodeSeq  =
     <div>
     A plugin that allows to display external reports for node
