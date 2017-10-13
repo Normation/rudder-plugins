@@ -1,0 +1,14 @@
+target*
+.project*
+.classpath*
+.settings*
+.scala_dependencies*
+*logback.xml
+.idea*
+*.iml
+.externalToolBuilders
+datasources/
+files.txz
+scripts.txz
+rudder-plugin-datasources-*.rpkg
+
