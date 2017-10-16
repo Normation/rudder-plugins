@@ -1,0 +1,12 @@
+target*
+.project*
+.classpath*
+.settings*
+.scala_dependencies*
+*logback.xml
+.idea*
+*.iml
+.externalToolBuilders
+files.txz
+scripts.txz
+*.rpkg
