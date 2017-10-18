@@ -13,7 +13,7 @@ import com.normation.rudder.web.components.{ DateFormaterService, RuleEditForm }
 import com.normation.rudder.web.snippet.configuration.RuleManagement
 
 import net.liftweb.common.Loggable
-import net.liftweb.util.Helpers.{ strToCssBindPromoter, strToSuperArrowAssoc }
+import net.liftweb.util.Helpers._
 
 class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Loggable {
 

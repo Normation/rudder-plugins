@@ -40,10 +40,11 @@ target/scripts.txz:
 
 target/metadata: prepare-files
 	cp packaging/metadata target/metadata
-	sed -i -e "s/\$${plugin-id}/$(FULL_NAME)/" target/metadata
-	sed -i -e "s/\$${plugin-version}/$(VERSION)/" target/metadata
-	sed -i -e "s/\$${maven.build.timestamp}/$(BUILD_TIMESTAMP)/" target/metadata
-	sed -i -e "s/\$${commit-id}/$(COMMIT_ID)/" target/metadata
+	sed -i -e "s/\$${plugin-id}/$(FULL_NAME)/g" target/metadata
+	sed -i -e "s/\$${plugin-version}/$(VERSION)/g" target/metadata
+	sed -i -e "s/\$${maven.build.timestamp}/$(BUILD_TIMESTAMP)/g" target/metadata
+	sed -i -e "s/\$${commit-id}/$(COMMIT_ID)/g" target/metadata
+	sed -i -e "s/\$${plugin-name}/$(NAME)/g" target/metadata
 
 # plugin-resources must be implemented for each plugin.
 # the goal is to copy the plugin needed resources into target/$(NAME)

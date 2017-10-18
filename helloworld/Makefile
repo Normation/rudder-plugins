@@ -7,7 +7,10 @@ include ../common-scala-plugin.mk
 
 plugin: all
 
+# this plugin has no resources to install
 plugin-resources:
-	cp ./src/main/resources/datasources-schema.sql target/$(NAME)/
+	# nothing to cp into target$(NAME)
+	# example could be: 
+	#cp src/main/resources/helloworld.properties target/$(NAME)/
 
 

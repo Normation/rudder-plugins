@@ -4,7 +4,7 @@
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
-  "jar-files": [ "/opt/rudder/share/plugins/node-external-reports/node-external-reports.jar" ],
+  "jar-files": [ "/opt/rudder/share/plugins/${plugin-name}/${plugin-name}.jar" ],
   "content": {
     "files.txz": "/opt/rudder/share/plugins"
   }
