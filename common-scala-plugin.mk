@@ -15,8 +15,10 @@ BUILD_TIMESTAMP = $(shell date --iso-8601=seconds)
 ## for demo
 # standard destination path for the license file is in module directory, "license.sign"
 TARGET_LICENSE_PATH = /opt/rudder/share/plugins/$(NAME)/license
-# standard destination path for the key is at JAR root, name: license.pubkey
-TARGET_KEY_CLASSPATH = license.pubkey
+# standard destination path for the key is at JAR root, name: $(NAME).pubkey
+# we use a per-plugin name because on the classpath, the first resource for 
+# a given path is loaded.
+TARGET_KEY_CLASSPATH = $(FULL_NAME).pubkey
 # SIGNED_LICENSE_PATH: path towards the license file to embed
 # PUBLIC_KEY_PATH: path towards the public key to embed
 
@@ -62,7 +64,7 @@ prepare-files:
 
 add-license:
 	# embed license file since we are in demo limited build
-	cp $(SIGNED_LICENSE_PATH) $(NAME)/license
+	cp $(SIGNED_LICENSE_PATH) target/$(NAME)/license
 
 std-jar:
 	mvn $(MAVEN_OPTS) package

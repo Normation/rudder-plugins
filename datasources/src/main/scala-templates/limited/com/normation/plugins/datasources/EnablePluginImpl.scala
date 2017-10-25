@@ -37,13 +37,13 @@
 
 package com.normation.plugins.datasources
 
-import com.normation.license._
 import java.util.Formatter.DateTime
-import java.io.InputStreamReader
 import org.joda.time.DateTime
+import com.normation.license._
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.PluginStatusInfo
 import com.normation.plugins.PluginLicenseInfo
+import com.normation.rudder.domain.logger.PluginLogger
 
 
 /*
@@ -52,51 +52,37 @@ import com.normation.plugins.PluginLicenseInfo
  * The default implementation is to always enable status.
  *
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
+ * 
+ * All implem is totally plugin independant, so it should be factored out
+ * in a trait, but there is no good place for that one. 
+ * It can't be in Rudder because it would make a dep towards license-lib. 
+ * Can't be in license-lib else dep toward Rudder. 
  */
 
 final class CheckRudderPluginDatasourcesEnableImpl() extends PluginStatus {
-  // here are processed variables
-  val CLASSPATH_KEYFILE = "${plugin-resource-publickey}"
-  val FS_SIGNED_LICENSE = "${plugin-resource-license}"
-  val VERSION           = "${plugin-declared-version}"
 
-  val maybeLicense = LicenseReader.readLicense(FS_SIGNED_LICENSE)
+  val pluginId = "${plugin-id}"
   
-  // for now, we only read license info at load, because it's time consuming
-  val maybeInfo = {
-    for {
-      unchecked <- maybeLicense
-      publicKey <- {
-                     val key = this.getClass.getClassLoader.getResourceAsStream(CLASSPATH_KEYFILE)
-                     if(key == null) {
-                       Left(LicenseError.IO(s"The classpath resources '${CLASSPATH_KEYFILE}' was not found"))
-                     } else {
-                       RSAKeyManagement.readPKCS8PublicKey(new InputStreamReader(key), None) //don't give to much info about path
-                     }
-                   }
-      checked   <- LicenseChecker.checkSignature(unchecked, publicKey)
-      version   <- Version.from(VERSION) match {
-                     case None    => Left(LicenseError.Parsing(s"Version is not valid: '${VERSION}'."))
-                     case Some(v) => Right(v)
-                   }
-    } yield {
-      (checked, version)
-    }
-  } 
-
-  //log at that point is we read the license information for the plugin
-  maybeInfo.fold( error => DataSourceLogger.error(error) , ok =>  DataSourceLogger.info("Plugin 'datasources' has a license and the license signature is valid.") )
+  //the following string should be replaced at compile time 
+  //(in maven language, they are "filtered")
+  val maybeLicense = LicenseReader.readAndCheckLicense("${plugin-resource-license}", "${plugin-resource-publickey}", "${plugin-declared-version}", pluginId)
+   
+  //log at that point of loading if we successfully read the license information for the plugin
+  maybeLicense.fold( 
+      error => PluginLogger.error(s"Plugin '${pluginId}' license error: ${error.msg}") 
+    , ok    => PluginLogger.info("Plugin '${plugin-id}' has a license and the license signature is valid.") 
+  )
     
   def current: PluginStatusInfo = {
     (for {
-      info               <- maybeInfo
+      info               <- maybeLicense
       (license, version) = info
-      check              <- LicenseChecker.checkLicense(license, DateTime.now, version)
+      check              <- LicenseChecker.checkLicense(license, DateTime.now, version, "${plugin-id}")
     } yield {
       check
     }) match {
       case Right(x) => PluginStatusInfo.EnabledWithLicense(licenseInformation(x))
-      case Left (y) => PluginStatusInfo.Disabled(y.msg, maybeLicense.toOption.map(licenseInformation))
+      case Left (y) => PluginStatusInfo.Disabled(y.msg, maybeLicense.toOption.map { case (l, v) => licenseInformation(l) })
     }
   }
   

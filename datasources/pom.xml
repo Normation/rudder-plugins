@@ -11,7 +11,7 @@
   <parent>
     <groupId>com.normation.rudder</groupId>
     <artifactId>rudder-parent</artifactId>
-    <version>4.2.0~rc3-SNAPSHOT</version>
+    <version>4.2.0</version>
   </parent>
 
   <description>
@@ -346,7 +346,7 @@
       <dependency>
         <groupId>com.normation</groupId>
         <artifactId>license-lib</artifactId>
-        <version>1.0.0</version>
+        <version>1.1.0-SNAPSHOT</version>
       </dependency>
     </dependencies>    
     <repositories>

@@ -41,10 +41,10 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.PluginStatusInfo
 
 /*
- * unlimited version of the plugin 
+ * unlimited version of the plugin
  */
 final class CheckRudderPluginDatasourcesEnableImpl() extends PluginStatus {
     override val isEnabled = true
-    override val enabledStatus = PluginStatusInfo.EnabledNoLicense
+    override val current = PluginStatusInfo.EnabledNoLicense
 }
 
