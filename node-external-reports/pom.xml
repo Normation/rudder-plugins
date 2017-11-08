@@ -10,7 +10,7 @@
     <version>4.1.0</version>
   </parent>
   
-  <version>4.1-1.2</version>
+  <version>${plugin-version}</version>
 
   <description>
     This is a plugin that allows to disaply external text (HTML, raw text) information about

@@ -40,11 +40,23 @@ the document will be downloadable.
 The document name matching is done based on the hostname of the node or
 its uuid (both will be tested), in LOWER cases. 
 
-== Configuration
+== Configuration file
 
-The configuration file for the plugin is located at: TODO. 
+The default configuration file for the plugin is located in `src/main/resources/node-external-reports.properties`. That file will be installed in Rudder server in the plugin directory (`/opt/rudder/share/plugins/node-external-reports/`). 
 
-Example: see TODO
+You can provide a custom configuration file during build with the variable: `CONFIG_FILE_PATH`, for example: 
+
+```
+% make CONFIG_FILE_PATH=/path/toward/custom/node-external-reports.properties
+```
+
+The configuration file name must be `node-external-reports.properties` to be automatically found
+by the plugin. 
+
+In case you need to change the configuration file name, you must start Rudder with the JVM 
+option parameter `-Drudder.plugin.externalNodeInformation.config=/full/path/to/config/file`.
+
+== Configuration file format
 
 The format allow to declare as many base directory you want. 
 
