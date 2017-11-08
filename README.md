@@ -73,7 +73,12 @@ Building
 
 All plugins share the same build infrastructure based on Make. 
 You will also need `ar`, and for any plugin with scala code (i.e most of them), you will also need
-`maven` in version 3.2 or up plus Java 8 JDK tools (javac, jar, etc).
+`maven` in version 3.2 or up plus Java 8 JDK tools (javac, jar, etc) and standard make tools.
+For information, this the list of package that need to be installed on a minimal linux distribution: 
+
+```
+openjdk-8-jdk maven binutils make git-core xz-utils
+```
 
 To build a plugin package, go to the plugin directory and type: 
 
