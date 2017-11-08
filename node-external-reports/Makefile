@@ -5,9 +5,14 @@
 
 include ../common-scala-plugin.mk
 
+# You can provide your own configuration file by setting env var
+# CONFIG_FILE_PATH with the path toward it. 
+
+CONFIG_FILE_PATH = src/main/resources/node-external-reports.properties
+
 plugin: all
 
 plugin-resources:
-	cp src/main/resources/node-external-reports.properties target/$(NAME)/
+	cp $(CONFIG_FILE_PATH) target/$(NAME)/
 
 
