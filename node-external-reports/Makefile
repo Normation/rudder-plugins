@@ -10,9 +10,8 @@ include ../common-scala-plugin.mk
 
 CONFIG_FILE_PATH = src/main/resources/node-external-reports.properties
 
-plugin: all
+FILES += $(NAME)/$(CONFIG_FILE_PATH)
 
-plugin-resources:
+target/$(NAME)/$(CONFIG_FILE_PATH)
 	cp $(CONFIG_FILE_PATH) target/$(NAME)/
-
 

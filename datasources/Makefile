@@ -1,13 +1,12 @@
 #
-# make all will build node-external-reports.rpkg. 
-# make demo will build a license limited version of the plugin
+# make all : will build node-external-reports.rpkg. 
+# make licensed : will build a license limited version of the plugin
 #
 
-include ../common-scala-plugin.mk
+include ../makefiles/common-scala-plugin.mk
 
-plugin: all
+FILES += $(NAME)/datasources-schema.sql
 
-plugin-resources:
+target/$(NAME)/datasources-schema.sql:
 	cp ./src/main/resources/datasources-schema.sql target/$(NAME)/
-
 
