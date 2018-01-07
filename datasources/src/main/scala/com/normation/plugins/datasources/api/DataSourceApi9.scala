@@ -37,133 +37,158 @@
 
 package com.normation.plugins.datasources.api
 
+import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.datasources.DataSourceId
-import com.normation.rudder.web.rest.ApiVersion
-import com.normation.rudder.web.rest.RestExtractorService
-import com.normation.rudder.web.rest.RestUtils
-import com.normation.rudder.web.rest.RestUtils._
+import com.normation.rudder.rest._
+import com.normation.rudder.rest.RestUtils._
+import com.normation.rudder.rest.lift.DefaultParams
+import com.normation.rudder.rest.lift.LiftApiModule
+import com.normation.rudder.rest.lift.LiftApiModule0
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.utils.StringUuidGenerator
-
 import net.liftweb.common.Box
-import net.liftweb.common.Loggable
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST.JString
-import net.liftweb.common.EmptyBox
-import net.liftweb.common.Full
 
 class DataSourceApi9 (
     extractor : RestExtractorService
   , apiService: DataSourceApiService
   , uuidGen   : StringUuidGenerator
-) extends DataSourceApi with Loggable {
+) extends  LiftApiModuleProvider {
+  api =>
+
+  val kind = "datasources"
 
   def response ( function : Box[JValue], req : Req, errorMessage : String, id : Option[String])(implicit action : String) : LiftResponse = {
     RestUtils.response(extractor, kind, id)(function, req, errorMessage)
   }
 
   type ActionType = RestUtils.ActionType
-  def actionResponse ( function : Box[ActionType], req : Req, errorMessage : String, id : Option[String])(implicit action : String) : LiftResponse = {
-    RestUtils.actionResponse(extractor, kind, uuidGen, id)(function, req, errorMessage)
+  def actionResponse ( function : Box[ActionType], req : Req, errorMessage : String, id : Option[String], actor: EventActor)(implicit action : String) : LiftResponse = {
+    RestUtils.actionResponse2(extractor, kind, uuidGen, id)(function, req, errorMessage)(action, actor)
   }
 
-  def requestDispatch(apiVersion: ApiVersion) : PartialFunction[Req, () => Box[LiftResponse]] = {
+  import com.normation.plugins.datasources.api.{ DataSourceApi => API }
 
-    /* Avoiding POST unreachable endpoint:
-     * (note: datasource must not have id "reload")
-     *
-     * POST /datasources/reload/node/$nodeid
-     * POST /datasources/reload/$datasourceid
-     * POST /datasources/reload/$datasourceid/node/$nodeid
-     * POST /datasources/reload
-     * POST /datasources/clear/$datasourceid/node/$nodeid
-     * POST /datasources/clear/$datasourceid/
-     */
+  def getLiftEndpoints(): List[LiftApiModule] = {
+    API.endpoints.map(e => e match {
+        case API.ReloadAllDatasourcesOneNode     => ReloadAllDatasourcesOneNode
+        case API.ReloadOneDatasourceAllNodes     => ReloadOneDatasourceAllNodes
+        case API.ReloadOneDatasourceOneNode      => ReloadOneDatasourceOneNode
+        case API.ReloadAllDatasourcesAllNodes    => ReloadAllDatasourcesAllNodes
+        case API.ClearValueOneDatasourceAllNodes => ClearValueOneDatasourceAllNodes
+        case API.ClearValueOneDatasourceOneNode  => ClearValueOneDatasourceOneNode
+        case API.GetAllDataSources               => GetAllDataSources
+        case API.GetDataSource                   => GetDataSource
+        case API.DeleteDataSource                => DeleteDataSource
+        case API.CreateDataSource                => CreateDataSource
+        case API.UpdateDataSource                => UpdateDataSource
+    }).toList
+  }
 
-    case Post("reload" :: "node" :: nodeId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadAllDatasourcesOneNode"
-      val actor = RestUtils.getActor(req)
+  object ReloadAllDatasourcesOneNode extends LiftApiModule {
+    val schema = API.ReloadAllDatasourcesOneNode
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      apiService.reloadDataOneNode(authzToken.actor, NodeId(nodeId))
 
-      apiService.reloadDataOneNode(actor, NodeId(nodeId))
-
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))
+      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))(schema.name, params.prettify)
     }
+  }
 
-
-    case Post( "reload" :: datasourceId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadOneDatasourceAllNodes"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataAllNodesFor(actor, DataSourceId(datasourceId))
-
-      toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', are going to be updated"))
+  object ReloadOneDatasourceAllNodes extends LiftApiModule {
+    val schema = API.ReloadOneDatasourceAllNodes
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, datasourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      apiService.reloadDataAllNodesFor(authzToken.actor, DataSourceId(datasourceId))
+      toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', are going to be updated"))(schema.name, params.prettify)
     }
+  }
 
-    case Post("reload" :: datasourceId :: "node" :: nodeId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadOneDatasourceOneNode"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataOneNodeFor(actor, NodeId(nodeId), DataSourceId(datasourceId))
-
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated"))
+  object ReloadOneDatasourceOneNode extends LiftApiModule {
+    val schema = API.ReloadOneDatasourceOneNode
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, ids: (String,String), req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      val (datasourceId, nodeId) = ids
+      apiService.reloadDataOneNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId))
+      toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated"))(schema.name, params.prettify)
     }
+  }
 
-    case Post( "clear" :: datasourceId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "clearValueOneDatasourceAllNodes"
-      val actor = RestUtils.getActor(req)
-
-      apiService.clearDataAllNodesFor(actor, DataSourceId(datasourceId)) match {
-        case Full(_)     => toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', cleared"))
-        case eb:EmptyBox => toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))
+  object ClearValueOneDatasourceAllNodes extends LiftApiModule {
+    val schema = API.ClearValueOneDatasourceAllNodes
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, datasourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      apiService.clearDataAllNodesFor(authzToken.actor, DataSourceId(datasourceId)) match {
+        case Full(_)     => toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', cleared"))(schema.name, params.prettify)
+        case eb:EmptyBox => toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))(schema.name, params.prettify)
       }
     }
+  }
 
-    case Post("clear" :: datasourceId :: "node" :: nodeId :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "clearValueOneDatasourceOneNode"
-      val actor = RestUtils.getActor(req)
-
-      apiService.clearDataOneNodeFor(actor, NodeId(nodeId), DataSourceId(datasourceId)) match {
-        case Full(_)     => toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"))
-        case eb:EmptyBox => toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))
+  object ClearValueOneDatasourceOneNode extends LiftApiModule {
+    val schema = API.ClearValueOneDatasourceOneNode
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, ids: (String, String), req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      val (datasourceId, nodeId) = ids
+      apiService.clearDataOneNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId)) match {
+        case Full(_)     => toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"))(schema.name, params.prettify)
+        case eb:EmptyBox => toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))(schema.name, params.prettify)
       }
     }
+  }
 
-    case Post( "reload" :: Nil, req) => {
-      implicit val prettify = extractor.extractPrettify(req.params)
-      implicit val action = "reloadAllDatasourcesAllNodes"
-      val actor = RestUtils.getActor(req)
-
-      apiService.reloadDataAllNodes(actor)
-
-      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))
+  object ReloadAllDatasourcesAllNodes extends LiftApiModule0 {
+    val schema = API.ReloadAllDatasourcesAllNodes
+    val restExtractor = extractor
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      apiService.reloadDataAllNodes(authzToken.actor)
+      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))(schema.name, params.prettify)
     }
+  }
 
-    case Get(Nil, req) => {
-      response(apiService.getSources(), req, "Could not get data sources", None)("getAllDataSources")
+  object GetAllDataSources extends LiftApiModule0 {
+    val schema = API.GetAllDataSources
+    val restExtractor = extractor
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      response(apiService.getSources(), req, "Could not get data sources", None)(schema.name)
     }
+  }
 
-    case Get(sourceId :: Nil, req) => {
-      response(apiService.getSource(DataSourceId(sourceId)), req, s"Could not get data sources from '${sourceId}'", None)("getDataSource")
+  object GetDataSource extends LiftApiModule {
+    val schema = API.GetDataSource
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, sourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      response(apiService.getSource(DataSourceId(sourceId)), req, s"Could not get data sources from '${sourceId}'", None)(schema.name)
     }
+  }
 
-    case Delete(sourceId :: Nil, req) => {
-      response(apiService.deleteSource(DataSourceId(sourceId)), req, s"Could not delete data sources '${sourceId}'", None)("deteteDataSource")
+  object DeleteDataSource extends LiftApiModule {
+    val schema = API.DeleteDataSource
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, sourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      response(apiService.deleteSource(DataSourceId(sourceId)), req, s"Could not delete data sources '${sourceId}'", None)(schema.name)
     }
+  }
 
-    case Put(Nil, req) => {
-        response(apiService.createSource(req), req, "Could not create data source", None)("createDataSource")
+  object CreateDataSource extends LiftApiModule0 {
+    val schema = API.CreateDataSource
+    val restExtractor = extractor
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      response(apiService.createSource(req), req, "Could not create data source", None)(schema.name)
     }
+  }
 
-    case Post(sourceId :: Nil, req) => {
-      response(apiService.updateSource(DataSourceId(sourceId),req), req, s"Could not update data source '${sourceId}'", None)("updateDataSource")
+  object UpdateDataSource extends LiftApiModule {
+    val schema = API.UpdateDataSource
+    val restExtractor = extractor
+    def process(version: ApiVersion, path: ApiPath, sourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      response(apiService.updateSource(DataSourceId(sourceId),req), req, s"Could not update data source '${sourceId}'", None)(schema.name)
     }
-
   }
 }

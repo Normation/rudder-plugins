@@ -63,7 +63,6 @@ import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
-import scalaz._
 
 /*
  * This file contain the logic to update dataset from an

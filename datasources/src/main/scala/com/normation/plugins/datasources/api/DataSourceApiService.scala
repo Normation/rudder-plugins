@@ -51,9 +51,9 @@ import com.normation.plugins.datasources.DataSourceUpdateCallbacks
 import com.normation.plugins.datasources.HttpMethod
 import com.normation.plugins.datasources.HttpRequestMode
 import com.normation.plugins.datasources.MissingNodeBehavior
-import com.normation.rudder.web.rest.RestDataSerializer
-import com.normation.rudder.web.rest.RestExtractorService
-import com.normation.rudder.web.rest.RestUtils
+import com.normation.rudder.rest.RestDataSerializer
+import com.normation.rudder.rest.RestExtractorService
+import com.normation.rudder.rest.RestUtils
 
 import net.liftweb.common._
 import net.liftweb.http.Req
@@ -94,12 +94,12 @@ class DataSourceApiService(
           enabled      <- extractBoolean("enabled")(req)(identity)
         } yield {
           base.copy(
-              name = name.getOrElse(base.name)
-            , sourceType = getOrElse(sourceType.map(_.withBase(base.sourceType)),base.sourceType)
-            , description = description.getOrElse(base.description)
-            , enabled = enabled.getOrElse(base.enabled)
+              name          = name.getOrElse(base.name)
+            , sourceType    = getOrElse(sourceType.map(_.withBase(base.sourceType)),base.sourceType)
+            , description   = description.getOrElse(base.description)
+            , enabled       = enabled.getOrElse(base.enabled)
             , updateTimeOut = timeOut.getOrElse(base.updateTimeOut)
-            , runParam = getOrElse(runParam.map(_.withBase(base.runParam)),base.runParam)
+            , runParam      = getOrElse(runParam.map(_.withBase(base.runParam)),base.runParam)
           )
         }
     }

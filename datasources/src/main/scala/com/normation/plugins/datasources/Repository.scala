@@ -55,9 +55,8 @@ import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.concurrent.duration._
-import scalaz.{ Failure => _ }
-import scalaz.Scalaz._
 import com.normation.plugins.PluginStatus
+import cats.implicits._
 
 final case class PartialNodeUpdate(
     nodes        : Map[NodeId, NodeInfo] //the node to update
@@ -382,27 +381,28 @@ class DataSourceJdbcRepository(
     import com.normation.plugins.datasources.DataSourceJsonSerializer._
     import net.liftweb.json.compactRender
     import net.liftweb.json.parse
-    Composite[(DataSourceId,String)].xmap(
+    Composite[(DataSourceId,String)].imap(
         tuple => DataSourceExtractor.CompleteJson.extractDataSource(tuple._1,parse(tuple._2)) match {
           case Full(s) => s
           case eb : EmptyBox  =>
             val fail = eb ?~! s"Error when deserializing data source ${tuple._1} from following data: ${tuple._2}"
             throw new RuntimeException(fail.messageChain)
         }
-      , source => (source.id, compactRender(serialize(source)))
+      )(
+        source => (source.id, compactRender(serialize(source)))
       )
   }
 
   override def getAllIds(): Box[Set[DataSourceId]] = {
-    query[DataSourceId]("""select id from datasources""").to[Set].attempt.transact(xa).unsafePerformSync
+    query[DataSourceId]("""select id from datasources""").to[Set].attempt.transact(xa).unsafeRunSync()
   }
 
   override def getAll(): Box[Map[DataSourceId,DataSource]] = {
-    query[DataSource]("""select id, properties from datasources""").vector.map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).unsafePerformSync
+    query[DataSource]("""select id, properties from datasources""").vector.map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).unsafeRunSync()
   }
 
   override def get(sourceId : DataSourceId): Box[Option[DataSource]] = {
-    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.attempt.transact(xa).unsafePerformSync
+    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.attempt.transact(xa).unsafeRunSync()
   }
 
   override def save(source : DataSource): Box[DataSource] = {
@@ -417,7 +417,7 @@ class DataSourceJdbcRepository(
                         case 0 =>
                           logger.debug(s"source ${source.id} is not present in database, creating it")
                           Update[DataSource](insert).run(source)
-                        case 1 => 1.point[ConnectionIO]
+                        case 1 => 1.pure[ConnectionIO]
                         case n => throw new RuntimeException(s"Expected 0 or 1 change, not ${n} for ${source.id}")
                       }
     } yield {
@@ -427,7 +427,7 @@ class DataSourceJdbcRepository(
 
     DataSource.reservedIds.get(source.id) match {
       case None =>
-        sql.map(_ => source).attempt.transact(xa).run
+        sql.map(_ => source).attempt.transact(xa).unsafeRunSync()
 
       case Some(msg) =>
         Failure(s"You can't use the reserved data sources id '${source.id.value}': ${msg}")
@@ -436,7 +436,7 @@ class DataSourceJdbcRepository(
 
   override def delete(sourceId : DataSourceId): Box[DataSourceId] = {
     val query = sql"""delete from datasources where id = ${sourceId}"""
-    query.update.run.map(_ => sourceId).attempt.transact(xa).unsafePerformSync
+    query.update.run.map(_ => sourceId).attempt.transact(xa).unsafeRunSync()
   }
 
 }

@@ -45,7 +45,6 @@ import com.normation.plugins.datasources.api.DataSourceApi9
 import com.normation.plugins.datasources.api.DataSourceApiService
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodeManagerHooks
-import com.normation.rudder.web.rest.ApiVersion
 import org.joda.time.DateTime
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
@@ -126,10 +125,6 @@ object DatasourcesConf {
     , Cfg.stringUuidGenerator
   )
   val dataSourceApi9 = new DataSourceApi9(Cfg.restExtractorService, dataSourceApiService, Cfg.stringUuidGenerator)
-
-  // data source started with Rudder 4.1 / Api version 9.
-  RudderConfig.apiDispatcher.addEndpoints(Map( ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
-
 }
 
 /**
