@@ -41,8 +41,6 @@ import bootstrap.liftweb.RudderConfig
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.datasources.DataSourceRepoImpl
 import com.normation.plugins.datasources.DataSourcesPluginDef
-import com.normation.plugins.datasources.api.DataSourceApi9
-import com.normation.plugins.datasources.api.DataSourceApiService
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodeManagerHooks
 import org.joda.time.DateTime
@@ -59,6 +57,7 @@ import com.normation.plugins.datasources.UpdateCause
 import com.normation.plugins.datasources.DataSourceJdbcRepository
 import com.normation.plugins.datasources.HttpQueryDataSourceService
 import com.normation.plugins.datasources.CheckRudderPluginDatasourcesEnableImpl
+import com.normation.plugins.datasources.api.DataSourceApiImpl
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -115,16 +114,14 @@ object DatasourcesConf {
   // initialize datasources to start schedule
   dataSourceRepository.initialize()
 
-
-  val dataSourceApiService = new DataSourceApiService(
-      dataSourceRepository
+  val dataSourceApi9 = new DataSourceApiImpl(
+      Cfg.restExtractorService
     , Cfg.restDataSerializer
-    , Cfg.restExtractorService
+    , dataSourceRepository
     , Cfg.nodeInfoService
     , Cfg.woNodeRepository
     , Cfg.stringUuidGenerator
   )
-  val dataSourceApi9 = new DataSourceApi9(Cfg.restExtractorService, dataSourceApiService, Cfg.stringUuidGenerator)
 }
 
 /**

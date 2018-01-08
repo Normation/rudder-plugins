@@ -41,19 +41,6 @@ import com.normation.rudder.rest._
 import com.normation.rudder.api.HttpAction._
 import com.normation.rudder.rest.EndpointSchema.syntax._
 
-//import net.liftweb.http.Req
-//
-//trait DataSourceApi extends RestAPI {
-//  val kind = "datasources"
-//
-//  override protected def checkSecure : PartialFunction[Req, Boolean] = {
-//    case Get(_,_) => CurrentUser.checkRights(Read("administration"))
-//    case Post(_,_) | Put(_,_) | Delete(_,_) => CurrentUser.checkRights(Write("administration")) || CurrentUser.checkRights(Edit("administration"))
-//    case _=> false
-//
-//  }
-//}
-
 sealed trait DataSourceApi extends EndpointSchema with GeneralApi with SortIndex
 object DataSourceApi {
 
