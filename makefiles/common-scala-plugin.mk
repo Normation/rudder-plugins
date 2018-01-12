@@ -3,6 +3,10 @@
 # make licensed : will build a license limited version of the plugin
 #
 
+# Files to add to the plugin content (from the target directory)
+# By default this is a directory containing the plugin jar
+FILES += $(NAME)
+
 include ../makefiles/common.mk
 
 MAVEN_OPTS = --batch-mode -U
@@ -14,10 +18,6 @@ TARGET_LICENSE_PATH = /opt/rudder/share/plugins/$(NAME)/license
 TARGET_KEY_CLASSPATH = license.pubkey
 # SIGNED_LICENSE_PATH: path towards the license file to embed
 # PUBLIC_KEY_PATH: path towards the public key to embed
-
-# Files to add to the plugin content (from the target directory)
-# By default this is a directory containing the plugin jar
-FILES = $(NAME)
 
 std-files: 
 	mvn $(MAVEN_OPTS) package
