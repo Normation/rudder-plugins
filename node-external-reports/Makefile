@@ -8,7 +8,9 @@
 
 CONFIG_FILE_PATH = src/main/resources/node-external-reports.properties
 
-FILES += $(NAME)/$(CONFIG_FILE_PATH)
+FILES = $(NAME)/$(CONFIG_FILE_PATH)
+
+SCRIPTS = postinst
 
 include ../common-scala-plugin.mk
 

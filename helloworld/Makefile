@@ -11,10 +11,10 @@
 
 # Uncomment to add scripts to the plugin (default is to have only postinst)
 # Those files are relative to the packaging directory
-#SCRIPTS += preinst
+#SCRIPTS = postinst preinst
 
 # Add another archive to the plugin (files.txz is the first one)
-#OTHER_ARCHIVES += target/other.txz
+#OTHER_ARCHIVES = target/other.txz
 
 # Use this one for a Scala plugin
 include ../makefiles/common-scala-plugin.mk

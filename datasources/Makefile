@@ -4,6 +4,7 @@
 #
 
 FILES = $(NAME)/datasources-schema.sql
+SCRIPTS = postinst
 
 include ../makefiles/common-scala-plugin.mk
 
