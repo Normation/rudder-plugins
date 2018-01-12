@@ -5,10 +5,10 @@
 
 .DEFAULT_GOAL := all
 
-# Available variables for override from makefiles
-OTHER_ARCHIVES = 
-SCRIPTS = postinst
-FILES = 
+# define those variable before including
+#OTHER_ARCHIVES = 
+#SCRIPTS = postinst
+#FILES = 
 
 RUDDER_BRANCH = $(shell sed -ne '/^rudder-branch=/s/rudder-branch=//p' build.conf)
 PLUGIN_BRANCH = $(shell sed -ne '/^plugin-branch=/s/plugin-branch=//p' build.conf)
