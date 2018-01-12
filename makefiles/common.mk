@@ -31,7 +31,7 @@ target/scripts.txz: $(addprefix packaging/,$(SCRIPTS))
 	tar cJ -C packaging -f target/scripts.txz $(SCRIPTS)
 
 target/files.txz: $(addprefix target/,$(FILES))
-	test [ -n "$(FILES)" ]   # you must define the FILES variable in your Makefile
+	test -n "$(FILES)"   # you must define the FILES variable in your Makefile
 	tar cJ -C target -f target/files.txz $(FILES)
 
 target/metadata:
