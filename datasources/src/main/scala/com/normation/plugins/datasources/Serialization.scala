@@ -48,8 +48,8 @@ import net.liftweb.json._
 import net.liftweb.util.ControlHelpers.tryo
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
-import scalaz.std.option._
 import com.normation.rudder.domain.nodes.NodeProperty
+import cats.implicits._
 
 object DataSourceJsonSerializer{
   def serialize(source : DataSource) : JValue = {
@@ -120,7 +120,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
     , onNewNode    : M[Boolean]
   ) {
     def to = {
-      monad.apply3(schedule, onGeneration, onNewNode){
+      monad.map3(schedule, onGeneration, onNewNode){
         case (a,b,c) => DataSourceRunParameters(a,b,c)
       }
     }
@@ -146,7 +146,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   , onMissing      : M[MissingNodeBehavior]
   ) {
     def to = {
-      monad.apply9(url, headers, httpMethod, params, sslCheck, path, requestMode, requestTimeout, onMissing){
+      monad.map9(url, headers, httpMethod, params, sslCheck, path, requestMode, requestTimeout, onMissing){
         case (a,b,c,d,e,f,g,h,i) => DataSourceType.HTTP(a,b,c,d,e,f,g,h,i)
       }
     }
@@ -178,9 +178,9 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   , updateTimeout : M[FiniteDuration]
   ) {
     def to = {
-    val unwrapRunParam = monad.bind(runParam)(_.to)
-    val unwrapType = monad.bind(sourceType)(_.to)
-      monad.apply6(name, unwrapType, unwrapRunParam, description, enabled, updateTimeout){
+    val unwrapRunParam = monad.flatMap(runParam)(_.to)
+    val unwrapType = monad.flatMap(sourceType)(_.to)
+      monad.map6(name, unwrapType, unwrapRunParam, description, enabled, updateTimeout){
         case (a,b,c,d,e,f) => DataSource(id,a,b,c,d,e,f)
       }
     }
@@ -246,11 +246,11 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             scheduleBase  <- {
 
               val t: Box[M[M[DataSourceSchedule]]] = extractJsonString(obj, "type",  _ match {
-              case "scheduled" => Full(monad.map(duration)(d => Scheduled(d)))
-              case "notscheduled" => Full(monad.map(duration)(d => NoSchedule(d)))
-              case _ => Failure("not a valid value for datasource schedule")
+                case "scheduled" => Full(monad.map(duration)(d => Scheduled(d)))
+                case "notscheduled" => Full(monad.map(duration)(d => NoSchedule(d)))
+                case _ => Failure("not a valid value for datasource schedule")
               })
-              t.map( monad.join(_))
+              t.map( monad.flatten(_))
             }
         } yield {
           scheduleBase
@@ -262,7 +262,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
       onNewNode    <- extractJsonBoolean(obj, "onNewNode")
       schedule     <- extractJsonObj(    obj, "schedule", extractSchedule(_))
     } yield {
-      DataSourceRunParamWrapper(monad.join(schedule), onGeneration, onNewNode)
+      DataSourceRunParamWrapper(monad.flatten(schedule), onGeneration, onNewNode)
     }
   }
 
@@ -276,13 +276,13 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
         def extractHttpRequestMode(obj: JObject) : Box[M[HttpRequestMode]] = {
           obj \ "name" match {
             case JString(OneRequestByNode.name) =>
-              Full(monad.point(OneRequestByNode))
+              Full(monad.pure(OneRequestByNode))
             case JString(OneRequestAllNodes.name) =>
               for {
                 attribute <- extractJsonString(obj, "attribute")
-                path <- extractJsonString(obj, "path")
+                path      <- extractJsonString(obj, "path")
               } yield {
-                monad.apply2(path, attribute){case (a,b) => OneRequestAllNodes(a,b)}
+                monad.map2(path, attribute){case (a,b) => OneRequestAllNodes(a,b)}
               }
             case x => Failure(s"Cannot extract request type from: ${x}")
           }
@@ -295,14 +295,13 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
               for {
                 converted <- sequence(values) { v =>
                                 for {
-                                  name <- extractJsonString(v, "name", boxedIdentity)
+                                  name  <- extractJsonString(v, "name" , boxedIdentity)
                                   value <- extractJsonString(v, "value", boxedIdentity)
                                 } yield {
                                   monad.tuple2(name,value)
                                 }
                               }
               } yield {
-                import scalaz.Scalaz.listInstance
                 monad.sequence(converted.toList)
               }
 
@@ -338,7 +337,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             }
             case x => Failure(s"Can not extract onMissingNode behavior from ${compactRender(x)}")
           })
-          onMissing.map(x => monad.point(x))
+          onMissing.map(x => monad.pure(x))
         }
 
         def HttpDataSourceParameters (obj : JObject)  = {
@@ -354,9 +353,9 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             onMissing   <- extractMissingNodeBehavior(obj)
           } yield {
 
-            val headersM =   monad.map(headers)(_.toMap)
-            val paramsM = monad.map(params)(_.toMap)
-            val unwrapMode = monad.join(requestMode)
+            val headersM   = monad.map(headers)(_.toMap)
+            val paramsM    = monad.map(params)(_.toMap)
+            val unwrapMode = monad.flatten(requestMode)
 
             (
                 url
@@ -374,15 +373,15 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
 
         for {
           parameters <- extractJsonObj(obj, "parameters", HttpDataSourceParameters)
-          url = monad.bind(parameters)(_._1)
-          headers = monad.bind(parameters)(_._2)
-          method = monad.bind(parameters)(_._3)
-          params = monad.bind(parameters)(_._4)
-          checkSsl = monad.bind(parameters)(_._5)
-          path = monad.bind(parameters)(_._6)
-          mode = monad.bind(parameters)(_._7)
-          timeout = monad.bind(parameters)(_._8)
-          onMissing = monad.bind(parameters)(_._9)
+          url       = monad.flatMap(parameters)(_._1)
+          headers   = monad.flatMap(parameters)(_._2)
+          method    = monad.flatMap(parameters)(_._3)
+          params    = monad.flatMap(parameters)(_._4)
+          checkSsl  = monad.flatMap(parameters)(_._5)
+          path      = monad.flatMap(parameters)(_._6)
+          mode      = monad.flatMap(parameters)(_._7)
+          timeout   = monad.flatMap(parameters)(_._8)
+          onMissing = monad.flatMap(parameters)(_._9)
         } yield {
           DataSourceTypeWrapper(
               url

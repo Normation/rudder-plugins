@@ -42,11 +42,10 @@ import bootstrap.rudder.plugin.DatasourcesConf
 import com.normation.plugins.PluginName
 import com.normation.plugins.PluginVersion
 import com.normation.plugins.RudderPluginDef
-import com.normation.rudder.authorization.Read
+import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.domain.logger.PluginLogger
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
-import net.liftweb.http.LiftRules
 import net.liftweb.http.ResourceServer
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
@@ -56,6 +55,7 @@ import net.liftweb.sitemap.Menu
 import scala.xml.NodeSeq
 import com.typesafe.config.ConfigFactory
 import com.normation.plugins.PluginStatus
+import bootstrap.liftweb.RudderConfig
 
 class DataSourcesPluginDef(info: PluginStatus) extends RudderPluginDef with Loggable {
 
@@ -91,7 +91,7 @@ class DataSourcesPluginDef(info: PluginStatus) extends RudderPluginDef with Logg
 
   def init = {
     PluginLogger.info(s"loading '${buildConf.getString("plugin-id")}:${version.toString}' plugin")
-    LiftRules.statelessDispatch.append(DatasourcesConf.dataSourceApi9)
+    RudderConfig.rudderApi.addModules(DatasourcesConf.dataSourceApi9.getLiftEndpoints())
     // resources in src/main/resources/toserve must be allowed:
     ResourceServer.allow{
       case "datasources" :: _ => true
@@ -107,7 +107,7 @@ class DataSourcesPluginDef(info: PluginStatus) extends RudderPluginDef with Logg
       Menu("dataSourceManagement", <span>Data sources</span>) /
         "secure" / "administration" / "dataSourceManagement"
         >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement",Read("administration")) )
+        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
         >> Template(() => ClasspathTemplates( "template" :: "dataSourceManagement" :: Nil ) openOr <div>Template not found</div>)
     )
 

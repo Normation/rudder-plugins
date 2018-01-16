@@ -41,11 +41,8 @@ import bootstrap.liftweb.RudderConfig
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.datasources.DataSourceRepoImpl
 import com.normation.plugins.datasources.DataSourcesPluginDef
-import com.normation.plugins.datasources.api.DataSourceApi9
-import com.normation.plugins.datasources.api.DataSourceApiService
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodeManagerHooks
-import com.normation.rudder.web.rest.ApiVersion
 import org.joda.time.DateTime
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
@@ -60,6 +57,7 @@ import com.normation.plugins.datasources.UpdateCause
 import com.normation.plugins.datasources.DataSourceJdbcRepository
 import com.normation.plugins.datasources.HttpQueryDataSourceService
 import com.normation.plugins.datasources.CheckRudderPluginDatasourcesEnableImpl
+import com.normation.plugins.datasources.api.DataSourceApiImpl
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -116,20 +114,14 @@ object DatasourcesConf {
   // initialize datasources to start schedule
   dataSourceRepository.initialize()
 
-
-  val dataSourceApiService = new DataSourceApiService(
-      dataSourceRepository
+  val dataSourceApi9 = new DataSourceApiImpl(
+      Cfg.restExtractorService
     , Cfg.restDataSerializer
-    , Cfg.restExtractorService
+    , dataSourceRepository
     , Cfg.nodeInfoService
     , Cfg.woNodeRepository
     , Cfg.stringUuidGenerator
   )
-  val dataSourceApi9 = new DataSourceApi9(Cfg.restExtractorService, dataSourceApiService, Cfg.stringUuidGenerator)
-
-  // data source started with Rudder 4.1 / Api version 9.
-  RudderConfig.apiDispatcher.addEndpoints(Map( ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
-
 }
 
 /**

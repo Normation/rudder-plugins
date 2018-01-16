@@ -54,7 +54,6 @@ import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import scala.concurrent.Await
-import com.normation.eventlog.ModificationId
 
 
 
@@ -108,7 +107,7 @@ class HttpQueryDataSourceService(
    * We need a scheduler tailored for I/O, we are mostly doing http requests and
    * database things here
    */
-  import monix.execution.schedulers.ExecutionModel
+  import monix.execution.ExecutionModel
   implicit lazy val scheduler = Scheduler.io(executionModel = ExecutionModel.AlwaysAsyncExecution)
 
   override def queryAll(datasource: DataSource, cause: UpdateCause): Box[Set[NodeUpdateResult]] = {
