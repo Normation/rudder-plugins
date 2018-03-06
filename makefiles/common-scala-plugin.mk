@@ -22,12 +22,13 @@ TARGET_KEY_CLASSPATH = license.pubkey
 std-files: 
 	mvn $(MAVEN_OPTS) package
 	mkdir -p target/$(NAME)
-	mv target/$(NAME)-*-plugin-with-own-dependencies.jar target/$(NAME)/$(NAME).jar
+	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
 licensed-files: check-license 
 	mvn $(MAVEN_OPTS) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_CLASSPATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
 	mkdir -p target/$(NAME)
-	mv target/$(NAME)-*-plugin-with-own-dependencies.jar target/$(NAME)/$(NAME).jar
+	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
+	cp $(PUBLIC_KEY_PATH) target/$(TARGET_KEY_CLASSPATH)
 	jar -uf target/$(NAME)/$(NAME).jar -C target $(TARGET_KEY_CLASSPATH)
 	# embed the license
 	cp $(SIGNED_LICENSE_PATH) target/$(NAME)/license

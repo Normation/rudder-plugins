@@ -46,9 +46,10 @@ import monix.execution.Cancelable
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import net.liftweb.common.Loggable
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
+import com.normation.plugins.CheckRudderPluginEnable
 
 
 final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String], triggeredByGeneration: Boolean = false)
@@ -67,7 +68,7 @@ final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Opt
 class DataSourceScheduler(
              val datasource  : DataSource
   , implicit val scheduler   : Scheduler
-  ,              pluginStatus: CheckRudderPluginDatasourcesEnable
+  ,              pluginStatus: CheckRudderPluginEnable
   ,              newUuid     : ()          => ModificationId
   ,              updateAll   : UpdateCause => Unit
 ) extends Loggable {

@@ -1,0 +1,35 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.normation.plugins</groupId>
+  <artifactId>plugins-common</artifactId>
+  <packaging>jar</packaging>
+  <!--
+    Do not change version here, update content into: build.conf
+  -->
+  <version>4.1-1.0</version>
+
+  <parent>
+    <groupId>com.normation.plugins</groupId>
+    <artifactId>plugins-parent</artifactId>
+    <version>${parent-plugin-version}</version>
+  </parent>
+
+  <description>
+    Utilities classes that factor common plugin logic.
+    The will be reintegrated in Rudder on a major branch to avoid
+    any API breaking
+  </description>
+
+  <dependencies>
+
+    <!-- Test: rudder -->
+    <dependency>
+      <groupId>com.normation.rudder</groupId>
+      <artifactId>rudder-web</artifactId>
+      <version>${rudder-version}</version>
+      <classifier>classes</classifier>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+</project>

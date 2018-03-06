@@ -37,6 +37,7 @@
 
 package com.normation.plugins.datasources
 
+import com.normation.plugins.PluginEnableImpl
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
@@ -73,9 +74,6 @@ import org.specs2.runner.JUnitRunner
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
-import bootstrap.rudder.plugin.DatasourcesStatus
-
 
 
 @RunWith(classOf[JUnitRunner])
@@ -295,12 +293,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val uuidGen = new StringUuidGeneratorImpl()
   }
 
-  object Enabled extends CheckRudderPluginDatasourcesEnable {
-    val hasLicense = false
-    val isEnabled = true
-    val enabledStatus = DatasourcesStatus.Enabled
-    val licenseInformation = None
-  }
+  object Enabled extends PluginEnableImpl
 
 
   sequential

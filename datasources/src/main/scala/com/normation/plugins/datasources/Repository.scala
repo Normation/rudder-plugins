@@ -54,10 +54,11 @@ import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
+
 import scala.concurrent.duration._
-import scalaz.{ Failure => _ }
+import scalaz.{Failure => _}
 import scalaz.Scalaz._
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
+import com.normation.plugins.CheckRudderPluginEnable
 
 final case class PartialNodeUpdate(
     nodes        : Map[NodeId, NodeInfo] //the node to update
@@ -160,7 +161,7 @@ class DataSourceRepoImpl(
     backend     : DataSourceRepository
   , fetch       : QueryDataSourceService
   , uuidGen     : StringUuidGenerator
-  , pluginStatus: CheckRudderPluginDatasourcesEnable
+  , pluginStatus: CheckRudderPluginEnable
 ) extends DataSourceRepository with DataSourceUpdateCallbacks {
 
   /*

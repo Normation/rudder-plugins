@@ -37,17 +37,11 @@
 
 package com.normation.plugins.datasources
 
-import bootstrap.rudder.plugin.CheckRudderPluginDatasourcesEnable
-import bootstrap.rudder.plugin.DatasourcesStatus
+import com.normation.plugins.PluginEnableImpl
 
 /*
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginDatasourcesEnableImpl() extends CheckRudderPluginDatasourcesEnable {
-    val hasLicense = false
-    val isEnabled = true
-    val enabledStatus = DatasourcesStatus.Enabled
-    val licenseInformation = None
-}
+final class CheckRudderPluginEnableImpl() extends PluginEnableImpl
 
