@@ -24,7 +24,7 @@
   <modules>
     <module>plugins-common</module>
     <!-- template module to copy'n'paste for new plugins -->
-    <module>blank</module>
+    <module>blank-template</module>
     <!-- a simple example plugin -->
     <module>helloworld</module>
     <module>datasources</module>
