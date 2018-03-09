@@ -37,6 +37,7 @@
 
 package com.normation.plugins.datasources
 
+import com.normation.plugins.PluginEnableImpl
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
@@ -73,8 +74,6 @@ import org.specs2.runner.JUnitRunner
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import com.normation.plugins.AlwaysEnabledPluginStatus
-
 
 
 @RunWith(classOf[JUnitRunner])
@@ -294,6 +293,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val uuidGen = new StringUuidGeneratorImpl()
   }
 
+  object Enabled extends PluginEnableImpl
+
   sequential
 
   "Update on datasource" should {
@@ -317,7 +318,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(enabled = false)
         , testScheduler
-        , AlwaysEnabledPluginStatus
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -340,7 +341,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
         , testScheduler
-        , AlwaysEnabledPluginStatus
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -368,7 +369,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource
         , testScheduler
-        , AlwaysEnabledPluginStatus
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )

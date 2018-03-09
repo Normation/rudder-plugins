@@ -39,8 +39,7 @@ package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
 import com.normation.inventory.domain.NodeId
-import com.normation.plugins.datasources.DataSourceRepoImpl
-import com.normation.plugins.datasources.DataSourcesPluginDef
+import com.normation.plugins.datasources._
 import com.normation.plugins.datasources.api.DataSourceApi9
 import com.normation.plugins.datasources.api.DataSourceApiService
 import com.normation.rudder.services.policies.PromiseGenerationHooks
@@ -48,18 +47,14 @@ import com.normation.rudder.services.servers.NewNodeManagerHooks
 import com.normation.rudder.web.rest.ApiVersion
 import org.joda.time.DateTime
 import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
-import org.springframework.context.annotation.{ Bean, Configuration }
+import org.springframework.context.{ApplicationContext, ApplicationContextAware}
+import org.springframework.context.annotation.{Bean, Configuration}
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.batch.AsyncDeploymentAgent
-import com.normation.plugins.datasources.UpdateCause
-import com.normation.plugins.datasources.DataSourceJdbcRepository
-import com.normation.plugins.datasources.HttpQueryDataSourceService
-import com.normation.plugins.datasources.CheckRudderPluginDatasourcesEnableImpl
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -82,7 +77,7 @@ object DatasourcesConf {
   import bootstrap.liftweb.{ RudderConfig => Cfg }
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginDatasourcesEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
   lazy val regenerationHook = new OnUpdatedNodeRegenerate(RudderConfig.asyncDeploymentAgent)
 

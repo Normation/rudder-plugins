@@ -2,7 +2,7 @@ package com.normation.plugins.helloworld
 
 import scala.xml.NodeSeq
 
-import com.normation.plugins.{ PluginName, PluginVersion, RudderPluginDef }
+import com.normation.plugins._
 import com.normation.plugins.helloworld.service.LogAccessInDb
 
 import bootstrap.liftweb.ClassPathResource
@@ -14,6 +14,7 @@ import net.liftweb.sitemap.LocPath.stringToLocPath
 
 class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with Loggable {
 
+  val status = new PluginEnableImpl(){}
   val name = PluginName("hello world")
   val basePackage = "com.normation.plugins.helloworld"
   val version = PluginVersion(1,0,0)

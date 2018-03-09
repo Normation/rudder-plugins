@@ -46,6 +46,7 @@ import monix.execution.Cancelable
 import monix.execution.Scheduler
 import monix.reactive.Observable
 import net.liftweb.common.Loggable
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import com.normation.plugins.PluginStatus

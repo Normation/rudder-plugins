@@ -54,8 +54,9 @@ import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
+
 import scala.concurrent.duration._
-import scalaz.{ Failure => _ }
+import scalaz.{Failure => _}
 import scalaz.Scalaz._
 import com.normation.plugins.PluginStatus
 

@@ -67,6 +67,7 @@ import com.normation.plugins.datasources.NodeUpdateResult
 import com.normation.utils.StringUuidGenerator
 import com.normation.eventlog.ModificationId
 import com.normation.utils.Control
+import com.normation.plugins.PluginRestExtractor._
 
 class DataSourceApiService(
     dataSourceRepo     : DataSourceRepository with DataSourceUpdateCallbacks
