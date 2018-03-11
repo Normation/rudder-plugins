@@ -4,76 +4,141 @@
   <artifactId>node-external-reports</artifactId>
   <packaging>jar</packaging>
 
-  <parent>
-    <groupId>com.normation</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>4.2.0</version>
-  </parent>
-  
   <version>${plugin-version}</version>
+
+  <parent>
+    <groupId>com.normation.plugins</groupId>
+    <artifactId>plugins-parent</artifactId>
+    <version>${parent-plugin-version}</version>
+  </parent>
 
   <description>
     This is a plugin that allows to disaply external text (HTML, raw text) information about
-    nodes in the node details page. 
-    The plugin allows to configure a list of report name, root directory, description. 
+    nodes in the node details page.
+    The plugin allows to configure a list of report name, root directory, description.
     When on node details, a new "external reports" tab is displayed, with the list
-    of report available for the node. 
+    of report available for the node.
   </description>
-  
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.4</version>
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/plugin-with-own-dependencies.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
+ <dependencies>
+    <!-- common data definition for plugins -->
+    <dependency>
+      <groupId>com.normation.plugins</groupId>
+      <artifactId>plugins-common</artifactId>
+    </dependency>
 
-  <dependencies>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <version>2.5</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.normation.rudder</groupId>
-      <artifactId>rudder-web</artifactId>
-      <version>${rudder-version}</version>
-      <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
-      <classifier>classes</classifier>
-      <scope>provided</scope>
-    </dependency>
-    
+    <!-- Add other plugin specific dependencies -->
   </dependencies>
 
-  <repositories>
+  <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->
+
+  <!-- Internal profile: FOR INTERNAL USE ONLY - active if -Dlimited is *not* specified. -->
+  <profiles>
+  <profile>
+    <id>internal-default</id>
+    <activation>
+      <!-- Activation via *absence* of a system property to ensure mutual exclusivity
+           of this profile with internal-limited -->
+      <property><name>!limited</name></property>
+    </activation>
+    <build><plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${basedir}/src/main/scala-templates/default</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins></build>
+  </profile>
+  <!-- Internal profile: FOR INTERNAL USE ONLY - active if -Dlimited is *not* specified. -->
+  <profile>
+    <id>internal-limited</id>
+    <activation>
+      <!-- Activation via *presence* of a system property to ensure mutual exclusivity
+           of this profile with internal-default -->
+      <property><name>limited</name></property>
+    </activation>
+    <build><plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>templating-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <executions>
+          <execution>
+            <id>filter-src</id>
+            <goals>
+              <goal>filter-sources</goal>
+            </goals>
+                <configuration>
+                  <sourceDirectory>${basedir}/src/main/scala-templates/limited</sourceDirectory>
+                  <outputDirectory>${project.build.directory}/generated</outputDirectory>
+                </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>add-license-checker-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins></build>
+    <dependencies>
+      <dependency>
+        <groupId>com.normation.plugins</groupId>
+        <artifactId>plugins-common-private</artifactId>
+        <version>${plugins-common-private-version}</version>
+      </dependency>
+    </dependencies>
+    <repositories>
     <repository>
-      <id>rudder-release</id>
-      <url>http://www.rudder-project.org/maven-releases/</url>
+      <id>rudder-release-private</id>
+      <url>http://nexus.normation.com/nexus/content/repositories/private-releases/</url>
       <layout>default</layout>
       <snapshots><enabled>false</enabled></snapshots>
     </repository>
     <repository>
-      <id>rudder-snapshot</id>
-      <url>http://www.rudder-project.org/maven-snapshots/</url>
+      <id>rudder-snapshot-private</id>
+      <url>http://nexus.normation.com/nexus/content/repositories/private-snapshots/</url>
       <layout>default</layout>
       <snapshots><enabled>true</enabled></snapshots>
     </repository>
-  </repositories>
+    </repositories>
+  </profile>
+  </profiles>
 
 </project>

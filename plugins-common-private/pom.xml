@@ -1,0 +1,50 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.normation.plugins</groupId>
+  <artifactId>plugins-common-private</artifactId>
+  <packaging>jar</packaging>
+  <!--
+    Do not change version here, update content into: build.conf
+  -->
+  <version>${plugins-common-private-version}</version>
+
+  <parent>
+    <groupId>com.normation.plugins</groupId>
+    <artifactId>plugins-parent</artifactId>
+    <version>${parent-plugin-version}</version>
+  </parent>
+
+  <description>
+    Utilities classes that factor common plugin logic.
+    The will be reintegrated in Rudder on a major branch to avoid
+    any API breaking. This part is the one which needs Rudder
+    private repository to be build, and manage licensing information.
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.normation</groupId>
+      <artifactId>license-lib</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.normation.plugins</groupId>
+      <artifactId>plugins-common</artifactId>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>rudder-release-private</id>
+      <url>http://nexus.normation.com/nexus/content/repositories/private-releases/</url>
+      <layout>default</layout>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+    <repository>
+      <id>rudder-snapshot-private</id>
+      <url>http://nexus.normation.com/nexus/content/repositories/private-snapshots/</url>
+      <layout>default</layout>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+  </repositories>
+
+</project>

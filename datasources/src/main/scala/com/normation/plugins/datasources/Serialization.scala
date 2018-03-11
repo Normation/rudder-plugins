@@ -49,6 +49,7 @@ import net.liftweb.util.ControlHelpers.tryo
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import com.normation.rudder.domain.nodes.NodeProperty
+import cats._
 import cats.implicits._
 
 object DataSourceJsonSerializer{
@@ -302,7 +303,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
                                 }
                               }
               } yield {
-                monad.sequence(converted.toList)
+                Traverse[List].sequence(converted.toList)
               }
 
             case JNothing   => emptyValue

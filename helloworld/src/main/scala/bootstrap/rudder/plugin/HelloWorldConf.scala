@@ -1,16 +1,13 @@
 package bootstrap.rudder.plugin
 
-import scala.xml.{ NodeSeq, Text }
-
+import scala.xml.{NodeSeq, Text}
 import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
-import org.springframework.context.annotation.{ Bean, Configuration }
-
-import com.normation.plugins.{ PluginName, PluginVersion, RudderPluginDef, SnippetExtensionRegister }
+import org.springframework.context.{ApplicationContext, ApplicationContextAware}
+import org.springframework.context.annotation.{Bean, Configuration}
+import com.normation.plugins._
 import com.normation.plugins.helloworld.HelloWorldPluginDef
-import com.normation.plugins.helloworld.extension.{ CreateRuleEditFormExtension, CreateRuleExtension }
+import com.normation.plugins.helloworld.extension.{CreateRuleEditFormExtension, CreateRuleExtension}
 import com.normation.plugins.helloworld.service.LogAccessInDb
-
 import bootstrap.liftweb.RudderConfig
 import net.liftweb.common.Loggable
 
@@ -57,6 +54,7 @@ class Module1 extends Loggable {
    * name, description, etc.
    */
   @Bean def moduleDef1 = new RudderPluginDef {
+    val status = new PluginEnableImpl(){}
     val name = PluginName("module1")
     val version = PluginVersion(0,0,1)
     val basePackage = "com.normation.plugins.helloworld"

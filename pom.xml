@@ -1,0 +1,309 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.normation.plugins</groupId>
+  <artifactId>plugins-parent</artifactId>
+  <packaging>pom</packaging>
+  <!--
+    This is the plugin-parent pom version. plugin will have a different one.
+  -->
+  <version>${parent-plugin-version}</version>
+
+  <parent>
+    <groupId>com.normation.rudder</groupId>
+    <artifactId>rudder-parent</artifactId>
+    <!-- here, we can't use ${rudder-build-version} because of maven limitation-->
+    <version>4.3.0~beta2-SNAPSHOT</version>
+  </parent>
+
+  <properties>
+    <plugins-common-version>4.2-1.0</plugins-common-version>
+    <plugins-common-private-version>4.2-1.0</plugins-common-private-version>
+  </properties>
+
+  <description>
+    This pom define common resources and build process for all
+    plugins.
+  </description>
+
+  <modules>
+    <module>plugins-common</module>
+    <!-- template module to copy'n'paste for new plugins -->
+    <module>blank-template</module>
+    <!-- a simple example plugin -->
+    <module>helloworld</module>
+    <module>datasources</module>
+    <module>node-external-reports</module>
+  </modules>
+
+  <build>
+    <pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <configuration>
+          <files>
+            <file>${project.basedir}/../main-build.conf</file>
+            <file>${project.basedir}/build.conf</file>
+          </files>
+        </configuration>
+        <executions>
+          <execution>
+            <!-- first phase available, to have properties always defined -->
+            <phase>validate</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.0.2</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <!-- we want to copy the build.conf in the plugin own package to allow
+                   unique identification of build.conf when several plugins presents.
+                   So build.conf is at the root of "basePackage"
+               -->
+              <outputDirectory>target/classes/com/normation/plugins/${}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>.</directory>
+                  <includes><include>build.conf</include></includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-metadata</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>target</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>packaging</directory>
+                  <includes><include>metadata</include></includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id> <!-- this is used for inheritance merges -->
+            <phase>package</phase> <!-- bind to the packaging phase -->
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- We need to specify that dependencies comming from parent are provided (they are by rudder-web) -->
+  <dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>com.normation.plugins</groupId>
+      <artifactId>plugins-common</artifactId>
+      <version>${plugins-common-version}</version>
+    </dependency>
+
+    <!-- from rudder-web: use:
+      mvn dependency:resolve -Dsort=true | grep "compile\|provided" | awk '{print $2}' | \
+        awk -F':' '{print "<dependency><groupId>"$1"</groupId><artifactId>"$2"</artifactId><scope>provided</scope></dependency>"}'
+    -->
+    <dependency><groupId>antlr</groupId><artifactId>antlr</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>aopalliance</groupId><artifactId>aopalliance</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>ca.mrvisser</groupId><artifactId>sealerate_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>cglib</groupId><artifactId>cglib</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.chuusai</groupId><artifactId>shapeless_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.jcraft</groupId><artifactId>jsch</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.lihaoyi</groupId><artifactId>sourcecode_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-repository</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-core</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-rest</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-templates</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation</groupId><artifactId>scala-ldap</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation</groupId><artifactId>utils</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.thoughtworks.paranamer</groupId><artifactId>paranamer</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.unboundid</groupId><artifactId>unboundid-ldapsdk</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.zaxxer</groupId><artifactId>nuprocess</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>commons-codec</groupId><artifactId>commons-codec</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>commons-fileupload</groupId><artifactId>commons-fileupload</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>commons-io</groupId><artifactId>commons-io</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>commons-lang</groupId><artifactId>commons-lang</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.monix</groupId><artifactId>monix-eval_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.monix</groupId><artifactId>monix-execution_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.monix</groupId><artifactId>monix-types_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>javax.activation</groupId><artifactId>activation</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>javax.mail</groupId><artifactId>mail</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>javax.servlet</groupId><artifactId>servlet-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.java.dev.jna</groupId><artifactId>jna</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-common_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json-ext_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-markdown_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-util_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-webkit_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>nu.validator.htmlparser</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-jdk15on</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk15on</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.joda</groupId><artifactId>joda-convert</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.reactivestreams</groupId><artifactId>reactive-streams</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scalaj</groupId><artifactId>scalaj-http_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.ldap</groupId><artifactId>spring-ldap-core</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-config</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-core</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-ldap</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-web</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-aop</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-beans</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-core</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-expression</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-free_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-postgres_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-free_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-kernel_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-macros_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>machinist_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>macro-compat_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>xml-apis</groupId><artifactId>xml-apis</artifactId><scope>provided</scope></dependency>
+  </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.normation.rudder</groupId>
+      <artifactId>rudder-web</artifactId>
+      <version>${rudder-version}</version>
+      <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
+      <classifier>classes</classifier>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Test: rudder -->
+    <dependency>
+      <groupId>com.normation.rudder</groupId>
+      <artifactId>rudder-core</artifactId>
+      <version>${rudder-version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.normation.rudder</groupId>
+      <artifactId>rudder-rest</artifactId>
+      <version>${rudder-version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.normation.rudder</groupId>
+      <artifactId>rudder-web</artifactId>
+      <version>${rudder-version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <!--
+      Aaaannnnd maven is horrible, so we need to put back needed dependencies, see:
+      https://maven.apache.org/plugins/maven-jar-plugin/examples/create-test-jar.html
+      Perhaps it's time to quit maven.
+     -->
+     <!-- Testing Liftweb -->
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-testkit_${scala-binary-version}</artifactId>
+      <version>${lift-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- YAML parser, for REST API test -->
+
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <id>rudder-release</id>
+      <url>http://www.rudder-project.org/maven-releases/</url>
+      <layout>default</layout>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+    <repository>
+      <id>rudder-snapshot</id>
+      <url>http://www.rudder-project.org/maven-snapshots/</url>
+      <layout>default</layout>
+      <snapshots><enabled>true</enabled></snapshots>
+    </repository>
+  </repositories>
+
+
+  <!-- In the general case, we don't want to build module plugins-common-private
+       as it depends on rudder internal repository
+  -->
+  <profiles>
+    <profile>
+      <id>internal-limited</id>
+      <activation>
+        <!-- Activation via *presence* of a system property to ensure mutual exclusivity
+             of this profile with internal-default -->
+        <property><name>limited</name></property>
+      </activation>
+      <modules>
+        <module>plugins-common-private</module>
+      </modules>
+    </profile>
+  </profiles>
+
+</project>

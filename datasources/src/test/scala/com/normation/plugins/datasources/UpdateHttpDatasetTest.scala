@@ -37,6 +37,7 @@
 
 package com.normation.plugins.datasources
 
+import com.normation.plugins.PluginEnableImpl
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
@@ -73,9 +74,10 @@ import org.specs2.runner.JUnitRunner
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import com.normation.plugins.AlwaysEnabledPluginStatus
-
-
+import cats.effect._
+import fs2._
+import fs2.Stream._
+import org.http4s.dsl.io._
 
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
@@ -94,14 +96,26 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val counterError   = AtomicInt(0)
     val counterSuccess = AtomicInt(0)
 
+    // an fs2 scheduler
+    val scheduler = fs2.Scheduler[IO](1)
+
+    // a delay methods that use the scheduler
+    def delayResponse(resp: IO[Response[IO]])(implicit F: cats.effect.Async[IO], ec: ExecutionContext = ExecutionContext.global): IO[Response[IO]] = {
+      scheduler.evalMap( _.effect.sleep(Random.nextInt(1000).millis) ).compile.drain.flatMap(_ =>
+        resp
+      )
+    }
+
+
     def reset(): Unit = {
       counterError.set(0)
       counterSuccess.set(0)
     }
 
-    def service(implicit executionContext: ExecutionContext = ExecutionContext.global) = HttpService {
+
+    def service(implicit F: cats.effect.Async[IO], ec: ExecutionContext = ExecutionContext.global) = HttpService[IO] {
       case _ -> Root =>
-        MethodNotAllowed()
+        IO.pure(Response(MethodNotAllowed))
 
       case GET -> Root / "single_node1" =>
         Ok{
@@ -127,10 +141,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       case r @ GET -> Root / "delay" / x =>
         r.headers.get(CaseInsensitiveString("nodeId")).map( _.value) match {
           case Some(`x`) =>
-            Ok {
+            delayResponse(Ok {
               counterSuccess.add(1)
               nodeJson(x)
-            }.after(Random.nextInt(1000).millis)
+            })
 
           case _ =>
             Forbidden {
@@ -148,10 +162,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
           (headerId, formId) match {
             case (Some(x), Some(y)) if x == y =>
-              Ok {
-                counterSuccess.add(1)
-                nodeJson("plop")
-              }.after(Random.nextInt(1000).millis)
+              delayResponse( Ok {
+                  counterSuccess.add(1)
+                  nodeJson("plop")
+              })
 
             case _ =>
               Forbidden {
@@ -178,15 +192,15 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   }
 
   //start server on a free port
-  val server = BlazeBuilder.bindAny()
-    .withConnectorPoolSize(1) //to make the server slow and validate that it still works
-    .mountService(NodeDataset.service, "/datasources")
-    .run
+  val server = BlazeBuilder.apply[IO].bindAny()
+      .withConnectorPoolSize(1) //to make the server slow and validate that it still works
+      .mountService(NodeDataset.service, "/datasources")
+      .start.unsafeRunSync
 
   val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
 
   override def afterAll(): Unit = {
-    server.shutdown
+    server.shutdownNow()
   }
 
   val actor = EventActor("Test-actor")
@@ -294,6 +308,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val uuidGen = new StringUuidGeneratorImpl()
   }
 
+  object Enabled extends PluginEnableImpl
+
   sequential
 
   "Update on datasource" should {
@@ -317,7 +333,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(enabled = false)
         , testScheduler
-        , AlwaysEnabledPluginStatus
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -340,7 +356,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
         , testScheduler
-        , AlwaysEnabledPluginStatus
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )
@@ -368,7 +384,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val dss = new DataSourceScheduler(
           datasource
         , testScheduler
-        , AlwaysEnabledPluginStatus
+        , Enabled
         , () => ModificationId(MyDatasource.uuidGen.newUuid)
         , action
      )

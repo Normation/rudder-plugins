@@ -10,12 +10,12 @@
 #SCRIPTS = postinst
 #FILES = 
 
-RUDDER_BRANCH = $(shell sed -ne '/^rudder-branch=/s/rudder-branch=//p' build.conf)
-PLUGIN_BRANCH = $(shell sed -ne '/^plugin-branch=/s/plugin-branch=//p' build.conf)
-VERSION = $(RUDDER_BRANCH)-$(PLUGIN_BRANCH)
-FULL_NAME = $(shell sed -ne '/^plugin-id=/s/plugin-id=//p' build.conf)
-NAME = $(shell echo $(FULL_NAME) | sed -ne 's/rudder-plugin-//p')
-COMMIT_ID = $(shell git rev-parse HEAD 2>/dev/null || true)
+RUDDER_BRANCH   = $(shell sed -ne '/^rudder-branch=/s/rudder-branch=//p' ../main-build.conf)
+PLUGIN_BRANCH   = $(shell sed -ne '/^plugin-branch=/s/plugin-branch=//p' build.conf)
+VERSION	        = $(RUDDER_BRANCH)-$(PLUGIN_BRANCH)
+NAME            = $(shell sed -ne '/^plugin-name=/s/plugin-name=//p' build.conf)
+FULL_NAME       = rudder-plugin-$(NAME)
+COMMIT_ID       = $(shell git rev-parse HEAD 2>/dev/null || true)
 BUILD_TIMESTAMP = $(shell date --iso-8601=seconds)
 
 # build the default oss version of the package
@@ -44,7 +44,7 @@ target/metadata:
 	sed -i -e "s/\$${plugin-name}/$(NAME)/g" target/metadata
 
 clean:
-	rm -f  $(FULL_NAME)-$(VERSION).rpkg
+	rm -f  $(FULL_NAME)-*.rpkg
 	rm -rf target
 
 

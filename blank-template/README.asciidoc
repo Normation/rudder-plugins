@@ -1,0 +1,31 @@
+Rudder plugin: TODO
+-------------------------------------------
+
+This project is part of Rudder - Continuous configuration for effective compliance
+
+Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
+Automation & Compliance.
+
+See: http://rudder-project.org for more information.
+
+=== How-to use that template project
+
+You need to change "BLANK" in filenames and file content by your actual project name:
+
+
+Filename:
+
+```
+for i in **/BLANK; do mv $i $(dirname $i)/mypluginuniqueshortname; done
+sed -i -e "s/BLANK/mypluginuniqueshortname/g"
+
+```
+
+Then, you still have several file with name containing BLANK to update.
+Most of them can be renamed with the `mypluginuniqueshortname` (or a
+capatalize version of it).
+
+```
+ls **/BLANK*
+```
+

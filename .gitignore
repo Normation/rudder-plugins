@@ -10,6 +10,7 @@ target*
 files.txz
 scripts.txz
 *.rpkg
+license.info
 license.sign
 *.pubkey
 *.privkey
