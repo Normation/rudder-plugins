@@ -1,6 +1,6 @@
 /*
 *************************************************************************************
-* Copyright 2017 Normation SAS
+* Copyright 2018 Normation SAS
 *************************************************************************************
 *
 * This file is part of Rudder.
@@ -49,8 +49,9 @@ import com.normation.plugins.LicensedPluginCheck
 
 final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
   // here are processed variables
-  lazy val CLASSPATH_KEYFILE = "${plugin-resource-publickey}"
-  lazy val FS_SIGNED_LICENSE = "${plugin-resource-license}"
-  lazy val VERSION           = "${plugin-declared-version}"
+  def pluginClasspathPubkey = "${plugin-resource-publickey}"
+  def pluginLicensePath     = "${plugin-resource-license}"
+  def pluginDeclaredVersion = "${plugin-declared-version}"
+  def pluginId              = "${plugin-name}"
 }
 

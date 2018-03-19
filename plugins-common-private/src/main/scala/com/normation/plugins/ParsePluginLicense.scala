@@ -61,38 +61,19 @@ trait LicensedPluginCheck extends CheckRudderPluginEnable {
    * implementation must define variable with the following maven properties
    * that will be replaced at build time:
    */
-//  val CLASSPATH_KEYFILE = "${plugin-resource-publickey}"
-//  val FS_SIGNED_LICENSE = "${plugin-resource-license}"
-//  val VERSION           = "${plugin-declared-version}"
+//  val pluginClasspathPubkey = "${plugin-resource-publickey}"
+//  val pluginLicensePath     = "${plugin-resource-license}"
+//  val pluginDeclaredVersion = "${plugin-declared-version}"
+//  val pluginId              = "${plugin-name}"
 
-  def CLASSPATH_KEYFILE: String
-  def FS_SIGNED_LICENSE: String
-  def VERSION          : String
+  def pluginClasspathPubkey: String
+  def pluginLicensePath    : String
+  def pluginDeclaredVersion: String
+  def pluginId             : String
 
-  lazy val maybeLicense = LicenseReader.readLicense(FS_SIGNED_LICENSE)
+  lazy val maybeInfo = LicenseReader.readAndCheckLicense(pluginLicensePath, pluginClasspathPubkey, pluginDeclaredVersion, pluginId)
   lazy val hasLicense = true
 
-  // for now, we only read license info at load, because it's time consuming
-  lazy val maybeInfo = (
-    for {
-      unchecked <- maybeLicense
-      publicKey <- {
-                     val key = this.getClass.getClassLoader.getResourceAsStream(CLASSPATH_KEYFILE)
-                     if(key == null) {
-                       Left(LicenseError.IO(s"The resources '${CLASSPATH_KEYFILE}' was not found"))
-                     } else {
-                       RSAKeyManagement.readPKCS8PublicKey(new InputStreamReader(key), None) //don't give to much info about path
-                     }
-                   }
-      checked   <- LicenseChecker.checkSignature(unchecked, publicKey)
-      version   <- Version.from(VERSION) match {
-                     case None    => Left(LicenseError.Parsing(s"Version is not valid: '${VERSION}'."))
-                     case Some(v) => Right(v)
-                   }
-    } yield {
-      (checked, version)
-    }
-  )
 
   // log
   maybeInfo.fold( error => PluginLogger.error(error) , ok =>  PluginLogger.warn("License signature is valid.") )
@@ -104,7 +85,7 @@ trait LicensedPluginCheck extends CheckRudderPluginEnable {
     (for {
       info               <- maybeInfo
       (license, version) = info
-      check              <- LicenseChecker.checkLicense(license, DateTime.now, version)
+      check              <- LicenseChecker.checkLicense(license, DateTime.now, version, pluginId)
     } yield {
       check
     }) match {
@@ -113,9 +94,9 @@ trait LicensedPluginCheck extends CheckRudderPluginEnable {
     }
   }
 
-  def licenseInformation: Option[PluginLicenseInfo] = maybeLicense match {
-    case Left(_)  => None
-    case Right(l) => Some(PluginLicenseInfo(
+  def licenseInformation: Option[PluginLicenseInfo] = maybeInfo match {
+    case Left(_)       => None
+    case Right((l, v)) => Some(PluginLicenseInfo(
           licensee   = l.content.licensee.value
         , softwareId = l.content.softwareId.value
         , minVersion = l.content.minVersion.value.toString

@@ -6,7 +6,7 @@
   <!--
     Do not change version here, update content into: build.conf
   -->
-  <version>4.1-1.0</version>
+  <version>${plugin-version}</version>
 
   <parent>
     <groupId>com.normation.plugins</groupId>
@@ -19,6 +19,15 @@
     The will be reintegrated in Rudder on a major branch to avoid
     any API breaking
   </description>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
 

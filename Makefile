@@ -2,15 +2,37 @@
 # Copyright 2017 Normation SAS
 #####################################################################################
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := unlicensed
 
-PLUGINS = helloworld centreon datasources node-external-reports
+# plugins-common version is defined in build.conf. 
+# It can be build if not published. 
+COMMONS_VERSION = 
 
-# all
-all: $(PLUGINS)
+PUB_LIBS = plugins-common 
+PRIV_LIBS = plugins-common-private
+LIBS= $(PUB_LIBS) $(PRIV_LIBS)
+
+PLUGINS = helloworld datasources node-external-reports
+PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
+ALL = $(LIBS) $(PLUGINS)
+
+# all 
+all: unlicensed
+
+unlicensed: $(PUB_LIBS) $(PLUGINS)
+
+licensed: $(LIBS) $(PLUGINS-LICENSED) 
+
+$(LIBS):%:
+	cd $@ && make
 
 $(PLUGINS):%:
 	cd $@ && make
 
+$(PLUGINS-LICENSED):%-licensed:
+	cd $* && make licensed
 
-.PHONY: $(PLUGINS)
+clean:
+	for i in $(ALL); do cd $$i; $(MAKE) clean; cd ..; done
+
+.PHONY: $(LIBS) $(PLUGINS)
