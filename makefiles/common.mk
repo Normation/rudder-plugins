@@ -10,7 +10,8 @@
 #SCRIPTS = postinst
 #FILES = 
 
-RUDDER_BRANCH   = $(shell sed -ne '/^rudder-branch=/s/rudder-branch=//p' ../main-build.conf)
+include ../makefiles/global-vars.mk 
+
 PLUGIN_BRANCH   = $(shell sed -ne '/^plugin-branch=/s/plugin-branch=//p' build.conf)
 VERSION	        = $(RUDDER_BRANCH)-$(PLUGIN_BRANCH)
 NAME            = $(shell sed -ne '/^plugin-name=/s/plugin-name=//p' build.conf)

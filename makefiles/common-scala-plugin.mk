@@ -9,8 +9,6 @@ FILES += $(NAME)
 
 include ../makefiles/common.mk
 
-MAVEN_OPTS = --batch-mode -U
-
 ## For licensed plugins
 # standard destination path for the license file is in module directory, "license.sign"
 TARGET_LICENSE_PATH = /opt/rudder/share/plugins/$(NAME)/license

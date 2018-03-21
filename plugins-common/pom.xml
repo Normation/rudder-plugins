@@ -6,7 +6,7 @@
   <!--
     Do not change version here, update content into: build.conf
   -->
-  <version>${plugin-version}</version>
+  <version>${rudder-branch}-${lib-common}</version>
 
   <parent>
     <groupId>com.normation.plugins</groupId>

@@ -4,10 +4,6 @@
 
 .DEFAULT_GOAL := unlicensed
 
-# plugins-common version is defined in build.conf. 
-# It can be build if not published. 
-COMMONS_VERSION = 
-
 PUB_LIBS = plugins-common 
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
