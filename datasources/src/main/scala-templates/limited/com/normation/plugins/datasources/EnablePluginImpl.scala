@@ -40,8 +40,9 @@ package com.normation.plugins.datasources
 import com.normation.plugins.LicensedPluginCheck
 
 final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
-  lazy val pluginId              = "${plugin-fullname}"
-  lazy val pluginClasspathPubkey = "${plugin-resource-publickey}"
-  lazy val pluginLicensePath     = "${plugin-resource-license}"
-  lazy val pluginDeclaredVersion = "${plugin-declared-version}"
+  // here are processed variables
+  def pluginClasspathPubkey = "${plugin-resource-publickey}"
+  def pluginLicensePath     = "${plugin-resource-license}"
+  def pluginDeclaredVersion = "${plugin-declared-version}"
+  def pluginId              = "${plugin-name}"
 }

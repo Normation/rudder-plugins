@@ -53,18 +53,16 @@ trait LicensedPluginCheck extends PluginStatus {
    * that will be replaced at build time:
    */
 //  val pluginClasspathPubkey = "${plugin-resource-publickey}"
-//  val pluginLicensePath = "${plugin-resource-license}"
-//  val pluginDeclaredVersion           = "${plugin-declared-version}"
-//  val pluginId          = "${lugin-name}"
+//  val pluginLicensePath     = "${plugin-resource-license}"
+//  val pluginDeclaredVersion = "${plugin-declared-version}"
+//  val pluginId              = "${plugin-name}"
 
   def pluginClasspathPubkey: String
-  def pluginLicensePath: String
-  def pluginDeclaredVersion          : String
-  def pluginId         : String
+  def pluginLicensePath    : String
+  def pluginDeclaredVersion: String
+  def pluginId             : String
 
-  //the following string should be replaced at compile time
-  //(in maven language, they are "filtered")
-  val maybeLicense = LicenseReader.readAndCheckLicense(pluginLicensePath, pluginClasspathPubkey, pluginDeclaredVersion, pluginId)
+  lazy val maybeLicense = LicenseReader.readAndCheckLicense(pluginLicensePath, pluginClasspathPubkey, pluginDeclaredVersion, pluginId)
 
   //log at that point of loading if we successfully read the license information for the plugin
   maybeLicense.fold(

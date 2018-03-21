@@ -128,7 +128,12 @@
     <dependency>
       <groupId>com.normation.plugins</groupId>
       <artifactId>plugins-common</artifactId>
-      <version>${plugins-common-version}</version>
+      <version>${rudder-branch}-${lib-common}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.normation.plugins</groupId>
+      <artifactId>plugins-common-private</artifactId>
+      <version>${rudder-branch}-${lib-common-private}</version>
     </dependency>
 
     <!-- from rudder-web: use:

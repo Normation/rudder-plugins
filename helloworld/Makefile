@@ -16,6 +16,8 @@
 # Add another archive to the plugin (files.txz is the first one)
 #OTHER_ARCHIVES = target/other.txz
 
+SCRIPTS = postinst
+
 # Use this one for a Scala plugin
 include ../makefiles/common-scala-plugin.mk
 

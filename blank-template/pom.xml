@@ -127,7 +127,6 @@
       <dependency>
         <groupId>com.normation.plugins</groupId>
         <artifactId>plugins-common-private</artifactId>
-        <version>${plugins-common-private-version}</version>
       </dependency>
     </dependencies>
     <repositories>
