@@ -6,15 +6,15 @@
 # You can provide your own configuration file by setting env var
 # CONFIG_FILE_PATH with the path toward it.
 
-CONFIG_FILE_PATH = src/main/resources/node-external-reports.properties
+CONFIG_FILE_NAME = node-external-reports.properties
+CONFIG_FILE_PATH = src/main/resources/$(CONFIG_FILE_NAME)
 
-FILES = $(NAME)/node-external-reports.properties
+FILES = $(NAME)/$(CONFIG_FILE_NAME)
 
 SCRIPTS = postinst
 
 include ../makefiles/common-scala-plugin.mk
 
-target/$(NAME)/$(CONFIG_FILE_PATH):
-	cp $(CONFIG_FILE_PATH) target/$(NAME)/node-external-reports.properties
-
+target/$(NAME)/$(CONFIG_FILE_NAME):
+	cp $(CONFIG_FILE_PATH) target/$(NAME)/$(CONFIG_FILE_NAME)
 

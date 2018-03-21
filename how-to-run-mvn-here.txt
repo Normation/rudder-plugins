@@ -1,0 +1,7 @@
+Maven forbids the use of properties for version numbering. 
+We need to have them centralized because we use them also in 'make' for packaging. 
+
+So you can't run maven directly. You need to give it the different version parameters
+in the command line, with '-Drudder-branch="4.1"', or just use "make". 
+
+
