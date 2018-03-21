@@ -1,7 +1,7 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.normation.plugins</groupId>
-  <artifactId>datasources</artifactId>
+  <artifactId>blank-template</artifactId>
   <packaging>jar</packaging>
   <!--
     Do not change version here, update content into: build.conf
@@ -11,12 +11,11 @@
   <parent>
     <groupId>com.normation.plugins</groupId>
     <artifactId>plugins-parent</artifactId>
-    <version>${parent-plugin-version}</version>
+    <version>${rudder-branch}-${parent-version}</version>
   </parent>
 
   <description>
-    This plugin allows to define node properties to be feed by external
-    data sources contacted throught their REST API.
+    TODO
   </description>
 
   <build>
@@ -42,86 +41,10 @@
       <artifactId>plugins-common</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <version>2.5</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- Doing HTTP requests -->
-    <dependency>
-      <groupId>org.scalaj</groupId>
-      <artifactId>scalaj-http_${scala-binary-version}</artifactId>
-      <version>2.3.0</version>
-    </dependency>
-
-    <!-- selecting sub-json -->
-    <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
-      <artifactId>json-path</artifactId>
-      <version>2.2.0</version>
-    </dependency>
-
-    <!-- Task/Observable: monix -->
-    <dependency>
-      <groupId>io.monix</groupId>
-      <artifactId>monix-reactive_${scala-binary-version}</artifactId>
-      <version>${monix-version}</version>
-    </dependency>
-
-    <!-- Test: rudder -->
-    <dependency>
-      <groupId>com.normation.rudder</groupId>
-      <artifactId>rudder-web</artifactId>
-      <version>${rudder-version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.normation.rudder</groupId>
-      <artifactId>rudder-core</artifactId>
-      <version>${rudder-version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <!--
-      Aaaannnnd maven is horrible, so we need to put back needed dependencies, see:
-      https://maven.apache.org/plugins/maven-jar-plugin/examples/create-test-jar.html
-      Perhaps it's time to quit maven.
-     -->
-     <!-- Testing Liftweb -->
-    <dependency>
-      <groupId>net.liftweb</groupId>
-      <artifactId>lift-testkit_${scala-binary-version}</artifactId>
-      <version>${lift-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- YAML parser, for REST API test -->
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>1.17</version>
-      <scope>test</scope>
-    </dependency>
-
-
-    <!-- Tests: a rest server -->
-    <dependency>
-      <groupId>org.http4s</groupId>
-      <artifactId>http4s-dsl_${scala-binary-version}</artifactId>
-      <version>${http4s-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.http4s</groupId>
-      <artifactId>http4s-blaze-server_${scala-binary-version}</artifactId>
-      <version>${http4s-version}</version>
-      <scope>test</scope>
-    </dependency>
+    <!-- Add other plugin specific dependencies -->
   </dependencies>
 
-  <!-- I hate maven. 100 lines for a F**** if/then/else. -->
+  <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->
 
   <!-- Internal profile: FOR INTERNAL USE ONLY - active if -Dlimited is *not* specified. -->
   <profiles>

@@ -4,11 +4,13 @@
 
 .DEFAULT_GOAL := unlicensed
 
+include makefiles/global-vars.mk
+
 PUB_LIBS = plugins-common 
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
-PLUGINS = helloworld datasources node-external-reports
+PLUGINS = blank-template helloworld datasources node-external-reports
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 
@@ -28,7 +30,11 @@ $(PLUGINS):%:
 $(PLUGINS-LICENSED):%-licensed:
 	cd $* && make licensed
 
-clean:
+generate-all-pom: generate-pom
+	for i in $(ALL); do cd $$i; $(MAKE) generate-pom; cd ..; done
+	
+clean: 
+	rm -f pom.xml
 	for i in $(ALL); do cd $$i; $(MAKE) clean; cd ..; done
 
 .PHONY: $(LIBS) $(PLUGINS)

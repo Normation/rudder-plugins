@@ -6,7 +6,7 @@
   <!--
     This is the plugin-parent pom version. plugin will have a different one.
   -->
-  <version>${parent-plugin-version}</version>
+  <version>${rudder-branch}-${parent-version}</version>
 
   <parent>
     <groupId>com.normation.rudder</groupId>
@@ -73,7 +73,7 @@
                    unique identification of build.conf when several plugins presents.
                    So build.conf is at the root of "basePackage"
                -->
-              <outputDirectory>target/classes/com/normation/plugins/${}</outputDirectory>
+              <outputDirectory>target/classes/com/normation/plugins/${project.artifactId}</outputDirectory>
               <resources>
                 <resource>
                   <directory>.</directory>
