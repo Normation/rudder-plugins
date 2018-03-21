@@ -12,10 +12,6 @@
 
 include ../makefiles/global-vars.mk 
 
-PLUGIN_BRANCH   = $(shell sed -ne '/^plugin-branch=/s/plugin-branch=//p' build.conf)
-VERSION	        = $(RUDDER_BRANCH)-$(PLUGIN_BRANCH)
-NAME            = $(shell sed -ne '/^plugin-name=/s/plugin-name=//p' build.conf)
-FULL_NAME       = rudder-plugin-$(NAME)
 COMMIT_ID       = $(shell git rev-parse HEAD 2>/dev/null || true)
 BUILD_TIMESTAMP = $(shell date --iso-8601=seconds)
 
@@ -45,8 +41,7 @@ target/metadata:
 	sed -i -e "s/\$${plugin-name}/$(NAME)/g" target/metadata
 
 clean:
-	rm -f  $(FULL_NAME)-*.rpkg
+	rm -f  $(FULL_NAME)-*.rpkg pom.xml
 	rm -rf target
-
 
 .PHONY: all licensed clean std-files licensed-files
