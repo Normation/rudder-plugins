@@ -37,6 +37,8 @@
 
 package com.normation.plugins
 
+import com.normation.rudder.domain.logger.ApplicationLogger
+import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import net.liftweb.common.Logger
 import net.liftweb.util.Helpers
@@ -124,15 +126,22 @@ trait DefaultPluginDef extends RudderPluginDef {
   //get properties name for the plugin from "build.conf" file
   //have default string for errors (and avoid "missing prop exception"):
   lazy val defaults = List(
-      "plugin-fullname"
+      "plugin-name"
+    , "plugin-fullname"
     , "plugin-title-description"
     , "plugin-version"
-  ).map(p => s"$p=missing property with name '$p' in file 'build.conf'").mkString("\n")
+  ).map(p => s"$p=missing property with name '$p' in file 'build.conf' for '${basePackage}'").mkString("\n")
 
   // ConfigFactory does not want the "/" at begining nor the ".conf" on the end
   lazy val buildConfPath = basePackage.replaceAll("""\.""", "/") + "/build.conf"
-  lazy val buildConf = ConfigFactory.load(this.getClass.getClassLoader, buildConfPath).withFallback(ConfigFactory.parseString(defaults))
+  lazy val buildConf = try {
+    ConfigFactory.load(this.getClass.getClassLoader, buildConfPath).withFallback(ConfigFactory.parseString(defaults))
+  } catch {
+    case ex: ConfigException => //something want very wrong with "build.conf" parsing
 
+      ApplicationLogger.error(s"Error when parsing coniguration file for plugin '${basePackage}': ${ex.getMessage}", ex)
+      ConfigFactory.parseString(defaults)
+  }
 
   override lazy val name = PluginName(buildConf.getString("plugin-fullname"))
   override lazy val displayName = buildConf.getString("plugin-title-description")
