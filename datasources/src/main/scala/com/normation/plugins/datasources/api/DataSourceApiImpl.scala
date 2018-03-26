@@ -76,6 +76,7 @@ import com.normation.utils.Control
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.CompareProperties
 import net.liftweb.common.Failure
+import com.normation.plugins.datasources.api.{ DataSourceApi => API }
 
 class DataSourceApiImpl (
     extractor         : RestExtractorService
@@ -84,10 +85,12 @@ class DataSourceApiImpl (
   , nodeInfoService   : NodeInfoService
   , nodeRepos         : WoNodeRepository
   , uuidGen           : StringUuidGenerator
-) extends  LiftApiModuleProvider {
+) extends LiftApiModuleProvider[API] {
   api =>
 
   val kind = "datasources"
+
+  def schemas = API
 
   def response ( function : Box[JValue], req : Req, errorMessage : String, id : Option[String])(implicit action : String) : LiftResponse = {
     RestUtils.response(extractor, kind, id)(function, req, errorMessage)
@@ -98,7 +101,6 @@ class DataSourceApiImpl (
     RestUtils.actionResponse2(extractor, kind, uuidGen, id)(function, req, errorMessage)(action, actor)
   }
 
-  import com.normation.plugins.datasources.api.{ DataSourceApi => API }
   import extractor._
   import com.normation.plugins.datasources.DataSourceExtractor.OptionnalJson._
   import net.liftweb.json.JsonDSL._
@@ -155,10 +157,10 @@ class DataSourceApiImpl (
     val schema = API.ClearValueOneDatasourceAllNodes
     val restExtractor = extractor
     def process(version: ApiVersion, path: ApiPath, datasourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      
+
       val modId = ModificationId(uuidGen.newUuid)
       def cause(nodeId: NodeId) = UpdateCause(modId, authzToken.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
-  
+
       val res: Box[Seq[NodeUpdateResult]] = for {
         nodes   <- nodeInfoService.getAllNodes()
         updated <- Control.bestEffort(nodes.values.toSeq) { node =>
@@ -198,7 +200,7 @@ class DataSourceApiImpl (
     val schema = API.ReloadAllDatasourcesAllNodes
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      // reloadData All Nodes All Datasources 
+      // reloadData All Nodes All Datasources
       dataSourceRepo.onUserAskUpdateAllNodes(authzToken.actor)
       toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))(schema.name, params.prettify)
     }
@@ -281,7 +283,7 @@ class DataSourceApiImpl (
   }
 
   /// utilities ///
-  
+
   def extractReqDataSource(req : Req, base : DataSource) : Box[DataSource] = {
     req.json match {
       case Full(json) =>

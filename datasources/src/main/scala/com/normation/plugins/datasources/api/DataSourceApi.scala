@@ -42,7 +42,7 @@ import com.normation.rudder.api.HttpAction._
 import com.normation.rudder.rest.EndpointSchema.syntax._
 
 sealed trait DataSourceApi extends EndpointSchema with GeneralApi with SortIndex
-object DataSourceApi {
+object DataSourceApi extends ApiModuleProvider[DataSourceApi] {
 
   /* Avoiding POST unreachable endpoint:
    * (note: datasource must not have id "reload")
