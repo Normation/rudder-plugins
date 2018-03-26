@@ -20,7 +20,7 @@ endif
 LIB_COMMON_NAME = plugins-common
 LIB_PRIVATE_NAME = plugins-common-private
 
-MAVEN_OPTS = --batch-mode # -Drudder-branch="$(RUDDER_BRANCH)" -Dlib-common="$(LIB_COMMON_VERSION)" -Dlib-common-private="$(LIB_PRIVATE_VERSION)" -Dparent-version="$(PARENT_VERSION)"
+MAVEN_OPTS = --batch-mode 
 
 
 generate-pom:
