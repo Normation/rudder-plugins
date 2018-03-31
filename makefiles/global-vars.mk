@@ -20,7 +20,8 @@ endif
 LIB_COMMON_NAME = plugins-common
 LIB_PRIVATE_NAME = plugins-common-private
 
-MAVEN_OPTS = --batch-mode 
+# if you want to add maven option, add them with MVN_OPS
+MAVEN_OPTS = $(MVN_OPS) --batch-mode 
 
 
 generate-pom:
