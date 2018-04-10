@@ -37,4 +37,8 @@ clean:
 	rm -f pom.xml
 	for i in $(ALL); do cd $$i; $(MAKE) clean; cd ..; done
 
+very-clean: clean 
+	./makefiles/find_m2_repo.sh clean
+	
+
 .PHONY: $(LIBS) $(PLUGINS)

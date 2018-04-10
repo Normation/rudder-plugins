@@ -8,7 +8,7 @@ include ../makefiles/global-vars.mk
 
 
 # maven local repo
-MAVEN_LOCAL_REPO =  $(shell mvn help:evaluate -Dexpression="localRepository" | grep basedir | sed -e "s/.*>\(.*\)<.*/\1/")
+MAVEN_LOCAL_REPO =  $(shell $(MVN_PARAMS) ../makefiles/find_m2_repo.sh)
 
 NAME = $(LIB_$(LIB_TYPE)_NAME)
 VERSION = $(RUDDER_BRANCH)-$(LIB_$(LIB_TYPE)_VERSION)
@@ -23,11 +23,11 @@ PARENT_POM = $(MAVEN_LOCAL_REPO)/com/normation/plugins/plugins-parent/$(PARENT_V
 # hand. Yep, most beautiful tool.
 $(PLUGINS_JAR_PATH): $(PARENT_POM)
 	test -n "$(LIB_TYPE)"  # $$LIB_TYPE must be defined to COMMON or PRIVATE
-	mvn $(MAVEN_OPTS) clean install
+	$(MVN_CMD) clean install
 
 $(PARENT_POM):
 	echo $(PARENT_POM)
-	cd .. && mvn $(MAVEN_OPTS) -pl com.normation.plugins:plugins-parent  install
+	cd .. && $(MVN_CMD) -pl com.normation.plugins:plugins-parent install
 clean:
 	rm -f  pom.xml
 	rm -rf target
