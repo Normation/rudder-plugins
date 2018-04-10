@@ -18,12 +18,12 @@ TARGET_KEY_CLASSPATH = license.pubkey
 # PUBLIC_KEY_PATH: path towards the public key to embed
 
 std-files: 
-	mvn $(MAVEN_OPTS) package
+	$(MVN_CMD) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
 licensed-files: check-license 
-	mvn $(MAVEN_OPTS) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_CLASSPATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
+	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_CLASSPATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 	cp $(PUBLIC_KEY_PATH) target/$(TARGET_KEY_CLASSPATH)
