@@ -36,6 +36,7 @@
 */
 
 var app = angular.module("datasource", []);
+var datasourceUrl = "/secure/api/datasources";
 
 app.directive('focusOn', function() {
   return function(scope, elem, attr) {
@@ -62,7 +63,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
   $scope.treeId = "#datasources-tree";
   /* Get data sources */
   $scope.getDataSources = function(){
-    return $http.get(contextPath + '/secure/api/latest/datasources').then(function(response){
+    return $http.get(contextPath + datasourceUrl).then(function(response){
       var res = response.data.data.datasources;
       $scope.propertyName = 'name';
       $scope.reverse = false;
@@ -157,7 +158,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     $scope.selectedDatasource.enabled = !$scope.selectedDatasource.enabled;
     var temp = jQuery.extend(true, {}, $scope.getDatasource($scope.selectedDatasource.id));
     temp.enabled = $scope.selectedDatasource.enabled;
-    $http.post(contextPath + '/secure/api/latest/datasources/' + temp.id, temp).then(function(response){
+    $http.post(contextPath + datasourceUrl + '/' + temp.id, temp).then(function(response){
       var res = response;
       var index = $scope.getDatasource($scope.selectedDatasource.id, true);
       $scope.datasources[index] = jQuery.extend(true, {}, $scope.selectedDatasource);
@@ -169,14 +170,14 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     $scope.selectedDatasource.updateTimeout = convertToSecond($scope.selectedDatasource.modifiedTimes.updateTimeout);
     $scope.selectedDatasource.type.parameters.requestTimeout = convertToSecond($scope.selectedDatasource.modifiedTimes.requestTimeout);
     if($scope.selectedDatasource.isNew){
-      $http.put(contextPath + '/secure/api/latest/datasources', $scope.selectedDatasource).then(function(response){
+      $http.put(contextPath + datasourceUrl, $scope.selectedDatasource).then(function(response){
         var res = response;
         delete $scope.selectedDatasource.isNew;
         $scope.datasources.push($scope.selectedDatasource);
         $('#successModal').bsModal('show');
       });
     }else{
-      $http.post(contextPath + '/secure/api/latest/datasources/' + $scope.selectedDatasource.id, $scope.selectedDatasource).then(function(response){
+      $http.post(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id, $scope.selectedDatasource).then(function(response){
         var res = response;
         var index = $scope.getDatasource($scope.selectedDatasource.id, true);
         $scope.datasources[index] = jQuery.extend(true, {}, $scope.selectedDatasource);
@@ -199,7 +200,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     $('#deleteModal').bsModal('show');
   }
   $scope.confirmDeleteDatasource = function(){
-    $http.delete(contextPath + '/secure/api/latest/datasources/' + $scope.selectedDatasource.id).then(function(response){
+    $http.delete(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id).then(function(response){
       $('#deleteModal').bsModal('hide');
       var index = $scope.getDatasource($scope.selectedDatasource.id, true);
       $scope.datasources.splice(index, 1);

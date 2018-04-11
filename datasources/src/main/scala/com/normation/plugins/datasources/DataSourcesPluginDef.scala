@@ -61,7 +61,6 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
   override val basePackage = "com.normation.plugins.datasources"
 
   def init = {
-    PluginLogger.info(s"loading '${buildConf.getString("plugin-id")}:${version.toString}' plugin")
     RudderConfig.rudderApi.addModules(DatasourcesConf.dataSourceApi9.getLiftEndpoints())
     // resources in src/main/resources/toserve must be allowed:
     ResourceServer.allow{
