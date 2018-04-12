@@ -1,0 +1,1 @@
+[{"rudder_id": "845d7972-1bed-4091-8979-ff5c295efb9e", "ip_address": "192.168.41.3", "node_type": "agent", "hostname": "agent.rudder.local"}, {"rudder_id": "root", "ip_address": "192.168.41.2", "node_type": "server", "hostname": "server.rudder.local"}]
