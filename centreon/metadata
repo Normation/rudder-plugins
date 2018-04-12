@@ -1,0 +1,10 @@
+{
+  "type": "plugin",
+  "name": "rudder-plugin-centreon",
+  "version": "4.1-1.0",
+  "build-date": "2018-04-13T16:59:58+02:00",
+  "build-commit": "447ccaf652d08fb5aa6c2fa51f36fb3a2264077f",
+  "content": {
+    "files.txz": "/opt/rudder/"
+  }
+}
