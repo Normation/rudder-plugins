@@ -23,12 +23,6 @@
 
   <modules>
     <module>plugins-common</module>
-    <!-- template module to copy'n'paste for new plugins -->
-    <module>blank-template</module>
-    <!-- a simple example plugin -->
-    <module>helloworld</module>
-    <module>datasources</module>
-    <module>node-external-reports</module>
   </modules>
 
   <build>
