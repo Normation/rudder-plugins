@@ -86,11 +86,11 @@ For information, this the list of package that need to be installed on a minimal
 openjdk-8-jdk maven binutils make git-core xz-utils
 ```
 
-To build a plugin package, go to the plugin directory and type:
+To build a plugin package, do:
 
 ```
 git checkout tag-corresponding-to-plugin-vesion
-make clean && make
+make clean && make generate-all-pom && make plugin-name
 ```
 
 After compilation, you will find in plugin root directory (i.e at the same level than the Makefile file) the
@@ -109,11 +109,16 @@ As of Rudder 4.1, plugins can have a license and adapt there behavior based on r
 The licensing framework is not open source, and such plugin need access to Rudder private repositories.
 
 The common API can be build and installed in user local maven repository with the following command line
-when on `rudder-plugins` directory:
+when on `rudder-plugins` directory (for example for `datasources`, use the same `-licensed` naming 
+convention for other):
 
 ```
-mvn install -Pinternal-limited -am -pl plugins-common-private
+make datasources-licensed SIGNED_LICENSE_PATH="./license.sign"  PUBLIC_KEY_PATH=/path/to/the/public/key.pub
 ```
+
+The file `license.sign` is a license information file signed with the private key matching the public one
+used in the command line. The path of `license.sign` is relative to the plugin directory, so in our example,
+it will be located at: `./datasources/license.sign`
 
 Licensing
 ---------
