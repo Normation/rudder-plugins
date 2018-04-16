@@ -12,13 +12,8 @@
     <groupId>com.normation.rudder</groupId>
     <artifactId>rudder-parent</artifactId>
     <!-- here, we can't use ${rudder-build-version} because of maven limitation-->
-    <version>4.2.3</version>
+    <version>4.2.5</version>
   </parent>
-
-  <properties>
-    <plugins-common-version>4.2-1.0</plugins-common-version>
-    <plugins-common-private-version>4.2-1.0</plugins-common-private-version>
-  </properties>
 
   <description>
     This pom define common resources and build process for all
