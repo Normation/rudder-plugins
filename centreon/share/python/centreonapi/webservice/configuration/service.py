@@ -33,7 +33,7 @@ class Service(object):
     def delhost(self):
         pass
 
-    def getmaro(self, hostname, servicename):
+    def getmacro(self, hostname, servicename):
         return self.webservice.call_clapi('getmacro', 'SERVICE', [hostname,servicename])
 
     def setmacro(self, hostname, servicename, name, value, description):
