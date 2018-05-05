@@ -53,7 +53,7 @@ trait PluginEnableImpl extends PluginStatus {
 /*
  * A standard implementation of the RudderPluginDef which expects to get most of its properties
  * from "build.conf" file.
- * It also manage pluginStatusrmation from a License pluginStatusrmation trait.
+ * It also manage plugin information from a License plugin information trait.
  *
  * Children must give base package (implement `basePackage`) so that build.conf file can be found.
  */
