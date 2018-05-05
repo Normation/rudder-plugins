@@ -52,6 +52,6 @@ final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
   def pluginClasspathPubkey = "${plugin-resource-publickey}"
   def pluginLicensePath     = "${plugin-resource-license}"
   def pluginDeclaredVersion = "${plugin-declared-version}"
-  def pluginId              = "${plugin-name}"
+  def pluginId              = "${plugin-fullname}"
 } 
 

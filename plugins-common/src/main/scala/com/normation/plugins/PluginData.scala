@@ -53,7 +53,7 @@ object DataSourceLogger extends Logger {
 }
 
 /**
- * This file defined an entry point for license pluginStatusrmation and other
+ * This file defined an entry point for license plugin information and other
  * enabling of the plugin
  */
 sealed trait PluginStatus
@@ -63,8 +63,8 @@ final object PluginStatus {
 }
 
 /*
- * This object gives main pluginStatusrmation about license pluginStatusrmation.
- * It is destinated to be read to the user. No string pluginStatusrmation
+ * This object gives main plugin information about license plugin information.
+ * It is destinated to be read to the user. No string plugin information
  * should be used for comparison.
  */
 final case class PluginLicenseInfo(
@@ -94,7 +94,7 @@ trait CheckRudderPluginEnable {
   def enabledStatus(): PluginStatus
 
   /*
-   * pluginStatusrmation about the license. Maybe none is the plugin
+   * plugin information about the license. Maybe none is the plugin
    * is not a limited version.
    */
   def licenseInformation(): Option[PluginLicenseInfo]
@@ -114,7 +114,7 @@ trait PluginEnableImpl extends CheckRudderPluginEnable {
 /*
  * A standard implementation of the RudderPluginDef which expects to get most of its properties
  * from "build.conf" file.
- * It also manage pluginStatusrmation from a License pluginStatusrmation trait.
+ * It also manage plugin information from a License plugin information trait.
  *
  * Children must give base package (implement `basePackage`) so that build.conf file can be found.
  */
@@ -162,22 +162,22 @@ trait DefaultPluginDef extends RudderPluginDef {
         displayName
       }
       }
-     { // license pluginStatusrmation
+     { // license plugin information
        if(!pluginStatus.hasLicense) {
          NodeSeq.Empty
        } else {
            val (bg, msg) = pluginStatus.enabledStatus() match {
-             case PluginStatus.Enabled => ("pluginStatus", None)
+             case PluginStatus.Enabled => ("info", None)
              case PluginStatus.Disabled(msg) => ("danger", Some(msg))
            }
 
-           <div class="tw-bs"><div id="license-pluginStatusrmation" style="padding:5px; margin: 5px;" class={s"bs-callout bs-callout-${bg}"}>
-             <h4>License pluginStatusrmation</h4>
+           <div class="tw-bs"><div id="license-information" style="padding:5px; margin: 5px;" class={s"bs-callout bs-callout-${bg}"}>
+             <h4>License plugin information</h4>
              <p>This binary version of the plugin is submited to a license with the
-                following pluginStatusrmation:</p>
+                following information:</p>
              <div class={s"bg-${bg}"}>{
                pluginStatus.licenseInformation() match {
-                 case None    => <p>It was not possible to read pluginStatusrmation about the license.</p>
+                 case None    => <p>It was not possible to read information about the license.</p>
                  case Some(i) =>
                  <dl class="dl-horizontal" style="padding:5px;">
                    <dt>Plugin with ID</dt> <dd>{i.softwareId}</dd>

@@ -64,7 +64,7 @@ trait LicensedPluginCheck extends CheckRudderPluginEnable {
 //  val pluginClasspathPubkey = "${plugin-resource-publickey}"
 //  val pluginLicensePath     = "${plugin-resource-license}"
 //  val pluginDeclaredVersion = "${plugin-declared-version}"
-//  val pluginId              = "${plugin-name}"
+//  val pluginId              = "${plugin-fullname}"
 
   def pluginClasspathPubkey: String
   def pluginLicensePath    : String
