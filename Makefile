@@ -10,7 +10,7 @@ PUB_LIBS = plugins-common
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
-PLUGINS = blank-template helloworld datasources node-external-reports
+PLUGINS = blank-template helloworld datasources node-external-reports branding
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 

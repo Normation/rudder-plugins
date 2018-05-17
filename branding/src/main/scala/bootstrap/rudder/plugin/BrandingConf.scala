@@ -37,27 +37,17 @@
 
 package bootstrap.rudder.plugin
 
-import bootstrap.liftweb.RudderConfig
-import com.normation.inventory.domain.NodeId
 import com.normation.plugins.branding.BrandingPluginDef
-import org.joda.time.DateTime
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
 import org.springframework.context.annotation.{ Bean, Configuration }
-import net.liftweb.common.Box
-import net.liftweb.common.Full
 import net.liftweb.common.Loggable
-import com.normation.rudder.batch.AutomaticStartDeployment
-import com.normation.rudder.domain.eventlog.RudderEventActor
-import com.normation.rudder.batch.AsyncDeploymentAgent
 import com.normation.plugins.branding.CheckRudderPluginBrandingEnableImpl
 
 /*
  * Actual configuration of the data sources logic
  */
 object BrandingConf {
-
-  import bootstrap.liftweb.{ RudderConfig => Cfg }
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginBrandingEnableImpl()
