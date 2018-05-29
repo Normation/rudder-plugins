@@ -59,7 +59,7 @@ class Host(object):
 
     def setparameters(self, hostname, name, value):
         """
-        DEPRECATED 
+        DEPRECATED
         """
         return self.setparam(hostname, name, value)
 
@@ -90,12 +90,12 @@ class Host(object):
         return self.webservice.call_clapi('settemplate', 'HOST', values)
 
     def addtemplate(self, hostname, template):
-        values = [hostname, "|".join(template)]
+        values = [hostname, template]
         return self.webservice.call_clapi('addtemplate', 'HOST', values)
 
     def deletetemplate(self, hostname, template):
-        values = [hostname, "|".join(template)]
-        return self.webservice.call_clapi('delemplate', 'HOST', values)
+        values = [hostname, template]
+        return self.webservice.call_clapi('deltemplate', 'HOST', values)
 
     def applytemplate(self, hostname):
         """
@@ -162,6 +162,3 @@ class Host(object):
 
     def disable(self, hostname):
         return self.webservice.call_clapi('disable', 'HOST', hostname)
-
-
-
