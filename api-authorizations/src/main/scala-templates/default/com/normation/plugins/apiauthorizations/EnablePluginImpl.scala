@@ -1,6 +1,6 @@
 /*
 *************************************************************************************
-* Copyright 2017 Normation SAS
+* Copyright 2018 Normation SAS
 *************************************************************************************
 *
 * This file is part of Rudder.
@@ -37,13 +37,7 @@
 
 package com.normation.plugins.apiauthorizations
 
-import com.normation.plugins.{PluginStatus, PluginStatusInfo}
+import com.normation.plugins.PluginEnableImpl
 
-/*
- * unlimited version of the plugin
- */
-final class CheckRudderPluginApiAuthorizationsEnableImpl() extends PluginStatus {
-    override val isEnabled = true
-    override val current = PluginStatusInfo.EnabledNoLicense
-}
+final class CheckRudderPluginEnableImpl() extends PluginEnableImpl
 
