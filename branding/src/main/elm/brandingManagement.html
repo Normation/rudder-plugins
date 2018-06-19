@@ -1,23 +1,23 @@
 <html>
-<head>
-  <title>Plugin Reporting</title>
-  <meta charset="utf8" />
-  <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
-  <link rel="stylesheet" href="font-awesome/font-awesome-4.6.3.min.css">
-  <link rel="stylesheet" type="text/css" href="media.css" media="screen">
-  <script src="main.js"></script>
-  <script src="jquery-3.2.1.min.js"></script>
-  <script src="bootstrap/js/bootstrap.min.js" crossorigin="anonymous"></script>
-</head>
-<body>
-  <main></main>
-  <script>
-    var main = document.querySelector("main");
-    var app  = Elm.Branding.embed(main);
-    app.ports.check.subscribe(function(word) {
-      window.print();
-    });
-  </script>
+<body data-lift-content-id="branding-main">
+  <div id="branding-main" data-lift="surround?with=common-layout;at=content">
+   <head_merge>
+
+   <title>Plugin Branding</title>
+   <meta charset="utf8" />
+     <link rel="stylesheet" type="text/css" href="include/media.css" media="screen" data-lift="ServeResource?path=branding/media.css">
+   <script src="generated/branding.js" data-lift="ServeResource?path=branding/branding.js"></script>
+
+   </head_merge>
+   <main></main>
+   <script>
+     var main = document.querySelector("main");
+     var app  = Elm.Branding.embed(main);
+     app.ports.check.subscribe(function(word) {
+       window.print();
+     });
+   </script>
+  </div>
 </body>
 </html>
 
