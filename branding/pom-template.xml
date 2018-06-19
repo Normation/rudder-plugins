@@ -89,7 +89,7 @@
                 <resource>
                   <directory>src/main/elm</directory>
                   <includes>
-                    <include>branding.html</include></includes>
+                    <include>brandingManagement.html</include></includes>
                 </resource>
               </resources>
             </configuration>
