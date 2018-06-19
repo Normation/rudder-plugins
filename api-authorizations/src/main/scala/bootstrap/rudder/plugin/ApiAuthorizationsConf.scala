@@ -58,7 +58,7 @@ object AclLevel extends ApiAuthorizationLevelService {
  */
 object ApiAuthorizationsConf {
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginApiAuthorizationsEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
   // override default service level
   RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
@@ -69,7 +69,7 @@ object ApiAuthorizationsConf {
  * Init module
  */
 @Configuration
-class ApiAuthorizationPluginConf extends Loggable with  ApplicationContextAware with InitializingBean {
+class ApiAuthorizationPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
   @Bean def apiAuthorizationsModuleDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
 
   // spring thingies
