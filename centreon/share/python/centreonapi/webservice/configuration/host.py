@@ -5,22 +5,22 @@ from centreonapi.webservice import Webservice
 class HostObj(object):
 
     def __init__(self, properties):
-        self.name = properties['name']
-        self.state = properties['activate']
-        self.address = properties['address']
-        self.alias = properties['alias']
+        self._name = properties['name']
+        self._state = properties['activate']
+        self._address = properties['address']
+        self._alias = properties['alias']
 
     def name(self):
-        return self.name
+        return self._name
 
     def address(self):
-        return self.address()
+        return self._address
 
     def alias(self):
-        return self.alias()
+        return self._alias
 
     def state(self):
-        return self.state()
+        return self._state
 
 
 class Host(object):

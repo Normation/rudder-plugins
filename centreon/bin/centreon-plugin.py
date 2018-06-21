@@ -39,7 +39,7 @@ registerFile = "/var/rudder/plugin-resources/centreon_register.conf"
 def getRequestToRudderAPI(path):
     try:
         data = requests.get(conf['RUDDER']['rudderAPIURL'] + path, headers={ 'X-API-Token': conf['RUDDER']['rudderAPIToken'] }, verify=False).json()
-    except json.decoder.JSONDecodeError:
+    except: # python3 -> json.decoder.JSONDecodeError:
         print("[!] Error : check your Rudder API token")
         sys.exit(-1)
     return data
