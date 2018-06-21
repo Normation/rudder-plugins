@@ -28,12 +28,14 @@ from centreonapi.webservice.configuration.hostgroups import Hostgroups
 
 confFile = "/opt/rudder/etc/centreon.conf"
 jsonTmp = "/var/rudder/tmp/rudder_nodes.json"
+# fake conf to shut down pylint
+conf={}
 
 # Generic call to the Rudder API, completed by its path param. Using URL and token obtained from centreon.conf
 def getRequestToRudderAPI(path):
     try:
         data = requests.get(conf['RUDDER']['rudderAPIURL'] + path, headers={ 'X-API-Token': conf['RUDDER']['rudderAPIToken'] }, verify=False).json()
-    except json.decoder.JSONDecodeError:
+    except: # python3 -> json.decoder.JSONDecodeError:
         print("[!] Error : check your Rudder API token")
         sys.exit(-1)
     return data
