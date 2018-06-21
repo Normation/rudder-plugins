@@ -88,7 +88,7 @@ def updateCentreonHosts(poller):
     for ch in centreon_hosts.list()['result']:
         if any(g['name'] == 'rudder-nodes' for g in centreon_hosts.gethostgroup(ch['name'])['result']) and not any(ch['name'] == rn['rudder_id'] for rn in rudder_nodes):
                 print("[ ] Host " + ch['name'] + " not listed in Rudder but appearing in rudder-nodes Centreon host group. Deleting host...")
-                centreon_hosts.disable(rudderID)
+                centreon_hosts.disable(ch['name'])
                 centreon_hosts.delete(ch['name'])
                 print("[+] Done")
     print("[+] Done")
