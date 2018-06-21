@@ -37,44 +37,47 @@
 
 package com.normation.plugins.branding
 
-import bootstrap.liftweb.Boot
-import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
-import com.normation.plugins.PluginStatus
-import com.normation.plugins.DefaultPluginDef
+import net.liftweb.common._
+import net.liftweb.json.JsonAST.JValue
+import net.liftweb.json.{NoTypeHints, Serialization}
 
-class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
+// This case class is serialized with it's parameters directly in json
+// Changing a parameter name impacts Rest api and parsing in Elm app
+final case class BrandingConf (
+    displayBar       : Boolean
+  , barColor         : JsonColor
+  , displayLabel     : Boolean
+  , labelText        : String
+  , labelColor       : JsonColor
+  , enableLogo       : Boolean
+  , displayFavIcon   : Boolean
+  , displaySmallLogo : Boolean
+  , displayBigLogo   : Boolean
+  , displayBarLogin  : Boolean
+  , displayLoginLogo : Boolean
+  , displayMotd      : Boolean
+  , motd             : String
+)
 
-  override val basePackage = "com.normation.plugins.branding"
-
-  def init = {
-    PluginLogger.info(s"loading '${buildConf.getString("plugin-name")}:${version.toString}' plugin")
-  }
-
-  def oneTimeInit : Unit = {}
-
-  val configFiles = Seq()
-
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val brandingMenu = (
-      Menu("brandingManagement", <span>Branding</span>) /
-        "secure" / "administration" / "brandingManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
-        >> Template(() => ClasspathTemplates( "template" :: "brandingManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ brandingMenu:_* )
-      case m => m
-    }
-  }
-
+final case class JsonColor (
+    red   : Int
+  , green : Int
+  , blue  : Int
+  , alpha : Double
+) {
+  def toRgba= s"rgba(${red}, ${green}, ${blue}, ${alpha})"
 }
+
+
+object BrandingConf {
+  implicit val formats = Serialization.formats(NoTypeHints)
+  def serialize(conf : BrandingConf) : JValue = {
+    import net.liftweb.json.Extraction.decompose
+    decompose(conf)
+  }
+  def parse(jValue: JValue) : Box[BrandingConf] = {
+    import net.liftweb.json.Extraction.extractOpt
+    Box(extractOpt[BrandingConf](jValue)) ?~! "Could not extract Branding plugin configuration from json"
+  }
+}
+
