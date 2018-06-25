@@ -71,7 +71,8 @@ trait DefaultPluginDef extends RudderPluginDef {
     , "plugin-version"
   ).map(p => s"$p=missing property with name '$p' in file 'build.conf' for '${basePackage}'").mkString("\n")
 
-  // ConfigFactory does not want the "/" at begining nor the ".conf" on the end
+  //by convention, plugin "build.conf" file is copied into path:
+  // target/classes/com/normation/plugins/${project.artifactId}
   lazy val buildConfPath = basePackage.replaceAll("""\.""", "/") + "/build.conf"
   lazy val buildConf = try {
     ConfigFactory.load(this.getClass.getClassLoader, buildConfPath).withFallback(ConfigFactory.parseString(defaults))
@@ -83,6 +84,7 @@ trait DefaultPluginDef extends RudderPluginDef {
   }
 
   override lazy val name = PluginName(buildConf.getString("plugin-fullname"))
+  override lazy val shortName = buildConf.getString("plugin-name")
   override lazy val displayName = buildConf.getString("plugin-title-description")
   override lazy val version = {
     val versionString = buildConf.getString("plugin-version")

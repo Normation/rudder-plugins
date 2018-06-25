@@ -3,7 +3,7 @@ package com.normation.plugins.helloworld.service
 import java.sql.Timestamp
 
 import org.joda.time.DateTime
-import org.squeryl.{ Schema, Session, SessionFactory }
+import org.squeryl.{ Schema, Session }
 import org.squeryl.KeyedEntity
 import org.squeryl.PrimitiveTypeMode.{ _ }
 import org.squeryl.adapters.PostgreSqlAdapter

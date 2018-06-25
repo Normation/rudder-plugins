@@ -42,7 +42,7 @@ import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
 import org.springframework.context.annotation.{ Bean, Configuration }
 import net.liftweb.common.Loggable
-import com.normation.plugins.branding.CheckRudderPluginBrandingEnableImpl
+import com.normation.plugins.branding.CheckRudderPluginEnableImpl
 
 /*
  * Actual configuration of the data sources logic
@@ -50,7 +50,7 @@ import com.normation.plugins.branding.CheckRudderPluginBrandingEnableImpl
 object BrandingConf {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginBrandingEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
 }
 

@@ -15,7 +15,7 @@
   </parent>
 
   <description>
-    Branding plugin to customize Rudder UI 
+    Branding plugin to customize Rudder UI
   </description>
 
   <build>
@@ -23,9 +23,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
@@ -48,7 +45,7 @@
           </execution>
         </executions>
       </plugin>
- <plugin>
+      <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <executions combine.children="append">
           <execution>

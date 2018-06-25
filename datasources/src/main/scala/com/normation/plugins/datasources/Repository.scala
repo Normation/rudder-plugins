@@ -47,7 +47,8 @@ import com.normation.rudder.domain.eventlog._
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.parameters.Parameter
 import com.normation.utils.StringUuidGenerator
-import doobie.imports._
+import doobie._
+import doobie.implicits._
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
@@ -131,9 +132,9 @@ class MemoryDataSourceRepository extends DataSourceRepository {
 
   private[this] var sources : Map[DataSourceId,DataSource] = Map()
 
-  def getAllIds() = synchronized(Full(sources.keySet))
+  def getAllIds = synchronized(Full(sources.keySet))
 
-  def getAll() = synchronized(Full(sources))
+  def getAll = synchronized(Full(sources))
 
   def get(id : DataSourceId) : Box[Option[DataSource]]= synchronized(Full(sources.get(id)))
 
@@ -394,12 +395,12 @@ class DataSourceJdbcRepository(
       )
   }
 
-  override def getAllIds(): Box[Set[DataSourceId]] = {
+  override def getAllIds: Box[Set[DataSourceId]] = {
     query[DataSourceId]("""select id from datasources""").to[Set].attempt.transact(xa).unsafeRunSync()
   }
 
-  override def getAll(): Box[Map[DataSourceId,DataSource]] = {
-    query[DataSource]("""select id, properties from datasources""").vector.map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).unsafeRunSync()
+  override def getAll: Box[Map[DataSourceId,DataSource]] = {
+    query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).unsafeRunSync()
   }
 
   override def get(sourceId : DataSourceId): Box[Option[DataSource]] = {

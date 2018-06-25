@@ -55,7 +55,8 @@ class Module1 extends Loggable {
    */
   @Bean def moduleDef1 = new RudderPluginDef {
     val status = new PluginEnableImpl(){}
-    val name = PluginName("module1")
+    val name = PluginName("rudder-plugin-module1")
+    val shortName = "module1"
     val version = PluginVersion(0,0,1)
     val basePackage = "com.normation.plugins.helloworld"
     val description : NodeSeq  = Text {

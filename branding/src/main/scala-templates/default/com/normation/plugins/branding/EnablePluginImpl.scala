@@ -37,14 +37,8 @@
 
 package com.normation.plugins.branding
 
-import com.normation.plugins.PluginStatus
-import com.normation.plugins.PluginStatusInfo
+import com.normation.plugins.PluginEnableImpl
 
-/*
- * unlimited version of the plugin
- */
-final class CheckRudderPluginBrandingEnableImpl() extends PluginStatus {
-    override val isEnabled = true
-    override val current = PluginStatusInfo.EnabledNoLicense
-}
+final class CheckRudderPluginEnableImpl() extends PluginEnableImpl
+
 

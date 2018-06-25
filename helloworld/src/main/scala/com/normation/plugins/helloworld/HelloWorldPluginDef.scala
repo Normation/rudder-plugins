@@ -15,7 +15,8 @@ import net.liftweb.sitemap.LocPath.stringToLocPath
 class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with Loggable {
 
   val status = new PluginEnableImpl(){}
-  val name = PluginName("hello world")
+  val shortName = "hello-world"
+  val name = PluginName("rudder-plugin-"+shortName)
   val basePackage = "com.normation.plugins.helloworld"
   val version = PluginVersion(1,0,0)
   val description : NodeSeq  =
@@ -27,7 +28,7 @@ class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with 
 
 
   def init = {
-    logger.info("loading helloWorl plugin")
+    logger.info("loading helloWorld plugin")
     dbService.init()
   }
 

@@ -37,7 +37,6 @@
 
 package bootstrap.rudder.plugin
 
-import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.BLANK.BLANKPluginDef
 import com.normation.plugins.BLANK.CheckRudderPluginEnableImpl
 import net.liftweb.common.Loggable

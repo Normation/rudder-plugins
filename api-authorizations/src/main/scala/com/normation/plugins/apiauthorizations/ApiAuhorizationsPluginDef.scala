@@ -37,19 +37,14 @@
 
 package com.normation.plugins.apiauthorizations
 
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.common.Loggable
 import com.normation.plugins._
 
 
-class ApiAuthorizationsPluginDef(override val status: PluginStatus) extends DefaultPluginDef with Loggable {
+class ApiAuthorizationsPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
-
+  //here, we let the "-" so that "build.conf" is looked up at the correct place.
   override val basePackage = "com.normation.plugins.apiauthorizations"
-  def init = {
-    PluginLogger.info(s"loading '${buildConf.getString("plugin-id")}:${version.toString}' plugin")
-  }
-
+  def init = {}
   def oneTimeInit : Unit = {}
 
   val configFiles = Seq()

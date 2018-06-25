@@ -1,10 +1,7 @@
 package com.normation.plugins.helloworld.snippet
 
-import net.liftweb.common._
 import net.liftweb.http.DispatchSnippet
-import net.liftweb.util._
 import net.liftweb.util.Helpers._
-import scala.xml.NodeSeq
 import bootstrap.liftweb.LiftSpringApplicationContext.inject
 import com.normation.plugins.helloworld.HelloWorldPluginDef
 
