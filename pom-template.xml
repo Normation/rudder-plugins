@@ -225,6 +225,13 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- this one is needed else overriden by lift trans dep. Really. Don't remove it. -->
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala-version}</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>
