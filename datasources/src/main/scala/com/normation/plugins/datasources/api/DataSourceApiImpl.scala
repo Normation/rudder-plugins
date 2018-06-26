@@ -183,8 +183,12 @@ class DataSourceApiImpl (
       val (datasourceId, nodeId) = ids
       val cause = UpdateCause(ModificationId(uuidGen.newUuid), authzToken.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId}'"), false)
       val res: Box[NodeUpdateResult] = for {
-        node    <- nodeInfoService.getNode(NodeId(nodeId))
-        updated <- erase(cause, node, DataSourceId(datasourceId))
+        optNode <- nodeInfoService.getNodeInfo(NodeId(nodeId))
+        node    <- optNode match {
+                     case None    => Failure(s"Node with ID '${nodeId}' was not found")
+                     case Some(x) => Full(x)
+                   }
+        updated <- erase(cause, node.node, DataSourceId(datasourceId))
       } yield {
         updated
       }

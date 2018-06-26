@@ -38,63 +38,23 @@
 package com.normation.plugins.branding
 
 import bootstrap.liftweb.Boot
-import bootstrap.rudder.plugin.BrandingConf
-import com.normation.plugins.PluginName
-import com.normation.plugins.PluginVersion
-import com.normation.plugins.RudderPluginDef
 import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
-import net.liftweb.http.ResourceServer
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
-import scala.xml.NodeSeq
-import com.typesafe.config.ConfigFactory
-import com.normation.plugins.PluginStatus
-import bootstrap.liftweb.RudderConfig
 
-class BrandingPluginDef(info: PluginStatus) extends RudderPluginDef with Loggable {
+import com.normation.plugins.PluginStatus
+import com.normation.plugins.DefaultPluginDef
+
+class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.branding"
 
-  //get properties name for the plugin from "build.conf" file
-  //have default string for errors (and avoid "missing prop exception"):
-  val defaults = List("plugin-id", "plugin-name", "plugin-version").map(p => s"$p=missing property with name '$p' in file 'build.conf'").mkString("\n")
-  // ConfigFactory does not want the "/" at begining nor the ".conf" on the end
-  val buildConfPath = basePackage.replaceAll("""\.""", "/") + "/build.conf"
-  val buildConf = ConfigFactory.load(this.getClass.getClassLoader, buildConfPath).withFallback(ConfigFactory.parseString(defaults))
 
-
-  override val name = PluginName(buildConf.getString("plugin-id"))
-  override val displayName = buildConf.getString("plugin-name")
-  override val version = {
-    val versionString = buildConf.getString("plugin-version")
-    PluginVersion.from(versionString).getOrElse(
-      //a version name that indicate an erro
-      PluginVersion(0,0,1, s"ERROR-PARSING-VERSION: ${versionString}")
-    )
-  }
-
-  override def description : NodeSeq  = (
-     <p>
-      Plugin which allow to create branding about Rudder managed object.
-      <a href="/secure/administration/brandingManagement">Go to branding editor</a>
-     </p>
-  )
-
-  val status: PluginStatus = info
-
-  def init = {
-    PluginLogger.info(s"loading '${buildConf.getString("plugin-id")}:${version.toString}' plugin")
-    // resources in src/main/resources/toserve must be allowed:
-    ResourceServer.allow{
-      case "branding" :: _ => true
-    }
-  }
+  def init = {}
 
   def oneTimeInit : Unit = {}
 

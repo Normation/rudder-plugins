@@ -16,3 +16,6 @@ license.sign
 *.privkey
 pom.xml
 makefiles/m2_location.cache
+#elm related stuff
+**/elm-stuff/*
+**/generated/*

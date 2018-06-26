@@ -3,11 +3,8 @@
 # make licensed : will build a license limited version of the plugin
 #
 
-FILES = $(NAME)/reporting-schema.sql
+FILES = 
 SCRIPTS = postinst
 
 include ../makefiles/common-scala-plugin.mk
-
-target/$(NAME)/reporting-schema.sql:
-	cp ./src/main/resources/reporting-schema.sql target/$(NAME)/
 

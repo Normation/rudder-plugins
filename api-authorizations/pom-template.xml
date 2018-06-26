@@ -18,6 +18,9 @@
     This plugin allows to define fine grained authorization for Rudder REST API.
   </description>
 
+  <properties>
+    <destDirectory>apiauthorizations</destDirectory>
+  </properties>
 
   <build>
     <plugins>

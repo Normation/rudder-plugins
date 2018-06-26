@@ -12,7 +12,7 @@
     <groupId>com.normation.rudder</groupId>
     <artifactId>rudder-parent</artifactId>
     <!-- here, we can't use ${rudder-build-version} because of maven limitation-->
-    <version>4.3.0</version>
+    <version>4.3.3-SNAPSHOT</version>
   </parent>
 
   <description>
@@ -23,6 +23,13 @@
   <modules>
     <module>plugins-common</module>
   </modules>
+
+  <properties>
+    <!-- the destination path for build.conf. By default ${project.artifactId} but may be
+         overriden in children project if needed (for ex is names is not a valid class name)
+    -->
+    <destDirectory>${project.artifactId}</destDirectory>
+  </properties>
 
   <build>
     <pluginManagement>
@@ -62,7 +69,7 @@
                    unique identification of build.conf when several plugins presents.
                    So build.conf is at the root of "basePackage"
                -->
-              <outputDirectory>target/classes/com/normation/plugins/${project.artifactId}</outputDirectory>
+              <outputDirectory>target/classes/com/normation/plugins/${destDirectory}</outputDirectory>
               <resources>
                 <resource>
                   <directory>.</directory>
@@ -227,6 +234,12 @@
       <version>${scala-version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala-version}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>

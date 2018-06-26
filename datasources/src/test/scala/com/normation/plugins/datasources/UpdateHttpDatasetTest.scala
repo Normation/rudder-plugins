@@ -62,7 +62,6 @@ import net.liftweb.common._
 import net.liftweb.json.JsonAST.JString
 import net.liftweb.json.JsonAST.JValue
 import org.http4s._
-import org.http4s.dsl._
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.util._
 import org.junit.runner.RunWith
@@ -71,11 +70,14 @@ import org.specs2.matcher.MatchResult
 import org.specs2.mutable._
 import org.specs2.specification.AfterAll
 import org.specs2.runner.JUnitRunner
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import cats.effect._
-import fs2._
+import com.normation.rudder.domain.queries.CriterionComposition
+import com.normation.rudder.domain.queries.NodeInfoMatcher
+import com.normation.rudder.services.nodes.LDAPNodeInfo
 import fs2.Stream._
 import org.http4s.dsl.io._
 
@@ -240,7 +242,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
-    def getLDAPNodeInfo(nodeIds: Set[NodeId]) = throw new IllegalAccessException("Thou shall not used that method here")
+    def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) : Box[Set[LDAPNodeInfo]] = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")

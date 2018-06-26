@@ -40,30 +40,18 @@ package com.normation.plugins.BLANK
 import bootstrap.liftweb.Boot
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
-import net.liftweb.http.ResourceServer
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 
-class BLANKPluginDef(override val status: PluginStatus) extends DefaultPluginDef with Loggable {
+class BLANKPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.BLANK"
 
-  def init = {
-
-    // here, initialization of Lift related things
-    PluginLogger.info(s"loading '${name}' plugin")
-    // LiftRules.xxxx
-    // resources in src/main/resources/toserve/BLANK must be allowed:
-    ResourceServer.allow{
-      case "BLANK" :: _ => true
-    }
-  }
+  def init = {}
 
   def oneTimeInit : Unit = {}
 

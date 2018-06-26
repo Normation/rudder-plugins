@@ -37,64 +37,12 @@
 
 package com.normation.plugins.branding
 
-import java.util.Formatter.DateTime
-import org.joda.time.DateTime
-import com.normation.license._
-import com.normation.plugins.PluginStatus
-import com.normation.plugins.PluginStatusInfo
-import com.normation.plugins.PluginLicenseInfo
-import com.normation.rudder.domain.logger.PluginLogger
+import com.normation.plugins.LicensedPluginCheck
 
-
-/*
- * This template file will processed at build time to choose
- * the correct immplementation to use for the interface.
- * The default implementation is to always enable status.
- *
- * The class will be loaded by ServiceLoader, it needs an empty constructor.
- * 
- * All implem is totally plugin independant, so it should be factored out
- * in a trait, but there is no good place for that one. 
- * It can't be in Rudder because it would make a dep towards license-lib. 
- * Can't be in license-lib else dep toward Rudder. 
- */
-
-final class CheckRudderPluginBrandingEnableImpl() extends PluginStatus {
-
-  val pluginId = "${plugin-id}"
-  
-  //the following string should be replaced at compile time 
-  //(in maven language, they are "filtered")
-  val maybeLicense = LicenseReader.readAndCheckLicense("${plugin-resource-license}", "${plugin-resource-publickey}", "${plugin-declared-version}", pluginId)
-   
-  //log at that point of loading if we successfully read the license information for the plugin
-  maybeLicense.fold( 
-      error => PluginLogger.error(s"Plugin '${pluginId}' license error: ${error.msg}") 
-    , ok    => PluginLogger.info("Plugin '${plugin-id}' has a license and the license signature is valid.") 
-  )
-    
-  def current: PluginStatusInfo = {
-    (for {
-      info               <- maybeLicense
-      (license, version) = info
-      check              <- LicenseChecker.checkLicense(license, DateTime.now, version, "${plugin-id}")
-    } yield {
-      check
-    }) match {
-      case Right(x) => PluginStatusInfo.EnabledWithLicense(licenseInformation(x))
-      case Left (y) => PluginStatusInfo.Disabled(y.msg, maybeLicense.toOption.map { case (l, v) => licenseInformation(l) })
-    }
-  }
-  
-  private[this] def licenseInformation(l: License): PluginLicenseInfo = {
-    PluginLicenseInfo(
-        licensee   = l.content.licensee.value
-      , softwareId = l.content.softwareId.value
-      , minVersion = l.content.minVersion.value.toString
-      , maxVersion = l.content.maxVersion.value.toString
-      , startDate  = l.content.startDate.value
-      , endDate    = l.content.endDate.value
-    )
-  }
+final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
+  // here are processed variables
+  def pluginClasspathPubkey = "${plugin-resource-publickey}"
+  def pluginLicensePath     = "${plugin-resource-license}"
+  def pluginDeclaredVersion = "${plugin-declared-version}"
+  def pluginId              = "${plugin-fullname}"
 }
-
