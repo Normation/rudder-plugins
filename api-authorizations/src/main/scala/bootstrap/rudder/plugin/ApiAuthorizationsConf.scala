@@ -1,6 +1,6 @@
 /*
 *************************************************************************************
-* Copyright 2016 Normation SAS
+* Copyright 2018 Normation SAS
 *************************************************************************************
 *
 * This file is part of Rudder.
@@ -63,6 +63,14 @@ object ApiAuthorizationsConf {
 
   // override default service level
   RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
+
+  lazy val userApi = new UserApi(
+      RudderConfig.restExtractorService
+    , RudderConfig.roApiAccountRepository
+    , RudderConfig.woApiAccountRepository
+    , RudderConfig.tokenGenerator
+    , RudderConfig.stringUuidGenerator
+  )
 }
 
 /**
@@ -73,6 +81,7 @@ class ApiAuthorizationPluginConf extends Loggable with ApplicationContextAware w
   @Bean def apiAuthorizationsModuleDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
 
   @Bean def apiAccountsExtention = new ApiAccountsExtension()
+  @Bean def userInformationExtention = new UserInformationExtension()
 
   // spring thingies
   var appContext : ApplicationContext = null
@@ -80,6 +89,7 @@ class ApiAuthorizationPluginConf extends Loggable with ApplicationContextAware w
   override def afterPropertiesSet() : Unit = {
     val ext = appContext.getBean(classOf[SnippetExtensionRegister])
     ext.register(apiAccountsExtention)
+    ext.register(userInformationExtention)
   }
 
   override def setApplicationContext(applicationContext:ApplicationContext) = {
