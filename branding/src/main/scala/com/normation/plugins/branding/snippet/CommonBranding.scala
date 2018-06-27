@@ -35,46 +35,45 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.branding
 
-import bootstrap.liftweb.Boot
-import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
-import com.normation.plugins.PluginStatus
-import com.normation.plugins.DefaultPluginDef
+package com.normation.plugins.branding.snippet
 
-class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
+import com.normation.plugins.{SnippetExtensionKey, SnippetExtensionPoint}
+import com.normation.rudder.web.snippet.CommonLayout
+import net.liftweb.common.{Full, Loggable}
+import net.liftweb.util._
+import Helpers._
+import bootstrap.rudder.plugin.BrandingPluginConf
 
-  override val basePackage = "com.normation.plugins.branding"
+import scala.xml.NodeSeq
 
-  def init = {
-    PluginLogger.info(s"loading '${buildConf.getString("plugin-name")}:${version.toString}' plugin")
-  }
 
-  def oneTimeInit : Unit = {}
 
-  val configFiles = Seq()
+class CommonBranding  extends SnippetExtensionPoint[CommonLayout] with Loggable {
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val brandingMenu = (
-      Menu("brandingManagement", <span>Branding</span>) /
-        "secure" / "administration" / "brandingManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
-        >> Template(() => ClasspathTemplates( "template" :: "brandingManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
+  val extendsAt = SnippetExtensionKey(classOf[CommonLayout].getSimpleName)
 
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ brandingMenu:_* )
-      case m => m
+  def compose(snippet:CommonLayout) : Map[String, NodeSeq => NodeSeq] = Map(
+    "display" -> display _
+  )
+
+  private [this] val confRepo = BrandingPluginConf.brandingConfService
+
+  def display(xml:NodeSeq) = {
+    val data = confRepo.getConf
+    val bar = data match {
+      case Full(data) if (data.displayBar) =>
+      <div id="headerBar"> {if (data.displayLabel) data.labelText}
+        <style>
+          .main-header {{top:30px }}
+          .content-wrapper, .main-sidebar {{padding-top:80px}}
+          #headerBar {{height: 30px; padding-top:5px; font-size:20px; position: fixed; z-index:1050;background-color: {data.barColor.toRgba}; color: {data.labelColor.toRgba }; font-weight: 700; width:100%; text-align:center;}}
+        </style>
+      </div>
+      case _ => NodeSeq.Empty
     }
+    ("* -*" #> bar).apply(xml)
+
   }
 
 }

@@ -37,21 +37,32 @@
 
 package bootstrap.rudder.plugin
 
-import com.normation.plugins.branding.BrandingPluginDef
+import com.normation.plugins.SnippetExtensionRegister
+import com.normation.plugins.branding.{BrandingConfService, BrandingPluginDef}
 import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ ApplicationContext, ApplicationContextAware }
-import org.springframework.context.annotation.{ Bean, Configuration }
+import org.springframework.context.{ApplicationContext, ApplicationContextAware}
+import org.springframework.context.annotation.{Bean, Configuration}
 import net.liftweb.common.Loggable
 import com.normation.plugins.branding.CheckRudderPluginEnableImpl
+import com.normation.plugins.branding.snippet.{CommonBranding, LoginBranding}
+import com.normation.rudder.rest.{BrandingApi, BrandingApiService}
 
 /*
  * Actual configuration of the data sources logic
  */
-object BrandingConf {
+object BrandingPluginConf {
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
+  import bootstrap.liftweb.{ RudderConfig => Cfg }
+
+  val brandingConfService : BrandingConfService  = new BrandingConfService
+
+  val brandingApiService : BrandingApiService = new BrandingApiService(brandingConfService)
+  val brandingApi : BrandingApi = new BrandingApi(brandingApiService, Cfg.restExtractorService, Cfg.stringUuidGenerator)
+
+  Cfg.rudderApi.addModules(brandingApi.getLiftEndpoints())
 }
 
 /**
@@ -59,14 +70,17 @@ object BrandingConf {
  */
 @Configuration
 class BrandingPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
-  @Bean def brandingModuleDef = new BrandingPluginDef(BrandingConf.pluginStatusService)
-
-
+  @Bean def brandingModuleDef = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
   // spring thingies
   var appContext : ApplicationContext = null
 
-  override def afterPropertiesSet() : Unit = {}
-
+  val commonBranding = new CommonBranding
+  val loginBranding = new LoginBranding
+  override def afterPropertiesSet() : Unit = {
+    val ext = appContext.getBean(classOf[SnippetExtensionRegister])
+    ext.register(commonBranding)
+    ext.register(loginBranding)
+  }
   override def setApplicationContext(applicationContext:ApplicationContext) = {
     appContext = applicationContext
   }
