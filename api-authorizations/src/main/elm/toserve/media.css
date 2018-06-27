@@ -1,0 +1,9 @@
+html, body {
+  background: #ecf0f5;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+.tw-bs{
+  background-color: transparent !important;
+}

@@ -38,6 +38,7 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.SnippetExtensionRegister
 import com.normation.plugins.apiauthorizations._
 import com.normation.rudder.rest.ApiAuthorizationLevelService
 import net.liftweb.common.Loggable
@@ -62,7 +63,6 @@ object ApiAuthorizationsConf {
 
   // override default service level
   RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
-
 }
 
 /**
@@ -72,10 +72,15 @@ object ApiAuthorizationsConf {
 class ApiAuthorizationPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
   @Bean def apiAuthorizationsModuleDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
 
+  @Bean def apiAccountsExtention = new ApiAccountsExtension()
+
   // spring thingies
   var appContext : ApplicationContext = null
 
-  override def afterPropertiesSet() : Unit = {}
+  override def afterPropertiesSet() : Unit = {
+    val ext = appContext.getBean(classOf[SnippetExtensionRegister])
+    ext.register(apiAccountsExtention)
+  }
 
   override def setApplicationContext(applicationContext:ApplicationContext) = {
     appContext = applicationContext
