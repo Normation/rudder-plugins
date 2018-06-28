@@ -86,12 +86,20 @@ For information, this the list of package that need to be installed on a minimal
 openjdk-8-jdk maven binutils make git-core xz-utils
 ```
 
+For the branding plugin, you need to have elm-install present on the system
+
+```
+npm install -g  elm
+```
+
 To build a plugin package, do:
 
 ```
 git checkout tag-corresponding-to-plugin-vesion
 make clean && make generate-all-pom && make plugin-name
 ```
+
+Please note that you need to build plugins-common before being able to build most project
 
 After compilation, you will find in plugin root directory (i.e at the same level than the Makefile file) the
 plugin package: `pluginShortName-pluginVersion.rpkg`.
