@@ -53,8 +53,6 @@ class NodeExternalReportApi(
     readReport   : ReadExternalReports
 ) extends RestHelper with Loggable {
 
-  import net.liftweb.json.JsonDSL._
-
   val requestDispatch : PartialFunction[Req, () => Box[LiftResponse]] = {
 
     case Get(reportType :: fileName :: "raw" :: Nil, req) => {
@@ -71,7 +69,7 @@ class NodeExternalReportApi(
         StreamingResponse(
             stream
           , () => stream.close
-          , stream.available
+          , stream.available.toLong
           , List("Content-Type" -> contentType)
           , Nil
           , 200
