@@ -36,7 +36,6 @@
 
 package com.normation.plugins.nodeexternalreports
 
-import scala.xml.NodeSeq
 import com.normation.plugins._
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
 import bootstrap.liftweb.ClassPathResource
@@ -50,7 +49,7 @@ import net.liftweb.sitemap.Menu
 
 class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val status: PluginStatus) extends DefaultPluginDef with Loggable {
 
-  val basePackage = "com.normation.plugins.nodeexternalreport"
+  val basePackage = "com.normation.plugins.nodeexternalreports"
 
   val configFiles = Seq(ClassPathResource("demo-config-1.properties"), ClassPathResource("demo-config-2.properties"))
 
@@ -65,10 +64,10 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
 
   override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
     val loc =
-      Menu("nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "administration" / "nodeexternalreport" >>
+      Menu("nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "administration" / "nodeexternalreports" >>
         LocGroup("administrationGroup") >>
         Template(() =>
-          ClasspathTemplates( "nodeExternalReport" :: Nil ) openOr
+          ClasspathTemplates( "nodeExternalReports" :: Nil ) openOr
           <div>Template not found</div>)
 
     menus.map {
