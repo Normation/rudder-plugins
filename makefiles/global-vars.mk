@@ -8,6 +8,7 @@ RUDDER_BRANCH       = $(shell sed -ne '/^rudder-branch=/s/rudder-branch=//p' $(M
 LIB_COMMON_VERSION  = $(shell sed -ne '/^lib-common=/s/lib-common=//p' $(MAIN_BUILD))
 LIB_PRIVATE_VERSION = $(shell sed -ne '/^lib-common-private=/s/lib-common-private=//p' $(MAIN_BUILD))
 PARENT_VERSION      = $(shell sed -ne '/^parent-plugin=/s/parent-plugin=//p' $(MAIN_BUILD))
+BUILD_VERSION       = $(shell sed -ne '/^rudder-build-version=/s/rudder-build-version=//p' $(MAIN_BUILD))
 
 
 ifneq (,$(wildcard ./build.conf))
@@ -30,5 +31,6 @@ generate-pom:
 	sed -i -e "s/\$${lib-common}/$(LIB_COMMON_VERSION)/" pom.xml
 	sed -i -e "s/\$${lib-common-private}/$(LIB_PRIVATE_VERSION)/" pom.xml
 	sed -i -e "s/\$${plugin-version}/$(VERSION)/" pom.xml
+	sed -i -e "s/\$${rudder-build-version}/$(BUILD_VERSION)/" pom.xml
 
 
