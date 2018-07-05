@@ -76,6 +76,9 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import cats.effect._
+import com.normation.rudder.domain.queries.CriterionComposition
+import com.normation.rudder.domain.queries.NodeInfoMatcher
+import com.normation.rudder.services.nodes.LDAPNodeInfo
 import fs2.Stream._
 import org.http4s.dsl.io._
 

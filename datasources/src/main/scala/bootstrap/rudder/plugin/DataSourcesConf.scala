@@ -51,13 +51,13 @@ import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
-import com.normation.rudder.batch.AsyncDeploymentAgent
 import com.normation.plugins.datasources.api.DataSourceApiImpl
+import com.normation.rudder.batch.AsyncDeploymentActor
 
 /*
  * An update hook which triggers a configuration generation if needed
  */
-class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentAgent) {
+class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentActor) {
   def hook(updatedNodeIds: Set[NodeId], cause: UpdateCause): Unit = {
     // we don't trigger a new update if the update cause was during a generation
     if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
