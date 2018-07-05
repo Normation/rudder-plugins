@@ -75,6 +75,9 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import cats.effect._
+import com.normation.rudder.domain.queries.CriterionComposition
+import com.normation.rudder.domain.queries.NodeInfoMatcher
+import com.normation.rudder.services.nodes.LDAPNodeInfo
 import fs2.Stream._
 import org.http4s.dsl.io._
 
@@ -239,7 +242,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
-    def getLDAPNodeInfo(nodeIds: Set[NodeId]) = throw new IllegalAccessException("Thou shall not used that method here")
+    def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) : Box[Set[LDAPNodeInfo]] = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
