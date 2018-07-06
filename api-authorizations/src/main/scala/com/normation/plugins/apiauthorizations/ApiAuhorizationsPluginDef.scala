@@ -1,6 +1,6 @@
 /*
 *************************************************************************************
-* Copyright 2016 Normation SAS
+* Copyright 2018 Normation SAS
 *************************************************************************************
 *
 * This file is part of Rudder.
@@ -37,13 +37,19 @@
 
 package com.normation.plugins.apiauthorizations
 
+import bootstrap.rudder.plugin.ApiAuthorizationsConf
 import com.normation.plugins._
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 
 
 class ApiAuthorizationsPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   //here, we let the "-" so that "build.conf" is looked up at the correct place.
   override val basePackage = "com.normation.plugins.apiauthorizations"
+
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(ApiAuthorizationsConf.userApi)
+
   def init = {}
   def oneTimeInit : Unit = {}
 
