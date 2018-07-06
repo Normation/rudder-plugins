@@ -6,3 +6,63 @@
   font-size: 12px !important;
   text-align: center;
 }
+
+label.label-acl{
+  display: block;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  background:#fff;
+  float:left;
+  width:100%;
+  background: #f0f0f0;
+  cursor:pointer;
+}
+
+label.label-acl > label{
+  text-align:center;
+  height: 100%;
+  margin-bottom:0;
+}
+
+label.label-acl > label input{
+  position: relative;
+  top: 20px;
+}
+
+label.label-acl > div{
+  background-color:#fff;
+  transition-duration:.2s;
+}
+label.label-acl:hover > div{
+  background-color:#fafafa;
+}
+label.label-acl > div > h4 > b{
+  font-weight:normal;
+  text-transform:UPPERCASE;
+  transition-duration:.2s;
+  color: #999;
+  display:inline-block;
+  font-family:monospace;
+  margin-right:2px;
+  font-size: 0.9em
+}
+label.label-acl:hover > div > h4 > b.delete{
+  color:#e25f5d;
+}
+label.label-acl:hover > div > h4 > b.get{
+  color:#6db95b;
+}
+label.label-acl:hover > div > h4 > b.post{
+  color:#609ade;
+}
+label.label-acl:hover > div > h4 > b.put{
+  color:#935cc1;
+}
+label.label-acl > div > div{
+  color: #555;
+  font-style: italic;
+}
+#apiauthorization-app h3{
+    float: left;
+    width: 100%;
+}

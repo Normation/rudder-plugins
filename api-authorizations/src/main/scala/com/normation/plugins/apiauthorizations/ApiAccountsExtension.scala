@@ -109,8 +109,9 @@ class ApiAccountsExtension extends SnippetExtensionPoint[ApiAccounts] with Logga
 
               // init elm app
               var node = document.getElementById('apiauthorization-app');
-              var app = Elm.ApiAuthorizations.embed(node, {
-                  token: { id: account.id, acl: account.acl}
+              var acl  = account.acl === undefined ? [] : account.acl;
+              var app  = Elm.ApiAuthorizations.embed(node, {
+                  token: { id: account.id, acl: acl}
                 , rudderApis: rudderApis
               });
 

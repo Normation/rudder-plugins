@@ -92,18 +92,16 @@ apiSelect acl path verb =
     ac     = AccessControl path verb
     status = List.member ac acl
   in
-    input [ type_ "checkbox", checked status, onClick (SetAc ac (not status)) ] []
-
-
+    label[class "col-xs-1"][input [ type_ "checkbox", checked status, onClick (SetAc ac (not status)) ] []]
 
 displayApi: Api -> Html Msg
 displayApi api =
-  div [] [
+  div [class "col-xs-11"] [
     h4 [] [
-      (b [] [(text ("["++api.verb++"]"))])
+      (b [class api.verb] [(text (api.verb))])
     , (text (" " ++ api.path))
     ]
-  , (text (api.name ++ ": " ++ api.description))
+  , div[][(text (api.name ++ ": " ++ api.description))]
   ]
 
 displayCategory: List AccessControl -> ApiCategory -> Html Msg
@@ -111,9 +109,9 @@ displayCategory acl cat =
   div [] [
     h3 [] [(text cat.category)]
   , div [] (cat.apis |> List.map (\api ->
-      label [] [
-        (displayApi api)
-      , (apiSelect acl api.path api.verb)
+      label [class "label-acl" ] [
+        (apiSelect acl api.path api.verb)
+      , (displayApi api)
       ]
     ))
   ]
