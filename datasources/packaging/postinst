@@ -1,7 +1,35 @@
 #!/bin/bash
 
-# create table for Rudder data sources plugin:
-# note that if you installed Rudder 4.1~alpha or 4.1~beta1, or a previous version
-# of the plugin, you can skip that step (which would fail with a "table exists" error)
-psql -U rudder -h localhost -d rudder -f /opt/rudder/share/plugins/datasources/datasources-schema.sql
+# Postinstall for Rudder datasource plugin
+RUDDER_OPT="/opt/rudder"
 
+SQL_CREDENTIALS=$(grep -c -E "^rudder.jdbc.(username|password)[ \t]*=" /opt/rudder/etc/rudder-web.properties || true)
+
+if [ -f /opt/rudder/etc/rudder-web.properties -a ${SQL_CREDENTIALS} -eq 2 ]; then
+  # Get the database access credentials from the rudder-web.properties file
+  SQL_USER="$(grep -E '^rudder.jdbc.username[ \t]*=' ${RUDDER_OPT}/etc/rudder-web.properties | cut -d "=" -f 2-)"
+  SQL_PASSWORD="$(grep -E '^rudder.jdbc.password[ \t]*=' ${RUDDER_OPT}/etc/rudder-web.properties | cut -d "=" -f 2-)"
+  SQL_SERVER="$(grep -E '^rudder.jdbc.url[ \t]*=' ${RUDDER_OPT}/etc/rudder-web.properties | cut -d '=' -f 2- | sed 's%^.*://\(.*\):\(.*\)/.*$%\1%')"
+  SQL_PORT="$(grep -E '^rudder.jdbc.url[ \t]*=' ${RUDDER_OPT}/etc/rudder-web.properties | cut -d '=' -f 2- | sed 's%^.*://\(.*\):\(.*\)/.*$%\2%')"
+  SQL_DATABASE="$(grep -E '^rudder.jdbc.url[ \t]*=' ${RUDDER_OPT}/etc/rudder-web.properties | cut -d '=' -f 2- | sed 's%^.*://.*:.*/\(.*\)$%\1%')"
+
+  export PGPASSWORD="${SQL_PASSWORD}"
+else
+  # No database access credentials in rudder-web.properties... Try anyway using "guessed" values.
+  echo "WARNING: Database access credentials are missing in /opt/rudder/etc/rudder-web.properties, trying to guess adequate values."
+
+  SQL_USER="rudder"
+  SQL_PASSWORD="Normation"
+  SQL_SERVER="localhost"
+  SQL_PORT="5432"
+
+  # We rely on .pgpass instead
+  unset PGPASSWORD
+fi
+
+PSQL="psql -q -h ${SQL_SERVER} -p ${SQL_PORT} -U ${SQL_USER}"
+
+# Run SQL script to update schema. This script is reentrant, so you can run it as much as you need
+echo -n "Ensuring that database schema is up to date"
+${PSQL} -d ${SQL_DATABASE} -f /opt/rudder/share/plugins/datasources/datasources-schema.sql
+echo " Done"
