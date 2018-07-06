@@ -12,17 +12,13 @@
     <groupId>com.normation.rudder</groupId>
     <artifactId>rudder-parent</artifactId>
     <!-- here, we can't use ${rudder-build-version} because of maven limitation-->
-    <version>4.3.0</version>
+    <version>${rudder-build-version}</version>
   </parent>
 
   <description>
     This pom define common resources and build process for all
     plugins.
   </description>
-
-  <modules>
-    <module>plugins-common</module>
-  </modules>
 
   <properties>
     <!-- the destination path for build.conf. By default ${project.artifactId} but may be
@@ -121,11 +117,6 @@
   <!-- We need to specify that dependencies comming from parent are provided (they are by rudder-web) -->
   <dependencyManagement>
   <dependencies>
-    <dependency>
-      <groupId>com.normation.plugins</groupId>
-      <artifactId>plugins-common</artifactId>
-      <version>${rudder-branch}-${lib-common}</version>
-    </dependency>
     <dependency>
       <groupId>com.normation.plugins</groupId>
       <artifactId>plugins-common-private</artifactId>

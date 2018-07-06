@@ -36,10 +36,6 @@
       <artifactId>license-lib</artifactId>
       <version>1.1.0</version>
     </dependency>
-    <dependency>
-      <groupId>com.normation.plugins</groupId>
-      <artifactId>plugins-common</artifactId>
-    </dependency>
   </dependencies>
   <repositories>
     <repository>
