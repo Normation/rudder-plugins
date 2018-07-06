@@ -44,25 +44,33 @@ class UserInformationExtension extends SnippetExtensionPoint[UserInformation] wi
      */
 
 
-    val embedAppXml = <ul id="userApiTokenManagement" class="dropdown-menu">
-      <head_merge>
-        <link rel="stylesheet" type="text/css" href="/toserve/api-authorizations/media.css" media="screen" data-lift="with-cached-resource" />
-        <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/api-authorizations/user-api-token.js"></script>
-      </head_merge>
-      <li id="user-token-app"></li>
-      <script>
-      //<![CDATA[
-        // init elm app
-        var node = document.getElementById('user-token-app');
-        var app = Elm.UserApiToken.embed(node, {
-          contextPath: contextPath
-        });
-      // ]]>
-      </script>
-    </ul>
+    val embedAppXml =
+      <ul id="userApiTokenManagement" class="dropdown-menu">
+        <head_merge>
+          <link rel="stylesheet" type="text/css" href="/toserve/api-authorizations/media.css" media="screen" data-lift="with-cached-resource" />
+          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/api-authorizations/user-api-token.js"></script>
+        </head_merge>
+        <li id="user-token-app"></li>
+        <script>
+        //<![CDATA[
+          // init elm app
+          $(document).ready(function(){
+            var node = document.getElementById('user-token-app');
+            var app = Elm.UserApiToken.embed(node, {
+              contextPath: contextPath
+            });
+            $('#userApiTokenManagement').on('click',function(e){
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            });
+          });
+        // ]]>
+        </script>
+      </ul>
 
     (
-      "#user-menu [class+]" #> "dropdown"
+      "#user-menu [class+]" #> "dropdown notifications-menu"
     & "#user-menu-action [style+]" #> "cursor:pointer"
     & "#user-menu-action [class+]" #> "dropdown-toggle"
     & "#user-menu-action [data-toggle+]" #> "dropdown"

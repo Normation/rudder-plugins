@@ -192,28 +192,48 @@ deleteUserToken model =
 -- view when the token exists
 tokenPresent: Token -> List (Html Msg)
 tokenPresent token =
-  [
-    li [] [ text("Your personnal token: " ++ token.token) ]
-  , li [] [ text("Generation date: " ++ token.generationDate) ]
-  , li [] [ text("Status: " ++ (case token.enabled of
-      True  -> "enabled"
-      False -> "disabled"
-    )) ]
-  , li [] [ button [ onClick DeleteButton ] [ text("Delete API Token")] ]
-  ]
+  let
+    (statusIcon, statusTxt, statusClass) =
+      case token.enabled of
+        True  -> ("fa fa-check", "enabled" , "text-success")
+        False -> ("fa-ban"     , "disabled", "text-info")
+  in
+    [ li []
+      [ a [ class "no-click"]
+        [ span [class "fa fa-key"][]
+        , text("Your personnal token: ")
+        , div[class "help-block"][b[][text (token.token)]]
+        ]
+      ]
+    , li []
+      [ a [ class "no-click"]
+        [ span [class "fa fa-calendar"][]
+        , text("Generated on ")
+        , b [][text token.generationDate]
+        ]
+      ]
+    , li []
+      [ a[class "no-click"]
+        [ span [class ("fa " ++ statusIcon)][]
+        , text("Status: ")
+        , b[class ("text-capitalize "++statusClass)][text statusTxt]
+        ]
+      ]
+    , li [class "footer"] [ a[class "deleteToken", onClick DeleteButton][ text("Delete API Token")] ]
+    ]
 
 tokenAbsent: Model -> List (Html Msg)
 tokenAbsent model =
   [
-    li [] [ text("You don't have an API token yet." ) ]
-  , li [] [ button [ onClick CreateButton ] [ text("Create API Token")] ]
+    li [] [ a[class "no-click no-token"][text("You don't have an API token yet." ) ]]
+  , li [class "footer"] [ a[class "createToken" , onClick CreateButton ] [ text("Create an API Token")] ]
   ]
 
 view: Model -> Html Msg
 view model =
   ul [class "menu"] (
     [ case model.error of
-      Just error -> li [class "error"] [ error ]
+      Just error -> li [class "error"] [ a[class "no-click"][error]]
       Nothing    -> text ""
     ] ++
     ( case model.token of
