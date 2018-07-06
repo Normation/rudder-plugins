@@ -37,11 +37,6 @@
   <dependencies>
     <!-- common data definition for plugins -->
     <dependency>
-      <groupId>com.normation.plugins</groupId>
-      <artifactId>plugins-common</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <version>2.5</version>

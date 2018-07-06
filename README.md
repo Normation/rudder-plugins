@@ -99,8 +99,6 @@ git checkout tag-corresponding-to-plugin-vesion
 make clean && make generate-all-pom && make plugin-name
 ```
 
-Please note that you need to build plugins-common before being able to build most project
-
 After compilation, you will find in plugin root directory (i.e at the same level than the Makefile file) the
 plugin package: `pluginShortName-pluginVersion.rpkg`.
 

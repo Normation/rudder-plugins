@@ -34,15 +34,6 @@
       </plugin>
     </plugins>
   </build>
- <dependencies>
-    <!-- common data definition for plugins -->
-    <dependency>
-      <groupId>com.normation.plugins</groupId>
-      <artifactId>plugins-common</artifactId>
-    </dependency>
-
-    <!-- Add other plugin specific dependencies -->
-  </dependencies>
 
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->
 
