@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import bootstrap.liftweb.Boot
-import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.DatasourcesConf
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.plugins._
@@ -49,21 +48,16 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import com.normation.plugins.PluginStatus
-import net.liftweb.http.ResourceServer
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 
 class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.datasources"
 
-//  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
 
-  def init = {
-    RudderConfig.rudderApi.addModules(DatasourcesConf.dataSourceApi9.getLiftEndpoints())
-    // resources in src/main/resources/toserve must be allowed:
-    ResourceServer.allow{
-      case "datasources" :: _ => true
-    }
-  }
+  def init = {}
 
   def oneTimeInit : Unit = {}
 
