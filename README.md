@@ -4,6 +4,42 @@ This is the repository for plugins for Rudder: Continuous configuration for effe
 
 https://www.rudder-project.org/site/documentation/
 
+Creating a new plugin
+---------------------
+
+If you want to create a new plugin, you can use giter8 (http://www.foundweekends.org/giter8/) on 
+that repository or directly from the file system. 
+
+Once `g8` command is installed (see http://www.foundweekends.org/giter8/setup.html), use: 
+
+```
+% g8 file://.                                                                                                     [18-07-06 18:47:53]
+```
+You can alos use the github resolution:
+
+```
+% g8 normation/rudder-plugins
+```
+
+And answer the questions. Only the `name` is mandatory: use the plugin short name, with 
+space and capital if you want  (see convetion below).
+Juste hitting <ENTER> choose the default value (the one between []).
+
+```
+name [My Plugin]: Node External Reports <ENTER>
+version [1.0 ]: <ENTER>
+title_description [One line description of plugin]: Add external reports in node details
+web_description [<p>HTML description of plugin</p>]: <p>Add external reports in node details</p>
+you_should_not_change_following_variables [just hit enter]: <ENTER>
+plugin_name [node-external-reports]: <ENTER>
+plugin_pkg [nodeexternalreports]: <ENTER>
+plugin_class [NodeExternalReports]: <ENTER>
+```
+
+If you don't want to use giter8, you can replace by hand the placeholders `$plugin_name$`,
+`$plugin_pkg$` and `$plugin_class$` using the same convention as the previous example. 
+Be careful to replace them in both file (with `sed` for example) and in path (with `mv`). 
+
 Repository structure
 ---------------------
 
