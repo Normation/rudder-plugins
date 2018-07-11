@@ -116,7 +116,7 @@ class ApiAccountsExtension extends SnippetExtensionPoint[ApiAccounts] with Logga
               });
 
               //set back seleced acl to angularjs variable
-              app.ports.giveAcls.subscribe(function(acl) {
+              app.ports.giveAcl.subscribe(function(acl) {
                 account.acl = acl;
               });
             }
