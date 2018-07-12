@@ -27,7 +27,7 @@ else
   unset PGPASSWORD
 fi
 
-PSQL="psql -q -h ${SQL_SERVER} -p ${SQL_PORT} -U ${SQL_USER}"
+PSQL="psql -t -q -h ${SQL_SERVER} -p ${SQL_PORT} -U ${SQL_USER}"
 
 # Run SQL script to update schema. This script is reentrant, so you can run it as much as you need
 echo -n "Ensuring that database schema is up to date"
