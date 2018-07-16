@@ -5,6 +5,9 @@ import Html.Events exposing (onClick,onInput,on, keyCode)
 import DataTypes exposing (..)
 import Ui.FileInput as FileInput
 import Ui.ColorPicker as ColorPicker
+import Toasty
+import Toasty.Defaults
+import Http exposing (Error)
 import Color exposing (Color)
 import Ext.Color exposing (toHsv, toCSSRgba)
 import ApiCall exposing (saveSettings)
@@ -96,7 +99,10 @@ view model =
       [ createPanel "Custom Bar"   "custom-bar"   customBar
       --, createPanel "Custom Logos" "custom-logos" customLogos
       , createPanel "Login Page"   "login-page"   loginPage
-      , div[][button[type_ "button", class "btn btn-success", onClick SendSave][text "Save"]]
+      , div[ class "toolbar"]
+        [ button[type_ "button", class "btn btn-success", onClick SendSave][text "Save"]
+        ]
+      , div[class "toasties"][Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties]
       ]
 
 -- HTML HELPERS
@@ -220,3 +226,51 @@ loginPagePreview settings =
         , div[class "form-foot"][]
       ]
     ]
+
+-- NOTIFICATIONS --
+getErrorMessage : Http.Error -> String
+getErrorMessage e =
+  let
+    errMessage = case e of
+      Http.BadStatus b  ->
+        let
+          status = b.status
+          message = status.message
+        in
+          ("Code "++Basics.toString(status.code)++" : "++message)
+      Http.BadUrl str -> "Invalid API url"
+      Http.Timeout      -> "It took too long to get a response"
+      Http.NetworkError -> "Network error"
+      Http.BadPayload str rstr -> str
+  in
+    errMessage
+
+tempConfig : Toasty.Config Msg
+tempConfig =
+  Toasty.Defaults.config
+    |> Toasty.delay 3000
+
+defaultConfig : Toasty.Config Msg
+defaultConfig =
+  Toasty.Defaults.config
+    |> Toasty.delay 999999999
+
+addTempToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+addTempToast toast ( model, cmd ) =
+  Toasty.addToast tempConfig ToastyMsg toast ( model, cmd )
+
+addToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+addToast toast ( model, cmd ) =
+  Toasty.addToast defaultConfig ToastyMsg toast ( model, cmd )
+
+createSuccessNotification : String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+createSuccessNotification message =
+  addTempToast (Toasty.Defaults.Success "Success!" message)
+
+createErrorNotification : String -> Http.Error -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+createErrorNotification message e =
+  addToast (Toasty.Defaults.Error "Error..." (message ++ " ("++(getErrorMessage e)++")"))
+
+createDecodeErrorNotification : String -> String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+createDecodeErrorNotification message e =
+  addToast (Toasty.Defaults.Error "Error..." (message ++ " ("++(e)++")"))
