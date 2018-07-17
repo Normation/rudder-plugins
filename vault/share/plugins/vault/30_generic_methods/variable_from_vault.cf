@@ -56,7 +56,7 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
 
   methods:
     pass1::
-      "Auth" usebundle => vault_get_token("userpass"),
+      "Auth" usebundle => vault_get_token(),
         ifvarclass => not(isvariable("vault.auth_token"));
 
     pass3.variable_defined::
