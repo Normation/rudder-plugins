@@ -55,13 +55,15 @@ bundle agent vault_get_token()
     
       "data_output" data => "${vault_apicall_output}";
 
+    pass2.mode_tls.vault_reachable::
+      "vault_apicall_output" string => execresult("/usr/bin/curl -s --request POST --cacert ${vault.config[auth][tls][ca]} --cert ${vault.config[auth][tls][cert]} --key ${vault.config[auth][tls][key]}", "noshell");
+
+      "data_output" data => "${vault_apicall_output}";
+
     pass2.vault_reachable::
       "vault.auth_token" string => "${data_output[auth][client_token]}",
         ifvarclass => isvariable("data_output[auth][client_token]");
       
-      "vault.auth_token" string => "${vault.config[auth][token]}",
-        ifvarclass => "direct_token_correct";
-  
   classes:
     pass2::
       # We need this to determinate whether an auth error is due to bad credentials or the Vault server being unreachable
@@ -70,6 +72,7 @@ bundle agent vault_get_token()
       # What auth mode are we using
       "mode_userpass" expression => strcmp("${vault.auth_mode}", "userpass");
       "mode_token" expression => strcmp("${vault.auth_mode}", "token");
+      "mode_tls" expression => strcmp("${vault.auth_mode}", "tls");
 
     any::
       "pass3" expression => "pass2";
