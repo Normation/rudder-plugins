@@ -58,12 +58,13 @@ class LoginBranding  extends SnippetExtensionPoint[Login] with Loggable {
   private [this] val confRepo = BrandingPluginConf.brandingConfService
   def display(xml:NodeSeq) = {
     val data = confRepo.getConf
+    val legend =
+      <p class="legend col-xs-12">
+        <img src="/images/login/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"></img>
+        <span>${{rudder-major-version}}</span>
+      </p>
     val bar = data match {
       case Full(data) if (data.displayBarLogin) =>
-        <p class="legend col-xs-12">
-          <img src="/images/login/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"></img>
-          <span>${{rudder-major-version}}</span>
-        </p> ++
         <div id="headerBar">
           <span>{if (data.displayLabel) data.labelText}</span>
           <style>
@@ -84,12 +85,13 @@ class LoginBranding  extends SnippetExtensionPoint[Login] with Loggable {
         </div>
       case _ => NodeSeq.Empty
     }
+    val legendBar = legend ++ bar
     val motd = data match {
       case Full(data) if (data.displayMotd) =>
        data.motd
       case _ => "Welcome, please sign in:"
     }
-    ( ".legend"    #> bar &
+    ( ".legend"    #> legendBar &
       ".welcome *" #> motd
     ) (xml)
 
