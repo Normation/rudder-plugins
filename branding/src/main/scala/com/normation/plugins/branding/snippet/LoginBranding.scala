@@ -64,7 +64,8 @@ class LoginBranding  extends SnippetExtensionPoint[Login] with Loggable {
           <img src="/images/login/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"></img>
           <span>${{rudder-major-version}}</span>
         </p> ++
-        <div id="headerBar"> {if (data.displayLabel) data.labelText}
+        <div id="headerBar">
+          <span>{if (data.displayLabel) data.labelText}</span>
           <style>
           #login-page form p.legend {{margin-bottom: 0px; }}
           #headerBar {{
