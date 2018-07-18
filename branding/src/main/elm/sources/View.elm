@@ -90,7 +90,7 @@ view model =
               , Html.map LoginLogoFileInput (FileInput.view model.loginLogoFile)
               ]
             ]-}
-          , textField ToggleMotd EditMotd True settings.motd "text-motd" "MOTD"
+          , textField ToggleMotd EditMotd settings.displayMotd settings.motd "text-motd" "MOTD"
           ]
       , div[class "panel-col col-md-6 bg-pattern"][loginPagePreview model.settings]
       ]
