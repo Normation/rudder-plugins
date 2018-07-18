@@ -280,3 +280,62 @@ form{
 	border: 1px solid #2e6da4;
 	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif !important;
 }
+
+/* RUDDER CSS CONFLICTS FIXES */
+#branding-main{
+    padding-bottom:50px;
+}
+#branding-main .panel-heading{
+    margin:0;
+    padding:0;
+}
+#branding-main .panel-heading .panel-title{
+    padding:0;
+}
+#branding-main .input-group .input-group-addon {
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+#branding-main .input-group .input-group-addon:first-child {
+    border-right:none;
+    border-top-right-radius:0;
+    border-bottom-right-radius:0;
+}
+#branding-main .input-group .input-group-addon:first-child input{
+    position: relative;
+    top: 2px;
+}
+#branding-main .toolbar {
+    background-color: #fff;
+    border-top: 1px solid #ccc;
+    position: fixed;
+    z-index: 200;
+    text-align: right;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 30px;
+}
+#branding-main .toolbar .btn{
+    min-width: 80px;
+}
+#branding-main .panel-body{
+    padding: 0;
+}
+
+/* Notifications */
+.toasties > ol {
+  top: 80px !important;
+  z-index: 100;
+}
+
+.toasties > ol > li{
+  margin-bottom: 45px !important;
+}
+
+/* CSS EFFECTS */
+#headerBar{
+    transition-property: background-color, color;
+    transition-duration:.6s;
+}

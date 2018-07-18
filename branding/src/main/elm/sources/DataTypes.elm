@@ -3,6 +3,8 @@ import Ui.FileInput as FileInput
 import Ui.ColorPicker as ColorPicker
 import Http exposing(Error)
 import Color exposing(Color)
+import Toasty
+import Toasty.Defaults
 
 type alias Model =
   { contextPath      : String
@@ -14,6 +16,7 @@ type alias Model =
   , loginLogoFile    : FileInput.Model
   , settings         : Settings
   , fileData         : FileData
+  , toasties         : Toasty.Stack Toasty.Defaults.Toast
   }
 
 type alias FileData = {
@@ -70,4 +73,6 @@ type Msg =
   | GetSettings (Result Error Settings)
   | SaveSettings (Result Error Settings)
   | SendSave
+  -- NOTIFICATIONS
+  | ToastyMsg         (Toasty.Msg Toasty.Defaults.Toast)
   -- TEST

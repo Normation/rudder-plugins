@@ -63,7 +63,8 @@ class CommonBranding  extends SnippetExtensionPoint[CommonLayout] with Loggable 
     val data = confRepo.getConf
     val bar = data match {
       case Full(data) if (data.displayBar) =>
-      <div id="headerBar"> {if (data.displayLabel) data.labelText}
+      <div id="headerBar">
+        <span>{if (data.displayLabel) data.labelText}</span>
         <style>
           .main-header {{top:30px }}
           .content-wrapper, .main-sidebar {{padding-top:80px}}

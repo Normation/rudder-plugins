@@ -2,10 +2,12 @@ port module Branding exposing (..)
 
 import Html exposing (..)
 import Html.Events exposing (on, keyCode)
-import Ext.Color exposing(hsvToRgb)
+import Ext.Color exposing(hsvToRgb, toHsv, toCSSRgba)
 import Color
 import Ui.FileInput as FileInput
 import Ui.ColorPicker as ColorPicker
+import Toasty
+import Toasty.Defaults
 import DataTypes exposing (..)
 import View exposing(..)
 import JsonDecoder exposing (..)
@@ -14,7 +16,7 @@ import Json.Decode as Decode
 import ApiCall
 
 --- PORTS ---
-port check : String -> Cmd msg
+port applyCss : (String,String,String) -> Cmd msg
 
 --- MODEL ---
 
@@ -41,9 +43,10 @@ initSettings contextPath =
     (txtColorPicker, _) =
       ColorPicker.init ()
       |> ColorPicker.setValue Color.white
+    toasties = Toasty.initialState
 
     initData = FileData ""  ""  ""  ""
-    model = Model contextPath bgColorPicker txtColorPicker favFileInput wideFileInput squareFileInput loginFileInput defaultSettings initData
+    model = Model contextPath bgColorPicker txtColorPicker favFileInput wideFileInput squareFileInput loginFileInput defaultSettings initData toasties
   in
     model ! [ ApiCall.getSettings model ]
 
@@ -53,7 +56,6 @@ initSettings contextPath =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-
 {-- Common branding messages --}
     ToggleCustomBar ->
       let
@@ -204,23 +206,36 @@ update msg model =
           let
             (bgColorPicker, _) = ColorPicker.setValue settings.bgColorValue model.bgColorPicker
             (textColorPicker, _) = ColorPicker.setValue settings.labelColorValue model.labelColorPicker
-            newModel = {model
+            newModel =
+              { model
               | settings = settings, bgColorPicker = bgColorPicker, labelColorPicker = textColorPicker
-            }
-        in
-          (newModel, Cmd.none)
+              }
+          in
+            (newModel, Cmd.none)
         Err err  ->
-          -- Need to display an error somehow
           (model, Cmd.none)
+            |> (createErrorNotification "Error while trying to fetch settings." err)
     SaveSettings result ->
       case result of
         Ok settings ->
-          (model, Cmd.none)
+          let
+            settings = model.settings
+            bgColor  = toHsv settings.bgColorValue
+              |> toCSSRgba
+            txtColor = toHsv settings.labelColorValue
+              |> toCSSRgba
+            labelTxt = settings.labelTxt
+          in
+            (model, applyCss (bgColor, txtColor, labelTxt))
+              |> (createSuccessNotification ("Your changes have been saved." ))
         Err err  ->
-          -- Need to display an error somehow
           (model, Cmd.none)
+            |> (createErrorNotification "Error while trying to save changes." err)
     SendSave ->
       (model, ApiCall.saveSettings model)
+
+    ToastyMsg subMsg ->
+      Toasty.update defaultConfig ToastyMsg subMsg model
 
 
 onKeyDown : (Int -> msg) -> Html.Attribute msg
