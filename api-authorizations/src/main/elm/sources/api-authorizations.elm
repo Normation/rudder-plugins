@@ -4,7 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import String
-
+import List.Extra exposing (uniqueBy)
 
 main = programWithFlags
     { init = init
@@ -53,6 +53,7 @@ type alias Model =
 
 type Msg
   = SetAc AccessControl Bool -- set that AC to status (ie remove it if false, add it if true
+  | SetAcl (List AccessControl) Bool -- set a list of access control to given status
 
 -- SUBSCRIPTIONS
 
@@ -60,7 +61,7 @@ subscriptions : Model -> Sub Msg
 subscriptions   model =  Sub.none
 
 -- sending out new acl
-port giveAcls : List AccessControl -> Cmd msg
+port giveAcl : List AccessControl -> Cmd msg
 
 init : { token: Token, rudderApis: List ApiCategory } -> (Model, Cmd Msg)
 init flags =
@@ -68,18 +69,29 @@ init flags =
 
 -- UPDATE
 
+-- utility method that update a model adding or removing a list of acl
+setAcl: Model -> List AccessControl -> Bool -> (Model, Cmd Msg)
+setAcl model acl status =
+  let
+    newAcl   = if status then -- add AC into list
+                 List.append acl model.token.acl
+                 |> uniqueBy toString -- uniqueBy requires comparable and does work with structural equality, which it a pity. toString should be ok in all case for AccessControl, but it was not necessary.
+               else
+                 List.filter (\a -> not (List.member a acl)) (model.token.acl)
+    newToken = Token model.token.id newAcl
+  in
+    ({ model | token = newToken}, giveAcl newAcl )
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    -- set/unset a list of access control
+    SetAcl acl status ->
+      setAcl model acl status
+
+    -- set/unset one access control
     SetAc ac status ->
-      let
-        newAcl   = if status then -- add AC into list
-                     ac :: model.token.acl
-                   else
-                     List.filter (\a -> a /= ac) (model.token.acl)
-        newToken = Token model.token.id newAcl
-      in
-        ( {model | token = newToken }, giveAcls newToken.acl )
+      setAcl model [ac] status
 
 
 -- VIEW
@@ -106,15 +118,22 @@ displayApi api =
 
 displayCategory: List AccessControl -> ApiCategory -> Html Msg
 displayCategory acl cat =
-  div [] [
-    h3 [] [(text cat.category)]
-  , div [] (cat.apis |> List.map (\api ->
-      label [class "label-acl" ] [
-        (apiSelect acl api.path api.verb)
-      , (displayApi api)
+  let
+    catAcl = cat.apis |> List.map (\api -> AccessControl api.path api.verb)
+  in
+    div [] [
+      h3 [] [ (text cat.category) ]
+    , div [] [
+        (span [ onClick (SetAcl catAcl True), class "btn btn-success pull-right small", style [("margin-left", "2px"), ("color", "#fff")] ] [ text "all" ])
+      , (span [ onClick (SetAcl catAcl False), class "btn btn-danger pull-right small", style [("margin-right", "2px"), ("color", "#fff")] ] [ text "none" ])
       ]
-    ))
-  ]
+    , div [] (cat.apis |> List.map (\api ->
+        label [class "label-acl" ] [
+          (apiSelect acl api.path api.verb)
+        , (displayApi api)
+        ]
+      ))
+    ]
 
 view: Model -> Html Msg
 view model =
