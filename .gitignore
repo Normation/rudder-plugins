@@ -17,3 +17,4 @@ license.sign
 pom.xml
 makefiles/m2_location.cache
 rudder-plugins.adoc
+plugin-doc-assets/
