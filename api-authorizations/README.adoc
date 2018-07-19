@@ -36,11 +36,14 @@ You can log information about ACL (behavior and errors) by adding the following 
 // Everything after this line goes into Rudder documentation
 // ====doc====
 
+[[api-authorizations]]
 
-=== User personnal API Token
+= API Authorizations
+
+== User personnal API Token
 
 When you use `api-authorizations` plugin, any logged user can get a personnal API token by clicking on
-its loggin information: 
+its login information: 
 
 image:./docs/api-authorizations-user-no-token.png[User requesting a personnal API token]
 
@@ -57,7 +60,7 @@ These actions are recorded as done by the user owning the API token in Rudder ev
 image:./docs/api-authorizations-user-event-log.png[Personnal API token information]
 
 
-=== API ACLs
+== API ACLs
 
 The plugin also allows to configure fine grained access control for a token. By selecting 
 "Custom ACL" access level, you can choose what endpoints are accessible for that API token. 
@@ -70,9 +73,9 @@ image:./docs/api-authorizations-new-token-acl.png[And only authorize access to c
 
 That token can of course access `compliance` related endpoints: 
 
-image:./docs/api-authorizations-success.png[Token can access compliance information]
+image:./docs/api-authorizations-curl-success.png[Token can access compliance information]
 
 But if it tries to access an other endpoint, it get an authorization error: 
 
-image:./docs/api-authorizations-error.png[Token is not authorized to access directives information]
+image:./docs/api-authorizations-curl-error.png[Token is not authorized to access directives information]
 
