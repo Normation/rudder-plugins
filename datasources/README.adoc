@@ -1,0 +1,124 @@
+Rudder plugin: Node properties data sources
+-------------------------------------------
+
+This project is part of Rudder - Continuous configuration for effective compliance
+
+Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
+Automation & Compliance.
+ 
+See: http://rudder-project.org for more information. 
+
+=== Synopsis
+
+This plugin allows to auto fill node properties with data coming from third party
+REST-enable application. 
+
+
+
+=== Logging
+
+You can log information about data source (behavior and errors) by adding the following lines in your ```logback.xml``` file:
+
+
+```
+  <!--
+    Datasource
+    ==========
+    Information about data source. 
+    "datasources" log what data source are fetched when (info level for updates start, 
+    error level for errors, debug/trace for non error returned value).
+    
+    "datasource-timing" give information about how long it takes to fetch data from
+    data source. Debug level is at the data source action level (ex: how long it takes
+    to update all nodes), trace times each http request individualy. It can be very
+    verbose if you have a couple of thousand of nodes with a "node by node" query type.
+  -->
+  <logger name="datasources" level="info" additivity="false">
+    <appender-ref ref="OPSLOG" />
+    <!-- comment the following appender if you don't want to have logs about report in both stdout and opslog -->
+    <appender-ref ref="STDOUT" />
+  </logger>
+  <logger name="datasources-timing" level="off" additivity="false">
+    <appender-ref ref="OPSLOG" />
+    <!-- comment the following appender if you don't want to have logs about report in both stdout and opslog -->
+    <appender-ref ref="STDOUT" />
+  </logger>
+```
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+
+[[node-properties-data-sources]]
+
+= Node properties data sources
+
+As explained in the chapter about node management, Nodes have properties that can be
+used to create groups or in techniques and directives parameters.
+These properties are key/value pairs, with values being a simple
+string or a well formed JSON document. 
+
+Rudder 4.1 introduces a new way to automatically import Node properties 
+by defining data sources.
+
+The following diagram explains the general working process of data source:
+
+image:./images/rudder-datasources-description.png[Data source description]
+
+As displayed, a data source provides a way for Rudder to query (when some
+conditions are met) a third party REST API to retrieve interesting
+properties for nodes and save them for a given Node property key.
+
+More precisely, there are three main sets of properties to define (by UI
+or via Rudder API) to configure a data source:
+
+== First set: data source description
+
+The first set of properties allows to define an unique identifier for
+the data source, which will be used as the property key in node, along
+with a human readable name and description.
+
+== Second set: query configuration
+
+The second set of properties allows to define how the third party REST API will
+be queried and the returned JSON response processed.
+
+For now, we only support one query mode which is to do one HTTP query for each
+node. In the future, a mode where only one query is done to retrieve
+information for all nodes will be added.
+
+For the query, you will define the HTTP method to use (GET or POST), what is the
+remote URL, if there are specific headers or query parameters to add.
+
+In case a 404 error is returned, the corresponding node property is deleted (on 
+that node). In case of a timeout or any other HTTP errors, this is considered a 
+temporary problem, and the node property is left as is.
+
+When a JSON document is returned, you can define a JSON path expression
+(cf https://github.com/jayway/JsonPath/) to select only a sub-part of
+the document as the actual data to use as a node property.
+
+Finally, the resulting data is assigned to the node, using the key name defined 
+in the data source configuration.
+
+You can use Rudder variables expansion (`${rudder.node.xxx}`,
+`${rudder.parameter.xxx}`, `${node.properties[xxx]}`) in most of these
+configuration option: URL, headers, query parameters, JSON path. They will be 
+replaced by their values for each node at the time the HTTP query is run.
+
+== Third set: query triggers
+
+The last set of options allows to define when the data source should
+be queried.
+
+For now, there are 3 available triggers:
+
+- a scheduled one, allowing to periodically do the update,
+- a trigger on policy generation, which allows to get a refresh of node
+properties before possibly using them in techniques or directives,
+- a trigger on node acceptation, so that a new node immediately get a
+working set of properties (for example to join the correct dynamic groups).
+
+In addition to these configured triggers, data sources can be interactively
+refreshed with a call to a Rudder REST API or via the web interface.
+
+

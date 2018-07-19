@@ -19,3 +19,4 @@ makefiles/m2_location.cache
 #elm related stuff
 **/elm-stuff/*
 **/generated/*
+rudder-plugins.adoc
