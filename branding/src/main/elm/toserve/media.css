@@ -232,6 +232,9 @@ form{
 
 
 /* -- COLOR PICKER -- */
+ui-dropdown-panel{
+    z-index:9999 !important;
+}
 .input-group > .input-group-addon + ui-picker{
     border-color: #cccccc;
     border-top-left-radius: 0;
