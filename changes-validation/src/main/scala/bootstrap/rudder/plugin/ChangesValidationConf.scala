@@ -43,6 +43,7 @@ import com.normation.plugins.changesvalidation.ChangesValidationPluginDef
 import com.normation.plugins.changesvalidation.CheckRudderPluginEnableImpl
 import com.normation.plugins.changesvalidation.EitherWorkflowService
 import com.normation.plugins.changesvalidation.KonamiValidationNeeded
+import com.normation.plugins.changesvalidation.TopBarExtension
 import com.normation.plugins.changesvalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.services.workflows.WorkflowLevelService
 
@@ -90,4 +91,6 @@ object ChangesValidationConf extends RudderPluginModule {
   })
 
   lazy val pluginDef = new ChangesValidationPluginDef(ChangesValidationConf.pluginStatusService)
+
+  RudderConfig.snippetExtensionRegister.register(new TopBarExtension())
 }

@@ -58,8 +58,8 @@ class ChangesValidationPluginDef(override val status: PluginStatus) extends Defa
   val configFiles = Seq()
 
   override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val datasourceMenu = (
-      Menu("dataSourceManagement", <span>Changes Validation</span>) /
+    val changesValidationMenu = (
+      Menu("changesValidationManagement", <span>Changes Validation</span>) /
         "secure" / "administration" / "changesValidationManagement"
         >> LocGroup("administrationGroup")
         >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
@@ -68,7 +68,7 @@ class ChangesValidationPluginDef(override val status: PluginStatus) extends Defa
 
     menus.map {
       case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ datasourceMenu:_* )
+        Menu(l , m.kids.toSeq :+ changesValidationMenu:_* )
       case m => m
     }
   }
