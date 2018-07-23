@@ -37,6 +37,10 @@ rudder-plugins.adoc:
 	rm -f rudder-plugins.adoc
 	for i in $(PLUGINS); do cd $$i; [ -f README.adoc ] && sed '1,/\/\/ ====doc====/d' README.adoc >> ../rudder-plugins.adoc; cd ..; done
 
+plugins-doc-assets:
+	mkdir -p plugins-doc-assets
+	for i in $(PLUGINS); do cd $$i; [ -d docs ] && cp -r docs/* ../plugin-doc-assets/; cd ..; done
+
 clean: 
 	rm -f pom.xml
 	for i in $(ALL); do cd $$i; $(MAKE) clean; cd ..; done
@@ -45,4 +49,4 @@ very-clean: clean
 	./makefiles/find_m2_repo.sh clean
 	
 
-.PHONY: $(LIBS) $(PLUGINS) rudder-plugins.adoc
+.PHONY: $(LIBS) $(PLUGINS) rudder-plugins.adoc plugins-doc-assets

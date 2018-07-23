@@ -62,7 +62,7 @@ by defining data sources.
 
 The following diagram explains the general working process of data source:
 
-image:./images/rudder-datasources-description.png[Data source description]
+image:./docs/rudder-datasources-description.png[Data source description]
 
 As displayed, a data source provides a way for Rudder to query (when some
 conditions are met) a third party REST API to retrieve interesting
