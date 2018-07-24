@@ -58,9 +58,9 @@ class $plugin_class$PluginDef(override val status: PluginStatus) extends Default
   val configFiles = Seq()
 
   override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val datasourceMenu = (
-      Menu("dataSourceManagement", <span>Data sources</span>) /
-        "secure" / "administration" / "dataSourceManagement"
+    val $plugin_classMenu = (
+      Menu("$plugin_class", <span>$name</span>) /
+        "secure" / "administration" / "$plugin_classManagement"
         >> LocGroup("administrationGroup")
         >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
         >> Template(() => ClasspathTemplates("template" :: "$plugin_class$Management" :: Nil ) openOr <div>Template not found</div>)
@@ -68,7 +68,7 @@ class $plugin_class$PluginDef(override val status: PluginStatus) extends Default
 
     menus.map {
       case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ datasourceMenu:_* )
+        Menu(l , m.kids.toSeq :+ $plugin_classMenu:_* )
       case m => m
     }
   }
