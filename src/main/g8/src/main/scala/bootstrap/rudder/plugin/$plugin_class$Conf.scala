@@ -40,39 +40,19 @@ package bootstrap.rudder.plugin
 import com.normation.plugins.$plugin_pkg$.$plugin_class$PluginDef
 import com.normation.plugins.$plugin_pkg$.CheckRudderPluginEnableImpl
 import net.liftweb.common.Loggable
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.ApplicationContextAware
-import org.springframework.context.ApplicationContext
-import org.springframework.context.annotation.{Bean, Configuration}
-
+import com.normation.plugins.RudderPluginModule
 
 /*
  * Actual configuration of the plugin logic
  */
-object $plugin_class$Conf {
+object $plugin_class$Conf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  
+  lazy val pluginDef = new $plugin_class$PluginDef($plugin_class$Conf.pluginStatusService)
 
   // other service instanciation / initialization
 
-}
-
-/**
- * Init module
- */
-@Configuration
-class $plugin_class$PluginConf extends Loggable with  ApplicationContextAware with InitializingBean {
-  @Bean def $plugin_class$ModuleDef = new $plugin_class$PluginDef($plugin_class$Conf.pluginStatusService)
-
-
-  // spring thingies
-  var appContext : ApplicationContext = null
-
-  override def afterPropertiesSet() : Unit = {}
-
-  override def setApplicationContext(applicationContext:ApplicationContext) = {
-    appContext = applicationContext
-  }
 }
 

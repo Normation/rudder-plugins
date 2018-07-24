@@ -39,17 +39,16 @@
 package com.normation.plugins.branding.snippet
 
 import bootstrap.rudder.plugin.BrandingPluginConf
-import com.normation.plugins.{SnippetExtensionKey, SnippetExtensionPoint}
+import com.normation.plugins.SnippetExtensionPoint
 import com.normation.rudder.web.snippet.Login
 import net.liftweb.common.{Full, Loggable}
 import net.liftweb.util.Helpers._
 
+import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 
-class LoginBranding  extends SnippetExtensionPoint[Login] with Loggable {
-
-  val extendsAt = SnippetExtensionKey(classOf[Login].getSimpleName)
+class LoginBranding(implicit val ttag: ClassTag[Login])  extends SnippetExtensionPoint[Login] with Loggable {
 
   def compose(snippet:Login) : Map[String, NodeSeq => NodeSeq] = Map(
     "display" -> display _)

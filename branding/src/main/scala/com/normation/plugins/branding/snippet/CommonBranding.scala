@@ -38,20 +38,19 @@
 
 package com.normation.plugins.branding.snippet
 
-import com.normation.plugins.{SnippetExtensionKey, SnippetExtensionPoint}
+import com.normation.plugins.SnippetExtensionPoint
 import com.normation.rudder.web.snippet.CommonLayout
 import net.liftweb.common.{Full, Loggable}
 import net.liftweb.util._
 import Helpers._
 import bootstrap.rudder.plugin.BrandingPluginConf
 
+import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 
 
-class CommonBranding  extends SnippetExtensionPoint[CommonLayout] with Loggable {
-
-  val extendsAt = SnippetExtensionKey(classOf[CommonLayout].getSimpleName)
+class CommonBranding(implicit val ttag: ClassTag[CommonLayout])  extends SnippetExtensionPoint[CommonLayout] with Loggable {
 
   def compose(snippet:CommonLayout) : Map[String, NodeSeq => NodeSeq] = Map(
     "display" -> display _

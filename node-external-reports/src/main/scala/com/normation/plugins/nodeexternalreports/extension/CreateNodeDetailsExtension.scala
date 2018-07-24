@@ -37,17 +37,16 @@
 package com.normation.plugins.nodeexternalreports.extension
 
 import scala.xml.NodeSeq
-import com.normation.plugins.{SnippetExtensionKey, SnippetExtensionPoint}
+import com.normation.plugins.SnippetExtensionPoint
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import net.liftweb.common._
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
+import scala.reflect.ClassTag
 
-class CreateNodeDetailsExtension(externalReport: ReadExternalReports) extends SnippetExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
-
-  val extendsAt = SnippetExtensionKey(classOf[ShowNodeDetailsFromNode].getSimpleName)
+class CreateNodeDetailsExtension(externalReport: ReadExternalReports)(implicit val ttag: ClassTag[ShowNodeDetailsFromNode]) extends SnippetExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
 
   def compose(snippet: ShowNodeDetailsFromNode) : Map[String, NodeSeq => NodeSeq] = Map(
       "popupDetails"    -> addExternalReportTab(snippet) _

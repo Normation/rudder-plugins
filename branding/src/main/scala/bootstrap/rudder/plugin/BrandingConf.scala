@@ -37,12 +37,9 @@
 
 package bootstrap.rudder.plugin
 
-import com.normation.plugins.SnippetExtensionRegister
+import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.branding.{BrandingConfService, BrandingPluginDef}
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import org.springframework.context.annotation.{Bean, Configuration}
-import net.liftweb.common.Loggable
 import com.normation.plugins.branding.CheckRudderPluginEnableImpl
 import com.normation.plugins.branding.snippet.{CommonBranding, LoginBranding}
 import com.normation.rudder.rest.{BrandingApi, BrandingApiService}
@@ -50,7 +47,7 @@ import com.normation.rudder.rest.{BrandingApi, BrandingApiService}
 /*
  * Actual configuration of the data sources logic
  */
-object BrandingPluginConf {
+object BrandingPluginConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
@@ -63,26 +60,8 @@ object BrandingPluginConf {
   val brandingApi : BrandingApi = new BrandingApi(brandingApiService, Cfg.restExtractorService, Cfg.stringUuidGenerator)
 
   Cfg.rudderApi.addModules(brandingApi.getLiftEndpoints())
+  lazy val pluginDef = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
+
+  RudderConfig.snippetExtensionRegister.register(new CommonBranding)
+  RudderConfig.snippetExtensionRegister.register(new LoginBranding)
 }
-
-/**
- * Init module
- */
-@Configuration
-class BrandingPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
-  @Bean def brandingModuleDef = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
-  // spring thingies
-  var appContext : ApplicationContext = null
-
-  val commonBranding = new CommonBranding
-  val loginBranding = new LoginBranding
-  override def afterPropertiesSet() : Unit = {
-    val ext = appContext.getBean(classOf[SnippetExtensionRegister])
-    ext.register(commonBranding)
-    ext.register(loginBranding)
-  }
-  override def setApplicationContext(applicationContext:ApplicationContext) = {
-    appContext = applicationContext
-  }
-}
-

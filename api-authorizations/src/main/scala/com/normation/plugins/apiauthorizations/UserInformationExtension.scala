@@ -1,15 +1,14 @@
 package com.normation.plugins.apiauthorizations
 
-import com.normation.plugins.{SnippetExtensionKey, SnippetExtensionPoint}
+import com.normation.plugins.SnippetExtensionPoint
 import com.normation.rudder.web.snippet.UserInformation
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
 
+import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class UserInformationExtension extends SnippetExtensionPoint[UserInformation] with Loggable {
-
-  val extendsAt = SnippetExtensionKey(classOf[UserInformation].getSimpleName)
+class UserInformationExtension(implicit val ttag: ClassTag[UserInformation]) extends SnippetExtensionPoint[UserInformation] with Loggable {
 
   def compose(snippet: UserInformation) : Map[String, NodeSeq => NodeSeq] = Map(
       "userCredentials" -> render _

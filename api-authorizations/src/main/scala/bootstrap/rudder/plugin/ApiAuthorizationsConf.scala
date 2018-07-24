@@ -38,13 +38,9 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.plugins.SnippetExtensionRegister
+import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.apiauthorizations._
 import com.normation.rudder.rest.ApiAuthorizationLevelService
-import net.liftweb.common.Loggable
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import org.springframework.context.annotation.{Bean, Configuration}
 
 // service that provide ACL level
 object AclLevel extends ApiAuthorizationLevelService {
@@ -57,7 +53,7 @@ object AclLevel extends ApiAuthorizationLevelService {
 /*
  * Actual configuration of the API Authorizations plugin
  */
-object ApiAuthorizationsConf {
+object ApiAuthorizationsConf extends RudderPluginModule {
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
@@ -71,29 +67,10 @@ object ApiAuthorizationsConf {
     , RudderConfig.tokenGenerator
     , RudderConfig.stringUuidGenerator
   )
-}
 
-/**
- * Init module
- */
-@Configuration
-class ApiAuthorizationPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
-  @Bean def apiAuthorizationsModuleDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
+  lazy val pluginDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
 
-  @Bean def apiAccountsExtention = new ApiAccountsExtension()
-  @Bean def userInformationExtention = new UserInformationExtension()
-
-  // spring thingies
-  var appContext : ApplicationContext = null
-
-  override def afterPropertiesSet() : Unit = {
-    val ext = appContext.getBean(classOf[SnippetExtensionRegister])
-    ext.register(apiAccountsExtention)
-    ext.register(userInformationExtention)
-  }
-
-  override def setApplicationContext(applicationContext:ApplicationContext) = {
-    appContext = applicationContext
-  }
+  RudderConfig.snippetExtensionRegister.register(new ApiAccountsExtension())
+  RudderConfig.snippetExtensionRegister.register(new UserInformationExtension())
 }
 

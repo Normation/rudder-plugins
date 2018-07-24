@@ -39,25 +39,22 @@ package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.datasources._
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodeManagerHooks
 import org.joda.time.DateTime
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import org.springframework.context.annotation.{Bean, Configuration}
 import net.liftweb.common.Box
 import net.liftweb.common.Full
-import net.liftweb.common.Loggable
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
-import com.normation.rudder.batch.AsyncDeploymentAgent
 import com.normation.plugins.datasources.api.DataSourceApiImpl
+import com.normation.rudder.batch.AsyncDeploymentActor
 
 /*
  * An update hook which triggers a configuration generation if needed
  */
-class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentAgent) {
+class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentActor) {
   def hook(updatedNodeIds: Set[NodeId], cause: UpdateCause): Unit = {
     // we don't trigger a new update if the update cause was during a generation
     if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
@@ -69,7 +66,7 @@ class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentAgent) {
 /*
  * Actual configuration of the data sources logic
  */
-object DatasourcesConf {
+object DatasourcesConf extends RudderPluginModule {
 
 
   import bootstrap.liftweb.{ RudderConfig => Cfg }
@@ -117,23 +114,8 @@ object DatasourcesConf {
     , Cfg.woNodeRepository
     , Cfg.stringUuidGenerator
   )
-}
 
-/**
- * Init module
- */
-@Configuration
-class DataSourcesPluginConf extends Loggable with  ApplicationContextAware with InitializingBean {
-  @Bean def datasourceModuleDef = new DataSourcesPluginDef(DatasourcesConf.pluginStatusService)
+  lazy val pluginDef = new DataSourcesPluginDef(DatasourcesConf.pluginStatusService)
 
-
-  // spring thingies
-  var appContext : ApplicationContext = null
-
-  override def afterPropertiesSet() : Unit = {}
-
-  override def setApplicationContext(applicationContext:ApplicationContext) = {
-    appContext = applicationContext
-  }
 }
 

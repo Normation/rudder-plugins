@@ -36,10 +36,7 @@
 
 package com.normation.plugins.nodeexternalreports.snippet
 
-import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
-
-import bootstrap.liftweb.LiftSpringApplicationContext.inject
-
+import bootstrap.rudder.plugin.NodeExternalReportsConf
 import net.liftweb.common._
 import net.liftweb.common.Loggable
 import net.liftweb.http.DispatchSnippet
@@ -48,7 +45,7 @@ import net.liftweb.util.Helpers._
 
 class PluginInfo extends DispatchSnippet with Loggable {
 
-  val reportsConfig = inject[ReadExternalReports]
+  val reportsConfig = NodeExternalReportsConf.readReport
 
   def dispatch = {
     case "render" => render
