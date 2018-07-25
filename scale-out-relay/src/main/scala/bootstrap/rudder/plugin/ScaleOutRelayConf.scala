@@ -37,42 +37,21 @@
 
 package bootstrap.rudder.plugin
 
+import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.scaleoutrelay.ScalaOutRelayPluginDef
 import com.normation.plugins.scaleoutrelay.CheckRudderPluginEnableImpl
-import net.liftweb.common.Loggable
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.ApplicationContextAware
-import org.springframework.context.ApplicationContext
-import org.springframework.context.annotation.{Bean, Configuration}
-
 
 /*
  * Actual configuration of the plugin logic
  */
-object ScalaOutRelayConf {
+object ScalaOutRelayConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
+  lazy val pluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
+
   // other service instanciation / initialization
 
-}
-
-/**
- * Init module
- */
-@Configuration
-class ScalaOutRelayPluginConf extends Loggable with  ApplicationContextAware with InitializingBean {
-  @Bean def ScalaOutRelayModuleDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
-
-
-  // spring thingies
-  var appContext : ApplicationContext = null
-
-  override def afterPropertiesSet() : Unit = {}
-
-  override def setApplicationContext(applicationContext:ApplicationContext) = {
-    appContext = applicationContext
-  }
 }
 
