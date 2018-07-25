@@ -1,0 +1,14 @@
+Rudder plugin: Changes Validation
+-----------------------------
+
+This project is part of Rudder - Continuous configuration for effective compliance
+
+Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
+Automation & Compliance.
+
+See: http://rudder-project.org for more information.
+
+=== Description
+
+Enable configuration change requests and validation workflows in Rudder
+
