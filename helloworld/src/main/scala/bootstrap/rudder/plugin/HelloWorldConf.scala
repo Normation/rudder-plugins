@@ -1,9 +1,6 @@
 package bootstrap.rudder.plugin
 
 import scala.xml.{NodeSeq, Text}
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import org.springframework.context.annotation.{Bean, Configuration}
 import com.normation.plugins._
 import com.normation.plugins.helloworld.HelloWorldPluginDef
 import com.normation.plugins.helloworld.extension.{CreateRuleEditFormExtension, CreateRuleExtension}
@@ -14,28 +11,14 @@ import net.liftweb.common.Loggable
 /**
  * Definition of services for the HelloWorld plugin.
  */
-@Configuration
-class HelloWorldConf extends Loggable with  ApplicationContextAware with InitializingBean {
+object HelloWorldConf extends Loggable with RudderPluginModule {
 
-  var appContext : ApplicationContext = null
+  lazy val pluginDef = new HelloWorldPluginDef(dbService)
 
-  override def afterPropertiesSet() : Unit = {
-    val ext = appContext.getBean(classOf[SnippetExtensionRegister])
-    ext.register(ext1)
-    ext.register(ext2)
-  }
+  RudderConfig.snippetExtensionRegister.register(new CreateRuleExtension())
+  RudderConfig.snippetExtensionRegister.register(new CreateRuleEditFormExtension(dbService))
 
-  override def setApplicationContext(applicationContext:ApplicationContext) = {
-    appContext = applicationContext
-  }
-
-  @Bean def moduleDef2 = new HelloWorldPluginDef(dbService)
-
-  @Bean def ext1 = new CreateRuleExtension()
-
-  @Bean def ext2 = new CreateRuleEditFormExtension(dbService)
-
-  @Bean def dbService = new LogAccessInDb(
+  lazy val dbService = new LogAccessInDb(
       RudderConfig.RUDDER_JDBC_URL
     , RudderConfig.RUDDER_JDBC_USERNAME
     , RudderConfig.RUDDER_JDBC_PASSWORD
@@ -46,14 +29,13 @@ class HelloWorldConf extends Loggable with  ApplicationContextAware with Initial
  * An other plugin for testing purpose, to verify that
  * two plugins don't override each other one another.
  */
-@Configuration
-class Module1 extends Loggable {
+object Module1 extends Loggable with RudderPluginModule {
 
   /**
    * This class contains the metadatas about the plugins : it's version,
    * name, description, etc.
    */
-  @Bean def moduleDef1 = new RudderPluginDef {
+  lazy val pluginDef = new RudderPluginDef {
     val status = new PluginEnableImpl(){}
     val name = PluginName("rudder-plugin-module1")
     val shortName = "module1"
@@ -69,8 +51,6 @@ class Module1 extends Loggable {
     def init = {
       logger.info("loading module 1")
     }
-
-    def oneTimeInit : Unit = {}
   }
 }
 

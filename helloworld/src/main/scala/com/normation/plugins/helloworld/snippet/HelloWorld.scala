@@ -2,12 +2,11 @@ package com.normation.plugins.helloworld.snippet
 
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.util.Helpers._
-import bootstrap.liftweb.LiftSpringApplicationContext.inject
-import com.normation.plugins.helloworld.HelloWorldPluginDef
+import bootstrap.rudder.plugin.HelloWorldConf
 
 class HelloWorld extends DispatchSnippet {
 
-  val moduleConfig = inject[HelloWorldPluginDef]
+  val moduleConfig =  HelloWorldConf.pluginDef
 
   def dispatch = {
     case "hello" => sayHello

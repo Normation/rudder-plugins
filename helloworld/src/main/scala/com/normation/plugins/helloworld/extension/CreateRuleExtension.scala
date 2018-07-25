@@ -1,23 +1,20 @@
 package com.normation.plugins.helloworld.extension
 
 import scala.xml.NodeSeq
-
 import org.joda.time.DateTime
+import com.normation.plugins.SnippetExtensionPoint
+import com.normation.plugins.helloworld.service.LogAccessInDb
+import com.normation.rudder.domain.policies.Rule
+import com.normation.rudder.web.components.{DateFormaterService, RuleEditForm}
+import com.normation.rudder.web.snippet.configuration.RuleManagement
+import net.liftweb.common.Loggable
+import net.liftweb.util.Helpers._
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
 
-import com.normation.plugins.{ SnippetExtensionKey, SnippetExtensionPoint }
-import com.normation.plugins.helloworld.service.LogAccessInDb
-import com.normation.rudder.domain.policies.Rule
-import com.normation.rudder.web.components.{ DateFormaterService, RuleEditForm }
-import com.normation.rudder.web.snippet.configuration.RuleManagement
+import scala.reflect.ClassTag
 
-import net.liftweb.common.Loggable
-import net.liftweb.util.Helpers._
-
-class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Loggable {
-
-  val extendsAt = SnippetExtensionKey(classOf[RuleManagement].getSimpleName)
+class CreateRuleExtension(implicit val ttag: ClassTag[RuleManagement]) extends SnippetExtensionPoint[RuleManagement] with Loggable {
 
   def compose(snippet:RuleManagement) : Map[String, NodeSeq => NodeSeq] = Map(
       "head" -> display _
@@ -39,9 +36,7 @@ class CreateRuleExtension extends SnippetExtensionPoint[RuleManagement] with Log
 
 class CreateRuleEditFormExtension(
     dbLogService      : LogAccessInDb
-  ) extends SnippetExtensionPoint[RuleEditForm] with Loggable {
-
-  val extendsAt = SnippetExtensionKey(classOf[RuleEditForm].getSimpleName)
+  )(implicit val ttag: ClassTag[RuleEditForm]) extends SnippetExtensionPoint[RuleEditForm] with Loggable {
 
   def compose(snippet:RuleEditForm) : Map[String, NodeSeq => NodeSeq] = Map(
       "showForm" -> addAnOtherTab(snippet) _
@@ -58,7 +53,7 @@ class CreateRuleEditFormExtension(
     //add a log entry
     dbLogService.logAccess(SecurityContextHolder.getContext.getAuthentication.getPrincipal match {
       case u:UserDetails =>  u.getUsername
-      case x => "unknown user"
+      case x             => "unknown user"
     })
 
     (

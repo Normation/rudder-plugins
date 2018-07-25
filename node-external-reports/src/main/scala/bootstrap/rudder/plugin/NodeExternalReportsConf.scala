@@ -36,46 +36,20 @@
 
 package bootstrap.rudder.plugin
 
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import org.springframework.context.annotation.{Bean, Configuration}
-import com.normation.plugins.SnippetExtensionRegister
 import com.normation.plugins.nodeexternalreports.NodeExternalReportsPluginDef
 import com.normation.plugins.nodeexternalreports.extension.CreateNodeDetailsExtension
 import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
 import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.nodeexternalreports.CheckRudderPluginEnableImpl
-import net.liftweb.common.Loggable
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
 import com.normation.rudder.domain.logger.ApplicationLogger
 
 
 
-object NodeExternalReportsConf {
+object NodeExternalReportsConf extends RudderPluginModule {
 
-  // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
-}
-
-/**
- * Definition of services for the HelloWorld plugin.
- */
-@Configuration
-class NodeExternalReportsPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
-
-  var appContext : ApplicationContext = null
-
-  override def afterPropertiesSet() : Unit = {
-    val ext = appContext.getBean(classOf[SnippetExtensionRegister])
-    ext.register(tabExtension)
-    logger.info("Extension initialized")
-  }
-
-  override def setApplicationContext(applicationContext: ApplicationContext) = {
-    appContext = applicationContext
-  }
-
-  @Bean def readReport = {
+  lazy val readReport = {
 
     val CONFIG_FILE_KEY = "rudder.plugin.externalNodeInformation.config"
     val defaultPath = "/opt/rudder/share/plugins/node-external-reports/node-external-reports.properties"
@@ -92,10 +66,13 @@ class NodeExternalReportsPluginConf extends Loggable with ApplicationContextAwar
     new ReadExternalReports(RudderConfig.nodeInfoService, configPath)
   }
 
-  @Bean def externalNodeReportApi = new NodeExternalReportApi(readReport)
+  // by build convention, we have only one of that on the classpath
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
-  @Bean def nodeExternalReportDef = new NodeExternalReportsPluginDef(externalNodeReportApi, NodeExternalReportsConf.pluginStatusService)
+  lazy val externalNodeReportApi = new NodeExternalReportApi(readReport)
 
-  @Bean def tabExtension = new CreateNodeDetailsExtension(readReport)
+  lazy val pluginDef = new NodeExternalReportsPluginDef(externalNodeReportApi, NodeExternalReportsConf.pluginStatusService)
+
+  RudderConfig.snippetExtensionRegister.register(new CreateNodeDetailsExtension(readReport))
 
 }
