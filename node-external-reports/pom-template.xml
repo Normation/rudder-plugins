@@ -20,6 +20,10 @@
     of report available for the node.
   </description>
 
+  <properties>
+    <destDirectory>nodeexternalreports</destDirectory>
+  </properties>
+
   <build>
     <plugins>
       <plugin>

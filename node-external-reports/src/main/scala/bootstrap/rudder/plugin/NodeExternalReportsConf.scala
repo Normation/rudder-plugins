@@ -96,6 +96,6 @@ class NodeExternalReportsPluginConf extends Loggable with ApplicationContextAwar
 
   @Bean def nodeExternalReportDef = new NodeExternalReportsPluginDef(externalNodeReportApi, NodeExternalReportsConf.pluginStatusService)
 
-  @Bean def tabExtension = new CreateNodeDetailsExtension(readReport)
+  @Bean def tabExtension = new CreateNodeDetailsExtension(readReport, NodeExternalReportsConf.pluginStatusService)
 
 }

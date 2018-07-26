@@ -74,8 +74,8 @@ class BrandingPluginConf extends Loggable with ApplicationContextAware with Init
   // spring thingies
   var appContext : ApplicationContext = null
 
-  val commonBranding = new CommonBranding
-  val loginBranding = new LoginBranding
+  @Bean def commonBranding = new CommonBranding(BrandingPluginConf.pluginStatusService)
+  @Bean def loginBranding = new LoginBranding(BrandingPluginConf.pluginStatusService, brandingModuleDef.version)
   override def afterPropertiesSet() : Unit = {
     val ext = appContext.getBean(classOf[SnippetExtensionRegister])
     ext.register(commonBranding)

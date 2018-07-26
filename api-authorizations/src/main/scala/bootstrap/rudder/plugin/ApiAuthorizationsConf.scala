@@ -62,7 +62,9 @@ object ApiAuthorizationsConf {
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
   // override default service level
-  RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
+  if(pluginStatusService.isEnabled) {
+    RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
+  }
 
   lazy val userApi = new UserApi(
       RudderConfig.restExtractorService
@@ -80,8 +82,8 @@ object ApiAuthorizationsConf {
 class ApiAuthorizationPluginConf extends Loggable with ApplicationContextAware with InitializingBean {
   @Bean def apiAuthorizationsModuleDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
 
-  @Bean def apiAccountsExtention = new ApiAccountsExtension()
-  @Bean def userInformationExtention = new UserInformationExtension()
+  @Bean def apiAccountsExtention = new ApiAccountsExtension(ApiAuthorizationsConf.pluginStatusService)
+  @Bean def userInformationExtention = new UserInformationExtension(ApiAuthorizationsConf.pluginStatusService)
 
   // spring thingies
   var appContext : ApplicationContext = null
