@@ -73,6 +73,6 @@ object NodeExternalReportsConf extends RudderPluginModule {
 
   lazy val pluginDef = new NodeExternalReportsPluginDef(externalNodeReportApi, NodeExternalReportsConf.pluginStatusService)
 
-  RudderConfig.snippetExtensionRegister.register(new CreateNodeDetailsExtension(readReport))
+  RudderConfig.snippetExtensionRegister.register(new CreateNodeDetailsExtension(readReport, pluginStatusService))
 
 }

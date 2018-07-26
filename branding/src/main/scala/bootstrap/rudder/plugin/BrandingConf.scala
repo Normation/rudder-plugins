@@ -62,6 +62,6 @@ object BrandingPluginConf extends RudderPluginModule {
   Cfg.rudderApi.addModules(brandingApi.getLiftEndpoints())
   lazy val pluginDef = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
 
-  RudderConfig.snippetExtensionRegister.register(new CommonBranding)
-  RudderConfig.snippetExtensionRegister.register(new LoginBranding)
+  RudderConfig.snippetExtensionRegister.register(new CommonBranding(pluginStatusService))
+  RudderConfig.snippetExtensionRegister.register(new LoginBranding(pluginStatusService, pluginDefbrandingModuleDef.version))
 }

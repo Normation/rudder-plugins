@@ -39,6 +39,7 @@ package com.normation.plugins.apiauthorizations
 
 import bootstrap.liftweb.PluginsInfo
 import com.normation.plugins.SnippetExtensionPoint
+import com.normation.plugins.PluginStatus
 import com.normation.rudder.rest.AllApi
 import com.normation.rudder.rest.ApiKind
 import com.normation.rudder.web.snippet.administration.ApiAccounts
@@ -48,12 +49,14 @@ import net.liftweb.util.Helpers._
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class ApiAccountsExtension(implicit val ttag: ClassTag[ApiAccounts]) extends SnippetExtensionPoint[ApiAccounts] with Loggable {
+class ApiAccountsExtension(status: PluginStatus)(implicit val ttag: ClassTag[ApiAccounts]) extends SnippetExtensionPoint[ApiAccounts] with Loggable {
+
+  def guard(f: NodeSeq => NodeSeq)(xml: NodeSeq): NodeSeq = if(status.isEnabled()) f(xml) else xml
 
   def compose(snippet: ApiAccounts) : Map[String, NodeSeq => NodeSeq] = Map(
-      "render" -> render _
+     "render"  -> render _
     , "body"   -> body _
-  )
+  ).mapValues(guard _)
 
 
   /*

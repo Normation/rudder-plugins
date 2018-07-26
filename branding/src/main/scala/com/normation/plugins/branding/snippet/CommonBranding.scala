@@ -44,17 +44,20 @@ import net.liftweb.common.{Full, Loggable}
 import net.liftweb.util._
 import Helpers._
 import bootstrap.rudder.plugin.BrandingPluginConf
+import com.normation.plugins.PluginStatus
 
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 
 
-class CommonBranding(implicit val ttag: ClassTag[CommonLayout])  extends SnippetExtensionPoint[CommonLayout] with Loggable {
+class CommonBranding(status: PluginStatus)(implicit val ttag: ClassTag[CommonLayout])  extends SnippetExtensionPoint[CommonLayout] with Loggable {
+
+  def guard(f: NodeSeq => NodeSeq)(xml: NodeSeq): NodeSeq = if(status.isEnabled()) f(xml) else xml
 
   def compose(snippet:CommonLayout) : Map[String, NodeSeq => NodeSeq] = Map(
     "display" -> display _
-  )
+  ).mapValues(guard _)
 
   private [this] val confRepo = BrandingPluginConf.brandingConfService
 
@@ -73,7 +76,6 @@ class CommonBranding(implicit val ttag: ClassTag[CommonLayout])  extends Snippet
       case _ => NodeSeq.Empty
     }
     ("* -*" #> bar).apply(xml)
-
   }
 
 }

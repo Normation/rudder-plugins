@@ -58,7 +58,9 @@ object ApiAuthorizationsConf extends RudderPluginModule {
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
   // override default service level
-  RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
+  if(pluginStatusService.isEnabled) {
+    RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
+  }
 
   lazy val userApi = new UserApi(
       RudderConfig.restExtractorService
@@ -67,10 +69,9 @@ object ApiAuthorizationsConf extends RudderPluginModule {
     , RudderConfig.tokenGenerator
     , RudderConfig.stringUuidGenerator
   )
-
   lazy val pluginDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
 
-  RudderConfig.snippetExtensionRegister.register(new ApiAccountsExtension())
-  RudderConfig.snippetExtensionRegister.register(new UserInformationExtension())
+  RudderConfig.snippetExtensionRegister.register(new ApiAccountsExtension(pluginStatusService))
+  RudderConfig.snippetExtensionRegister.register(new UserInformationExtension(pluginStatusService))
 }
 

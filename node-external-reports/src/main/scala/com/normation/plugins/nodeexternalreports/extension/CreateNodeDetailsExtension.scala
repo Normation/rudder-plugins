@@ -36,6 +36,8 @@
 
 package com.normation.plugins.nodeexternalreports.extension
 
+import com.normation.plugins.PluginStatus
+
 import scala.xml.NodeSeq
 import com.normation.plugins.SnippetExtensionPoint
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
@@ -46,12 +48,14 @@ import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
 import scala.reflect.ClassTag
 
-class CreateNodeDetailsExtension(externalReport: ReadExternalReports)(implicit val ttag: ClassTag[ShowNodeDetailsFromNode]) extends SnippetExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
+class CreateNodeDetailsExtension(externalReport: ReadExternalReports, status: PluginStatus)(implicit val ttag: ClassTag[ShowNodeDetailsFromNode]) extends SnippetExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
+
+  def guard(f: NodeSeq => NodeSeq)(xml: NodeSeq): NodeSeq = if(status.isEnabled()) f(xml) else xml
 
   def compose(snippet: ShowNodeDetailsFromNode) : Map[String, NodeSeq => NodeSeq] = Map(
-      "popupDetails"    -> addExternalReportTab(snippet) _
-    , "mainDetails" -> addExternalReportTab(snippet) _
-  )
+      "popupDetails" -> addExternalReportTab(snippet) _
+    , "mainDetails"  -> addExternalReportTab(snippet) _
+  ).mapValues(guard _)
 
   /**
    * Add a tab:

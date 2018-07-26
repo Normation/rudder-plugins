@@ -40,6 +40,8 @@ package com.normation.plugins.branding.snippet
 
 import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.SnippetExtensionPoint
+import com.normation.plugins.PluginStatus
+import com.normation.plugins.PluginVersion
 import com.normation.rudder.web.snippet.Login
 import net.liftweb.common.{Full, Loggable}
 import net.liftweb.util.Helpers._
@@ -48,10 +50,13 @@ import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 
-class LoginBranding(implicit val ttag: ClassTag[Login])  extends SnippetExtensionPoint[Login] with Loggable {
+class LoginBranding(status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login])  extends SnippetExtensionPoint[Login] with Loggable {
+
+  def guard(f: NodeSeq => NodeSeq)(xml: NodeSeq): NodeSeq = if(status.isEnabled()) f(xml) else xml
 
   def compose(snippet:Login) : Map[String, NodeSeq => NodeSeq] = Map(
-    "display" -> display _)
+    "display" -> display _
+  ).mapValues(guard _)
 
 
   private [this] val confRepo = BrandingPluginConf.brandingConfService
@@ -60,7 +65,7 @@ class LoginBranding(implicit val ttag: ClassTag[Login])  extends SnippetExtensio
     val legend =
       <p class="legend col-xs-12">
         <img src="/images/login/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"></img>
-        <span>${{rudder-major-version}}</span>
+        <span>{version.prefix.replaceAll("-", "")}</span>
       </p>
     val bar = data match {
       case Full(data) if (data.displayBarLogin) =>
@@ -93,7 +98,5 @@ class LoginBranding(implicit val ttag: ClassTag[Login])  extends SnippetExtensio
     ( ".legend"    #> legendBar &
       ".welcome *" #> motd
     ) (xml)
-
   }
-
 }
