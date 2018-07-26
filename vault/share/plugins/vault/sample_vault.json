@@ -1,0 +1,11 @@
+{
+  "server_addr": "YOUR_VAULT_SERVER",
+  "auth":
+  {
+    "userpass":
+    {
+      "user": "USER",
+      "password": "PASSWD"
+    }
+  }
+}
