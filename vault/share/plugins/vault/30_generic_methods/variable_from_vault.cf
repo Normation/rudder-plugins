@@ -1,0 +1,79 @@
+#####################################################################################
+# Copyright 2018 Normation SAS
+#####################################################################################
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, Version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################################
+#
+# @name Variable from Vault
+# @description Gets a key-value dictionnary from Vault given the secret path
+#
+# @documentation To use the generated variable, you must use the form `${variable_prefix.variable_name}` with each name replaced with the parameters of this method.
+#
+# Access to the vault has to be configured on each agent in /var/rudder/plugin-resources/vault.json. A sample config file is provided in /opt/rudder/share/plugins/vault/sample_vault.json
+#
+# This generic method will report as performing a repair when it fetches a key, and an error when it fails to do so.
+#
+# @parameter variable_prefix The prefix of the variable name
+# @parameter variable_name   The variable to define, the full name will be variable_prefix.variable_name
+# @parameter path            The path of the secret
+#
+# @class_prefix variable_from_vault
+# @class_parameter path
+
+bundle agent variable_from_vault(variable_prefix, variable_name, path)
+{
+  vars:
+      "old_class_prefix" string => canonify("variable_from_vault_${path}");
+      "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
+      "class_prefix" string => canonify(join("_", "promisers"));
+      "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
+
+    pass2::
+      "vault_apicall_ouput" string => execresult("/usr/bin/curl -s -H 'X-Vault-Token: ${vault.auth_token}' ${vault.server_addr}/v1/secret/${path}", "noshell");
+
+      "${variable_prefix}.${variable_name}" data => "${vault_apicall_ouput}";
+
+  classes:
+      "pass3" expression => "pass2";
+      "pass2" expression => "pass1";
+      "pass1";
+
+    pass3::
+      "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");  
+      "config_defined" expression => isvariable("vault.config");
+
+  methods:
+    pass1::
+      "Auth" usebundle => vault_get_token("userpass"),
+        ifvarclass => not(isvariable("vault.auth_token"));
+
+    pass3.variable_defined::
+      "repair" usebundle => _classes_repaired("${old_class_prefix}");
+      "repair" usebundle => _classes_repaired("${class_prefix}");
+      "report" usebundle => _log("Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
+
+    pass3.!variable_defined.!vault_reachable::
+      "failure" usebundle => _classes_failure("${old_class_prefix}");
+      "failure" usebundle => _classes_failure("${class_prefix}");
+      "report" usebundle => _log("Vault server unreachable. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "config_defined";
+      "report" usebundle => _log("Undefined configuration. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "!config_defined";
+
+    pass3.!variable_defined.vault_reachable::
+      "failure" usebundle => _classes_failure("${old_class_prefix}");
+      "failure" usebundle => _classes_failure("${class_prefix}");
+      "report" usebundle => _log("Vault server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
+}

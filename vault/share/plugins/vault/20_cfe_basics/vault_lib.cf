@@ -1,0 +1,76 @@
+#####################################################################################
+# Copyright 2018 Normation SAS
+#####################################################################################
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, Version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################################
+
+# Fetches the configuration to be used for this run.
+# The config is located at "config_path". It is a JSON file containing two fields : a server_addr and an auth dictionary :
+# {
+#   "server_addr": "YOUR_VAULT_SERVER",
+#   "auth":
+#   {
+#     "userpass":
+#     {
+#       "user": "USER",
+#       "password": "PASSWD"
+#     }
+#   }
+# }
+#
+# The auth field can contain one field for each auth mode, with the latter as key name.
+
+bundle agent vault_fetch_config()
+{
+  vars:
+      "config_path" string => "/var/rudder/plugin-resources/vault.json";
+      "vault.config" data => readjson("${config_path}");
+}
+
+bundle agent vault_get_token(auth_mode)
+{
+  vars:
+      "class_prefix" string => canonify("vault_get_token${auth_mode}");
+
+    pass1::
+      "vault.server_addr" string => "${vault.config[server_addr]}";
+
+    pass2.mode_userpass.vault_reachable::
+      "vault_apicall_output" string => execresult("/usr/bin/curl -s --request POST --data '{\"password\": \"${vault.config[auth][userpass][password]}\"}' ${vault.server_addr}/v1/auth/userpass/login/${vault.config[auth][userpass][user]}", "noshell");
+      
+      "data_output" data => "${vault_apicall_output}";
+
+    pass2.vault_reachable::
+      "vault.auth_token" string => "${data_output[auth][client_token]}",
+        ifvarclass => isvariable("data_output[auth][client_token]");
+
+  classes:
+    pass1::
+      # We need this to determinate whether an auth error is due to bad credentials or the Vault server being unreachable
+      "vault_reachable" expression => returnszero("/usr/bin/curl -s ${vault.server_addr}", "noshell");
+     
+      # What auth mode are we using
+      "mode_userpass" expression => strcmp("${auth_mode}", "userpass");
+    
+    any::
+      "pass3" expression => "pass2";
+      "pass2" expression => "pass1";
+      "pass1";
+
+  methods:
+    pass1::
+      "Vault config" usebundle => vault_fetch_config(),
+        ifvarclass => not(isvariable("vault.config"));
+}
