@@ -38,6 +38,7 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.changesvalidation.ChangesValidationPluginDef
 import com.normation.plugins.changesvalidation.CheckRudderPluginEnableImpl
@@ -51,8 +52,8 @@ import com.normation.rudder.services.workflows.WorkflowLevelService
 /*
  * The validation workflow level
  */
-object ChangeValidationWorkflowLevelService extends WorkflowLevelService {
-  override def workflowEnabled: Boolean = true
+class ChangeValidationWorkflowLevelService(status: PluginStatus) extends WorkflowLevelService {
+  override def workflowEnabled: Boolean = status.isEnabled()
   override def name: String = "Change Request Validation Workflows"
 }
 
@@ -65,7 +66,7 @@ object ChangesValidationConf extends RudderPluginModule {
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
   // other service instanciation / initialization
-  RudderConfig.workflowLevelService.overrideLevel(ChangeValidationWorkflowLevelService)
+  RudderConfig.workflowLevelService.overrideLevel(new ChangeValidationWorkflowLevelService(pluginStatusService))
 
   // change workflow service
   RudderConfig.workflowService.updateWorkflowService({
@@ -90,7 +91,7 @@ object ChangesValidationConf extends RudderPluginModule {
     )
   })
 
-  lazy val pluginDef = new ChangesValidationPluginDef(ChangesValidationConf.pluginStatusService)
+  lazy val pluginDef = new ChangesValidationPluginDef(pluginStatusService)
 
-  RudderConfig.snippetExtensionRegister.register(new TopBarExtension())
+  RudderConfig.snippetExtensionRegister.register(new TopBarExtension(pluginStatusService))
 }
