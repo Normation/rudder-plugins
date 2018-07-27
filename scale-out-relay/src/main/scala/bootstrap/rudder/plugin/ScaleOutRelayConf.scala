@@ -37,9 +37,11 @@
 
 package bootstrap.rudder.plugin
 
+import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.scaleoutrelay.ScalaOutRelayPluginDef
 import com.normation.plugins.scaleoutrelay.CheckRudderPluginEnableImpl
+import com.normation.plugins.scaleoutrelay.ScaleOutRelayAgentSpecificGeneration
 
 /*
  * Actual configuration of the plugin logic
@@ -51,7 +53,8 @@ object ScalaOutRelayConf extends RudderPluginModule {
 
   lazy val pluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
 
-  // other service instanciation / initialization
+  // add policy generation for AIX nodes
+  RudderConfig.agentRegister.addAgentLogic(new ScaleOutRelayAgentSpecificGeneration(pluginStatusService))
 
 }
 

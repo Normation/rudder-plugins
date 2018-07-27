@@ -1,6 +1,7 @@
 package com.normation.plugins.changesvalidation
 
-import com.normation.plugins.SnippetExtensionPoint
+import com.normation.plugins.PluginExtensionPoint
+import com.normation.plugins.PluginStatus
 import com.normation.rudder.web.snippet.CommonLayout
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
@@ -8,9 +9,9 @@ import net.liftweb.util.Helpers._
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class TopBarExtension(implicit val ttag: ClassTag[CommonLayout]) extends SnippetExtensionPoint[CommonLayout] with Loggable {
+class TopBarExtension(val status: PluginStatus)(implicit val ttag: ClassTag[CommonLayout]) extends PluginExtensionPoint[CommonLayout] with Loggable {
 
-  def compose(snippet: CommonLayout) : Map[String, NodeSeq => NodeSeq] = Map(
+  def pluginCompose(snippet: CommonLayout) : Map[String, NodeSeq => NodeSeq] = Map(
       "display" -> render _
   )
 

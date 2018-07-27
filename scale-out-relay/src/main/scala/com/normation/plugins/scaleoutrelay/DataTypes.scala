@@ -70,7 +70,9 @@ class ScaleOutRelayAgentSpecificGeneration(pluginInfo: PluginStatus) extends Age
    * This plugin handle relay server, i.e non-root policy servers
    */
   override def handle(agentNodeProps: AgentNodeProperties): Boolean = {
-    agentNodeProps.isPolicyServer && agentNodeProps.nodeId != Constants.ROOT_POLICY_SERVER_ID
+    pluginInfo.isEnabled() &&
+    agentNodeProps.isPolicyServer &&
+    agentNodeProps.nodeId != Constants.ROOT_POLICY_SERVER_ID
   }
 
   override def write(cfg: AgentNodeWritableConfiguration): Box[List[AgentSpecificFile]] = {

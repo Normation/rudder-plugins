@@ -37,17 +37,13 @@
 
 package com.normation.plugins.scaleoutrelay
 
-import bootstrap.liftweb.RudderConfig
 import com.normation.plugins._
 
 class ScalaOutRelayPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.scaleoutrelay"
 
-  def init = {
-    // add policy generation for AIX nodes
-    RudderConfig.agentRegister.addAgentLogic(new ScaleOutRelayAgentSpecificGeneration(status))
-  }
+  def init = {}
 
   def oneTimeInit : Unit = {}
 

@@ -39,7 +39,7 @@
 package com.normation.plugins.branding.snippet
 
 import bootstrap.rudder.plugin.BrandingPluginConf
-import com.normation.plugins.SnippetExtensionPoint
+import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.PluginVersion
 import com.normation.rudder.web.snippet.Login
@@ -50,11 +50,9 @@ import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 
-class LoginBranding(status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login])  extends SnippetExtensionPoint[Login] with Loggable {
+class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login]) extends PluginExtensionPoint[Login] with Loggable {
 
-  def guard(f: NodeSeq => NodeSeq)(xml: NodeSeq): NodeSeq = if(status.isEnabled()) f(xml) else xml
-
-  def compose(snippet:Login) : Map[String, NodeSeq => NodeSeq] = Map(
+  def pluginCompose(snippet:Login) : Map[String, NodeSeq => NodeSeq] = Map(
     "display" -> display _
   ).mapValues(guard _)
 

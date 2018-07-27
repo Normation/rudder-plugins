@@ -1,6 +1,6 @@
 package com.normation.plugins.apiauthorizations
 
-import com.normation.plugins.SnippetExtensionPoint
+import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.web.snippet.UserInformation
 import net.liftweb.common.Loggable
@@ -9,13 +9,11 @@ import net.liftweb.util.Helpers._
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class UserInformationExtension(status: PluginStatus)(implicit val ttag: ClassTag[UserInformation]) extends SnippetExtensionPoint[UserInformation] with Loggable {
+class UserInformationExtension(val status: PluginStatus)(implicit val ttag: ClassTag[UserInformation]) extends PluginExtensionPoint[UserInformation] with Loggable {
 
-  def guard(f: NodeSeq => NodeSeq)(xml: NodeSeq): NodeSeq = if(status.isEnabled()) f(xml) else xml
-
-  def compose(snippet: UserInformation) : Map[String, NodeSeq => NodeSeq] = Map(
+  def pluginCompose(snippet: UserInformation) : Map[String, NodeSeq => NodeSeq] = Map(
       "userCredentials" -> render _
-  ).mapValues(guard _)
+  )
 
   def render(xml:NodeSeq) = {
     /* xml is a menu entry which looks like:
