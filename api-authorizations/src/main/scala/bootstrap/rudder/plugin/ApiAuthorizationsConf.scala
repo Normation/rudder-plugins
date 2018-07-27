@@ -39,6 +39,7 @@ package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.SnippetExtensionRegister
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.apiauthorizations._
 import com.normation.rudder.rest.ApiAuthorizationLevelService
 import net.liftweb.common.Loggable
@@ -46,9 +47,9 @@ import org.springframework.beans.factory.InitializingBean
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 import org.springframework.context.annotation.{Bean, Configuration}
 
-// service that provide ACL level
-object AclLevel extends ApiAuthorizationLevelService {
-  override def aclEnabled: Boolean = true
+// service that provide ACL level only if plugin is enable
+class AclLevel(status: PluginStatus) extends ApiAuthorizationLevelService {
+  override def aclEnabled: Boolean = status.isEnabled()
 
   override def name: String = "Fine grained API authorizations with ACLs"
 }
@@ -62,9 +63,7 @@ object ApiAuthorizationsConf {
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
   // override default service level
-  if(pluginStatusService.isEnabled) {
-    RudderConfig.apiAuthorizationLevelService.overrideLevel(AclLevel)
-  }
+  RudderConfig.apiAuthorizationLevelService.overrideLevel(new AclLevel(pluginStatusService))
 
   lazy val userApi = new UserApi(
       RudderConfig.restExtractorService
