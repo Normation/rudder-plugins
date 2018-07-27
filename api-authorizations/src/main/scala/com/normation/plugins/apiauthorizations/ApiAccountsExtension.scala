@@ -87,12 +87,19 @@ class ApiAccountsExtension(status: PluginStatus) extends SnippetExtensionPoint[A
     implicit val formats = Serialization.formats(NoTypeHints)
 
     val categories = ((AllApi.api ++ PluginsInfo.pluginApisDef).filter(x => x.kind == ApiKind.Public || x.kind == ApiKind.General).groupBy(_.path.parts.head).map { case(cat, apis) =>
-      JsonCategory(cat.value, apis.map(a => JsonApi(a.name, a.description, a.path.value, a.action.name)).sortBy(_.path))
+      JsonCategory(cat.value, apis.map(a => JsonApi(a.name, a.description, apiPathToAcl(a.path.value), a.action.name)).sortBy(_.path))
     }).toList.sortBy(_.category)
     val json = write(categories)
 
     //now, add declaration of a JS variable: var rudderApis = [{ ... }]
     xml ++ Script(JsRaw(s"""var rudderApis = $json;"""))
+  }
+
+  // change variables in api path {xxx] into *
+  // it could (should?) be done at case class level, but for a first version is
+  // does the job.
+  def apiPathToAcl(path: String): String = {
+    path.replaceAll("""\{.*?\}""", "*")
   }
 
   def body(xml:NodeSeq) : NodeSeq = {
