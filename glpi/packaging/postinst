@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "15 7 * * * /opt/rudder/bin/glpi-plugin send-all" > /etc/cron.d/glpi-rudder
