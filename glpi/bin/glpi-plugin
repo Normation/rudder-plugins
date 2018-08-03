@@ -1,0 +1,30 @@
+#!/bin/bash
+
+INVENTORIES_DIR=/var/rudder/inventories/received
+GLPI_FUSION_URL=$(sed -e "/GLPI_FUSION_URL/s/^.*=//" /opt/rudder/etc/glpi.conf)
+INV_N=$(ls -1 "${INVENTORIES_DIR}" | egrep '.ocs$' | wc -l)
+
+send_inventory()
+{
+  curl -H "Content-Type: Application/x-compress" -k -s --data @$1 "${GLPI_FUSION_URL}" > /dev/null
+}
+
+
+case "$1" in
+  send-all)
+    echo "[ ] Sending ${INV_N} inventories to GLPI..."
+    
+    for INV in $(ls -1 "${INVENTORIES_DIR}" | egrep '.ocs$'); do
+      send_inventory "${INVENTORIES_DIR}"/"${INV}"
+    done
+  ;;
+  
+  send-one)
+    echo "[ ] Sending inventory for node $2 to GLPI..."
+    
+    INV=$(ls -1 "${INVENTORIES_DIR}" | egrep "$2.ocs$")
+    send_inventory "${INVENTORIES_DIR}"/"${INV}"
+  ;;
+esac
+
+echo "[+] Done."
