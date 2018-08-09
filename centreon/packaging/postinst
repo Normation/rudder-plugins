@@ -1,3 +1,4 @@
 #!/bin/sh
 
 mkdir -p /var/rudder/plugin-resources
+echo "0 * * * * /opt/rudder/bin/centreon-plugin.py commit" > /etc/cron.d/centreon-rudder
