@@ -2,6 +2,7 @@
   "server_addr": "YOUR_VAULT_SERVER",
   "auth":
   {
+    "mode": "userpass",
     "userpass":
     {
       "user": "USER",
