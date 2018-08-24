@@ -31,7 +31,6 @@ http://www.rudder-project.org/HowToContribute
 // ====doc====
 
 [[node-external-reports]]
-
 = Node external reports
 
 This plugin allows to add external, static documents in a new tab in node details. 
