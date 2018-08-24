@@ -49,7 +49,6 @@ You can log information about data source (behavior and errors) by adding the fo
 // ====doc====
 
 [[node-properties-data-sources]]
-
 = Node properties data sources
 
 As explained in the chapter about node management, Nodes have properties that can be
