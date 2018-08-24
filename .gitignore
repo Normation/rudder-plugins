@@ -19,5 +19,7 @@ makefiles/m2_location.cache
 #elm related stuff
 **/elm-stuff/*
 **/generated/*
+#doc
+/doc
 rudder-plugins.adoc
 plugin-doc-assets/
