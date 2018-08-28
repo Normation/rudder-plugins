@@ -38,10 +38,16 @@
 package com.normation.plugins
 
 import java.io.InputStreamReader
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
 
-import com.normation.license.{LicenseChecker, LicenseError, LicenseReader, RSAKeyManagement, Version}
+import com.normation.license.MaybeLicenseError
+import com.normation.license._
 import com.normation.rudder.domain.logger.PluginLogger
 import org.joda.time.DateTime
+
+import scala.util.control.NonFatal
 
 
 /*
@@ -61,25 +67,52 @@ trait LicensedPluginCheck extends CheckRudderPluginEnable {
    * implementation must define variable with the following maven properties
    * that will be replaced at build time:
    */
-//  val pluginClasspathPubkey = "${plugin-resource-publickey}"
-//  val pluginLicensePath     = "${plugin-resource-license}"
-//  val pluginDeclaredVersion = "${plugin-declared-version}"
-//  val pluginId              = "${plugin-fullname}"
+//  val pluginResourcePublickey = "${plugin-resource-publickey}"
+//  val pluginResourceLicense   = "${plugin-resource-license}"
+//  val pluginDeclaredVersion   = "${plugin-declared-version}"
+//  val pluginId                = "${plugin-fullname}"
 
-  def pluginClasspathPubkey: String
-  def pluginLicensePath    : String
-  def pluginDeclaredVersion: String
-  def pluginId             : String
+  def pluginResourcePublickey: String
+  def pluginResourceLicense  : String
+  def pluginDeclaredVersion  : String
+  def pluginId               : String
 
-  lazy val maybeInfo = LicenseReader.readAndCheckLicense(pluginLicensePath, pluginClasspathPubkey, pluginDeclaredVersion, pluginId)
   lazy val hasLicense = true
 
+  /*
+   * we don't want to check each time if the license is ok or not. So we only change if license or key file is updated
+   */
+  def getModDate(path: String): Option[FileTime] = {
+    try {
+      Some(Files.getLastModifiedTime(Paths.get(path)))
+    } catch {
+      case NonFatal(ex) => None
+    }
+  }
+  def readLicense = {
+    val lic = LicenseReader.readAndCheckLicenseFS(pluginResourceLicense, pluginResourcePublickey, new DateTime(), pluginDeclaredVersion, pluginId)
+    // log
+    lic.fold( error => PluginLogger.error(error) , ok =>  PluginLogger.warn("License signature is valid.") )
+    lic
+  }
 
-  // log
-  maybeInfo.fold( error => PluginLogger.error(error) , ok =>  PluginLogger.warn("License signature is valid.") )
+  // some cached information
+  private[this] var licenseModDate = Option.empty[FileTime]
+  private[this] var pubkeyModDate  = Option.empty[FileTime]
+  private[this] var infoCache: MaybeLicenseError.Maybe[(License.CheckedLicense, Version)] = Left(LicenseError.IO("License not initialized yet or missing licenses related files."))
+
+  def maybeInfo = {
+    val licenseMod = getModDate(pluginResourceLicense)
+    val pubkeyMod  = getModDate(pluginResourcePublickey)
+    if(licenseMod != licenseModDate || pubkeyMod != pubkeyModDate) {
+      licenseModDate = licenseMod
+      pubkeyModDate  = pubkeyMod
+      infoCache      = readLicense
+    }
+    infoCache
+  }
 
   def isEnabled = enabledStatus == PluginStatus.Enabled
-
 
   def enabledStatus: PluginStatus = {
     (for {
