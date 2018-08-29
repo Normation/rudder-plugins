@@ -40,7 +40,6 @@ package com.normation.plugins.datasources.api
 import com.normation.plugins.datasources._
 import java.util.concurrent.TimeUnit
 
-import bootstrap.rudder.plugin.DatasourcesConf.dataSourceRepository
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -54,7 +53,6 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 
 import scala.concurrent.duration.Duration
-import com.normation.rudder.rest.RestTestSetUp
 
 
 
@@ -76,19 +74,19 @@ class RestDataSourceTest extends Specification with Loggable {
     }
   }
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
-  val dataSourceApi9 = new DataSourceApiImpl(
-      RestTestSetUp.restExtractorService
-    , RestTestSetUp.restDataSerializer
-    , dataSourceRepository
-    , null
-    , null
-    , RestTestSetUp.uuidGen
-  )
 
-
-  // TODO: Test API in Rudder 4.3
+  // TODO: Test API in Rudder 4.3 & up
   // this need to be ported to new way of doing API tests
-  // RestTestSetUp.api.addEndpoints(Map(ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
+
+  //  val dataSourceApi9 = new DataSourceApiImpl(
+//      RestTestSetUp.restExtractorService
+//    , RestTestSetUp.restDataSerializer
+//    , dataSourceRepository
+//    , null
+//    , null
+//    , RestTestSetUp.uuidGen
+//  )
+//   RestTestSetUp.api.addEndpoints(Map(ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
 
   val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", HttpRequestMode.OneRequestByNode, DataSource.defaultDuration, MissingNodeBehavior.Delete)
   val baseRunParam  = DataSourceRunParameters(DataSourceSchedule.NoSchedule(DataSource.defaultDuration), false,false)
