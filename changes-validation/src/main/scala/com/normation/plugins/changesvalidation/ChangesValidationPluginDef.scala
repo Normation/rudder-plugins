@@ -57,20 +57,13 @@ class ChangesValidationPluginDef(override val status: PluginStatus) extends Defa
 
   val configFiles = Seq()
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val changesValidationMenu = (
-      Menu("changesValidationManagement", <span>Changes Validation</span>) /
-        "secure" / "administration" / "changesValidationManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "ChangesValidationManagement" :: Nil ) openOr <div>Template not found</div>)
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(Menu("changesValidationManagement", <span>Changes Validation</span>) /
+      "secure" / "plugins" / "changesValidationManagement"
+      >> LocGroup("pluginsGroup")
+      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
+      >> Template(() => ClasspathTemplates("template" :: "ChangesValidationManagement" :: Nil ) openOr <div>Template not found</div>)
     )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ changesValidationMenu:_* )
-      case m => m
-    }
   }
 
 }

@@ -58,20 +58,12 @@ class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPl
 
   val configFiles = Seq(ClassPathResource("auth-backends.properties"))
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val authBackendsMenu = (
-      Menu("authBackensdManagement", <span>Authentication Backends</span>) /
-        "secure" / "administration" / "authBackendsManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "AuthBackendsManagement" :: Nil ) openOr <div>Template not found</div>)
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(Menu("authBackensdManagement", <span>Authentication Backends</span>) /
+      "secure" / "plugins" / "authBackendsManagement"
+      >> LocGroup("pluginsGroup")
+      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
+      >> Template(() => ClasspathTemplates("template" :: "AuthBackendsManagement" :: Nil ) openOr <div>Template not found</div>)
     )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ authBackendsMenu:_* )
-      case m => m
-    }
   }
-
 }
