@@ -16,9 +16,6 @@ class TopBarExtension(val status: PluginStatus)(implicit val ttag: ClassTag[Comm
   )
 
   def render(xml:NodeSeq) = {
-
-    println("**** I'm extending! ****")
-
     (
      "#rudder-navbar -*" #> <li class="lift:comet?type=WorkflowInformation" name="workflowInfo" ></li>
     ).apply(xml)

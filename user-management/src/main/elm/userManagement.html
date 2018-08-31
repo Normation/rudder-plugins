@@ -1,0 +1,20 @@
+<html>
+<body data-lift-content-id="user-management-main">
+  <div class="tw-bs" id="user-management-main" data-lift="surround?with=common-layout;at=content">
+    <head_merge>
+
+      <title>User Plugin</title>
+      <meta charset="utf8" />
+      <link rel="stylesheet" type="text/css" href="/toserve/usermanagement/media.css"  media="screen" data-lift="with-cached-resource">
+      <script src="/toserve/usermanagement/user-management.js" data-lift="with-cached-resource"></script>
+
+    </head_merge>
+   <div id="user-management-app"></div>
+   <div data-lift="UserPlugin.getAuthzConfig"></div>
+   <script>
+     var node = document.getElementById("user-management-app");
+     var app  = Elm.UserManagement.embed(node, { authzConfig: authzConfig});
+   </script>
+  </div>
+</body>
+</html>
