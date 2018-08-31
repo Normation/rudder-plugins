@@ -37,9 +37,15 @@
 
 package com.normation.plugins
 
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
+
 import com.normation.license._
 import com.normation.rudder.domain.logger.PluginLogger
 import org.joda.time.DateTime
+
+import scala.util.control.NonFatal
 
 /*
  * An utility method that check if a license file exists and is valid.
@@ -52,23 +58,51 @@ trait LicensedPluginCheck extends PluginStatus {
    * implementation must define variable with the following maven properties
    * that will be replaced at build time:
    */
-//  val pluginClasspathPubkey = "${plugin-resource-publickey}"
-//  val pluginLicensePath     = "${plugin-resource-license}"
-//  val pluginDeclaredVersion = "${plugin-declared-version}"
-//  val pluginId              = "${plugin-fullname}"
+//  val pluginResourcePublickey = "${plugin-resource-publickey}"
+//  val pluginResourceLicense   = "${plugin-resource-license}"
+//  val pluginDeclaredVersion   = "${plugin-declared-version}"
+//  val pluginId                = "${plugin-fullname}"
 
-  def pluginClasspathPubkey: String
-  def pluginLicensePath    : String
-  def pluginDeclaredVersion: String
-  def pluginId             : String
+  def pluginResourcePublickey: String
+  def pluginResourceLicense  : String
+  def pluginDeclaredVersion  : String
+  def pluginId               : String
 
-  lazy val maybeLicense = LicenseReader.readAndCheckLicense(pluginLicensePath, pluginClasspathPubkey, pluginDeclaredVersion, pluginId)
-
-  //log at that point of loading if we successfully read the license information for the plugin
-  maybeLicense.fold(
+  /*
+   * we don't want to check each time if the license is ok or not. So we only change if license or key file is updated
+   */
+  def getModDate(path: String): Option[FileTime] = {
+    try {
+      Some(Files.getLastModifiedTime(Paths.get(path)))
+    } catch {
+      case NonFatal(ex) => None
+    }
+  }
+  def readLicense = {
+    val lic = LicenseReader.readAndCheckLicenseFS(pluginResourceLicense, pluginResourcePublickey, new DateTime(), pluginDeclaredVersion, pluginId)
+    // log
+    lic.fold(
       error => PluginLogger.error(s"Plugin '${pluginId}' license error: ${error.msg}")
     , ok    => PluginLogger.info(s"Plugin '${pluginId}' has a license and the license signature is valid.")
-  )
+    )
+    lic
+  }
+
+  // some cached information
+  private[this] var licenseModDate = Option.empty[FileTime]
+  private[this] var pubkeyModDate  = Option.empty[FileTime]
+  private[this] var infoCache: MaybeLicenseError.Maybe[(License.CheckedLicense, Version)] = Left(LicenseError.IO("License not initialized yet or missing licenses related files."))
+
+  def maybeLicense = {
+    val licenseMod = getModDate(pluginResourceLicense)
+    val pubkeyMod  = getModDate(pluginResourcePublickey)
+    if(licenseMod != licenseModDate || pubkeyMod != pubkeyModDate) {
+      licenseModDate = licenseMod
+      pubkeyModDate  = pubkeyMod
+      infoCache      = readLicense
+    }
+    infoCache
+  }
 
   def current: PluginStatusInfo = {
     (for {
