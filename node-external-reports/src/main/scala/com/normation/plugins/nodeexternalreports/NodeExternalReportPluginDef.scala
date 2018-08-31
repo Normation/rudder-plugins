@@ -62,19 +62,13 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
 
   def oneTimeInit : Unit = {}
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val loc =
-      Menu("nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "administration" / "nodeexternalreports" >>
-        LocGroup("administrationGroup") >>
-        Template(() =>
-          ClasspathTemplates( "nodeExternalReports" :: Nil ) openOr
-          <div>Template not found</div>)
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ loc:_* )
-      case m => m
-    }
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(Menu("nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
+      LocGroup("pluginsGroup") >>
+      Template(() =>
+        ClasspathTemplates( "nodeExternalReports" :: Nil ) openOr
+        <div>Template not found</div>)
+    )
   }
 
 }

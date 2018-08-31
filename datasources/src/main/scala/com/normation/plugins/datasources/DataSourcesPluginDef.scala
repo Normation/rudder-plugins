@@ -63,20 +63,13 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
 
   val configFiles = Seq()
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val datasourceMenu = (
-      Menu("dataSourceManagement", <span>Data sources</span>) /
-        "secure" / "administration" / "dataSourceManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
-        >> Template(() => ClasspathTemplates( "template" :: "dataSourceManagement" :: Nil ) openOr <div>Template not found</div>)
+  override def pluginMenuEntry : Option[Menu] = {
+    Some(Menu("dataSourceManagement", <span>Data sources</span>) /
+      "secure" / "plugins" / "dataSourceManagement"
+      >> LocGroup("pluginsGroup")
+      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read) )
+      >> Template(() => ClasspathTemplates( "template" :: "dataSourceManagement" :: Nil ) openOr <div>Template not found</div>)
     )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ datasourceMenu:_* )
-      case m => m
-    }
   }
 
 }
