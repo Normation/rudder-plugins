@@ -10,29 +10,20 @@ FILES += $(NAME)
 include ../makefiles/common.mk
 
 ## For licensed plugins
+# The path are expected on Rudder, and the license and key file will be provided separatly
 # standard destination path for the license file is in module directory, "license.sign"
-TARGET_LICENSE_PATH = /opt/rudder/share/plugins/$(NAME)/license
-# standard destination path for the key is at JAR root, name: license.pubkey
-TARGET_KEY_CLASSPATH = license.pubkey
-# SIGNED_LICENSE_PATH: path towards the license file to embed
-# PUBLIC_KEY_PATH: path towards the public key to embed
+TARGET_LICENSE_PATH = /opt/rudder/etc/plugins/licenses/$(NAME).license
+# standard destination path for the key:
+TARGET_KEY_PATH = /opt/rudder/etc/plugins/licenses/license.key
 
 std-files: 
 	$(MVN_CMD) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
-licensed-files: check-license 
-	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_CLASSPATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
+licensed-files:
+	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
-	cp $(PUBLIC_KEY_PATH) target/$(TARGET_KEY_CLASSPATH)
-	jar -uf target/$(NAME)/$(NAME).jar -C target $(TARGET_KEY_CLASSPATH)
-	# embed the license
-	cp $(SIGNED_LICENSE_PATH) target/$(NAME)/license
 
-check-license: 
-	test -n "$(SIGNED_LICENSE_PATH)"  # $$SIGNED_LICENSE_PATH must be defined
-	test -n "$(PUBLIC_KEY_PATH)"      # $$PUBLIC_KEY_PATH must be defined
-
-.PHONY: std-files licensed-files check-license
+.PHONY: std-files licensed-files 
