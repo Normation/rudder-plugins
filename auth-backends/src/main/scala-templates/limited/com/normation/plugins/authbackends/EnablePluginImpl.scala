@@ -48,9 +48,9 @@ import com.normation.plugins.LicensedPluginCheck
  */
 final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
   // here are processed variables
-  def pluginClasspathPubkey = "${plugin-resource-publickey}"
-  def pluginLicensePath     = "${plugin-resource-license}"
-  def pluginDeclaredVersion = "${plugin-declared-version}"
-  def pluginId              = "${plugin-fullname}"
+  def pluginResourcePublickey = "${plugin-resource-publickey}"
+  def pluginResourceLicense   = "${plugin-resource-license}"
+  def pluginDeclaredVersion   = "${plugin-declared-version}"
+  def pluginId                = "${plugin-fullname}"
 } 
 
