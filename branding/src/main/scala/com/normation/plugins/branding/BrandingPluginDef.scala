@@ -61,20 +61,13 @@ class BrandingPluginDef(override val status: PluginStatus) extends DefaultPlugin
 
   val configFiles = Seq()
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val brandingMenu = (
-      Menu("brandingManagement", <span>Branding</span>) /
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(Menu("brandingManagement", <span>Branding</span>) /
         "secure" / "administration" / "brandingManagement"
         >> LocGroup("administrationGroup")
         >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
         >> Template(() => ClasspathTemplates( "template" :: "brandingManagement" :: Nil ) openOr <div>Template not found</div>)
     )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ brandingMenu:_* )
-      case m => m
-    }
   }
 
 }
