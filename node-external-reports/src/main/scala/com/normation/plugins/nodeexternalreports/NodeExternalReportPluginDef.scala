@@ -54,10 +54,7 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
   val configFiles = Seq(ClassPathResource("demo-config-1.properties"), ClassPathResource("demo-config-2.properties"))
 
   def init = {
-
-    logger.info("Report plugin correctly loaded")
     LiftRules.statelessDispatch.append(api)
-
   }
 
   def oneTimeInit : Unit = {}
