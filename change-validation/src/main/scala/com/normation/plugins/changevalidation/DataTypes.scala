@@ -35,37 +35,16 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.branding
+package com.normation.plugins.changevalidation
 
-import bootstrap.liftweb.Boot
-import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
-import com.normation.plugins.PluginStatus
-import com.normation.plugins.DefaultPluginDef
+import net.liftweb.common.Logger
+import org.slf4j.LoggerFactory
 
-class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
-
-  override val basePackage = "com.normation.plugins.branding"
-
-  def init = {}
-
-  def oneTimeInit : Unit = {}
-
-  val configFiles = Seq()
-
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("brandingManagement", <span>Branding</span>) /
-        "secure" / "administration" / "brandingManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
-        >> Template(() => ClasspathTemplates( "template" :: "brandingManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-  }
-
+/**
+ * Applicative log of interest for Rudder ops.
+ */
+object ChangeValidationLogger extends Logger {
+  override protected def _logger = LoggerFactory.getLogger("change-validation")
 }
+
+// other data types for you plugin

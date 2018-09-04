@@ -35,37 +35,22 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.branding
+package com.normation.plugins.changevalidation
 
-import bootstrap.liftweb.Boot
-import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
-import com.normation.plugins.PluginStatus
-import com.normation.plugins.DefaultPluginDef
+import com.normation.plugins.LicensedPluginCheck
 
-class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
+/*
+ * This template file will processed at build time to choose
+ * the correct immplementation to use for the interface.
+ * The default implementation is to always enable status.
+ *
+ * The class will be loaded by ServiceLoader, it needs an empty constructor.
+ */
+final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
+  // here are processed variables
+  def pluginResourcePublickey = "${plugin-resource-publickey}"
+  def pluginResourceLicense   = "${plugin-resource-license}"
+  def pluginDeclaredVersion   = "${plugin-declared-version}"
+  def pluginId                = "${plugin-fullname}"
+} 
 
-  override val basePackage = "com.normation.plugins.branding"
-
-  def init = {}
-
-  def oneTimeInit : Unit = {}
-
-  val configFiles = Seq()
-
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("brandingManagement", <span>Branding</span>) /
-        "secure" / "administration" / "brandingManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
-        >> Template(() => ClasspathTemplates( "template" :: "brandingManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-  }
-
-}
