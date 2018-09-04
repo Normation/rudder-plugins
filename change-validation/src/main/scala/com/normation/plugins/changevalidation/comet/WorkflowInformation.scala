@@ -41,7 +41,6 @@ import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.changevalidation.EitherWorkflowService
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.services.workflows.FacadeWorkflowService
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.web.model.CurrentUser
@@ -54,7 +53,9 @@ import scala.xml._
 
 
 class WorkflowInformation extends CometActor with CometListener with Loggable {
-  private[this] val workflowService = RudderConfig.workflowService
+  private[this] def workflowService = {
+    RudderConfig.workflowLevelService.getWorkflowService()
+  }
   private[this] val asyncWorkflow   = RudderConfig.asyncWorkflowInfo
 
   private[this] val isValidator = CurrentUser.checkRights(AuthorizationType.Validator.Edit)
@@ -118,7 +119,6 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         val deployment = if (isDeployer) ws.getItemsInStep(ws.Deployment.id).map(_.size).getOrElse(0) else 0
         validation  + deployment
       case either: EitherWorkflowService => requestCount(either.current)
-      case facade: FacadeWorkflowService => requestCount(facade.getCurrentWorkflowService)
       case _ => 0
     }
   }
@@ -135,7 +135,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         ws.getItemsInStep(ws.Validation.id) match {
           case Full(seq) =>
             <li>
-              <a href="/secure/utilities/changeRequests/Pending_validation">
+              <a href="/secure/plugins/changes/changeRequests/Pending_validation">
                 <i class="fa fa fa-flag-o"></i>
                 Pending review
                 <span class="label pull-right">{seq.size}</span>
@@ -145,7 +145,6 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
             <li><p class="error">Error when trying to fetch pending change requests.</p></li>
         }
       case either: EitherWorkflowService => pendingModificationRec(either.current)
-      case facade: FacadeWorkflowService => pendingModificationRec(facade.getCurrentWorkflowService)
       case _ => //For other kind of workflows, this has no meaning
         <li><p class="error">Error, the configured workflow does not have that step.</p></li>
     }
@@ -163,7 +162,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         ws.getItemsInStep(ws.Deployment.id) match {
           case Full(seq) =>
             <li>
-              <a href="/secure/utilities/changeRequests/Pending_deployment">
+              <a href="/secure/plugins/changes/changeRequests/Pending_deployment">
                 <i class="fa fa fa-flag-checkered"></i>
                 Pending deployment
                 <span class="label pull-right">{seq.size}</span>
@@ -173,7 +172,6 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
             <li><p class="error">Error when trying to fetch pending change requests.</p></li>
         }
       case either: EitherWorkflowService => pendingDeploymentRec(either.current)
-      case facade: FacadeWorkflowService => pendingDeploymentRec(facade.getCurrentWorkflowService)
       case _ => //For other kind of workflows, this has no meaning
         <li><p class="error">Error, the configured workflow does not have that step.</p></li>
     }

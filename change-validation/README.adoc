@@ -71,7 +71,7 @@ image::workflows/States.png[]
 
 == Change request management page
 
-All Change requests can be seen on the /secure/utilities/changeRequests page.
+All Change requests can be seen on the /secure/plugins/changes/changeRequests page.
 There is a table containing all requests, you can access to each of them by clicking on their id.
 You can filter change requests by status and only display what you need.
 
@@ -79,7 +79,7 @@ image::workflows/Management.png[]
 
 === Change request detail page
 
-Each Change request is reachable on the /secure/utilities/changeRequest/id.
+Each Change request is reachable on the /secure/plugins/changes/changeRequest/id.
 
 image::workflows/Details.png[]
 

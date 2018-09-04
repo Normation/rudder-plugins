@@ -39,7 +39,6 @@ package com.normation.plugins.branding
 
 import bootstrap.liftweb.Boot
 import com.normation.rudder.AuthorizationType.Administration
-import com.normation.rudder.domain.logger.PluginLogger
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
