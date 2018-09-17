@@ -9,7 +9,7 @@ Usage:
     centreon-plugin.py commit
 
 Options:
-    pull     Updates rudder_nodes.json from the serve API
+    pull     Updates rudder_nodes.json from the server API
     push     Updates Centreon server based on rudder_nodes.json
     update   Pulls nodes from Rudder, then pushes to Centreon
     hook     Used when automatically called from Rudder
@@ -20,7 +20,10 @@ import os
 import json
 import csv
 import time
-import configparser
+try:
+  from configparser import ConfigParser
+except:
+  from ConfigParser import ConfigParser
 import sys
 import requests
 import urllib3
@@ -38,7 +41,7 @@ registerFile = "/var/rudder/plugin-resources/centreon_register.conf"
 # Generic call to the Rudder API, completed by its path param. Using URL and token obtained from centreon.conf
 def getRequestToRudderAPI(path):
     try:
-        data = requests.get(conf['RUDDER']['rudderAPIURL'] + path, headers={ 'X-API-Token': conf['RUDDER']['rudderAPIToken'] }, verify=False).json()
+        data = requests.get(conf.get('RUDDER', 'rudderAPIURL') + path, headers={ 'X-API-Token': conf.get('RUDDER', 'rudderAPIToken') }, verify=False).json()
     except: # python3 -> json.decoder.JSONDecodeError:
         print("[!] Error : check your Rudder API token")
         sys.exit(-1)
@@ -120,15 +123,15 @@ def registerTemplate(node, template, register):
     if not register.has_option(node, 'templates'):
         register.set(node, 'templates', template)
     else:
-        register[node]['templates'] = register[node]['templates'] + ',' + template
+        register.set(node, 'templates', register.get(node,'templates') + ',' + template)
 
 def templateWasRegistered(node, template, register):
-    return register.has_section(node) and template in register[node]['templates'].split(',')
+    return register.has_section(node) and template in register.get(node,'templates').split(',')
 
 def unregisterTemplate(node, template, register):
-    tlist = register[node]['templates'].split(',')
+    tlist = register.get(node,'templates').split(',')
     tlist.remove(template)
-    register[node]['templates'] = ','.join(tlist)
+    register.set(node, 'templates',  ','.join(tlist))
 
 #Same for macros
 def registerMacro(node, macroKey, macroValue, register):
@@ -140,11 +143,11 @@ def macroWasRegistered(node, macroKey, register):
     return register.has_section(node) and register.has_option(node, macroKey)
 
 def unregisterMacro(node, macroKey, register):
-    del register[node][macroKey]
+    register.remove_option(node, macroKey)
 
 def applyRudderMonitoringConfigurations(conf):
     centreon_hosts = Host()
-    register = configparser.ConfigParser()
+    register = ConfigParser()
     register.read(registerFile)
 
     for dir in next(os.walk('/var/rudder/shared-files/root/files'))[1]:
@@ -196,17 +199,17 @@ def applyRudderMonitoringConfigurations(conf):
 
     register.write(open(registerFile, 'w'))
     print('[ ] Reloading Centreon poller config, restarting poller...')
-    Webservice.getInstance().restart_poller(conf['CENTREON']['centreonPoller'])
+    Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
     print('[+] Done')
 
 if __name__ == '__main__':
     args = docopt(__doc__)
-    conf = configparser.ConfigParser()
+    conf = ConfigParser()
     conf.read(confFile)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     try:
-        WSInstance = Webservice.getInstance(conf['CENTREON']['centreonWebserviceURL'], conf['CENTREON']['username'], conf['CENTREON']['password'])
+        WSInstance = Webservice.getInstance(conf.get('CENTREON', 'centreonWebserviceURL'), conf.get('CENTREON', 'username'), conf.get('CENTREON', 'password'))
         WSInstance.auth()
     except HTTPError:
         print("[!] Unable to connect to Centreon webservice. Check centreon.conf ?")
@@ -215,13 +218,13 @@ if __name__ == '__main__':
     if(args['pull']):
         updateNodesJSON()
     elif(args['push']):
-        updateCentreonHosts(conf['CENTREON']['centreonPoller'])
+        updateCentreonHosts(conf.get('CENTREON', 'centreonPoller'))
     elif(args['update']):
         updateNodesJSON()
-        updateCentreonHosts(conf['CENTREON']['centreonPoller'])
+        updateCentreonHosts(conf.get('CENTREON', 'centreonPoller'))
     elif(args['hook']):
         if(args['add']):
-            addHostOnRudderHook(args['<id>'], conf['CENTREON']['centreonPoller'])
+            addHostOnRudderHook(args['<id>'], conf.get('CENTREON', 'centreonPoller'))
         elif(args['rm']):
             delHostOnRudderHook(args['<id>'])
     elif(args['commit']):
