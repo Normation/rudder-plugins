@@ -37,17 +37,20 @@
 
 package bootstrap.rudder.plugin
 
+import java.nio.file.Paths
+
 import bootstrap.liftweb.RudderConfig
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.changevalidation.ChangeValidationPluginDef
 import com.normation.plugins.changevalidation.CheckRudderPluginEnableImpl
-import com.normation.plugins.changevalidation.FiveFirstTargetForChangeRequest
 import com.normation.plugins.changevalidation.NodeGroupValidationNeeded
+import com.normation.plugins.changevalidation.SupervisedTargetsReposiory
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.ValidationNeeded
+import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
 import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
@@ -79,9 +82,13 @@ class ChangeValidationWorkflowLevelService(
 
   override def getWorkflowService(): WorkflowService = if(workflowEnabled) validationWorkflowService else defaultWorkflowService
 
-  override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
+  /*
+   * return the correct workflow given the "needed" check. Also check
+   * for the actual status of workflow to decide what workflow to use.
+   */
+  private[this] def getWorkflow(shouldBeNeeded: Box[Boolean]): Box[WorkflowService] = {
     for {
-      need <- validationNeeded.forRule(actor, change)
+      need <- shouldBeNeeded
     } yield {
       if(need && workflowEnabled) {
         validationWorkflowService
@@ -91,9 +98,19 @@ class ChangeValidationWorkflowLevelService(
     }
   }
 
-  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest): Box[WorkflowService] = ???
-  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[WorkflowService] = ???
-  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = ???
+  override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
+      getWorkflow(validationNeeded.forRule(actor, change))
+  }
+
+  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.forDirective(actor, change))
+  }
+  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.forNodeGroup(actor, change))
+  }
+  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.forGlobalParam(actor, change))
+  }
 }
 
 /*
@@ -115,6 +132,12 @@ object ChangeValidationConf extends RudderPluginModule {
     , RudderConfig.configService.rudder_workflow_self_deployment _
   )
 
+  lazy val supervisedTargetRepo = new SupervisedTargetsReposiory(
+      directory = Paths.get("/var/rudder/plugin-resources/" + pluginDef.shortName)
+    , filename  = "supervised-targets.json"
+  )
+
+
   // other service instanciation / initialization
   RudderConfig.workflowLevelService.overrideLevel(
     new ChangeValidationWorkflowLevelService(
@@ -130,7 +153,7 @@ object ChangeValidationConf extends RudderPluginModule {
           , RudderConfig.configService.rudder_workflow_self_deployment _
         )
       , new NodeGroupValidationNeeded(
-            new FiveFirstTargetForChangeRequest(RudderConfig.roNodeGroupRepository)
+            supervisedTargetRepo.load _
           , RudderConfig.roChangeRequestRepository
           , RudderConfig.roRuleRepository
         )
@@ -139,6 +162,12 @@ object ChangeValidationConf extends RudderPluginModule {
   )
 
   lazy val pluginDef = new ChangeValidationPluginDef(pluginStatusService)
+
+  lazy val api = new SupervisedTargetsApiImpl(
+      RudderConfig.restExtractorService
+    , supervisedTargetRepo
+    , RudderConfig.roNodeGroupRepository
+  )
 
   RudderConfig.snippetExtensionRegister.register(new TopBarExtension(pluginStatusService))
 }

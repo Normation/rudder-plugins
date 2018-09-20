@@ -39,9 +39,12 @@ package com.normation.plugins.changevalidation
 
 import bootstrap.liftweb.Boot
 import bootstrap.liftweb.Boot.redirection
+import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.AuthorizationType.Administration
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.web.model.CurrentUser
 import net.liftweb.common.Empty
 import net.liftweb.common.Full
@@ -72,7 +75,12 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
       case RewriteRequest(ParsePath("secure" ::"plugins" :: "changes" :: "changeRequest" :: crId :: Nil, _, _, _), GetRequest, _) =>
         RewriteResponse("secure" :: "plugins" :: "changes" :: "changeRequest" :: Nil, Map("crId" -> crId))
     }
+
+    // init directory to save JSON
+    ChangeValidationConf.supervisedTargetRepo.checkPathAndInitRepos()
   }
+
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(ChangeValidationConf.api)
 
   def oneTimeInit : Unit = {}
 

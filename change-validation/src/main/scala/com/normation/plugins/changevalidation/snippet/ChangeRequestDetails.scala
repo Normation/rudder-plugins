@@ -333,14 +333,14 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       case "Decline" => "btn-danger"
       case _ => "btn-success"
     }
-      ( "#header"   #>  s"${action} CR #${cr.id}: ${cr.info.name}" &
+      ( "#header"   #>  s"${action} CR #${cr.id.value}: ${cr.info.name}" &
         "#form -*"  #>
           SHtml.ajaxForm(
-            ( "#reason"  #> changeMessageDisplay &
-              "#next"    #> next(default) &
-              "#cancel"  #> SHtml.ajaxButton("Cancel", () => closePopup ) &
-              "#confirm" #> SHtml.ajaxSubmit(s"${action}", () => confirm(), ("class", classForButton)) &
-              "#intro *+" #> introMessage andThen
+            ( "#reason"      #> changeMessageDisplay &
+              "#next"        #> next(default) &
+              "#cancel"      #> SHtml.ajaxButton("Cancel", () => closePopup ) &
+              "#confirm"     #> SHtml.ajaxSubmit(s"${action}", () => confirm(), ("class", classForButton)) &
+              "#intro *+"    #> introMessage andThen
               "#formError *" #> updateAndDisplayNotifications()
               ) (popupContent)
           )
