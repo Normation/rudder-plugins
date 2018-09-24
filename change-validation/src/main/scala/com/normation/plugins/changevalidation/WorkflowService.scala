@@ -43,14 +43,22 @@ import net.liftweb.common._
 import com.normation.rudder.repository._
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.batch.AsyncWorkflowInfo
-import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
+import com.normation.rudder.domain.policies.GroupTarget
+import com.normation.rudder.domain.policies.RuleTarget
+import com.normation.rudder.domain.policies.SimpleTarget
+import com.normation.rudder.domain.policies.TargetExclusion
+import com.normation.rudder.domain.policies.TargetIntersection
+import com.normation.rudder.domain.policies.TargetUnion
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
+import com.normation.rudder.services.workflows.DirectiveChangeRequest
+import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NoWorkflowAction
+import com.normation.rudder.services.workflows.NodeGroupChangeRequest
+import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 
-import scala.xml.NodeSeq
 
 /**
  * A proxy workflow service based on a runtime choice
@@ -63,57 +71,125 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
 
   def current: WorkflowService = if(cond().getOrElse(false)) whenTrue else whenFalse
 
-  def startWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] =
-    if(cond().getOrElse(false)) whenTrue.startWorkflow(changeRequestId, actor, reason) else whenFalse.startWorkflow(changeRequestId, actor, reason)
-  def openSteps :List[WorkflowNodeId] =
-    if(cond().getOrElse(false)) whenTrue.openSteps else whenFalse.openSteps
-  def closedSteps :List[WorkflowNodeId] =
-    if(cond().getOrElse(false)) whenTrue.closedSteps else whenFalse.closedSteps
-  def stepsValue :List[WorkflowNodeId] =
-    if(cond().getOrElse(false)) whenTrue.stepsValue else whenFalse.stepsValue
-  def findNextSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean) : WorkflowAction =
-    if(cond().getOrElse(false)) whenTrue.findNextSteps(currentUserRights, currentStep, isCreator) else whenFalse.findNextSteps(currentUserRights, currentStep, isCreator)
-  def findBackSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean) : Seq[(WorkflowNodeId,(ChangeRequestId,EventActor, Option[String]) => Box[WorkflowNodeId])] =
-    if(cond().getOrElse(false)) whenTrue.findBackSteps(currentUserRights, currentStep, isCreator) else whenFalse.findBackSteps(currentUserRights, currentStep, isCreator)
-  def findStep(changeRequestId: ChangeRequestId) : Box[WorkflowNodeId] =
-    if(cond().getOrElse(false)) whenTrue.findStep(changeRequestId) else whenFalse.findStep(changeRequestId)
-  def getAllChangeRequestsStep() : Box[Map[ChangeRequestId,WorkflowNodeId]] =
-    if(cond().getOrElse(false)) whenTrue.getAllChangeRequestsStep else whenFalse.getAllChangeRequestsStep
-  def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean =
-    if(cond().getOrElse(false)) whenTrue.isEditable(currentUserRights, currentStep, isCreator) else whenFalse.isEditable(currentUserRights, currentStep, isCreator)
-  def isPending(currentStep:WorkflowNodeId): Boolean =
-    if(cond().getOrElse(false)) whenTrue.isPending(currentStep) else whenFalse.isPending(currentStep)
+  override def startWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] =
+    current.startWorkflow(changeRequestId, actor, reason)
+  override def openSteps :List[WorkflowNodeId] =
+    current.openSteps
+  override def closedSteps :List[WorkflowNodeId] =
+    current.closedSteps
+  override def stepsValue :List[WorkflowNodeId] =
+    current.stepsValue
+  override def findNextSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean) : WorkflowAction =
+    current.findNextSteps(currentUserRights, currentStep, isCreator)
+  override def findBackSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean) : Seq[(WorkflowNodeId,(ChangeRequestId,EventActor, Option[String]) => Box[WorkflowNodeId])] =
+    current.findBackSteps(currentUserRights, currentStep, isCreator)
+  override def findStep(changeRequestId: ChangeRequestId) : Box[WorkflowNodeId] =
+    current.findStep(changeRequestId)
+  override def getAllChangeRequestsStep() : Box[Map[ChangeRequestId,WorkflowNodeId]] =
+    current.getAllChangeRequestsStep
+  override def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean =
+    current.isEditable(currentUserRights, currentStep, isCreator)
+  override def isPending(currentStep:WorkflowNodeId): Boolean =
+    current.isPending(currentStep)
+  override def needExternalValidation(): Boolean = current.needExternalValidation()
 }
 
-
+/**
+ * Check is an external validation is needed for the change, given some
+ * arbitrary rules defined in implementation.
+ */
 trait ValidationNeeded {
-
-  // check is the given change request, initiated by actor, need to be validated or can
-  // be auto deployed.
-  def check(changeRequestId: ChangeRequestId, actor: EventActor): Box[Boolean]
+  def forRule       (actor: EventActor, change: RuleChangeRequest       ): Box[Boolean]
+  def forDirective  (actor: EventActor, change: DirectiveChangeRequest  ): Box[Boolean]
+  def forNodeGroup  (actor: EventActor, change: NodeGroupChangeRequest  ): Box[Boolean]
+  def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean]
 }
 
-class KonamiValidationNeeded(
-    roChangeRequestRepository: RoChangeRequestRepository
-  , changeRequestChangeSerialisation: ChangeRequestChangesSerialisation
+
+
+
+
+/*
+ * A version of the "validationNeeded" plugin which bases its oracle on a list
+ * of group. If at least one node on the group is impacted by the change, then
+ * the change must be validated with a change request.
+ *
+ * - a modification in a GlobalParam is always validated (because can be used in CFEngine code)
+ * - a modification in a node group is validated only if it's one of the supervised one
+ * - a modification in a rule is validated only if:
+ *    - one of the modification add or remove a monitored group
+ *    - one of its target is a special group intersecting with the list of monitored groups
+ *    - one of its target group, either in the "in" or in the "not in", is in the list of monitored one.
+ *      We must take group in both "in" and "not in" because adding or removing a node from the target of
+ *      a rule need the same validation
+ * - a modification in a directive is validated if it as at least configured in one rule where modification
+ *   are supervised.
+ *
+ */
+class NodeGroupValidationNeeded(
+    monitoredTargets: () => Box[Set[SimpleTarget]]
+  , repos           : RoChangeRequestRepository
+  , ruleLib         : RoRuleRepository
 ) extends ValidationNeeded {
-  val code = "↑↑↓↓←→←→BA"
-  override def check(changeRequestId: ChangeRequestId, actor: EventActor): Box[Boolean] = {
-    for {
-      opt <- roChangeRequestRepository.get(changeRequestId)
-    } yield {
-      val xml = opt match {
-                case Some(cr) => changeRequestChangeSerialisation.serialise(cr)
-                case None     => Full(NodeSeq.Empty)
-              }
-      if(xml.toString().contains(code)) {
-        ChangeValidationLogger.info("Cheat code detected, avoid validation!")
-        false
-      } else {
-        ChangeValidationLogger.info("That change request need validation")
-        true
-      }
+
+
+  /*
+   * from a list of RuleTarget, get all the SimpleTarget implied, however they
+   * are used.
+   */
+  def getAllSimpleTarget(target: RuleTarget): Set[SimpleTarget] = {
+    target match {
+      case st: SimpleTarget       => Set(st)
+      case TargetUnion(ts)        => ts.flatMap(getAllSimpleTarget)
+      case TargetIntersection(ts) => ts.flatMap(getAllSimpleTarget)
+      case TargetExclusion(a, b)  => getAllSimpleTarget(a) ++ getAllSimpleTarget(b)
     }
+  }
+
+  /*
+   * A rule need external validation if any of its old or future targets is in the
+   * supervised set of groups.
+   */
+  override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
+    val targets = change.newRule.targets.flatMap(getAllSimpleTarget) ++ change.previousRule.map( _.targets.flatMap(getAllSimpleTarget)).getOrElse(Set())
+    for {
+      monitored <- monitoredTargets()
+    } yield {
+      monitored.intersect(targets).nonEmpty
+    }
+  }
+
+  /*
+   * A directive need a validation if any rule using it need a validation.
+   */
+  override def forDirective(actor: EventActor, change: DirectiveChangeRequest): Box[Boolean] = {
+    //in a change, the old directive id and the new one is the same.
+    val directiveId = change.newDirective.id
+    for {
+      rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId)))
+      monitored <- monitoredTargets()
+      targets   =  rules.flatMap(_.targets.flatMap(getAllSimpleTarget)).toSet
+    } yield {
+      monitored.intersect(targets).nonEmpty
+    }
+  }
+
+  /*
+   * Just check if the node group is the list of monitored groups
+   */
+  override def forNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[Boolean] = {
+    for {
+      monitored <- monitoredTargets()
+    } yield {
+      monitored.contains(GroupTarget(change.newGroup.id))
+    }
+  }
+
+  /*
+   * For a global parameter, we just answer "yes"
+   */
+  override def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean] = {
+    Full(true)
   }
 }
 
@@ -125,7 +201,6 @@ class TwoValidationStepsWorkflowServiceImpl(
   , roWorkflowRepo  : RoWorkflowRepository
   , woWorkflowRepo  : WoWorkflowRepository
   , workflowComet   : AsyncWorkflowInfo
-  , validationNeeded: ValidationNeeded
   , selfValidation  : () => Box[Boolean]
   , selfDeployment  : () => Box[Boolean]
 ) extends WorkflowService {
@@ -274,16 +349,7 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   def startWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
-    for {
-      shouldValidate <- validationNeeded.check(changeRequestId, actor)
-      started        <- if(shouldValidate) {
-                          startTwoStepWorkflow(changeRequestId, actor, reason)
-                        } else {
-                          startAutodeployWorkflow(changeRequestId, actor, reason)
-                        }
-    } yield {
-      started
-    }
+    startTwoStepWorkflow(changeRequestId, actor, reason)
   }
 
   private[this] def startTwoStepWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
@@ -293,16 +359,6 @@ class TwoValidationStepsWorkflowServiceImpl(
     } yield {
       workflowComet ! WorkflowUpdate
       workflow
-    }
-  }
-
-  private[this] def startAutodeployWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
-    ChangeValidationLogger.debug(s"${name}: automatically deploy change for change request '${changeRequestId.value}'")
-    for {
-      result <- commit.save(changeRequestId, actor, reason)
-    } yield {
-      // and return a no workflow
-      Deployed.id
     }
   }
 
@@ -342,7 +398,8 @@ class TwoValidationStepsWorkflowServiceImpl(
     toFailure(Deployment, changeRequestId, actor, reason)
   }
 
-
+  // this THE workflow that needs external validation.
+  override def needExternalValidation(): Boolean = true
 }
 
 

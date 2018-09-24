@@ -37,24 +37,80 @@
 
 package bootstrap.rudder.plugin
 
+import java.nio.file.Paths
+
 import bootstrap.liftweb.RudderConfig
+import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.changevalidation.ChangeValidationPluginDef
 import com.normation.plugins.changevalidation.CheckRudderPluginEnableImpl
-import com.normation.plugins.changevalidation.EitherWorkflowService
-import com.normation.plugins.changevalidation.KonamiValidationNeeded
+import com.normation.plugins.changevalidation.NodeGroupValidationNeeded
+import com.normation.plugins.changevalidation.SupervisedTargetsReposiory
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
+import com.normation.plugins.changevalidation.ValidationNeeded
+import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
+import com.normation.rudder.services.workflows.DirectiveChangeRequest
+import com.normation.rudder.services.workflows.GlobalParamChangeRequest
+import com.normation.rudder.services.workflows.NodeGroupChangeRequest
+import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowLevelService
+import com.normation.rudder.services.workflows.WorkflowService
+import net.liftweb.common.Box
+
 
 
 /*
  * The validation workflow level
  */
-class ChangeValidationWorkflowLevelService(status: PluginStatus) extends WorkflowLevelService {
-  override def workflowEnabled: Boolean = status.isEnabled()
+class ChangeValidationWorkflowLevelService(
+    status                   : PluginStatus
+  , defaultWorkflowService   : WorkflowService
+  , validationWorkflowService: WorkflowService
+  , validationNeeded         : ValidationNeeded
+  , workflowEnabledByUser    : () => Box[Boolean]
+) extends WorkflowLevelService {
+
+
+  override def workflowLevelAllowsEnable: Boolean = status.isEnabled()
+
+  override def workflowEnabled: Boolean = {
+    workflowLevelAllowsEnable && workflowEnabledByUser().getOrElse(false)
+  }
   override def name: String = "Change Request Validation Workflows"
+
+  override def getWorkflowService(): WorkflowService = if(workflowEnabled) validationWorkflowService else defaultWorkflowService
+
+  /*
+   * return the correct workflow given the "needed" check. Also check
+   * for the actual status of workflow to decide what workflow to use.
+   */
+  private[this] def getWorkflow(shouldBeNeeded: Box[Boolean]): Box[WorkflowService] = {
+    for {
+      need <- shouldBeNeeded
+    } yield {
+      if(need && workflowEnabled) {
+        validationWorkflowService
+      } else {
+        defaultWorkflowService
+      }
+    }
+  }
+
+  override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
+      getWorkflow(validationNeeded.forRule(actor, change))
+  }
+
+  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.forDirective(actor, change))
+  }
+  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.forNodeGroup(actor, change))
+  }
+  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.forGlobalParam(actor, change))
+  }
 }
 
 /*
@@ -65,33 +121,53 @@ object ChangeValidationConf extends RudderPluginModule {
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
+
+  lazy val validationWorkflowService = new TwoValidationStepsWorkflowServiceImpl(
+      RudderConfig.workflowEventLogService
+    , RudderConfig.commitAndDeployChangeRequest
+    , RudderConfig.roWorkflowRepository
+    , RudderConfig.woWorkflowRepository
+    , RudderConfig.asyncWorkflowInfo
+    , RudderConfig.configService.rudder_workflow_self_validation _
+    , RudderConfig.configService.rudder_workflow_self_deployment _
+  )
+
+  lazy val supervisedTargetRepo = new SupervisedTargetsReposiory(
+      directory = Paths.get("/var/rudder/plugin-resources/" + pluginDef.shortName)
+    , filename  = "supervised-targets.json"
+  )
+
+
   // other service instanciation / initialization
-  RudderConfig.workflowLevelService.overrideLevel(new ChangeValidationWorkflowLevelService(pluginStatusService))
-
-  // change workflow service
-  RudderConfig.workflowService.updateWorkflowService({
-    val current = RudderConfig.workflowService.getCurrentWorkflowService
-
-    new EitherWorkflowService(
-        RudderConfig.configService.rudder_workflow_enabled _
+  RudderConfig.workflowLevelService.overrideLevel(
+    new ChangeValidationWorkflowLevelService(
+        pluginStatusService
+      , RudderConfig.workflowLevelService.defaultWorkflowService
       , new TwoValidationStepsWorkflowServiceImpl(
             RudderConfig.workflowEventLogService
           , RudderConfig.commitAndDeployChangeRequest
           , RudderConfig.roWorkflowRepository
           , RudderConfig.woWorkflowRepository
           , RudderConfig.asyncWorkflowInfo
-          , new KonamiValidationNeeded(
-                RudderConfig.roChangeRequestRepository
-              , RudderConfig.changeRequestChangesSerialisation
-            )
           , RudderConfig.configService.rudder_workflow_self_validation _
           , RudderConfig.configService.rudder_workflow_self_deployment _
         )
-      , current
+      , new NodeGroupValidationNeeded(
+            supervisedTargetRepo.load _
+          , RudderConfig.roChangeRequestRepository
+          , RudderConfig.roRuleRepository
+        )
+      , RudderConfig.configService.rudder_workflow_enabled _
     )
-  })
+  )
 
   lazy val pluginDef = new ChangeValidationPluginDef(pluginStatusService)
+
+  lazy val api = new SupervisedTargetsApiImpl(
+      RudderConfig.restExtractorService
+    , supervisedTargetRepo
+    , RudderConfig.roNodeGroupRepository
+  )
 
   RudderConfig.snippetExtensionRegister.register(new TopBarExtension(pluginStatusService))
 }

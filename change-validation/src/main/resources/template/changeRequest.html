@@ -1,0 +1,62 @@
+<lift:surround with="common-layout" at="content">
+
+<head_merge>
+	<title>Rudder :: Change Validation</title>
+	<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
+	<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
+</head_merge>
+
+<div class="portlet">
+  <div class="portlet-content">
+    <div id="changeRequestHeader">
+      <div class="lift:ChangeRequestDetails.header"></div>
+    </div>
+    <div id="changeRequestDetails">
+      <div class="lift:ChangeRequestDetails.details"></div>
+    </div>
+
+    <div id="warnOnUnmergeable">
+      <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
+    </div>
+
+    <div class="lift:ChangeRequestDetails.changes">
+    </div>
+     <hr class="spacer"/>
+    <div class="lift:ChangeRequestDetails.actions" >
+    </div>
+  </div>
+
+  <div>
+    <div id="successWorkflow" class="modal fade" data-keyboard="true" tabindex="-1">
+        <div class="modal-backdrop fade in" style="height: 100%;"></div>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="close" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                        <span class="sr-only">Close</span>
+                    </div>
+                    <h4 class="modal-title">Success</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-12 col-sm-12 col-xs-12">
+                            <h4 class="text-center">
+                                Change request state has been changed to <span id="newStatus">next status</span>
+                            </h4>
+                        </div>
+                    </div>
+                    <div id="successDialogContent">
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+  </div>
+</div>
+</lift:surround>
+

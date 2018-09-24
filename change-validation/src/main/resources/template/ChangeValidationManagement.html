@@ -9,12 +9,14 @@
     <head_merge>
       <title>Rudder :: Change Validation</title>
       <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
+      <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen" data-lift="with-cached-resource">
       <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
+      <script src="/toserve/changevalidation/supervised-targets.js" data-lift="with-cached-resource"></script>
     </head_merge>
 
-    <div class="lift:ChangeValidationSettings.activation tw-bs" id="workflowForm">
+    <div class="lift:ChangeValidationSettings.activation" id="workflowForm">
       <div class="inner-portlet">
-        <div class="page-title">Change Requests (validation workflow)</div>
+        <div class="page-title">Change Validation Status</div>
         <div class="portlet-content">
           <div class="col-xs-12 callout-fade callout-warning">
             <div class="marker">
@@ -87,7 +89,42 @@
       </div>
     </div>
 
+    <div id="supervised-target">
+      <div class="inner-portlet">
+        <div class="page-title">Configure Groups with Change Validations</div>
+        <div class="portlet-content">
+          <div class="col-xs-12 callout-fade callout-warning">
+            <div class="marker">
+              <span class="glyphicon glyphicon-info-sign"></span>
+            </div>
+            <p>
+              Change validation are enable only for nodes belonging to chosen groups below: click the
+              checkbox to force any modification impacting a node in the corresponding group to go through a
+              change request and validation workflow.
+            </p>
+            <p>
+              The supervised changes are:
+              <ul>
+                <li>any change in a global parameter, as these change can have side effects spreading technique code,</li>
+                <li>any change in a rule which targets one the group (either from the include or the exclude part),</li>
+                <li>any change in a directive used in one of the previous rules,</li>
+                <li>and of course, any modification in one the supervised group.</li>
+              </ul>
+            </p>
+            <p>
+              Changes in techniques are not subjected to change validation, nor are changes resulting from an archive import.
+            </p>
+          </div>
 
+          <div id="supervised-targets-app"></div>
+          <script>
+            var node = document.getElementById("supervised-targets-app");
+            var app  = Elm.SupervisedTargets.embed(node, { contextPath: contextPath});
+          </script>
+
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 </html>

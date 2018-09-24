@@ -37,8 +37,23 @@
 
 package com.normation.plugins.changevalidation
 
+import com.normation.rudder.domain.policies.FullRuleTargetInfo
+import com.normation.rudder.domain.policies.RuleTarget
+import com.normation.rudder.domain.policies.SimpleTarget
+import com.normation.rudder.repository.FullNodeGroupCategory
+import com.normation.utils.Control
+import net.liftweb.common.Box
+import net.liftweb.common.Empty
+import net.liftweb.common.Failure
+import net.liftweb.common.Full
 import net.liftweb.common.Logger
+import net.liftweb.json.JValue
+import net.liftweb.json.JsonAST.JArray
+import net.liftweb.json.NoTypeHints
+import net.liftweb.json.parse
 import org.slf4j.LoggerFactory
+
+import scala.util.control.NonFatal
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -47,4 +62,121 @@ object ChangeValidationLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("change-validation")
 }
 
-// other data types for you plugin
+/*
+ * What is a group in the API ?
+ */
+final case class JsonTarget(
+    id         : String // this a target id, so either group:groupid or special:specialname
+  , name       : String
+  , description: String
+  , supervised : Boolean
+)
+
+/*
+ * The JSON class saved in /var/rudder/plugins/...
+ * with the list of targets
+ */
+final case class SupervisedTargetIds(
+  supervised: List[String]
+)
+
+/*
+ * The JSON sent to client side
+ */
+final case class JsonCategory(
+    name      : String
+  , categories: List[JsonCategory]
+  , targets   : List[JsonTarget]
+)
+
+/*
+ * Mapping between Rudder category/group and json one
+ */
+object RudderJsonMapping {
+
+
+  implicit class TargetToJson(target: FullRuleTargetInfo) {
+    /**
+     * We only know how to map SimpleTarget, so just map that.
+     */
+    def toJson(supervisedSet: Set[SimpleTarget]): Option[JsonTarget] = {
+
+      target.target.target match {
+        case st: SimpleTarget =>
+          Some(JsonTarget(
+              st.target
+            , target.name
+            , target.description
+            , supervisedSet.contains(st)
+          ))
+        case _ => None
+      }
+    }
+  }
+
+  implicit class CatToJson(cat: FullNodeGroupCategory) {
+    def toJson(supervisedSet: Set[SimpleTarget]): JsonCategory = JsonCategory(
+        cat.name
+      , cat.subCategories.map( _.toJson(supervisedSet)).sortBy(_.name)
+      , cat.targetInfos.flatMap(_.toJson(supervisedSet)).sortBy(_.name)
+    )
+  }
+
+}
+
+/*
+ * Ser utils
+ */
+object Ser {
+  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+
+  /*
+   * Parse a string as a simple target ID
+   */
+  def parseTargetId(s: String): Box[SimpleTarget] = {
+    RuleTarget.unser(s) match {
+      case Some(x: SimpleTarget) => Full(x)
+      case _                     => Failure(s"Error: the string '${s}' can not parsed as a valid rule target", Empty, Empty)
+    }
+  }
+
+  /*
+   * Transform a JSON value
+   */
+  def parseJsonTargets(json: JValue): Box[Set[SimpleTarget]] = {
+    /*
+     * Here, for some reason, JNothing.extractOpt[SupervisedTargetIds] returns Some(SupervisedTargetIds(Nil)).
+     * Which is not what we want, obviously. So the workaround.
+     */
+    for {
+      list    <- parseSupervised(json)
+      targets <- Control.sequence(list)(parseTargetId)
+    } yield {
+      targets.toSet
+    }
+  }
+
+  def parseSupervised(json: JValue): Box[List[String]] = {
+    (json \ "supervised") match {
+      case JArray(list) => Control.sequence(list)( s => Box(s.extractOpt[String])).map( _.toList)
+      case _ => Failure("Error when trying to parse JSON content as a set of rule target.", Empty, Empty)
+    }
+  }
+
+  /*
+   * Parse a string, expecting to be the JSON representation
+   * of SupervisedTargetIds
+   */
+  def parseTargetIds(source: String): Box[Set[SimpleTarget]] = {
+    for {
+      json    <- try {
+                   Full(parse(source))
+                 } catch {
+                   case NonFatal(ex) => Failure(s"Error when trying to parse source document as JSON.", Full(ex), Empty)
+                 }
+      targets <- parseJsonTargets(json)
+    } yield {
+      targets
+    }
+  }
+}

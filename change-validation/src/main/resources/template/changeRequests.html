@@ -1,0 +1,42 @@
+<lift:surround with="common-layout" at="content">
+
+<head_merge>
+	<title>Rudder :: Change Validation</title>
+	<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
+	<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
+</head_merge>
+
+<div class="portlet">
+  <div class="portlet-content">
+    <div class="inner-portlet">
+      <div class="page-title">Change Requests</div>
+		  <div class="portlet-content">
+		    <lift:lazy-load>
+		    <div class="lift:ChangeRequestManagement.filter" style="margin-top:10px;">
+		      <div id="content">
+		        <div id="nameFilter" style="margin-left:40px;">
+		          <span>
+		            <span id="actualFilter" style="margin-left:10px; display:inline-block"></span>
+		          </span>
+		        </div>
+		      </div>
+		    </div>
+		    </lift:lazy-load>
+		    <hr class="spacer"/>
+
+		    <lift:lazy-load>
+		    <div class="lift:ChangeRequestManagement.display">
+		      <div id="" style="margin: 0 40px; overflow:auto;">
+            <table id="changeRequestTable">
+		        </table>
+		      </div>
+		    </div>
+		    </lift:lazy-load>
+
+     </div>
+    </div>
+  </div>
+ <br/>
+</div>
+</lift:surround>
+
