@@ -33,6 +33,7 @@ from requests.exceptions import HTTPError
 from centreonapi.webservice import Webservice
 from centreonapi.webservice.configuration.host import Host
 from centreonapi.webservice.configuration.hostgroups import Hostgroups
+import ipaddress
 
 confFile = "/opt/rudder/etc/centreon.conf"
 jsonTmp = "/var/rudder/plugin-resources/rudder_nodes.json"
@@ -60,7 +61,24 @@ def getRequestToRudderAPI(path):
 
 # Used to determinate which IP will be given to Centreon, from all the IPs Rudder sends us
 def validateIPAddr(ip):
-    return not ':' in ip and not ip == '127.0.0.1'
+    if ':':
+        return False
+    if sys.version_info[0] == 2:
+        ip = unicode(ip)
+    ip_obj = ipaddress.ip_address(ip)
+    if ip_obj.is_loopback():
+        return False
+    try:
+        filter_out = conf.get('RUDDER', 'ipBlacklist')
+        for net in filter_out.split(" ")
+            if sys.version_info[0] == 2:
+                net = unicode(net)
+            net_obj = ipaddress.ip_network(net)
+            if ip_obj in net_obj:
+                return False
+    except:
+        pass
+    return True
 
 def dictifyNode(node):
     ipAddr = ''
