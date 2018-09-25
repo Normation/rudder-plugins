@@ -160,64 +160,71 @@ def applyRudderMonitoringConfigurations(conf):
     centreon_hosts = Host()
     register = ConfigParser()
     register.read(registerFile)
+    changed = False
 
-    # list all nodes
-    nodes_list = {}
-    data = getRequestToRudderAPI("/nodes?include=minimal")
-    for node in data['data']['nodes']:
-        nodes_list[node["id"]] = node["hostname"]
-
-    for dir in next(os.walk('/var/rudder/shared-files/root/files'))[1]:
-        name = nodes_list[dir]
-        try:
-            confcsv = csv.reader(open('/var/rudder/shared-files/root/files/' + dir + '/rudder_monitoring.csv'))
-        except:
-            print('[!] Node ' + name + ' has no rudder monitoring config file, considering it empty...')
-            confcsv = []
-
-        if not any(h['name'] == name for h in centreon_hosts.list()['result']):
-            print('[!] Node ' + name + ' is not registered in Centreon, skipping...')
-            continue
-
-        print('[ ] Applying conf to node ' + name + '...')
-        csvTmpList = []
-        csvMacroKeyList = []
-        for r in confcsv:
-            if(r[0] == 'template'):
-                csvTmpList.append(r[1])
-                if not any(t['name'] == r[1] for t in centreon_hosts.gettemplate(name)['result']):
-                    try:
-                        centreon_hosts.addtemplate(name, r[1])
-                        centreon_hosts.applytemplate(name)
+    if os.path.exists('/var/rudder/shared-files/root/files'):
+        # list all nodes
+        nodes_list = {}
+        data = getRequestToRudderAPI("/nodes?include=minimal")
+        for node in data['data']['nodes']:
+            nodes_list[node["id"]] = node["hostname"]
+    
+        for dir in next(os.walk('/var/rudder/shared-files/root/files'))[1]:
+            name = nodes_list[dir]
+            try:
+                confcsv = csv.reader(open('/var/rudder/shared-files/root/files/' + dir + '/rudder_monitoring.csv'))
+            except:
+                print('[!] Node ' + name + ' has no rudder monitoring config file, considering it empty...')
+                confcsv = []
+    
+            if not any(h['name'] == name for h in centreon_hosts.list()['result']):
+                print('[!] Node ' + name + ' is not registered in Centreon, skipping...')
+                continue
+    
+            print('[ ] Applying conf to node ' + name + '...')
+            csvTmpList = []
+            csvMacroKeyList = []
+            for r in confcsv:
+                if(r[0] == 'template'):
+                    csvTmpList.append(r[1])
+                    if not any(t['name'] == r[1] for t in centreon_hosts.gettemplate(name)['result']):
+                        try:
+                            centreon_hosts.addtemplate(name, r[1])
+                            centreon_hosts.applytemplate(name)
+                            registerTemplate(name, r[1], register)
+                            changed = True
+                        except HTTPError:
+                            print('[!] Centreon API error, check if template ' + r[1] + ' exists')
+                    else:
+                        print('[ ] Template ' + r[1] + ' already applied to node ' + name)
                         registerTemplate(name, r[1], register)
-                    except HTTPError:
-                        print('[!] Centreon API error, check if template ' + r[1] + ' exists')
+                elif(r[0] == 'param'):
+                    csvMacroKeyList.append(r[1])
+                    centreon_hosts.setmacro(name, r[1], ''.join(r[2:]))
+                    registerMacro(name, r[1], ''.join(r[2:]), register)
+                    changed = True
                 else:
-                    print('[ ] Template ' + r[1] + ' already applied to node ' + name)
-                    registerTemplate(name, r[1], register)
-            elif(r[0] == 'param'):
-                csvMacroKeyList.append(r[1])
-                centreon_hosts.setmacro(name, r[1], ''.join(r[2:]))
-                registerMacro(name, r[1], ''.join(r[2:]), register)
-            else:
-                print('[!] Incorrect config parameter type ' + r[0] + ', skipping...')
+                    print('[!] Incorrect config parameter type ' + r[0] + ', skipping...')
+    
+            for t in centreon_hosts.gettemplate(name)['result']:
+                if not any(t['name'] == n for n in csvTmpList) and templateWasRegistered(name, t['name'], register):
+                    unregisterTemplate(name, t['name'], register)
+                    centreon_hosts.deletetemplate(name, t['name'])
+                    changed = True
+    
+            for mk in centreon_hosts.getmacro(name)['result']:
+                if not any(mk['macro name'] == n for n in csvMacroKeyList) and macroWasRegistered(name, mk['macro name'], register):
+                    unregisterMacro(name, mk['macro name'], register)
+                    centreon_hosts.deletemacro(name, mk['macro name'])
+                    changed = True
+    
+            #This ensures we get no duplicates in register in case we have to re-add an already registered
+            #register[dir]['templates'] = ','.join(list(set(register[dir]['templates'].split(','))))
 
-        for t in centreon_hosts.gettemplate(name)['result']:
-            if not any(t['name'] == n for n in csvTmpList) and templateWasRegistered(name, t['name'], register):
-                unregisterTemplate(name, t['name'], register)
-                centreon_hosts.deletetemplate(name, t['name'])
-
-        for mk in centreon_hosts.getmacro(name)['result']:
-            if not any(mk['macro name'] == n for n in csvMacroKeyList) and macroWasRegistered(name, mk['macro name'], register):
-                unregisterMacro(name, mk['macro name'], register)
-                centreon_hosts.deletemacro(name, mk['macro name'])
-
-        #This ensures we get no duplicates in register in case we have to re-add an already registered
-        #register[dir]['templates'] = ','.join(list(set(register[dir]['templates'].split(','))))
-
-    register.write(open(registerFile, 'w'))
-    print('[ ] Reloading Centreon poller config, restarting poller...')
-    Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+    if changed:
+        register.write(open(registerFile, 'w'))
+        print('[ ] Reloading Centreon poller config, restarting poller...')
+        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
     print('[+] Done')
 
 if __name__ == '__main__':
