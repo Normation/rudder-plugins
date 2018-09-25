@@ -3,6 +3,7 @@ package bootstrap.rudder.plugin
 import scala.xml.{NodeSeq, Text}
 import com.normation.plugins._
 import com.normation.plugins.helloworld.HelloWorldPluginDef
+import com.normation.plugins.helloworld.CheckRudderPluginEnableImpl
 import com.normation.plugins.helloworld.extension.{CreateRuleEditFormExtension, CreateRuleExtension}
 import com.normation.plugins.helloworld.service.LogAccessInDb
 import bootstrap.liftweb.RudderConfig
@@ -13,7 +14,11 @@ import net.liftweb.common.Loggable
  */
 object HelloWorldConf extends Loggable with RudderPluginModule {
 
-  lazy val pluginDef = new HelloWorldPluginDef(dbService)
+  // by build convention, we have only one of that on the classpath
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+
+
+  lazy val pluginDef = new HelloWorldPluginDef(dbService, pluginStatusService)
 
   RudderConfig.snippetExtensionRegister.register(new CreateRuleExtension())
   RudderConfig.snippetExtensionRegister.register(new CreateRuleEditFormExtension(dbService))

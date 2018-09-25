@@ -1,6 +1,5 @@
 package com.normation.plugins.helloworld
 
-import scala.xml.NodeSeq
 
 import com.normation.plugins._
 import com.normation.plugins.helloworld.service.LogAccessInDb
@@ -12,17 +11,9 @@ import net.liftweb.sitemap.{ Menu }
 import net.liftweb.sitemap.Loc.{ LocGroup, Template, Title }
 import net.liftweb.sitemap.LocPath.stringToLocPath
 
-class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with Loggable {
+class HelloWorldPluginDef(dbService:LogAccessInDb, override val status: PluginStatus ) extends DefaultPluginDef with Loggable {
 
-  val status = new PluginEnableImpl(){}
-  val shortName = "hello-world"
-  val name = PluginName("rudder-plugin-"+shortName)
-  val basePackage = "com.normation.plugins.helloworld"
-  val version = PluginVersion(1,0,0)
-  val description : NodeSeq  =
-    <div>
-    An <b>Hello World !</b> template plugin"
-    </div>
+  override val basePackage = "com.normation.plugins.helloworld"
 
   val configFiles = Seq(ClassPathResource("demo-config-1.properties"), ClassPathResource("demo-config-2.properties"))
 
@@ -34,8 +25,8 @@ class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with 
 
   def oneTimeInit : Unit = {}
 
-  override def updateSiteMap: Option[Menu] = {
-    Some(Menu("HelloPluginConfig") / "secure" / "administration" / "helloplugin" >>
+  override def pluginMenuEntry: Option[Menu] = {
+    Some( Menu("HelloPluginConfig") / "secure" / "plugins" / "helloplugin" >>
       Title( x => <span>HelloPlugin</span>) >>
       LocGroup("administrationGroup") >>
       Template(() =>
@@ -43,5 +34,4 @@ class HelloWorldPluginDef(dbService:LogAccessInDb) extends RudderPluginDef with 
         <div>Template not found</div>)
     )
   }
-
 }
