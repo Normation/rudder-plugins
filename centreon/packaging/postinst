@@ -1,4 +1,23 @@
 #!/bin/sh
 
+CONFFILE="/opt/rudder/etc/centreon.conf"
+
 mkdir -p /var/rudder/plugin-resources
 echo "0 * * * * /opt/rudder/bin/centreon-plugin.py commit" > /etc/cron.d/centreon-rudder
+
+# create configuration file
+if [ ! -f "${CONFFILE}" ]
+then
+  cat > "${CONFFILE}" <<EOF
+[CENTREON]
+username = YOUR_CENTREON_USERNAME
+password = YOUR_CENTREON_PASSWORD
+centreonWebserviceURL = http://YOUR_CENTREON_SERVER/centreon
+centreonPoller = CENTREON_POLLER
+
+[RUDDER]
+# Fill this if the plugin is not installed on the Rudder server
+#rudderAPIURL = https://YOUR_RUDDER_SERVER/rudder/api/latest
+#rudderAPIToken = YOUR_RUDDER_API_TOKEN
+EOF
+fi
