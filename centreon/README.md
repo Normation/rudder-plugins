@@ -29,6 +29,7 @@ Installation
 - Generate the Rudder package if you do not already have the .rpkg file :
   ```
   cd centreon
+  make clean
   make
   ```
 
@@ -36,7 +37,7 @@ Installation
 
 - Install the package on the Rudder server :
   ```
-  /opt/rudder/bin/rudderpkg install-file <plugin>.rpkg
+  /opt/rudder/bin/rudder-pkg install-file <plugin>.rpkg
   ```
 
 - Edit the configuration file /opt/rudder/etc/centreon.conf. This config file has to contain your Centreon
