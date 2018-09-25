@@ -1,0 +1,19 @@
+#!/bin/bash
+
+CONFFILE="/opt/rudder/etc/notify.conf"
+
+# create configuration file
+if [ ! -f "${CONFFILE}" ]
+then
+  cat > "${CONFFILE}" <<EOF
+[MAIL]
+on = true
+nospam = true
+batch_period = 0d0h1m
+recipients = <email addresses, separated by spaces>
+
+[SLACK]
+on = true
+webhooks = <slack webhooks, separated by spaces>
+EOF
+fi
