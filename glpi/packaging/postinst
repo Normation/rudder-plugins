@@ -1,3 +1,15 @@
 #!/bin/bash
 
+CONFFILE="/opt/rudder/etc/glpi.conf"
+
 echo "15 7 * * * /opt/rudder/bin/glpi-plugin send-all" > /etc/cron.d/glpi-rudder
+
+
+# create configuration file
+if [ ! -f "${CONFFILE}" ]
+then
+  cat > "${CONFFILE}" <<EOF
+GLPI_FUSION_URL=http://<your_glpi_server_root>/plugins/fusioninventory/
+EOF
+fi
+
