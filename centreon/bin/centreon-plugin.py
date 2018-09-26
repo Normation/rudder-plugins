@@ -70,7 +70,7 @@ def validateIPAddr(ip):
         return False
     try:
         filter_out = conf.get('RUDDER', 'ipBlacklist')
-        for net in filter_out.split(" ")
+        for net in filter_out.split(" "):
             if sys.version_info[0] == 2:
                 net = unicode(net)
             net_obj = ipaddress.ip_network(net)
