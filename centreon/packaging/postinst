@@ -3,7 +3,7 @@
 CONFFILE="/opt/rudder/etc/centreon.conf"
 
 mkdir -p /var/rudder/plugin-resources
-echo "0 * * * * /opt/rudder/bin/centreon-plugin.py commit" > /etc/cron.d/centreon-rudder
+echo "*/2 * * * * root /opt/rudder/bin/centreon-plugin.py commit" > /etc/cron.d/centreon-rudder
 
 # create configuration file
 if [ ! -f "${CONFFILE}" ]
