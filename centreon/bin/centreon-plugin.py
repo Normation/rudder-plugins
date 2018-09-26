@@ -61,12 +61,12 @@ def getRequestToRudderAPI(path):
 
 # Used to determinate which IP will be given to Centreon, from all the IPs Rudder sends us
 def validateIPAddr(ip):
-    if ':':
+    if ':' in ip:
         return False
     if sys.version_info[0] == 2:
         ip = unicode(ip)
     ip_obj = ipaddress.ip_address(ip)
-    if ip_obj.is_loopback():
+    if ip_obj.is_loopback:
         return False
     try:
         filter_out = conf.get('RUDDER', 'ipBlacklist')
@@ -105,24 +105,41 @@ def updateNodesJSON():
     nodes_file.close()
     print("[+] Done")
 
+# Add a single host to centreon
+def addHostToCentreon(centreon_hosts, hostname, alias, ip, poller):
+    centreon_hosts.add(hostname, alias, ip, '', poller, '')
+    # if there is a default template, add it
+    try:
+        defaultTemplate = conf.get('CENTREON', 'defaultTemplate')
+    except:
+        defaultTemplate = ""
+    if defaultTemplate != "":
+        centreon_hosts.addtemplate(hostname, defaultTemplate)
+        centreon_hosts.applytemplate(hostname)
+
 # Manual pushing
 def updateCentreonHosts(poller):
     print("[ ] Checking if Centreon is up-to-date...")
     checkRudderCentreonHostGroup()
     centreon_hosts = Host()
     rudder_nodes = json.load(open(jsonTmp))
+    changed = False
 
     for rn in rudder_nodes:
         if not any(h['name'] == rn['hostname'] for h in centreon_hosts.list()['result']):
             print("[ ] Unregistered Rudder node found: " + rn['hostname'] + " (id " + rn['rudder_id'] + "). Adding it to Centreon...")
-            centreon_hosts.add(rn['hostname'], "Rudder " + rn['node_type'] + " node " + rn['rudder_id'], rn['ip_address'], '', poller, '')
+            addHostToCentreon(centreon_hosts, rn['hostname'], "Rudder " + rn['node_type'] + " node " + rn['rudder_id'], rn['ip_address'], poller)
             checkIfNodeInRudderGroup(rn['hostname'], centreon_hosts)
+            changed = True
     for ch in centreon_hosts.list()['result']:
         if any(g['name'] == 'rudder-nodes' for g in centreon_hosts.gethostgroup(ch['name'])['result']) and not any(ch['name'] == rn['hostname'] for rn in rudder_nodes):
                 print("[ ] Host " + ch['name'] + " not listed in Rudder but appearing in rudder-nodes Centreon host group. Deleting host...")
                 centreon_hosts.disable(ch['name'])
                 centreon_hosts.delete(ch['name'])
+                changed = True
                 print("[+] Done")
+    if changed:
+        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
     print("[+] Done")
 
 def checkRudderCentreonHostGroup():
@@ -135,15 +152,20 @@ def addHostOnRudderHook(rudderID, poller):
     data = getRequestToRudderAPI("/nodes/" + rudderID)
     node = dictifyNode(data['data']['nodes'][0])
     centreon_hosts = Host()
+    changed = False
     if not any(h['name'] == node['hostname'] for h in centreon_hosts.list()['result']):
-        centreon_hosts.add(node['hostname'], "Rudder " + node['node_type'] + " node " + node['rudder_id'], node['ip_address'], '', poller, '')
+        addHostToCentreon(centreon_hosts, node['hostname'], "Rudder " + node['node_type'] + " node " + node['rudder_id'], node['ip_address'], poller)
+        changed = True
     checkIfNodeInRudderGroup(node['hostname'], centreon_hosts)
+    if changed:
+        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
 
 def delHostOnRudderHook(rudderID):
     centreon_hosts = Host()
     if any(h['name'] == rudderID for h in centreon_hosts.list()['result']):
         centreon_hosts.disable(rudderID)
         centreon_hosts.delete(rudderID)
+        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
 
 #When we add a template, we register it to prevent us from deleting templates we did not add when they do not appear in Rudder
 def registerTemplate(node, template, register):
