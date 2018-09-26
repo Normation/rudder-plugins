@@ -19,5 +19,8 @@ centreonPoller = CENTREON_POLLER
 # Fill this if the plugin is not installed on the Rudder server
 #rudderAPIURL = https://YOUR_RUDDER_SERVER/rudder/api/latest
 #rudderAPIToken = YOUR_RUDDER_API_TOKEN
+
+# Put here IP networks that you don't want to appear in centreon (space separated)
+#ipBlacklist = 10.0.0.0/8 192.168.0.0/16
 EOF
 fi
