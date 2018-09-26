@@ -27,6 +27,7 @@ except:
 import sys
 import requests
 import urllib3
+import hashlib
 sys.path.insert(0,"/opt/rudder/share/python")
 from docopt import docopt
 from requests.exceptions import HTTPError
@@ -36,7 +37,8 @@ from centreonapi.webservice.configuration.hostgroups import Hostgroups
 import ipaddress
 
 confFile = "/opt/rudder/etc/centreon.conf"
-jsonTmp = "/var/rudder/plugin-resources/rudder_nodes.json"
+nodesTmp = "/var/rudder/plugin-resources/rudder_nodes.json"
+templatesTmp = "/var/rudder/plugin-resources/rudder_templates.json"
 registerFile = "/var/rudder/plugin-resources/centreon_register.conf"
 systemToken = "/var/rudder/run/api-token"
 
@@ -100,9 +102,8 @@ def updateNodesJSON():
     rnodes = []
     for node in data['data']['nodes']:
         rnodes.append(dictifyNode(node))
-    nodes_file = open(jsonTmp, 'w+')
-    json.dump(rnodes, nodes_file)
-    nodes_file.close()
+    with open(nodesTmp, 'w+') as fd:
+        json.dump(rnodes, fd)
     print("[+] Done")
 
 # Add a single host to centreon
@@ -122,7 +123,8 @@ def updateCentreonHosts(poller):
     print("[ ] Checking if Centreon is up-to-date...")
     checkRudderCentreonHostGroup()
     centreon_hosts = Host()
-    rudder_nodes = json.load(open(jsonTmp))
+    with open(nodesTmp) as fd:
+        rudder_nodes = json.load(fd)
     changed = False
 
     for rn in rudder_nodes:
@@ -201,26 +203,41 @@ def applyRudderMonitoringConfigurations(conf):
     register = ConfigParser()
     register.read(registerFile)
     changed = False
+    rootPath = '/var/rudder/shared-files/root/files'
+    if os.path.exists(templatesTmp):
+        with open(templatesTmp) as fd:
+            hash_list = json.load(fd)
+    else:
+        hash_list = {}
 
-    if os.path.exists('/var/rudder/shared-files/root/files'):
+
+    if os.path.exists(rootPath):
         # list all nodes
         nodes_list = {}
         data = getRequestToRudderAPI("/nodes?include=minimal")
         for node in data['data']['nodes']:
             nodes_list[node["id"]] = node["hostname"]
     
-        for dir in next(os.walk('/var/rudder/shared-files/root/files'))[1]:
+        for dir in next(os.walk(rootPath))[1]:
             name = nodes_list[dir]
-            try:
-                confcsv = csv.reader(open('/var/rudder/shared-files/root/files/' + dir + '/rudder_monitoring.csv'))
-            except:
+            csvfile = rootPath + '/' + dir + '/rudder_monitoring.csv'
+            # if file exist check for change before reading
+            if os.path.exists(csvfile):
+                with open(csvfile) as fd:
+                    hash_value = hashlib.sha256(fd.read()).hexdigest()
+                    if dir in hash_list and hash_value == hash_list[dir]:
+                        continue
+                # the file must stay open
+                fd = open(csvfile)
+                confcsv = csv.reader(fd)
+            else:
                 print('[!] Node ' + name + ' has no rudder monitoring config file, considering it empty...')
                 confcsv = []
     
             if not any(h['name'] == name for h in centreon_hosts.list()['result']):
                 print('[!] Node ' + name + ' is not registered in Centreon, skipping...')
                 continue
-    
+
             print('[ ] Applying conf to node ' + name + '...')
             csvTmpList = []
             csvMacroKeyList = []
@@ -261,10 +278,16 @@ def applyRudderMonitoringConfigurations(conf):
             #This ensures we get no duplicates in register in case we have to re-add an already registered
             #register[dir]['templates'] = ','.join(list(set(register[dir]['templates'].split(','))))
 
+            # update hash value
+            hash_list[dir] = hash_value
+
     if changed:
         register.write(open(registerFile, 'w'))
         print('[ ] Reloading Centreon poller config, restarting poller...')
         Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+    # store new hash values
+    with open(templatesTmp, 'w+') as fd:
+        json.dump(hash_list, fd)
     print('[+] Done')
 
 if __name__ == '__main__':
