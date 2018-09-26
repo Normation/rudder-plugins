@@ -2,18 +2,14 @@
 
 """
 Usage:
-    centreon-plugin.py pull
-    centreon-plugin.py push
-    centreon-plugin.py update
-    centreon-plugin.py hook (add|rm) <id>
-    centreon-plugin.py commit
+    centreon-plugin synchronize-hosts
+    centreon-plugin apply-configuration
+    centreon-plugin hook (add|rm) <id>
 
 Options:
-    pull     Updates rudder_nodes.json from the server API
-    push     Updates Centreon server based on rudder_nodes.json
-    update   Pulls nodes from Rudder, then pushes to Centreon
-    hook     Used when automatically called from Rudder
-    commit    Applies the monitoring config (templates and macros) specified in rudder
+    synchronize-hosts   Synchronize node liist between Rudder and Centreon adding or removing them as necessary
+    apply-configuration Applies the monitoring config (templates and macros) specified in rudder
+    hook                Used when automatically called from Rudder hook
 """
 
 import os
@@ -303,11 +299,7 @@ if __name__ == '__main__':
         print("[!] Unable to connect to Centreon webservice. Check centreon.conf ?")
         sys.exit(1)
 
-    if(args['pull']):
-        updateNodesJSON()
-    elif(args['push']):
-        updateCentreonHosts(conf.get('CENTREON', 'centreonPoller'))
-    elif(args['update']):
+    if(args['synchronize-hosts']):
         updateNodesJSON()
         updateCentreonHosts(conf.get('CENTREON', 'centreonPoller'))
     elif(args['hook']):
@@ -315,5 +307,5 @@ if __name__ == '__main__':
             addHostOnRudderHook(args['<id>'], conf.get('CENTREON', 'centreonPoller'))
         elif(args['rm']):
             delHostOnRudderHook(args['<id>'])
-    elif(args['commit']):
+    elif(args['apply-configuration']):
         applyRudderMonitoringConfigurations(conf)
