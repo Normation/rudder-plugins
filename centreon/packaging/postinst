@@ -3,7 +3,7 @@
 CONFFILE="/opt/rudder/etc/centreon.conf"
 
 mkdir -p /var/rudder/plugin-resources
-echo "*/2 * * * * root /opt/rudder/bin/centreon-plugin.py commit" > /etc/cron.d/centreon-rudder
+echo "*/2 * * * * root /opt/rudder/bin/centreon-plugin apply-configuration >/dev/null" > /etc/cron.d/centreon-rudder
 
 # create configuration file
 if [ ! -f "${CONFFILE}" ]
@@ -14,6 +14,9 @@ username = YOUR_CENTREON_USERNAME
 password = YOUR_CENTREON_PASSWORD
 centreonWebserviceURL = http://YOUR_CENTREON_SERVER/centreon
 centreonPoller = CENTREON_POLLER
+# Add this template automatically to all hosts added via Rudder
+# For a more fine grained choice, pleas use https://docs.rudder.io/reference/current/reference/generic_methods.html#monitoring_template
+defaultTemplate = generic-active-host-custom
 
 [RUDDER]
 # Fill this if the plugin is not installed on the Rudder server
