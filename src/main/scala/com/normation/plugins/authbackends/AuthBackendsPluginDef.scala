@@ -37,10 +37,16 @@
 
 package com.normation.plugins.authbackends
 
+import java.io.File
+
 import bootstrap.liftweb.Boot
 import bootstrap.liftweb.ClassPathResource
+import bootstrap.liftweb.FileSystemResource
+import bootstrap.rudder.plugin.AuthBackendsConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType.Administration
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
@@ -56,7 +62,11 @@ class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPl
 
   def oneTimeInit : Unit = {}
 
-  val configFiles = Seq(ClassPathResource("auth-backends.properties"))
+  // there is no config file as the main rudder-web.properties must be modified
+  // for these properties.
+  val configFiles = Seq()
+
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(AuthBackendsConf.api)
 
   override def pluginMenuEntry: Option[Menu] = {
     Some(Menu("authBackensdManagement", <span>Authentication Backends</span>) /
