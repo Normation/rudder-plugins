@@ -39,9 +39,12 @@ package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.AuthBackendsProvider
 import bootstrap.liftweb.RudderConfig
+import bootstrap.liftweb.RudderProperties
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.authbackends.AuthBackendsPluginDef
+import com.normation.plugins.authbackends.AuthBackendsRepository
 import com.normation.plugins.authbackends.CheckRudderPluginEnableImpl
+import com.normation.plugins.authbackends.api.AuthBackendsApiImpl
 
 
 /*
@@ -59,4 +62,9 @@ object AuthBackendsConf extends RudderPluginModule {
   RudderConfig.authenticationProviders.addProvider(authBackendsProvider)
 
   lazy val pluginDef = new AuthBackendsPluginDef(AuthBackendsConf.pluginStatusService)
+
+  lazy val api = new AuthBackendsApiImpl(
+      RudderConfig.restExtractorService
+    , new AuthBackendsRepository(RudderConfig.authenticationProviders, RudderProperties.config)
+  )
 }

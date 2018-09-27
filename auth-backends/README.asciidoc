@@ -14,16 +14,14 @@ Alternative Authentication Backends for Rudder:
 
 ==== LDAP / AD backends
 
+This plugin allows to use LDAP
 
 ==== Radius backend
 
 This plugin allows to use a radius authentication.
 
-The configuration is done in the main rudder.properties
+The configuration is done in the main /opt/ruder/etc/rudder-web.properties
 configuration file.
-
-rudder.auth.type=radius::
-Use "radius" auth type to enable radius authentication
 
 rudder.auth.radius.host.name=192.168.42.80::
 IP or hostname of the Radius server. Both work, but it is prefered to use an IP.
