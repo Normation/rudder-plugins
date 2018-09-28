@@ -38,8 +38,11 @@
 package com.normation.plugins.usermanagement
 
 import bootstrap.liftweb.Boot
+import bootstrap.rudder.plugin.UserManagementConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType.Administration
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
@@ -57,20 +60,16 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
 
   val configFiles = Seq()
 
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val UserManagementMenu = (
-      Menu("UserManagement", <span>User Management</span>) /
-        "secure" / "administration" / "UserManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "userManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(UserManagementConf.api)
 
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ UserManagementMenu:_* )
-      case m => m
-    }
+
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(Menu("userManagement", <span>User Management</span>) /
+      "secure" / "plugins" / "UserManagement"
+      >> LocGroup("pluginsGroup")
+      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
+      >> Template(() => ClasspathTemplates("template" :: "UserManagement" :: Nil ) openOr <div>Template not found</div>)
+    )
   }
 
 }

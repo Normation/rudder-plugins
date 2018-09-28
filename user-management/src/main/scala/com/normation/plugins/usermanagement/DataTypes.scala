@@ -40,6 +40,7 @@ package com.normation.plugins.usermanagement
 import bootstrap.liftweb.PasswordEncoder
 import bootstrap.liftweb.UserDetailList
 import net.liftweb.common.Logger
+import net.liftweb.json.JsonAST.JValue
 import org.slf4j.LoggerFactory
 
 /**
@@ -53,7 +54,7 @@ object UserManagementLogger extends Logger {
 object Serialisation {
 
   implicit class AuthConfigSer(auth: UserDetailList) {
-    def toJson: String = {
+    def toJson: JValue = {
       val encoder = auth.encoder match {
         case PasswordEncoder.MD5       => "MD5"
         case PasswordEncoder.SHA1      => "SHA-1"
@@ -61,11 +62,10 @@ object Serialisation {
         case PasswordEncoder.SHA512    => "SHA-512"
         case _                         => "plain text"
       }
-      val json = JsonAuthConfig(encoder, auth.users.map { case(_,u)=> JsonUser(u.getUsername, u.authz.displayAuthorizations) }.toList )
+      val json = JsonAuthConfig(encoder, auth.users.map { case(_,u)=> JsonUser(u.getUsername, u.authz.displayAuthorizations) }.toList.sortBy( _.login ) )
       import net.liftweb.json._
-      import net.liftweb.json.Serialization.write
       implicit val formats = Serialization.formats(NoTypeHints)
-      write(json)
+      Extraction.decompose(json)
     }
   }
 }
