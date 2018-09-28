@@ -396,15 +396,15 @@ class DataSourceJdbcRepository(
   }
 
   override def getAllIds: Box[Set[DataSourceId]] = {
-    query[DataSourceId]("""select id from datasources""").to[Set].attempt.transact(xa).unsafeRunSync()
+    query[DataSourceId]("""select id from datasources""").to[Set].transact(xa).attempt.unsafeRunSync()
   }
 
   override def getAll: Box[Map[DataSourceId,DataSource]] = {
-    query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.attempt.transact(xa).unsafeRunSync()
+    query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.transact(xa).attempt.unsafeRunSync()
   }
 
   override def get(sourceId : DataSourceId): Box[Option[DataSource]] = {
-    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.attempt.transact(xa).unsafeRunSync()
+    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.transact(xa).attempt.unsafeRunSync()
   }
 
   override def save(source : DataSource): Box[DataSource] = {
@@ -429,7 +429,7 @@ class DataSourceJdbcRepository(
 
     DataSource.reservedIds.get(source.id) match {
       case None =>
-        sql.map(_ => source).attempt.transact(xa).unsafeRunSync()
+        sql.map(_ => source).transact(xa).attempt.unsafeRunSync()
 
       case Some(msg) =>
         Failure(s"You can't use the reserved data sources id '${source.id.value}': ${msg}")
@@ -438,7 +438,7 @@ class DataSourceJdbcRepository(
 
   override def delete(sourceId : DataSourceId): Box[DataSourceId] = {
     val query = sql"""delete from datasources where id = ${sourceId}"""
-    query.update.run.map(_ => sourceId).attempt.transact(xa).unsafeRunSync()
+    query.update.run.map(_ => sourceId).transact(xa).attempt.unsafeRunSync()
   }
 
 }
