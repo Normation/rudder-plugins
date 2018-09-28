@@ -1,3 +1,3 @@
 #!/bin/bash
 
-find . -name '*.py' | grep -v share/python | xargs pylint -E --disable=C,R,undefined-variable  --persistent=n --init-hook="sys.path[0:0] = ['./centreon/share/python']"
+find . -name '*.py' | grep -v share/python | xargs -r pylint -E --disable=C,R,undefined-variable  --persistent=n --init-hook="sys.path[0:0] = ['./centreon/share/python']"
