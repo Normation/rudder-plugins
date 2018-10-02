@@ -1,5 +1,5 @@
 {
-  "server_addr": "YOUR_VAULT_SERVER",
+  "server_addr": "http://127.0.0.1:8200",
   "auth":
   {
     "mode": "userpass",
