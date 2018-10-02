@@ -1,0 +1,93 @@
+This file contains the configuration properties that need to be added in
+/opt/rudder/etc/rudder-web.properties file to configure the LDAP or AD
+authentication backend.
+
+For convenience, the part under "---- add in rudder-web.properties----" can
+be directly added in your /opt/rudder/etc/rudder-web.properties file.
+
+Note that key "rudder.auth.provider" is likelly to already exists. In
+that case, just update it with the sequence of authentication backend
+you want to try.
+
+
+
+---- add in rudder-web.properties----
+
+###########################
+# Rudder Authentication    #############################################################
+###########################
+
+#
+# By default, both authentication and authorization are handle in the rudder-users.xml
+# file. But you may want to rely on your existing entreprise Active Directory or LDAP
+# to take care of the authentication part.
+# To choose the scheme to use, either use 'file' or 'ldap' for the rudder.auth.provider
+# parameter.
+# You can also use a comma separated list of authentication provider to use,
+# like 'ldap, file' in which case each one will be tested in turned for authentication.
+#
+# When set to 'ldap', passwords in rudder-users.xml are ignored and the
+# authentication is delegated to the LDAP server configured below.
+# By convention, when LDAP authentication is enable, 'password' field in
+# rudder-users.xml are set to 'LDAP'
+#
+# Comma separated list of authentication providers.
+#
+rudder.auth.provider=ldap
+
+
+###########################
+# LDAP Authentication      #############################################################
+###########################
+
+
+# The following parameters allow to configure the LDAP authentication provider.
+# The LDAP authentication procedure is a typical bind/search/rebind, in which
+# an application connection (bind) is used to search (search) for an user entry
+# given some base and filter parameters, and then, a bind (rebind) is tried on
+# that entry with the credential provided by the user.
+# That allows to seperate the user DN (especially RDN) from the search criteria.
+#
+# Be careful, the authorization is still done in the rudder-user.xml, what means
+# that each user should have access to Rudder MUST have a line in that file.
+# Without that line, the user can have a successful LDAP authentication, but
+# won't be able to do or see anything in Rudder (safe logout).
+#
+
+#
+# Connection URL to the LDAP server, in the form:
+# ldap://hostname:port/base_dn
+#
+rudder.auth.ldap.connection.url=ldap://ldap.mycorp.com:389/dc=mycorp,dc=com
+
+#
+# Bind DN used by Rudder to do the search
+# LDAP dn, no default value.
+#
+rudder.auth.ldap.connection.bind.dn=cn=admin,dc=mycorp,dc=com
+
+#
+# Bind password used by Rudder to do the search.
+# String, no default value.
+#
+rudder.auth.ldap.connection.bind.password=secret
+
+#
+# Search base and filter to use to find the user.
+# The search base can be left empty. In that
+# case, the root of directory is used.
+#
+rudder.auth.ldap.searchbase=ou=People
+#
+# In the filter, {0} denotes the value provided as
+# login by the user.
+# The filter must lead to at most one result, which
+# will be used to try the bind request.
+#
+rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
+
+#
+# An AD example would be:
+#
+#rudder.auth.ldap.searchbase=
+#rudder.auth.ldap.filter=(&(sAMAccountName={0})(objectclass=user))
