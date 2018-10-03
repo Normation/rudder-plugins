@@ -156,6 +156,8 @@ object ChangeValidationConf extends RudderPluginModule {
             supervisedTargetRepo.load _
           , RudderConfig.roChangeRequestRepository
           , RudderConfig.roRuleRepository
+          , RudderConfig.roNodeGroupRepository
+          , RudderConfig.nodeInfoService
         )
       , RudderConfig.configService.rudder_workflow_enabled _
     )

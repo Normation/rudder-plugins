@@ -60,6 +60,10 @@ import scala.util.control.NonFatal
  */
 object ChangeValidationLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("change-validation")
+
+  object Metrics extends Logger {
+    override protected def _logger = LoggerFactory.getLogger("change-validation.metrics")
+  }
 }
 
 /*
