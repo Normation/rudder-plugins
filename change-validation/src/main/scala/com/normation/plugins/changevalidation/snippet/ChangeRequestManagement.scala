@@ -91,19 +91,35 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
    *   }
    */
   case class ChangeRequestLine (
+      id              : Int
+    , name            : String
+    , creator         : String
+    , step            : String
+    , lastModification: String
+  ) extends JsTableLine {
+    val json = {
+      JsObj(
+          "id"               -> id
+        , "name"             -> name
+        , "creator"          -> creator
+        , "step"             -> step
+        , "lastModification" -> lastModification
+      )
+    }
+  }
+
+  def toChangeRequestLine(
       changeRequest : ChangeRequest
     , workflowStateMap: Map[ChangeRequestId,WorkflowNodeId]
     , eventsMap : Map[ChangeRequestId, EventLog]
-  ) extends JsTableLine {
+  ): Option[ChangeRequestLine] = {
     val date = eventsMap.get(changeRequest.id).map(event => DateFormaterService.getFormatedDate(event.creationDate)).getOrElse("Unknown")
-
-    val json = {
-      JsObj(
-          "id" -> changeRequest.id.value
-        , "name" -> changeRequest.info.name
-        , "creator" -> changeRequest.owner
-        , "step" -> (workflowStateMap.get(changeRequest.id).map(_.value).getOrElse("Unknown"): String)
-        , "lastModification" -> date
+    workflowStateMap.get(changeRequest.id).map { status => ChangeRequestLine(
+          changeRequest.id.value
+        , changeRequest.info.name
+        , changeRequest.owner
+        , status.value
+        , date
       )
     }
   }
@@ -122,7 +138,8 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
             logger.error(fail.messageChain)
             Map()
         }
-        changeRequests.map(ChangeRequestLine(_,workflowStateMap,eventMap)).toList
+        changeRequests.flatMap(toChangeRequestLine(_,workflowStateMap,eventMap)).toList
+
       case eb:EmptyBox =>
         val fail = eb ?~! s"Could not get change requests because of : ${eb}"
         logger.error(fail.msg)
