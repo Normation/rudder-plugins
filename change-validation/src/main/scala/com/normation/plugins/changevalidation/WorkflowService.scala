@@ -38,26 +38,16 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.eventlog.EventActor
+import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.domain.workflows._
-import net.liftweb.common._
 import com.normation.rudder.repository._
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
-import com.normation.rudder.batch.AsyncWorkflowInfo
-import com.normation.rudder.domain.policies.GroupTarget
-import com.normation.rudder.domain.policies.RuleTarget
-import com.normation.rudder.domain.policies.SimpleTarget
-import com.normation.rudder.domain.policies.TargetExclusion
-import com.normation.rudder.domain.policies.TargetIntersection
-import com.normation.rudder.domain.policies.TargetUnion
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
-import com.normation.rudder.services.workflows.DirectiveChangeRequest
-import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NoWorkflowAction
-import com.normation.rudder.services.workflows.NodeGroupChangeRequest
-import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
+import net.liftweb.common._
 
 
 /**
@@ -94,104 +84,8 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
   override def needExternalValidation(): Boolean = current.needExternalValidation()
 }
 
-/**
- * Check is an external validation is needed for the change, given some
- * arbitrary rules defined in implementation.
- */
-trait ValidationNeeded {
-  def forRule       (actor: EventActor, change: RuleChangeRequest       ): Box[Boolean]
-  def forDirective  (actor: EventActor, change: DirectiveChangeRequest  ): Box[Boolean]
-  def forNodeGroup  (actor: EventActor, change: NodeGroupChangeRequest  ): Box[Boolean]
-  def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean]
-}
 
 
-
-
-
-/*
- * A version of the "validationNeeded" plugin which bases its oracle on a list
- * of group. If at least one node on the group is impacted by the change, then
- * the change must be validated with a change request.
- *
- * - a modification in a GlobalParam is always validated (because can be used in CFEngine code)
- * - a modification in a node group is validated only if it's one of the supervised one
- * - a modification in a rule is validated only if:
- *    - one of the modification add or remove a monitored group
- *    - one of its target is a special group intersecting with the list of monitored groups
- *    - one of its target group, either in the "in" or in the "not in", is in the list of monitored one.
- *      We must take group in both "in" and "not in" because adding or removing a node from the target of
- *      a rule need the same validation
- * - a modification in a directive is validated if it as at least configured in one rule where modification
- *   are supervised.
- *
- */
-class NodeGroupValidationNeeded(
-    monitoredTargets: () => Box[Set[SimpleTarget]]
-  , repos           : RoChangeRequestRepository
-  , ruleLib         : RoRuleRepository
-) extends ValidationNeeded {
-
-
-  /*
-   * from a list of RuleTarget, get all the SimpleTarget implied, however they
-   * are used.
-   */
-  def getAllSimpleTarget(target: RuleTarget): Set[SimpleTarget] = {
-    target match {
-      case st: SimpleTarget       => Set(st)
-      case TargetUnion(ts)        => ts.flatMap(getAllSimpleTarget)
-      case TargetIntersection(ts) => ts.flatMap(getAllSimpleTarget)
-      case TargetExclusion(a, b)  => getAllSimpleTarget(a) ++ getAllSimpleTarget(b)
-    }
-  }
-
-  /*
-   * A rule need external validation if any of its old or future targets is in the
-   * supervised set of groups.
-   */
-  override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
-    val targets = change.newRule.targets.flatMap(getAllSimpleTarget) ++ change.previousRule.map( _.targets.flatMap(getAllSimpleTarget)).getOrElse(Set())
-    for {
-      monitored <- monitoredTargets()
-    } yield {
-      monitored.intersect(targets).nonEmpty
-    }
-  }
-
-  /*
-   * A directive need a validation if any rule using it need a validation.
-   */
-  override def forDirective(actor: EventActor, change: DirectiveChangeRequest): Box[Boolean] = {
-    //in a change, the old directive id and the new one is the same.
-    val directiveId = change.newDirective.id
-    for {
-      rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId)))
-      monitored <- monitoredTargets()
-      targets   =  rules.flatMap(_.targets.flatMap(getAllSimpleTarget)).toSet
-    } yield {
-      monitored.intersect(targets).nonEmpty
-    }
-  }
-
-  /*
-   * Just check if the node group is the list of monitored groups
-   */
-  override def forNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[Boolean] = {
-    for {
-      monitored <- monitoredTargets()
-    } yield {
-      monitored.contains(GroupTarget(change.newGroup.id))
-    }
-  }
-
-  /*
-   * For a global parameter, we just answer "yes"
-   */
-  override def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean] = {
-    Full(true)
-  }
-}
 
 
 
