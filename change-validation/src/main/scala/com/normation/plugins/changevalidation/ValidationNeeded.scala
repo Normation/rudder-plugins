@@ -6,7 +6,6 @@ import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.policies.Rule
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.FullNodeGroupCategory
-import com.normation.rudder.repository.RoChangeRequestRepository
 import com.normation.rudder.repository.RoNodeGroupRepository
 import com.normation.rudder.repository.RoRuleRepository
 import com.normation.rudder.services.nodes.NodeInfoService
