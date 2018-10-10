@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory
  * Applicative log of interest for Rudder ops.
  */
 object UserManagementLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("user-management")
+  override protected def _logger = LoggerFactory.getLogger("usermanagement")
 }
 
 

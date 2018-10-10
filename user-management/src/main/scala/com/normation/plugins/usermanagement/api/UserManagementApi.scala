@@ -74,7 +74,7 @@ object UserManagementApi extends ApiModuleProvider[UserManagementApi] {
   final case object GetUserInfo extends UserManagementApi with ZeroParam with StartsAtVersion10 {
     val z = zz
     val description    = "Get information about registered users in Rudder"
-    val (action, path) = GET / "user-management" / "users"
+    val (action, path) = GET / "usermanagement" / "users"
   }
 
   /*
@@ -84,7 +84,7 @@ object UserManagementApi extends ApiModuleProvider[UserManagementApi] {
   final case object ReloadUsersConf extends UserManagementApi with ZeroParam with StartsAtVersion10 {
     val z = zz
     val description    = "Reload (read again rudder-users.xml and process result) information about registered users in Rudder"
-    val (action, path) = POST / "user-management" / "users" / "reload"
+    val (action, path) = POST / "usermanagement" / "users" / "reload"
   }
 
   def endpoints = ca.mrvisser.sealerate.values[UserManagementApi].toList.sortBy( _.z )
