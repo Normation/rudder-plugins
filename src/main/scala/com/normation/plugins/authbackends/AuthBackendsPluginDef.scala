@@ -37,11 +37,7 @@
 
 package com.normation.plugins.authbackends
 
-import java.io.File
-
 import bootstrap.liftweb.Boot
-import bootstrap.liftweb.ClassPathResource
-import bootstrap.liftweb.FileSystemResource
 import bootstrap.rudder.plugin.AuthBackendsConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType.Administration
