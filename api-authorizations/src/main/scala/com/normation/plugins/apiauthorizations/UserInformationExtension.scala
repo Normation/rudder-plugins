@@ -47,8 +47,8 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
     val embedAppXml =
       <ul id="userApiTokenManagement" class="dropdown-menu">
         <head_merge>
-          <link rel="stylesheet" type="text/css" href="/toserve/api-authorizations/media.css" media="screen" data-lift="with-cached-resource" />
-          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/api-authorizations/user-api-token.js"></script>
+          <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
+          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/user-api-token.js"></script>
         </head_merge>
         <li id="user-token-app"></li>
         <script>

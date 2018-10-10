@@ -78,7 +78,7 @@ type Msg
 getUsersConf : Model -> Cmd Msg
 getUsersConf model =
   let
-    url     = (model.contextPath ++ "/secure/api/user-management/users")
+    url     = (model.contextPath ++ "/secure/api/usermanagement/users")
     headers = []
     req = request {
         method          = "GET"
@@ -95,7 +95,7 @@ getUsersConf model =
 postReloadConf : Model -> Cmd Msg
 postReloadConf model =
   let
-    url     = (model.contextPath ++ "/secure/api/user-management/users/reload")
+    url     = (model.contextPath ++ "/secure/api/usermanagement/users/reload")
     headers = []
     req = request {
         method          = "POST"
