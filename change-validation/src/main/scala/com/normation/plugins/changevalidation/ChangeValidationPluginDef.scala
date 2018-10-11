@@ -42,7 +42,6 @@ import bootstrap.liftweb.Boot.redirection
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.web.model.CurrentUser
@@ -86,40 +85,49 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
 
   val configFiles = Seq()
 
-  override def pluginMenuEntry: Option[Menu] = {
-    val changeMenu = (
-      Menu("changeValidationManagement", <span>Change Validation</span>) /
-      "secure" / "plugins" / "changeValidationManagement"
-      >> LocGroup("pluginsGroup")
-      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
-      >> Template(() => ClasspathTemplates("template" :: "ChangeValidationManagement" :: Nil ) openOr <div>Template not found</div>)
-    ) submenus (
-        Menu("changeRequests", <span>Change requests</span>) /
-          "secure" / "plugins" / "changes" / "changeRequests"
-          >> LocGroup("utilitiesGroup")
-          >> Template(() => ClasspathTemplates("template" :: "changeRequests" :: Nil ) openOr <div>Template not found</div>)
-          >> TestAccess ( () =>
-            if (status.isEnabled() && (CurrentUser.checkRights(AuthorizationType.Validator.Read) || CurrentUser.checkRights(AuthorizationType.Deployer.Read)))
-              Empty
-            else
-              Full(RedirectWithState("/secure/utilities/eventLogs", redirection ) )
-            )
+  /*
+   * Menu for change validation is a little bit more complex than
+   * usual plugins. We have the default plugin menu with admin rights, and a
+   * "change request management" menu, that is hidden, but has special rights
+   */
+  // manage change request
+  val changeRequestValidationMenu: Menu = {
+    def canViewPage = CurrentUser.checkRights(AuthorizationType.Validator.Read) ||
+                      CurrentUser.checkRights(AuthorizationType.Deployer.Read)
 
-      , Menu("changeRequest", <span>Change request</span>) /
+    (Menu("changeRequests", <span>Change Requests</span>) /
+      "secure" / "plugins" / "changes"
+      >> LocGroup("changeValidation")
+      >> Hidden
+      >> TestAccess ( () =>
+        if (status.isEnabled() && canViewPage)
+          Empty
+        else
+          Full(RedirectWithState("/secure/utilities/eventLogs", redirection ) )
+      )
+    ) submenus (
+        Menu("changeRequestsList", <span>Change requests</span>) /
+          "secure" / "plugins" / "changes" / "changeRequests"
+          >> Hidden
+          >> Template(() => ClasspathTemplates("template" :: "changeRequests" :: Nil ) openOr <div>Template not found</div>)
+      , Menu("changeRequestDetails", <span>Change request</span>) /
           "secure" / "plugins" / "changes" / "changeRequest"
           >> Hidden
           >> Template(() => ClasspathTemplates("template" :: "changeRequest" :: Nil ) openOr <div>Template not found</div>)
-          >> TestAccess ( () =>
-            if (status.isEnabled() && (CurrentUser.checkRights(AuthorizationType.Validator.Read) || CurrentUser.checkRights(AuthorizationType.Deployer.Read)))
-              Empty
-            else
-              Full(RedirectWithState("/secure/utilities/eventLogs", redirection) )
-            )
     )
-
-    Some(changeMenu)
-
-
   }
 
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(
+      Menu("changeValidationManagement", <span>Change Validation</span>) /
+      "secure" / "plugins" / "changeValidationManagement"
+      >> LocGroup("pluginsGroup")
+      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", AuthorizationType.Administration.Read))
+      >> Template(() => ClasspathTemplates("template" :: "ChangeValidationManagement" :: Nil ) openOr <div>Template not found</div>)
+    )
+  }
+
+  override def updateSiteMap(menus: List[Menu]): List[Menu] = {
+    super.updateSiteMap(menus) :+ changeRequestValidationMenu
+  }
 }
