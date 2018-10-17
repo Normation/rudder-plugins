@@ -115,8 +115,8 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
 
     workflowService match {
       case ws:TwoValidationStepsWorkflowServiceImpl =>
-        val validation = if (isValidator) ws.getItemsInStep(ws.Validation.id).map(_.size).getOrElse(0) else 0
-        val deployment = if (isDeployer) ws.getItemsInStep(ws.Deployment.id).map(_.size).getOrElse(0) else 0
+        val validation = if (isValidator) ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id).map(_.size).getOrElse(0) else 0
+        val deployment = if (isDeployer) ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id).map(_.size).getOrElse(0) else 0
         validation  + deployment
       case either: EitherWorkflowService => requestCount(either.current)
       case _ => 0
@@ -132,7 +132,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   private[this] def pendingModificationRec(workflowService: WorkflowService): NodeSeq = {
     workflowService match {
       case ws:TwoValidationStepsWorkflowServiceImpl =>
-        ws.getItemsInStep(ws.Validation.id) match {
+        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id) match {
           case Full(seq) =>
             <li>
               <a href="/secure/plugins/changes/changeRequests/Pending_validation">
@@ -159,7 +159,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   private[this] def pendingDeploymentRec(workflowService: WorkflowService): NodeSeq = {
     workflowService match {
       case ws:TwoValidationStepsWorkflowServiceImpl =>
-        ws.getItemsInStep(ws.Deployment.id) match {
+        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id) match {
           case Full(seq) =>
             <li>
               <a href="/secure/plugins/changes/changeRequests/Pending_deployment">

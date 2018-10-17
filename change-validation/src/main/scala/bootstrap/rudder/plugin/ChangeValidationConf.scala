@@ -40,17 +40,46 @@ package bootstrap.rudder.plugin
 import java.nio.file.Paths
 
 import bootstrap.liftweb.RudderConfig
+import bootstrap.liftweb.RudderConfig.commitAndDeployChangeRequest
+import bootstrap.liftweb.RudderConfig.doobie
+import bootstrap.liftweb.RudderConfig.restDataSerializer
+import bootstrap.liftweb.RudderConfig.restExtractorService
+import bootstrap.liftweb.RudderConfig.techniqueRepository
+import bootstrap.liftweb.RudderConfig.workflowLevelService
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
+import com.normation.plugins.changevalidation.ChangeRequestMapper
 import com.normation.plugins.changevalidation.ChangeValidationPluginDef
 import com.normation.plugins.changevalidation.CheckRudderPluginEnableImpl
 import com.normation.plugins.changevalidation.NodeGroupValidationNeeded
+import com.normation.plugins.changevalidation.RoChangeRequestJdbcRepository
+import com.normation.plugins.changevalidation.RoChangeRequestRepository
+import com.normation.plugins.changevalidation.RoWorkflowJdbcRepository
 import com.normation.plugins.changevalidation.SupervisedTargetsReposiory
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.ValidationNeeded
+import com.normation.plugins.changevalidation.WoChangeRequestJdbcRepository
+import com.normation.plugins.changevalidation.WoChangeRequestRepository
+import com.normation.plugins.changevalidation.WoWorkflowJdbcRepository
+import com.normation.plugins.changevalidation.api.ChangeRequestApi
+import com.normation.plugins.changevalidation.api.ChangeRequestApiImpl
+import com.normation.plugins.changevalidation.api.SupervisedTargetsApi
 import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
+import com.normation.rudder.AuthorizationType
+import com.normation.rudder.AuthorizationType.Deployer
+import com.normation.rudder.AuthorizationType.Validator
+import com.normation.rudder.api.ApiAclElement
+import com.normation.rudder.domain.nodes.NodeGroupId
+import com.normation.rudder.domain.policies.DirectiveId
+import com.normation.rudder.domain.policies.RuleId
+import com.normation.rudder.domain.workflows.ChangeRequest
+import com.normation.rudder.rest.ApiModuleProvider
+import com.normation.rudder.rest.AuthorizationApiMapping
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModule
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
@@ -58,6 +87,7 @@ import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
 import net.liftweb.common.Box
+import net.liftweb.common.Full
 
 
 
@@ -67,7 +97,7 @@ import net.liftweb.common.Box
 class ChangeValidationWorkflowLevelService(
     status                   : PluginStatus
   , defaultWorkflowService   : WorkflowService
-  , validationWorkflowService: WorkflowService
+  , validationWorkflowService: TwoValidationStepsWorkflowServiceImpl
   , validationNeeded         : ValidationNeeded
   , workflowEnabledByUser    : () => Box[Boolean]
 ) extends WorkflowLevelService {
@@ -111,6 +141,30 @@ class ChangeValidationWorkflowLevelService(
   override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
     getWorkflow(validationNeeded.forGlobalParam(actor, change))
   }
+
+  override def getByDirective(id: DirectiveId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+    if(workflowEnabled) {
+      validationWorkflowService.roChangeRequestRepository.getByDirective(id, onlyPending)
+    } else {
+      Full(Vector())
+    }
+  }
+
+  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+    if(workflowEnabled) {
+      validationWorkflowService.roChangeRequestRepository.getByNodeGroup(id, onlyPending)
+    } else {
+      Full(Vector())
+    }
+  }
+
+  override def getByRule(id: RuleId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+    if(workflowEnabled) {
+      validationWorkflowService.roChangeRequestRepository.getByRule(id, onlyPending)
+    } else {
+      Full(Vector())
+    }
+  }
 }
 
 /*
@@ -121,13 +175,21 @@ object ChangeValidationConf extends RudderPluginModule {
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
 
+  lazy val roWorkflowRepository = new RoWorkflowJdbcRepository(RudderConfig.doobie)
+  lazy val woWorkflowRepository = new WoWorkflowJdbcRepository(RudderConfig.doobie)
+
 
   lazy val validationWorkflowService = new TwoValidationStepsWorkflowServiceImpl(
       RudderConfig.workflowEventLogService
     , RudderConfig.commitAndDeployChangeRequest
-    , RudderConfig.roWorkflowRepository
-    , RudderConfig.woWorkflowRepository
+    , roWorkflowRepository
+    , woWorkflowRepository
     , RudderConfig.asyncWorkflowInfo
+    , RudderConfig.stringUuidGenerator
+    , RudderConfig.changeRequestEventLogService
+    , roChangeRequestRepository
+    , woChangeRequestRepository
+    , () => Full(RudderConfig.workflowLevelService.workflowEnabled)
     , RudderConfig.configService.rudder_workflow_self_validation _
     , RudderConfig.configService.rudder_workflow_self_deployment _
   )
@@ -136,6 +198,13 @@ object ChangeValidationConf extends RudderPluginModule {
       directory = Paths.get("/var/rudder/plugin-resources/" + pluginDef.shortName)
     , filename  = "supervised-targets.json"
   )
+  lazy val roChangeRequestRepository : RoChangeRequestRepository = {
+    new RoChangeRequestJdbcRepository(doobie, changeRequestMapper)
+  }
+
+  lazy val woChangeRequestRepository : WoChangeRequestRepository = {
+    new WoChangeRequestJdbcRepository(doobie, changeRequestMapper, roChangeRequestRepository)
+  }
 
 
   // other service instanciation / initialization
@@ -143,18 +212,10 @@ object ChangeValidationConf extends RudderPluginModule {
     new ChangeValidationWorkflowLevelService(
         pluginStatusService
       , RudderConfig.workflowLevelService.defaultWorkflowService
-      , new TwoValidationStepsWorkflowServiceImpl(
-            RudderConfig.workflowEventLogService
-          , RudderConfig.commitAndDeployChangeRequest
-          , RudderConfig.roWorkflowRepository
-          , RudderConfig.woWorkflowRepository
-          , RudderConfig.asyncWorkflowInfo
-          , RudderConfig.configService.rudder_workflow_self_validation _
-          , RudderConfig.configService.rudder_workflow_self_deployment _
-        )
+      , validationWorkflowService
       , new NodeGroupValidationNeeded(
             supervisedTargetRepo.load _
-          , RudderConfig.roChangeRequestRepository
+          , roChangeRequestRepository
           , RudderConfig.roRuleRepository
           , RudderConfig.roNodeGroupRepository
           , RudderConfig.nodeInfoService
@@ -163,13 +224,57 @@ object ChangeValidationConf extends RudderPluginModule {
     )
   )
 
+  lazy val changeRequestMapper = new ChangeRequestMapper(RudderConfig.changeRequestChangesUnserialisation, RudderConfig.changeRequestChangesSerialisation)
+
   lazy val pluginDef = new ChangeValidationPluginDef(pluginStatusService)
 
-  lazy val api = new SupervisedTargetsApiImpl(
+  lazy val api = {
+    val api1 = new SupervisedTargetsApiImpl(
       RudderConfig.restExtractorService
-    , supervisedTargetRepo
-    , RudderConfig.roNodeGroupRepository
-  )
+      , supervisedTargetRepo
+      , RudderConfig.roNodeGroupRepository
+    )
+    val api2 = new ChangeRequestApiImpl(
+      restExtractorService
+      , roChangeRequestRepository
+      , woChangeRequestRepository
+      , roWorkflowRepository
+      , woWorkflowRepository
+      , techniqueRepository
+      , workflowLevelService
+      , commitAndDeployChangeRequest
+      , restDataSerializer
+    )
+    new LiftApiModuleProvider[EndpointSchema] {
+      override def schemas = new ApiModuleProvider[EndpointSchema] {
+        override def endpoints = SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints
+
+        import AuthorizationApiMapping.ToAuthz
+
+        /*
+         * Here, rights are not sufficiently precise: the check need to know the value
+         * of the "status" parameter to decide if a validator (resp a deployer) can do
+         * what he asked for.
+         */
+        override def authorizationApiMapping: AuthorizationApiMapping = new AuthorizationApiMapping {
+          override def mapAuthorization(authz: AuthorizationType): List[ApiAclElement] = {
+            authz match {
+              case Deployer.Read   => ChangeRequestApi.ListChangeRequests.x :: ChangeRequestApi.ChangeRequestsDetails.x :: Nil
+              case Deployer.Write  => ChangeRequestApi.DeclineRequestsDetails.x :: ChangeRequestApi.AcceptRequestsDetails.x :: Nil
+              case Deployer.Edit   => ChangeRequestApi.UpdateRequestsDetails.x :: Nil
+              case Validator.Read  => ChangeRequestApi.ListChangeRequests.x :: ChangeRequestApi.ChangeRequestsDetails.x :: Nil
+              case Validator.Write => ChangeRequestApi.DeclineRequestsDetails.x :: ChangeRequestApi.AcceptRequestsDetails.x :: Nil
+              case Validator.Edit  => ChangeRequestApi.UpdateRequestsDetails.x :: Nil
+
+              case _ => Nil
+            }
+          }
+        }
+      }
+
+      override def getLiftEndpoints(): List[LiftApiModule] = api1.getLiftEndpoints() ::: api2.getLiftEndpoints()
+    }
+  }
 
   RudderConfig.snippetExtensionRegister.register(new TopBarExtension(pluginStatusService))
 }

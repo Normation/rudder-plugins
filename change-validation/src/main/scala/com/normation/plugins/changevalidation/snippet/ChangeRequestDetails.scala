@@ -38,8 +38,10 @@
 package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
+import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
+import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.ActionType
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.eventlog.AddChangeRequest
@@ -77,7 +79,8 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
   private[this] val userPropertyService      = RudderConfig.userPropertyService
   private[this] val workFlowEventLogService =  RudderConfig.workflowEventLogService
-  private[this] val changeRequestService  = RudderConfig.changeRequestService
+  private[this] val changeRequestEventLogService  = RudderConfig.changeRequestEventLogService
+  private[this] val roChangeRequestRepo = ChangeValidationConf.roChangeRequestRepository
   private[this] val workflowService = RudderConfig.workflowLevelService.getWorkflowService()
   private[this] val eventlogDetailsService = RudderConfig.eventLogDetailsService
   private[this] val commitAndDeployChangeRequest =  RudderConfig.commitAndDeployChangeRequest
@@ -86,7 +89,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   private[this] val CrId: Box[Int] = {S.param("crId").map(x=>x.toInt) }
   private[this] var changeRequest: Box[ChangeRequest] = {
     CrId match {
-    case Full(id) => changeRequestService.get(ChangeRequestId(id)) match {
+    case Full(id) => roChangeRequestRepo.get(ChangeRequestId(id)) match {
       case Full(Some(cr)) =>
         if (checkAccess(cr))
         Full(cr)
@@ -180,7 +183,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
             , ("class" ,"btn btn-danger")
           ) } }  &
       "#nextStep" #> {
-        if(commitAndDeployChangeRequest.isMergeable(cr.id)) {
+        if(commitAndDeployChangeRequest.isMergeable(cr)) {
           workflowService.findNextSteps(authz,step,isOwner) match {
             case NoWorkflowAction => NodeSeq.Empty
             case WorkflowAction(actionName,emptyList) if emptyList.size == 0 => NodeSeq.Empty
@@ -196,15 +199,22 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   }
 
   private[this] def changeDetailsCallback (cr:ChangeRequest)(statusUpdate:ChangeRequestInfo) =  {
-    val newCR = changeRequestService.updateChangeRequestInfo(cr, statusUpdate, CurrentUser.actor, None)
-    changeRequest = newCR
-    SetHtml("changeRequestHeader", displayHeader(newCR.openOr(cr))) &
-    SetHtml("changeRequestChanges", new ChangeRequestChangesForm(newCR.openOr(cr)).dispatch("changes")(NodeSeq.Empty))
+    workflowService match {
+      case ws:TwoValidationStepsWorkflowServiceImpl =>
+        val newCR = ws.updateChangeRequestInfo(cr, statusUpdate, CurrentUser.actor, None)
+        changeRequest = newCR
+        SetHtml("changeRequestHeader", displayHeader(newCR.openOr(cr))) &
+        SetHtml("changeRequestChanges", new ChangeRequestChangesForm(newCR.openOr(cr)).dispatch("changes")(NodeSeq.Empty))
+
+      case _ =>
+        //not sure about what we want to do if there an other workflows.
+        Alert("Current workflow kind does not support that option. Perhaps the workflows plugin is not enable?")
+      }
   }
 
   def displayHeader(cr:ChangeRequest) = {
     //last action on the change Request (name/description changed):
-    val (action,date) = changeRequestService.getLastLog(cr.id) match {
+    val (action,date) = changeRequestEventLogService.getLastLog(cr.id) match {
       case eb:EmptyBox => ("Error when retrieving the last action",None)
       case Full(None)  => ("Error, no action were recorded for that change request",None) //should not happen here !
       case Full(Some(e:EventLog)) =>
@@ -243,7 +253,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
   def displayWarnUnmergeable(cr:ChangeRequest) : NodeSeq = {
     step.map{ wfId =>
-      if(!workflowService.isPending(wfId) || commitAndDeployChangeRequest.isMergeable(cr.id) ) {
+      if(!workflowService.isPending(wfId) || commitAndDeployChangeRequest.isMergeable(cr) ) {
         NodeSeq.Empty
       } else {
         unmergeableWarning
