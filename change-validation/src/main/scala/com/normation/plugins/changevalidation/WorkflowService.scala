@@ -38,15 +38,21 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.eventlog.EventActor
+import com.normation.eventlog.ModificationId
 import com.normation.rudder.batch.AsyncWorkflowInfo
+import com.normation.rudder.domain.eventlog.AddChangeRequestDiff
+import com.normation.rudder.domain.eventlog.ChangeRequestDiff
+import com.normation.rudder.domain.eventlog.DeleteChangeRequestDiff
+import com.normation.rudder.domain.eventlog.ModifyToChangeRequestDiff
 import com.normation.rudder.domain.workflows._
-import com.normation.rudder.repository._
+import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
+import com.normation.utils.StringUuidGenerator
 import net.liftweb.common._
 
 
@@ -61,8 +67,8 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
 
   def current: WorkflowService = if(cond().getOrElse(false)) whenTrue else whenFalse
 
-  override def startWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] =
-    current.startWorkflow(changeRequestId, actor, reason)
+  override def startWorkflow(changeRequest: ChangeRequest, actor:EventActor, reason: Option[String]) : Box[ChangeRequestId] =
+    current.startWorkflow(changeRequest, actor, reason)
   override def openSteps :List[WorkflowNodeId] =
     current.openSteps
   override def closedSteps :List[WorkflowNodeId] =
@@ -85,22 +91,7 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
 }
 
 
-
-
-
-
-class TwoValidationStepsWorkflowServiceImpl(
-    workflowLogger  : WorkflowEventLogService
-  , commit          : CommitAndDeployChangeRequestService
-  , roWorkflowRepo  : RoWorkflowRepository
-  , woWorkflowRepo  : WoWorkflowRepository
-  , workflowComet   : AsyncWorkflowInfo
-  , selfValidation  : () => Box[Boolean]
-  , selfDeployment  : () => Box[Boolean]
-) extends WorkflowService {
-
-  val name = "two-steps-validation-workflow"
-
+object TwoValidationStepsWorkflowServiceImpl {
   case object Validation extends WorkflowNode {
     val id = WorkflowNodeId("Pending validation")
   }
@@ -118,12 +109,66 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   val steps:List[WorkflowNode] = List(Validation,Deployment,Deployed,Cancelled)
+}
+
+
+
+class TwoValidationStepsWorkflowServiceImpl(
+    workflowLogger                : WorkflowEventLogService
+  , commit                        : CommitAndDeployChangeRequestService
+  , roWorkflowRepo                : RoWorkflowRepository
+  , woWorkflowRepo                : WoWorkflowRepository
+  , workflowComet                 : AsyncWorkflowInfo
+  , uuidGen                       : StringUuidGenerator
+  , changeRequestEventLogService  : ChangeRequestEventLogService
+  , val roChangeRequestRepository : RoChangeRequestRepository
+  , woChangeRequestRepository     : WoChangeRequestRepository
+  , workflowEnable                : () => Box[Boolean]
+  , selfValidation                : () => Box[Boolean]
+  , selfDeployment                : () => Box[Boolean]
+) extends WorkflowService {
+  import TwoValidationStepsWorkflowServiceImpl._
+
+  val name = "two-steps-validation-workflow"
+
 
   def getItemsInStep(stepId: WorkflowNodeId) : Box[Seq[ChangeRequestId]] = roWorkflowRepo.getAllByState(stepId)
 
-  val openSteps : List[WorkflowNodeId] = List(Validation.id,Deployment.id)
   val closedSteps : List[WorkflowNodeId] = List(Cancelled.id,Deployed.id)
+  val openSteps : List[WorkflowNodeId] = List(Validation.id,Deployment.id)
   val stepsValue = steps.map(_.id)
+
+  private[this] def saveAndLogChangeRequest(diff:ChangeRequestDiff,actor:EventActor,reason:Option[String]) = {
+    val changeRequest = diff.changeRequest
+    // We need to remap back to the original type to fetch the id of the CR created
+    val save = diff match {
+      case add:AddChangeRequestDiff         => woChangeRequestRepository.createChangeRequest(diff.changeRequest, actor, reason).map(AddChangeRequestDiff(_))
+      case modify:ModifyToChangeRequestDiff => woChangeRequestRepository.updateChangeRequest(changeRequest, actor, reason).map(x => modify) // For modification the id is already correct
+      case delete:DeleteChangeRequestDiff   => woChangeRequestRepository.deleteChangeRequest(changeRequest.id, actor, reason).map(DeleteChangeRequestDiff(_))
+    }
+
+    for {
+    saved  <- save ?~! s"could not save change request ${changeRequest.info.name}"
+    modId  =  ModificationId(uuidGen.newUuid)
+    workflowEnable <- workflowEnable()
+    logged <- if(workflowEnable) {
+                changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
+                  s"could not save event log for change request ${saved.changeRequest.id} creation"
+              } else {
+                Full("OK, no workflow")
+              }
+    } yield { saved.changeRequest }
+  }
+
+  def updateChangeRequestInfo(
+      oldChangeRequest : ChangeRequest
+    , newInfo          : ChangeRequestInfo
+    , actor            : EventActor
+    , reason           : Option[String]
+  ) : Box[ChangeRequest] = {
+    val newCr = ChangeRequest.updateInfo(oldChangeRequest, newInfo)
+    saveAndLogChangeRequest(ModifyToChangeRequestDiff(newCr,oldChangeRequest), actor, reason)
+  }
 
   def findNextSteps(
       currentUserRights : Seq[String]
@@ -242,29 +287,28 @@ class TwoValidationStepsWorkflowServiceImpl(
     changeStep(from, Cancelled,changeRequestId,actor,reason)
   }
 
-  def startWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
-    startTwoStepWorkflow(changeRequestId, actor, reason)
-  }
-
-  private[this] def startTwoStepWorkflow(changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
-    ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequestId.value}'")
+  def startWorkflow(changeRequest: ChangeRequest, actor:EventActor, reason: Option[String]) : Box[ChangeRequestId] = {
+    ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
     for {
-      workflow <- woWorkflowRepo.createWorkflow(changeRequestId, Validation.id)
+      saved    <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), actor, reason)
+      workflow <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
     } yield {
       workflowComet ! WorkflowUpdate
-      workflow
+      saved.id
     }
   }
 
   private[this] def onSuccessWorkflow(from: WorkflowNode, changeRequestId: ChangeRequestId, actor:EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
     ChangeValidationLogger.debug(s"${name}: deploy change for change request '${changeRequestId.value}'")
     for {
-      save  <- commit.save(changeRequestId, actor, reason)
-      state <- changeStep(from,Deployed,changeRequestId,actor,reason)
+      optcr  <- roChangeRequestRepository.get(changeRequestId)
+      cr     <- Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database"
+      saved  <- commit.save(cr, actor, reason)
+      repoOk <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
+      state  <- changeStep(from,Deployed,changeRequestId,actor,reason)
     } yield {
       state
     }
-
   }
 
   //allowed workflow steps

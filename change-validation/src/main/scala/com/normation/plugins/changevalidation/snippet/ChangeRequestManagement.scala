@@ -38,6 +38,7 @@
 package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
+import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventLog
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.workflows.ChangeRequestId
@@ -62,7 +63,7 @@ import scala.xml.Text
 
 class ChangeRequestManagement extends DispatchSnippet with Loggable {
 
-  private[this] val roCrRepo = RudderConfig.roChangeRequestRepository
+  private[this] val roCrRepo = ChangeValidationConf.roChangeRequestRepository
   private[this] val workflowService = RudderConfig.workflowLevelService.getWorkflowService()
   private[this] val changeRequestEventLogService = RudderConfig.changeRequestEventLogService
   private[this] val workflowLoggerService = RudderConfig.workflowEventLogService
