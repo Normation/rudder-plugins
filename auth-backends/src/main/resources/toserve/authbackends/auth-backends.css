@@ -37,3 +37,69 @@
 
 /* add you plugin css in that file */
 
+
+/* CONTAINER */
+#plugin-main .inner-portlet{
+  padding     : 0 15px;
+  font-family : 'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif;
+  font-weight : 400;
+  font-size   : 14px;
+}
+
+#auth-backends-app{
+	padding-bottom : 30px;
+}
+
+#auth-backends-app h4 {
+  margin         : 30px 0 15px 0;
+  padding-bottom : 2px;
+  border-bottom  : 1px solid #eaeaea;
+}
+
+#auth-backends-app h4 span{
+  font-size : 12px;
+  color     : #888;
+}
+
+#auth-backends-app .form-group{
+  margin-bottom : 15px;
+}
+
+label{
+  margin-bottom : 0;
+}
+
+.tag {
+  background-color : #F0F0F0;
+  border-radius    : 40px;
+  padding          : 5px 16px 2px 16px;
+  border           : 1px solid #dedede;
+  float            : left;
+  line-height      : normal;
+  margin-right     : 5px;
+  margin-top:      : 5px;
+}
+
+.key {
+  display     : inline-block;
+  font-weight : 700;
+}
+
+.sep{
+  width      : 20px;
+  display    : inline-block;
+  text-align : center;
+}
+
+.val {
+  display : inline-block;
+}
+
+.text-info{
+  color : #227f9d;
+}
+
+.text-info:before{
+  content : "# ";
+}
+
