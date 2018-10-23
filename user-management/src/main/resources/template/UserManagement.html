@@ -9,24 +9,21 @@
     <head_merge>
       <title>Plugin :: User Management</title>
       <link rel="stylesheet" type="text/css" href="/toserve/usermanagement/user-management.css" media="screen" data-lift="with-cached-resource">
+      <link rel="stylesheet" type="text/css" href="/toserve/usermanagement/toasty.css" media="screen" data-lift="with-cached-resource">
       <script src="/toserve/usermanagement/user-management.js" data-lift="with-cached-resource"></script>
     </head_merge>
 
 
     <div class="portlet ui-widget ui-widget-content ui-helper-clearfix arrondis">
       <div class="inner-portlet">
-        <div class="page-title">Authentication Backends Configuration</div>
+        <div class="page-title">User Management Configuration</div>
         <div class="portlet-content">
           <div class="col-xs-12 callout-fade callout-warning">
             <div class="marker">
               <span class="glyphicon glyphicon-info-sign"></span>
             </div>
             <p>
-              This page present to you the current authentication backends used by Rudder
-              to allow users to log in into Rudder.
-            </p>
-            <p>
-              You can can change these parameter by editing <span>/opt/rudder/etc/rudder-web.properties</span>. The plugin documentation is available <a href="https://docs.rudder.io/reference/current/plugins/">in Rudder documentation</a>.
+              This page shows you the current Rudder users and their rights.
             </p>
           </div>
 
@@ -38,7 +35,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </body>
 </html>
