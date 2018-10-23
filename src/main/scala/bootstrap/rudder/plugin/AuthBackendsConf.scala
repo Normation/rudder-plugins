@@ -58,7 +58,13 @@ object AuthBackendsConf extends RudderPluginModule {
   lazy val authBackendsProvider = new AuthBackendsProvider {
     def authenticationBackends = Set("ldap", "radius")
     def name = s"Enterprise Authentication Backends: '${authenticationBackends.mkString("','")}'"
+
+    override def allowedToUseBackend(name: String): Boolean = {
+      // same behavior for all authentication backends: only depends on the plugin status
+      pluginStatusService.isEnabled
+    }
   }
+
   RudderConfig.authenticationProviders.addProvider(authBackendsProvider)
 
   lazy val pluginDef = new AuthBackendsPluginDef(AuthBackendsConf.pluginStatusService)

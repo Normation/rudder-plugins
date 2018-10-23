@@ -37,7 +37,7 @@
 
 package com.normation.plugins.authbackends
 
-import bootstrap.liftweb.DefaultAuthBackendProviders
+import bootstrap.liftweb.AuthBackendProvidersManager
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigRenderOptions
@@ -49,7 +49,7 @@ import com.typesafe.config.ConfigValueType
  * user.
  */
 class AuthBackendsRepository(
-    authService     : DefaultAuthBackendProviders
+    authService     : AuthBackendProvidersManager
   , configParameters: Config
 ) {
 
@@ -196,7 +196,7 @@ class AuthBackendsRepository(
       case ex: ConfigException.Missing => "" // if the key is absent, default config will be used
     }
 
-    val usedOrder = authService.authenticationMethods.map( _.name )
+    val usedOrder = authService.getConfiguredProviders().map( _.name )
 
 
     Right(JsonAuthConfiguration(
