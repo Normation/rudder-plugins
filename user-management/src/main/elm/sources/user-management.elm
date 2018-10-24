@@ -192,29 +192,49 @@ displayUsersConf usersConf =
   let
     users = usersConf.users |> List.map (\user -> displayUser user)
   in
-    div [] [
-      h3 [] [ (text "Rudder Users") ]
-    , div [ class "row" ] [
-        div [ class "col-md-4 col-md-offset-4"] [
-          button [ class "btn btn-primary", onClick SendReload ] [ text "Reload users from file"]
+    div [class "row"] [
+      div [class "col-xs-12"]
+      [ h3 []
+        [ (text "Rudder Users")
+        , button [ class "btn btn-sm btn-primary", onClick SendReload ]
+          [ text "Reload users from file"
+          , span [class "fa fa-refresh"][]
+          ]
         ]
       ]
-    , div [ class "row" ] [
-        (span [ style [("color", "#fff")] ] [text ("Password encoder: "++usersConf.digest) ])
+    , div[class "col-xs-12"]
+      [ p [ class "callout-fade callout-info" ]
+        [ div [class "marker"][span [class "glyphicon glyphicon-info-sign"][]]
+        , text ("Password encoder: "++usersConf.digest)
+        ]
       ]
-    , div [] users
+    , div [ class "col-xs-12 user-list" ]
+      [ div[ class "row " ] users ]
     ]
 
 displayUser: User -> Html Msg
 displayUser user =
-  div [class "col-xs-11"] [
-    h4 [] [
-      (b [] [(text (user.login))])
+  div [class "col-xs-12 col-sm-6 col-md-4"] [
+    div [class "user"]
+    [ div[ class "row" ]
+      [ h4 [class "col-xs-12"]
+        [ span[class "fa fa-user user-icon"][]
+        , text user.login
+        ]
+      ]
+    , div[]
+      [ h6[] [ span[][text "RIGHTS"]]
+      , div[class "list-auths"] (displayAuth user.authz)
+      ]
     ]
-  , div[][(text (user.authz))]
   ]
-
-
+displayAuth: String -> List (Html Msg)
+displayAuth auth =
+  let
+    auths = String.split "," auth
+      |> List.map (\auth -> (span [class "auth"] [ text auth ]))
+  in
+    auths
 
 ------------------------------
 -- NOTIFICATIONS --
