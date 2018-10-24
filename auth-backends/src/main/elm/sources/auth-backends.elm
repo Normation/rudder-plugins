@@ -183,7 +183,6 @@ decodeRadiusConfig = decode RadiusConfig
   |> required "retries"     decodeConfigOption
   |> required "protocol"    decodeConfigOption
 
-
 ------------------------------
 -- UPDATE --
 ------------------------------
@@ -216,10 +215,10 @@ view: Model -> Html Msg
 view model =
   let
     content = case model.currentConfig of
-                Nothing     -> text "Waiting for data from server..."
-                Just config -> displayAuthConfig config
+      Nothing     -> text "Waiting for data from server..."
+      Just config -> displayAuthConfig config
   in
-    div [] [
+    div [class "row"] [
         content
       , div[class "toasties"][Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties]
     ]
@@ -227,42 +226,64 @@ view model =
 -- an utility that display a config option
 backendConfigOption: ConfigOption -> Html Msg
 backendConfigOption config =
-  div [ class "row", style [("margin", "10px")] ] [
-    span [class "col-md-12 text-info" ] [ text config.description ]
-  , span [class "col-md-4 col-offset-2"] [ text config.key ]
-  , span [class "col-md-1"] [ text ":" ]
-  , span [class "col-md-5"] [ text config.value ]
+  div [ class "row form-group" ]
+  [ div [class "text-info col-xs-12" ] [ text config.description ]
+  , div [class "col-xs-12"]
+    [ span [class "key"] [ text config.key ]
+    , span [class "sep"] [ text ":" ]
+    , span [class "val"] [ text config.value ]
+    ]
   ]
 
 displayBackendId: String -> Html Msg
 displayBackendId id =
-  div [ class "row "] [
-    span [] [ b [] [text "Backend ID: "] ]
+  span [class "backend-id"] 
+  [ span [] [ text " - "]
+  , span [] [ b [] [text "Backend ID: "] ]
   , span [] [ text id ]
   ]
 
 backendDescription: String -> Html Msg
-backendDescription desc = p [ class "bs-callout bs-callout-info" ] [ text desc ]
+backendDescription desc = p [ class "col-xs-12 callout-fade callout-info" ]
+  [ div [class "marker"][span [class "glyphicon glyphicon-info-sign"][]]
+  , text desc
+  ]
 
-backendTitle: String -> Html Msg
-backendTitle title = h4 [ style [ ("margin", "40px 0 20px 0")] ] [ text title ]
+backendTitle: String -> String -> Html Msg
+backendTitle title providerId =
+  h4 []
+  [ text title 
+  , displayBackendId providerId
+  ]
 
 displayAuthConfig: AuthConfig -> Html Msg
 displayAuthConfig config =
-  div [ class "col-md-12" ] [
-    backendTitle "Currently configured provider sequence"
-  , div [ class "bs-callout bs-callout-info" ] [
-      p [] [ text """Rudder relies on authentication providers to decide if an user can log in
-                     into the application.
-                     When an user try to log in, each configured providers are tried in
-                     sequence to find if any allows the user log in.
-                     You can configure the sequence of tested provider with the configuration
-                     key 'rudder.auth.provider' which accept a comma-separated list of
-                     provider ID."""
+  div []
+  [ displayProvidConfig config
+  , displayAdminConfig  config.adminConfig
+  , displayFileConfig   config.fileConfig
+  , displayLdapConfig   config.ldapConfig
+  , displayRadiusConfig config.radiusConfig
+  ]
+
+displayProvidConfig: AuthConfig -> Html Msg
+displayProvidConfig config =
+  div [class "col-xs-12"]
+  [ h4[] [ text "Currently configured provider sequence" ]
+    , div [ class "col-xs-12 callout-fade callout-info" ]
+    [ div [class "marker"][span [class "glyphicon glyphicon-info-sign"][]]
+    , p [] [ text """Rudder relies on authentication providers to decide if an user can log in
+                   into the application.
+                   When an user tries to log in, all of the configured providers are tried in
+                   sequence to find if any allows the user log in.
+                   You can configure the sequence of tested provider with the configuration
+                   key 'rudder.auth.provider' which accept a comma-separated list of
+                   provider ID."""
       ]
-    , p [] [ text """By default, the 'file' provider is used, which correspond to the
-                     authentication configured in file '/opt/rudder/etc/rudder-users.xml'.
-                   """
+    , p []
+      [ text """By default, the 'file' provider is used, which correspond to the authentication configured in file"""
+      , b[][ text """ /opt/rudder/etc/rudder-users.xml"""]
+      , text "."
       ]
     , p [] [ text """A special provider can be added for a root admin. It's an hook to
                      alway let the possibility to have at least one access in the application.
@@ -270,26 +291,22 @@ displayAuthConfig config =
                      tested first the root admin is enabled.
                   """]
     ]
-  , div [] [
-      h5 [] [ text "Configured list of providers"]
-    , p [ class "text-info" ] [ text "This is value of key 'rudder.auth.provider' as configured in 'rudder-web.properties'."]
-    , p [] [ span [class "bg-success", style [ ("padding", "5px"), ("margin", "2px")] ] [ text config.declaredProviders ] ]
+  , div [class "row form-group"] [
+      label [class "col-xs-12"] [ text "Configured list of providers"]
+    , div   [class "col-xs-12 text-info"] [ text "This is value of key 'rudder.auth.provider' as configured in 'rudder-web.properties'."]
+    , div   [class "col-xs-12 tag-list" ] [ span [class "tag"] [ text config.declaredProviders ] ]
     ]
-  , div [] [
-      h5 [] [ text "Computed list of providers"]
-    , p [ class "text-info" ] [ text "This is the list of providers actually used by Rudder, once hooks and plugin status are resolbed'"]
-    , ul [ class "list-inline" ] (config.computedProviders |> (List.map (\x -> li [ class "bg-success", style [ ("padding", "5px"), ("margin", "2px")] ] [text x])))
+  , div [class "row form-group"] [
+      label [class "col-xs-12"] [ text "Computed list of providers"]
+    , div   [class "col-xs-12 text-info"] [ text "This is the list of providers actually used by Rudder, once hooks and plugin status are resolbed."]
+    , div   [class "col-xs-12 tag-list" ] (config.computedProviders |> (List.map (\x -> span [class "tag"] [text x])))
     ]
-  , displayAdminConfig  config.adminConfig
-  , displayFileConfig   config.fileConfig
-  , displayLdapConfig   config.ldapConfig
-  , displayRadiusConfig config.radiusConfig
   ]
 
 displayAdminConfig: AdminConfig -> Html Msg
 displayAdminConfig admin =
-  div [] [
-    backendTitle "Root Admin account"
+  div [class "col-xs-12"] [
+    h4 [] [ text "Root Admin account" ]
   , backendDescription  admin.description
   , backendConfigOption admin.login
   , backendConfigOption admin.password
@@ -298,22 +315,21 @@ displayAdminConfig admin =
 
 displayFileConfig: FileConfig -> Html Msg
 displayFileConfig file =
-  div [] [
-    backendTitle "File backend"
+  div [class "col-xs-12"] [
+    backendTitle "File backend" file.providerId
   , backendDescription file.description
-  , displayBackendId   file.providerId
   , p [] [
-      span [] [ text "Path towards authentication file: " ]
-    , span [] [ text file.filePath ]
+      span [class "key"] [ text "Path towards authentication file" ]
+    , span [class "sep"] [ text ":" ]
+    , span [class "val"] [ text file.filePath ]
     ]
   ]
 
 displayLdapConfig: LdapConfig -> Html Msg
 displayLdapConfig ldap =
-  div [] [
-    backendTitle "LDAP or AD backend configuration"
+  div [class "col-xs-12"] [
+    backendTitle "LDAP or AD backend configuration" ldap.providerId
   , backendDescription  ldap.description
-  , displayBackendId    ldap.providerId
   , backendConfigOption ldap.ldapUrl
   , backendConfigOption ldap.bindDn
   , backendConfigOption ldap.bindPassword
@@ -323,10 +339,9 @@ displayLdapConfig ldap =
 
 displayRadiusConfig: RadiusConfig -> Html Msg
 displayRadiusConfig radius =
-  div [] [
-    backendTitle "Radius configuration"
+  div [class "col-xs-12"] [
+    backendTitle "Radius configuration" radius.providerId
   , backendDescription  radius.description
-  , displayBackendId    radius.providerId
   , backendConfigOption radius.hostName
   , backendConfigOption radius.hostPort
   , backendConfigOption radius.secret
@@ -356,7 +371,6 @@ getErrorMessage e =
   in
     errMessage
 
-
 defaultConfig : Toasty.Config Msg
 defaultConfig =
   Toasty.Defaults.config
@@ -376,7 +390,6 @@ defaultConfig =
 
 tempConfig : Toasty.Config Msg
 tempConfig = defaultConfig |> Toasty.delay 3000
-
 
 addTempToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 addTempToast toast ( model, cmd ) =
