@@ -159,11 +159,13 @@ def addHostOnRudderHook(rudderID, poller):
         Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
 
 def delHostOnRudderHook(rudderID):
-    centreon_hosts = Host()
-    if any(h['name'] == rudderID for h in centreon_hosts.list()['result']):
-        centreon_hosts.disable(rudderID)
-        centreon_hosts.delete(rudderID)
-        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+   data = getRequestToRudderAPI("/nodes/" + rudderID)
+   node = dictifyNode(data['data']['nodes'][0])
+   centreon_hosts = Host()
+   if any(h['name'] == node['hostname'] for h in centreon_hosts.list()['result']):
+       centreon_hosts.disable(node['hostname'])
+       centreon_hosts.delete(node['hostname'])
+       Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
 
 #When we add a template, we register it to prevent us from deleting templates we did not add when they do not appear in Rudder
 def registerTemplate(node, template, register):
