@@ -423,7 +423,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   "querying a lot of nodes" should {
 
-    val nodes = (NodeConfigData.root :: List.fill(1000)(NodeConfigData.node1).zipWithIndex.map { case (n,i) =>
+    // test on 100 nodes. With 30s timeout, even on small hardware it will be ok.
+    val nodes = (NodeConfigData.root :: List.fill(100)(NodeConfigData.node1).zipWithIndex.map { case (n,i) =>
       val name = "node"+i
       n.copy(node = n.node.copy(id = NodeId(name), name = name), hostname = name+".localhost")
     }).map( n => (n.id, n)).toMap
