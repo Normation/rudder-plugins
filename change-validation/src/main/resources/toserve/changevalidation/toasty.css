@@ -9,12 +9,11 @@
 }
 
 .toasty-title {
-    font-size: 1em;
+    font-size: 36px;
     margin: 0
 }
-
-.toasty-message {
-    font-size: .9em;
+ .toasty-message {
+    font-size: 14px;
     margin-top: .5em;
     margin-bottom: 0
 }

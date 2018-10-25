@@ -12,6 +12,7 @@ import Http exposing (..)
 import Json.Encode as E
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing(..)
+import Regex
 
 ------------------------------
 -- SUBSCRIPTIONS
@@ -220,12 +221,14 @@ updateTarget target cat =
 
 view: Model -> Html Msg
 view model =
-  div [] [
-      div [] [(displayCategory model.allTargets)]
-    , div [] [
-        button [onClick SendSave] [text "Save"]
+  div []
+  [ div[class "row"]
+    [ div [class "col-xs-12"]
+      [ (displayCategory model.allTargets)
+      , div[ class "panel-footer" ] [ button [onClick SendSave, class "btn btn-success pull-right"] [text "Save"] ]
       ]
-    , div[class "toasties"][Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties]
+    ]
+  , div[class "toasties"][Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties]
   ]
 
 
@@ -236,33 +239,49 @@ displaySubcategories (Subcategories categories) =
 displayCategory: Category -> Html Msg
 displayCategory category =
   let
+    subcats : List (Html Msg)
     subcats = displaySubcategories category.categories
-    targets = category.targets    |> List.map (\target -> displayTarget target)
+    targets : List (Html Msg)
+    targets = category.targets |> List.map (\target -> displayTarget target)
+    htmlId = String.toLower category.name |> String.filter isAlphanumeric
+    listGroupHeadingId = "list-group-heading-"++htmlId
+    listGroupId        = "list-group-"++htmlId
   in
-    li [] (
-      h3 [] [ (text category.name) ] ::
-      (ul [] subcats) ::
-      targets
-    )
+    div[class "panel-group"]
+    [ div[class "panel panel-default"]
+      [ div [class "panel-heading", Html.Attributes.id listGroupHeadingId]
+        [ h4 [class "panel-title"]
+          [ a [Html.Attributes.href ("#"++listGroupId), Html.Attributes.attribute "role" "button", Html.Attributes.attribute "data-toggle" "collapse", Html.Attributes.attribute "aria-expanded" "true", Html.Attributes.attribute "aria-controls" listGroupId ]
+            [ span [class "fa fa-folder"] []
+            , text category.name
+            ]
+          ]
+        ]
+    , div[class "panel-collapse collapse in", Html.Attributes.id listGroupId, Html.Attributes.attribute "role" "tabpanel", Html.Attributes.attribute "aria-labelledby" listGroupHeadingId, Html.Attributes.attribute "aria-expanded" "true"]
+      ( List.append subcats [ ul [ class "list-group" ] targets ])
+    ]
+  ]
 
 displayTarget: Target -> Html Msg
 displayTarget target =
-  li [ (style [("padding", "10px")]) ] [
-    div [] [
-        (b [] [(text target.name)])
-      , (input [
-              type_ "checkbox"
-            , style [("margin", "0 0 -5px 15px")]
-            , checked target.supervised
-            , onClick (UpdateTarget {target| supervised = not target.supervised })
-            ]
-            []
-        )
-    ]
-  , div[][
-      if not (String.isEmpty target.description) then
-        (span [style [("margin", "5px")]] [(text target.description)])
-      else (text "")
+  li [ class "list-group-item" ] [
+    label [ class "node" ]
+    [ div [ class "node-name" ]
+      [ span [ class "fa fa-sitemap" ] []
+      , text target.name ]
+    , div [ class "node-desc" ] [
+        if not (String.isEmpty target.description) then
+          (text target.description)
+        else (text "")
+      ]
+    , label [ class "node-check" ]
+      [ input
+        [ type_ "checkbox"
+        , checked target.supervised
+        , onClick (UpdateTarget {target| supervised = not target.supervised })
+        ] []
+      , span [ class "ion ion-checkmark-round" ] []
+      ]
     ]
   ]
 
@@ -306,7 +325,7 @@ defaultConfig =
     ]
 
 tempConfig : Toasty.Config Msg
-tempConfig = defaultConfig |> Toasty.delay 3000
+tempConfig = defaultConfig |> Toasty.delay 300000
 
 
 addTempToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
@@ -328,3 +347,17 @@ createErrorNotification message e =
 createDecodeErrorNotification : String -> String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 createDecodeErrorNotification message e =
   addToast (Toasty.Defaults.Error "Error..." (message ++ " ("++(e)++")"))
+
+------------------------------
+-- HELPERS
+------------------------------
+
+alphanumericRegex =
+  Regex.regex "^[A-Za-z0-9]*$"
+
+isAlphanumeric : Char -> Bool
+isAlphanumeric c =
+  let
+    str = String.fromChar c
+  in
+    Regex.contains alphanumericRegex str
