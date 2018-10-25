@@ -76,15 +76,6 @@ class RestDataSourceTest extends Specification with Loggable {
     }
   }
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
-  val dataSourceApi9 = new DataSourceApiImpl(
-      RestTestSetUp.restExtractorService
-    , RestTestSetUp.restDataSerializer
-    , dataSourceRepository
-    , null
-    , null
-    , RestTestSetUp.uuidGen
-  )
-
 
   // TODO: Test API in Rudder 4.3
   // this need to be ported to new way of doing API tests
