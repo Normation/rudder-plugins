@@ -8,16 +8,14 @@ Automation & Compliance.
 
 See: http://rudder-project.org for more information.
 
-
 // Everything after this line goes into Rudder documentation
 // ====doc====
 
-
-=== Description
+= Authentication backends
 
 This plugins allows to use alternative authentication backends for Rudder: LDAP/AD and radius.
 
-==== Configure enabled backends
+=== Configure enabled backends
 
 By default, both authentication and authorization are handle in the `rudder-users.xml`
 file. But you may want to rely on your existing entreprise Active Directory or LDAP
@@ -41,7 +39,7 @@ in `ldap`, fall-back in file authentication, you will specify:
 rudder.auth.provider=ldap,file
 ```
 
-==== LDAP / AD backend
+=== LDAP / AD backend
 
 The configuration properties that need to be added in
 /opt/rudder/etc/rudder-web.properties file to configure the LDAP or AD
@@ -128,7 +126,7 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 ---- end of add in rudder-web.properties ----
 ```
 
-==== Radius backend
+=== Radius backend
 
 Below follow the configuration properties that need to be added in
 `/opt/rudder/etc/rudder-web.properties` file to configure the Radius
