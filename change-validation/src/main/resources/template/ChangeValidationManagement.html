@@ -94,29 +94,32 @@
       <div class="inner-portlet">
         <div class="page-title">Configure Groups with Change Validations</div>
         <div class="portlet-content">
-          <div class="col-xs-12 callout-fade callout-warning">
-            <div class="marker">
-              <span class="glyphicon glyphicon-info-sign"></span>
+          <div class="row">
+            <div class="col-xs-12">
+              <div class="callout-fade callout-warning">
+                <div class="marker">
+                  <span class="glyphicon glyphicon-info-sign"></span>
+                </div>
+                <p>
+                  Change validation are enable only for nodes belonging to chosen groups below: click the
+                  checkbox to force any modification impacting a node in the corresponding group to go through a
+                  change request and validation workflow.
+                </p>
+                <p>
+                  The supervised changes are:
+                <ul>
+                  <li>any change in a global parameter, as these change can have side effects spreading technique code,</li>
+                  <li>any modification in one of the supervised groups,</li>
+                  <li>any change in a rule which targets a node which belong to a group marked as supervised,</li>
+                  <li>any change in a directive used in one of the previous rules.</li>
+                </ul>
+                </p>
+                <p>
+                  Changes in techniques are not subjected to change validation, nor are changes resulting from an archive import.
+                </p>
+              </div>
             </div>
-            <p>
-              Change validation are enable only for nodes belonging to chosen groups below: click the
-              checkbox to force any modification impacting a node in the corresponding group to go through a
-              change request and validation workflow.
-            </p>
-            <p>
-              The supervised changes are:
-              <ul>
-                <li>any change in a global parameter, as these change can have side effects spreading technique code,</li>
-                <li>any modification in one of the supervised groups,</li>
-                <li>any change in a rule which targets a node which belong to a group marked as supervised,</li>
-                <li>any change in a directive used in one of the previous rules.</li>
-              </ul>
-            </p>
-            <p>
-              Changes in techniques are not subjected to change validation, nor are changes resulting from an archive import.
-            </p>
           </div>
-
           <div id="supervised-targets-app"></div>
           <script>
             var node = document.getElementById("supervised-targets-app");
