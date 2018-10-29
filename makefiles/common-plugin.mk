@@ -8,5 +8,5 @@ include ../makefiles/common.mk
 std-files:
 
 licensed-files:
-	echo "License not supported for this kind of plugin" && /bin/false
+	echo "License not supported for this kind of plugin, building without license"
 
