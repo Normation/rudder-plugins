@@ -62,7 +62,7 @@ object DataSourceJsonSerializer{
         ( ( "name" -> source.sourceType.name )
         ~ ( "parameters" -> {
             source.sourceType match {
-              case DataSourceType.HTTP(url, headers, method, params, checkSsl, path, mode, timeOut, missing) =>
+              case DataSourceType.HTTP(url, headers, method, params, checkSsl, path, maxReq, mode, timeOut, missing) =>
                 ( ( "url"            -> url     )
                 ~ ( "headers"        -> headers.map{
                   case (name,value) => ("name" -> name) ~ ("value" -> value)
@@ -72,6 +72,7 @@ object DataSourceJsonSerializer{
                 } )
                 ~ ( "path"           -> path    )
                 ~ ( "checkSsl"       -> checkSsl)
+                ~ ( "maxParallelReq" -> maxReq )
                 ~ ( "requestTimeout" -> timeOut.toSeconds )
                 ~ ( "requestMethod"  -> method.name )
                 ~ ( "requestMode"    ->
@@ -142,13 +143,14 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   , params         : M[Map[String,String]]
   , sslCheck       : M[Boolean]
   , path           : M[String]
+  , maxParallelReq : M[Int]
   , requestMode    : M[HttpRequestMode]
   , requestTimeout : M[FiniteDuration]
   , onMissing      : M[MissingNodeBehavior]
   ) {
     def to = {
-      monad.map9(url, headers, httpMethod, params, sslCheck, path, requestMode, requestTimeout, onMissing){
-        case (a,b,c,d,e,f,g,h,i) => DataSourceType.HTTP(a,b,c,d,e,f,g,h,i)
+      monad.map10(url, headers, httpMethod, params, sslCheck, path, maxParallelReq, requestMode, requestTimeout, onMissing){
+        case (a,b,c,d,e,f,g,h,i,j) => DataSourceType.HTTP(a,b,c,d,e,f,g,h,i,j)
       }
     }
     def withBase (base : DataSourceType) : DataSourceType = {
@@ -161,6 +163,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             , getOrElse(params        , httpBase.params)
             , getOrElse(sslCheck      , httpBase.sslCheck)
             , getOrElse(path          , httpBase.path)
+            , getOrElse(maxParallelReq, httpBase.maxParallelRequest)
             , getOrElse(requestMode   , httpBase.requestMode)
             , getOrElse(requestTimeout, httpBase.requestTimeOut)
             , getOrElse(onMissing     , httpBase.missingNodeBehavior)
@@ -179,11 +182,11 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   , updateTimeout : M[FiniteDuration]
   ) {
     def to = {
-    val unwrapRunParam = monad.flatMap(runParam)(_.to)
-    val unwrapType = monad.flatMap(sourceType)(_.to)
-      monad.map6(name, unwrapType, unwrapRunParam, description, enabled, updateTimeout){
-        case (a,b,c,d,e,f) => DataSource(id,a,b,c,d,e,f)
-      }
+      val unwrapRunParam = monad.flatMap(runParam)(_.to)
+      val unwrapType = monad.flatMap(sourceType)(_.to)
+        monad.map6(name, unwrapType, unwrapRunParam, description, enabled, updateTimeout){
+          case (a,b,c,d,e,f) => DataSource(id,a,b,c,d,e,f)
+        }
     }
     def withBase (base : DataSource) = {
       val unwrapRunParam = monad.map(runParam)(_.withBase(base.runParam))
@@ -347,6 +350,10 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             path        <- extractJsonString(obj, "path")
             method      <- extractJsonString(obj, "requestMethod", {s => Box(HttpMethod.values.find( _.name == s))})
             checkSsl    <- extractJsonBoolean(obj, "checkSsl")
+            maxParReq   <- Full(monad.point(obj \ "maxParallelReq" match {
+                             case JInt(n) if(n > BigInt(0) || n < BigInt(Int.MaxValue)) => n.intValue()
+                             case _                                                     => DataSourceType.HTTP.defaultMaxParallelRequest // if not int or key absent => default value
+                           }))
             timeout     <- extractJsonBigInt(obj, "requestTimeout", extractDuration)
             params      <- extractNameValueObjectArray(obj, "params")
             headers     <- extractNameValueObjectArray(obj, "headers")
@@ -365,6 +372,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
               , paramsM
               , checkSsl
               , path
+              , maxParReq
               , unwrapMode
               , timeout
               , onMissing
@@ -374,15 +382,16 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
 
         for {
           parameters <- extractJsonObj(obj, "parameters", HttpDataSourceParameters)
-          url       = monad.flatMap(parameters)(_._1)
-          headers   = monad.flatMap(parameters)(_._2)
-          method    = monad.flatMap(parameters)(_._3)
-          params    = monad.flatMap(parameters)(_._4)
-          checkSsl  = monad.flatMap(parameters)(_._5)
-          path      = monad.flatMap(parameters)(_._6)
-          mode      = monad.flatMap(parameters)(_._7)
-          timeout   = monad.flatMap(parameters)(_._8)
-          onMissing = monad.flatMap(parameters)(_._9)
+          url       = monad.flatMap(parameters)(_. _1)
+          headers   = monad.flatMap(parameters)(_. _2)
+          method    = monad.flatMap(parameters)(_. _3)
+          params    = monad.flatMap(parameters)(_. _4)
+          checkSsl  = monad.flatMap(parameters)(_. _5)
+          path      = monad.flatMap(parameters)(_. _6)
+          maxParReq = monad.flatMap(parameters)(_. _7)
+          mode      = monad.flatMap(parameters)(_. _8)
+          timeout   = monad.flatMap(parameters)(_. _9)
+          onMissing = monad.flatMap(parameters)(_._10)
         } yield {
           DataSourceTypeWrapper(
               url
@@ -391,6 +400,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             , params
             , checkSsl
             , path
+            , maxParReq
             , mode
             , timeout
             , onMissing
