@@ -4,12 +4,12 @@
 *************************************************************************************
 *
 * This file is part of Rudder.
-* 
+*
 * Rudder is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
-* 
+*
 * In accordance with the terms of section 7 (7. Additional Terms.) of
 * the GNU General Public License version 3, the copyright holders add
 * the following Additional permissions:
@@ -22,12 +22,12 @@
 * documentation that, without modification of the Source Code, enables
 * supplementary functions or services in addition to those offered by
 * the Software.
-* 
+*
 * Rudder is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-* 
+*
 * You should have received a copy of the GNU General Public License
 * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -77,9 +77,9 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
         , 'requestTimeout' : convertFromSecond($scope.datasources[i].type.parameters.requestTimeout)
         };
         //This will need to be changed when Bug #10554 will be fixed
-        
+
         //we always to display a string for the default "onMissing" value (if exists). The backend will
-        //manage the correct parsing. 
+        //manage the correct parsing.
         if(typeof $scope.datasources[i].type.parameters.onMissing.value === 'object') {
           $scope.datasources[i].type.parameters.onMissing.value = JSON.stringify($scope.datasources[i].type.parameters.onMissing.value)
         }
@@ -120,7 +120,8 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
           "requestMethod":"GET",
           "requestMode":{"name":"byNode"},
           "url"     :"",
-          "onMissing": { "name":"delete"}
+          "onMissing": { "name":"delete"},
+          "maxParallelReq": 10
         }
   	  },
   	  "runParameters":{
@@ -142,7 +143,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
   	  "isNew":true
   	};
   }
-  
+
   $scope.updateKeyName = function(str){
     if($scope.selectedDatasource.isNew){
       if(str){
@@ -248,7 +249,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     el.parent().parent().find('.well').toggle();
   }
   adjustHeight($scope.treeId);
-  
+
 }]);
 
 function convertFromSecond(time) {

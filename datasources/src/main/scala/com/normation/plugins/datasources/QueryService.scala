@@ -230,7 +230,7 @@ class HttpQueryDataSourceService(
        * do hundreds of simultaneous requests to the output server (and that make tests on macos
        * fail, see: http://www.rudder-project.org/redmine/issues/10341)
        */
-      val semaphore = TaskSemaphore(maxParallelism = 50)
+      val semaphore = TaskSemaphore(maxParallelism = datasource.maxParallelRequest)
 
       Task.gatherUnordered(nodes.values.map { nodeInfo =>
         semaphore.greenLight(buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, parameters, cause))

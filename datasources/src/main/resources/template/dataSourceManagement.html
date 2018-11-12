@@ -174,6 +174,10 @@
                   <input type="number" class="form-control " id="updatetimeout-seconds" ng-min="0" ng-model="selectedDatasource.modifiedTimes.updateTimeout.second">
                   <label for="updatetimeout-seconds" class="input-group-addon">second<span ng-class="{'invisible' : selectedDatasource.modifiedTimes.updateTimeout.second<2}">s</span></label>
                 </div>
+                <label>Maximum number of parallel requests</label>
+                <div class="input-group group-update-frequency">
+                  <input type="number" class="form-control " id="maxParallelReq" ng-min="0" ng-model="selectedDatasource.type.parameters.maxParallelReq">
+                </div>
               </div>
             </div>
             <div class="form-group">

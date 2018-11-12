@@ -38,8 +38,9 @@
 package com.normation.plugins.datasources.api
 
 import com.normation.plugins.datasources._
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.SECONDS
 
+import com.normation.rudder.rest.RestTestSetUp
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -48,11 +49,13 @@ import net.liftweb.http.JsonResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST._
+import net.liftweb.json.JsonParser
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 
 
@@ -78,17 +81,17 @@ class RestDataSourceTest extends Specification with Loggable {
   // TODO: Test API in Rudder 4.3 & up
   // this need to be ported to new way of doing API tests
 
-  //  val dataSourceApi9 = new DataSourceApiImpl(
-//      RestTestSetUp.restExtractorService
-//    , RestTestSetUp.restDataSerializer
-//    , dataSourceRepository
-//    , null
-//    , null
-//    , RestTestSetUp.uuidGen
-//  )
-//   RestTestSetUp.api.addEndpoints(Map(ApiVersion(9, false) -> (dataSourceApi9 :: Nil)))
+    val dataSourceApi9 = new DataSourceApiImpl(
+      RestTestSetUp.restExtractorService
+    , RestTestSetUp.restDataSerializer
+    , datasourceRepo
+    , null
+    , null
+    , RestTestSetUp.uuidGen
+  )
+  RestTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
 
-  val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", HttpRequestMode.OneRequestByNode, DataSource.defaultDuration, MissingNodeBehavior.Delete)
+  val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", DataSourceType.HTTP.defaultMaxParallelRequest, HttpRequestMode.OneRequestByNode, DataSource.defaultDuration, MissingNodeBehavior.Delete)
   val baseRunParam  = DataSourceRunParameters(DataSourceSchedule.NoSchedule(DataSource.defaultDuration), false,false)
 
   val datasource1 = DataSource(DataSourceId( "datasource1"), DataSourceName(""), baseSourceType, baseRunParam, "", false, DataSource.defaultDuration)
@@ -103,7 +106,7 @@ class RestDataSourceTest extends Specification with Loggable {
   val dataSource2Updated = datasource2.copy(
       description = "new description"
     , sourceType = baseSourceType.copy(headers = Map( ("new header 1" -> "new value 1") , ("new header 2" -> "new value 2")))
-    , runParam = baseRunParam.copy(DataSourceSchedule.Scheduled(Duration(70, TimeUnit.SECONDS))))
+    , runParam = baseRunParam.copy(DataSourceSchedule.Scheduled(Duration(70, SECONDS))))
   val d2updatedJson = DataSourceJsonSerializer.serialize(dataSource2Updated)
 
   val d2modJson = {
@@ -135,103 +138,181 @@ class RestDataSourceTest extends Specification with Loggable {
 
   sequential
 
-  "Data source api" should {
+  "Serialisation then deserialisation" should {
 
-    "test backend serialization" in {
-       val result = DataSourceExtractor.CompleteJson.extractDataSource(datasource1.id, DataSourceJsonSerializer.serialize(datasource1))
+    "be isomorphic" in {
+      DataSourceExtractor.CompleteJson.extractDataSource(datasource1.id, d1Json) must_===( Full(datasource1))
+    }
+  }
 
-       result must beEqualTo(Full(datasource1))
+  "Deserialization" should {
+
+    val sourceType = DataSourceType.HTTP(
+        "http://jsonplaceholder.typicode.com/posts/1000"
+      , Map("Accept" -> "application/json")
+      , HttpMethod.GET
+      , Map()
+      , false
+      , "result.environment"
+      , DataSourceType.HTTP.defaultMaxParallelRequest
+      , HttpRequestMode.OneRequestByNode
+      , FiniteDuration(194, SECONDS)
+      , MissingNodeBehavior.Delete
+    )
+    val source =  DataSource(
+        DataSourceId( "source")
+      , DataSourceName("source")
+      , sourceType
+      , DataSourceRunParameters(
+          DataSourceSchedule.Scheduled(FiniteDuration(4921, SECONDS))
+        , onGeneration = true
+        , onNewNode    = false
+      )
+      , ""
+      , enabled = true
+      , FiniteDuration(165, SECONDS)
+    )
+
+
+    def getJson(moreParam: String) = s"""{
+              "name":"source"
+            , "id":"source"
+            , "description":""
+            , "type":{
+                "name":"HTTP"
+              , "parameters":{
+                  "url":"http://jsonplaceholder.typicode.com/posts/1000"
+                , "headers":[{"name":"Accept","value":"application/json"}]
+                , "params":[]
+                , "path":"result.environment"
+                $moreParam
+                , "checkSsl":false
+                , "requestTimeout":194
+                , "requestMethod":"GET"
+                , "requestMode":{"name":"byNode"}
+                , "onMissing":{"name":"delete"}
+                }
+              }
+            , "runParameters":{
+                "onGeneration":true
+              , "onNewNode":false
+              , "schedule":{"type":"scheduled","duration":4921}
+              }
+            , "updateTimeout":165
+            , "enabled":true
+
+            }"""
+
+    "accept datasource without a max number of parallel request" in {
+      val json = getJson("")
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(source) )
+
     }
 
-//    "Get all base data source" in {
-//      RestTestSetUp.testGET("/api/latest/datasources") { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//       } yield {
-//         data
-//       }
-//
-//       result must beEqualTo(Full(d1Json :: Nil))
-//      }
-//    }
-//
-//    "Accept new data source as json" in {
-//      RestTestSetUp.testPUT("/api/latest/datasources", d2Json) { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//       } yield {
-//         data
-//       }
-//
-//       result must beEqualTo(Full(d2Json :: Nil))
-//      }
-//    }
-//
-//    "List new data source" in {
-//      RestTestSetUp.testGET("/api/latest/datasources") { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//
-//       } yield {
-//         data
-//       }
-//       result.getOrElse(Nil) must contain( exactly(d1Json , d2Json))
-//      }
-//    }
-//
-//    "Accept modification as json" in {
-//      RestTestSetUp.testPOST(s"/api/latest/datasources/${datasource2.id.value}", d2modJson) { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//       } yield {
-//         data
-//       }
-//
-//       result must beEqualTo(Full(d2updatedJson :: Nil))
-//      }
-//    }
-//
-//    "Get updated data source" in {
-//      RestTestSetUp.testGET(s"/api/latest/datasources/${datasource2.id.value}") { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//
-//       } yield {
-//         data
-//       }
-//       result.getOrElse(Nil) must contain( exactly( d2updatedJson))
-//      }
-//    }
-//
-//    "Delete the newly added data source" in {
-//      RestTestSetUp.testDELETE(s"/api/latest/datasources/${datasource2.id.value}") { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//
-//       } yield {
-//         data
-//       }
-//       result must beEqualTo(Full(d2DeletedJson :: Nil))
-//      }
-//    }
-//
-//    "Be removed from list of all data sources" in {
-//      RestTestSetUp.testGET("/api/latest/datasources") { req =>
-//       val result = for {
-//         answer <- RestTestSetUp.api(req)()
-//         data <- extractDataFromResponse(answer, "datasources")
-//
-//       } yield {
-//         data
-//       }
-//       result.getOrElse(Nil) must contain( exactly(d1Json))
-//      }
-//    }
+    "accept datasource with a max number of parallel request" in {
+      val json = getJson(""", "maxParallelReq":42 """)
+      val expected = source.copy(sourceType = sourceType.copy(maxParallelRequest = 42))
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(expected) )
+
+    }
+
+  }
+
+
+  "Data source api" should {
+
+
+    "Get all base data source" in {
+      RestTestSetUp.testGET("/api/latest/datasources") { req =>
+        val result = for {
+          answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+          data   <- extractDataFromResponse(answer, "datasources")
+        } yield {
+          data
+        }
+
+        result must beEqualTo(Full(d1Json :: Nil))
+      }
+    }
+
+    "Accept new data source as json" in {
+      RestTestSetUp.testPUT("/api/latest/datasources", d2Json) { req =>
+       val result = for {
+         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         data   <- extractDataFromResponse(answer, "datasources")
+       } yield {
+         data
+       }
+
+       result must beEqualTo(Full(d2Json :: Nil))
+      }
+    }
+
+    "List new data source" in {
+      RestTestSetUp.testGET("/api/latest/datasources") { req =>
+       val result = for {
+         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         data   <- extractDataFromResponse(answer, "datasources")
+
+       } yield {
+         data
+       }
+       result.getOrElse(Nil) must contain( exactly(d1Json , d2Json))
+      }
+    }
+
+    "Accept modification as json" in {
+      RestTestSetUp.testPOST(s"/api/latest/datasources/${datasource2.id.value}", d2modJson) { req =>
+       val result = for {
+         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         data   <- extractDataFromResponse(answer, "datasources")
+       } yield {
+         data
+       }
+
+       result must beEqualTo(Full(d2updatedJson :: Nil))
+      }
+    }
+
+    "Get updated data source" in {
+      RestTestSetUp.testGET(s"/api/latest/datasources/${datasource2.id.value}") { req =>
+       val result = for {
+         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         data   <- extractDataFromResponse(answer, "datasources")
+
+       } yield {
+         data
+       }
+       result.getOrElse(Nil) must contain( exactly( d2updatedJson))
+      }
+    }
+
+    "Delete the newly added data source" in {
+      RestTestSetUp.testDELETE(s"/api/latest/datasources/${datasource2.id.value}") { req =>
+       val result = for {
+         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         data   <- extractDataFromResponse(answer, "datasources")
+
+       } yield {
+         data
+       }
+       result must beEqualTo(Full(d2DeletedJson :: Nil))
+      }
+    }
+
+    "Be removed from list of all data sources" in {
+      RestTestSetUp.testGET("/api/latest/datasources") { req =>
+       val result = for {
+         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         data   <- extractDataFromResponse(answer, "datasources")
+
+       } yield {
+         data
+       }
+       result.getOrElse(Nil) must contain( exactly(d1Json))
+      }
+    }
   }
 }

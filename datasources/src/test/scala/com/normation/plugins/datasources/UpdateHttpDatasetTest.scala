@@ -50,7 +50,6 @@ import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.parameters.ParameterName
-import com.normation.rudder.domain.queries. {NodeInfoMatcher, CriterionComposition}
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
@@ -62,7 +61,6 @@ import monix.execution.schedulers.TestScheduler
 import net.liftweb.common._
 import net.liftweb.json.JsonAST.JString
 import net.liftweb.json.JsonAST.JValue
-import org.http4s._
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.util._
 import org.junit.runner.RunWith
@@ -75,11 +73,14 @@ import org.specs2.runner.JUnitRunner
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
-import cats.effect._
 import com.normation.rudder.domain.queries.CriterionComposition
 import com.normation.rudder.domain.queries.NodeInfoMatcher
 import fs2.Stream._
+import org.http4s.HttpService
+import cats.effect._
+import org.http4s._
 import org.http4s.dsl.io._
+
 
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
@@ -97,6 +98,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     //for debuging - of course works correctly only if sequential
     val counterError   = AtomicInt(0)
     val counterSuccess = AtomicInt(0)
+    val maxPar = AtomicInt(0)
 
     // an fs2 scheduler
     val scheduler = fs2.Scheduler[IO](1)
@@ -191,13 +193,39 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           }
         }
     }
+
+    def ioCountService(implicit F: cats.effect.Async[IO]): IO[HttpService[IO]] = {
+      for {
+        currentConcurrent <- fs2.async.refOf[IO, Int](0)
+        maxConcurrent     <- fs2.async.refOf[IO, Int](0)
+        service           <- IO.pure(HttpService[IO] {
+                               case GET -> Root / x =>
+                                 for {
+                                   - <- currentConcurrent.modify(_ + 1)
+                                   c <- currentConcurrent.get
+                                   _ <- maxConcurrent.modify(m => if(c > m) c else { maxPar.set(m) ; m})
+                                   m <- maxConcurrent.get
+                                   x <- Ok { nodeJson(x) }
+                                   _ <- currentConcurrent.modify(_ - 1)
+                                 } yield x
+                             } )
+      } yield service
+    }
+
   }
 
   //start server on a free port
-  val server = BlazeBuilder.apply[IO].bindAny()
-      .withConnectorPoolSize(1) //to make the server slow and validate that it still works
-      .mountService(NodeDataset.service, "/datasources")
-      .start.unsafeRunSync
+  val server =
+    (for {
+      count  <- NodeDataset.ioCountService
+      server <- BlazeBuilder.apply[IO].bindAny()
+        .withConnectorPoolSize(1) //to make the server slow and validate that it still works
+        .mountService(NodeDataset.service, "/datasources")
+        .mountService(count, "/datasources/parallel")
+        .start
+    } yield {
+      server
+    }).unsafeRunSync
 
   val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
 
@@ -262,6 +290,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     , Map()
     , true
     , "CHANGE MY PATH"
+    , DataSourceType.HTTP.defaultMaxParallelRequest
     , HttpRequestMode.OneRequestByNode
     , 30.second
     , MissingNodeBehavior.Delete
@@ -289,8 +318,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     , params   : Map[String, String] = httpDatasourceTemplate.params
     , headers  : Map[String, String] = httpDatasourceTemplate.headers
     , onMissing: MissingNodeBehavior = httpDatasourceTemplate.missingNodeBehavior
+    , maxPar   : Int                 = httpDatasourceTemplate.maxParallelRequest
   ) = {
-    val http = httpDatasourceTemplate.copy(url = url, path = path, httpMethod = method, params = params, headers = headers, missingNodeBehavior = onMissing)
+    val http = httpDatasourceTemplate.copy(url = url, path = path, httpMethod = method, params = params, headers = headers
+      , missingNodeBehavior = onMissing, maxParallelRequest = maxPar)
     val run  = datasourceTemplate.runParam.copy(schedule = schedule)
     datasourceTemplate.copy(id = DataSourceId(name), sourceType = http, runParam = run)
 
@@ -437,6 +468,27 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , noPostHook
     )
 
+    def maxParDataSource(n: Int) = NewDataSource(
+          "test-lot-of-nodes-max-parallel-GET"
+        , url  = s"${REST_SERVER_URL}/parallel/$${rudder.node.id}"
+        , path = "$.hostname"
+        , headers = Map( "nodeId" -> "${rudder.node.id}" )
+        , maxPar = n
+      )
+
+    "comply with the limit of parallel queries" in {
+      val MAX_PARALLEL = 2
+      val ds = maxParDataSource(MAX_PARALLEL)
+      val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+      //all node updated one time
+      infos.updates.clear()
+      NodeDataset.reset()
+      val res = http.queryAll(ds, UpdateCause(modId, actor, None))
+
+      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
+        NodeDataset.counterError.get must_===  0
+      ) and (NodeDataset.maxPar.get must_===  MAX_PARALLEL)
+    }
 
     "work even if nodes don't reply at same speed with GET" in {
       val ds = NewDataSource(
@@ -453,7 +505,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
-      ) and (NodeDataset.counterError.get === 0) and (NodeDataset.counterSuccess.get === nodeIds.size)
+      ) and (NodeDataset.counterError.get must_=== 0) and (NodeDataset.counterSuccess.get must_=== nodeIds.size)
     }
 
     "work even if nodes don't reply at same speed with POST" in {
@@ -473,7 +525,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
-      ) and (NodeDataset.counterError.get === 0) and (NodeDataset.counterSuccess.get === nodeIds.size)
+      ) and (NodeDataset.counterError.get must_=== 0) and (NodeDataset.counterSuccess.get must_=== nodeIds.size)
     }
 
     "work for odd node even if even nodes fail" in {
@@ -596,11 +648,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
       val nodeIds = nodes.keySet
-      res mustFullEq(nodeIds.map(n =>  if(expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n))) and (
+      (res mustFullEq(nodeIds.map(n =>  if(expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n)))) and (
         if(expectMod) {
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         } else {
-          true === true
+          true must_=== true
         }
       ) and ({
         //none should have "test-404"

@@ -100,6 +100,7 @@ final object DataSourceType {
 
   final object HTTP {
     val name = "HTTP"
+    val defaultMaxParallelRequest = 10
   }
 
   final case class HTTP (
@@ -109,6 +110,7 @@ final object DataSourceType {
     , params             : Map[String, String] // query params for GET, form params for POST
     , sslCheck           : Boolean
     , path               : String
+    , maxParallelRequest : Int                 // maximum number of output parallel requests
     , requestMode        : HttpRequestMode
     , requestTimeOut     : FiniteDuration
     , missingNodeBehavior: MissingNodeBehavior
