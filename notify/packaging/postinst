@@ -6,14 +6,51 @@ CONFFILE="/opt/rudder/etc/notify.conf"
 if [ ! -f "${CONFFILE}" ]
 then
   cat > "${CONFFILE}" <<EOF
+# Left blank after = for no filter
+# Filters are not combinated, if a report matches a filter
+# It will be parsed except if empty
+[FILTERS]
+nodeFilter =
+ruleFilter =
+directiveFilter =
+
 [MAIL]
-on = true
+on = false
 nospam = true
 batch_period = 0d0h1m
 recipients = <email addresses, separated by spaces>
 
 [SLACK]
-on = true
+on = false
 webhooks = <slack webhooks, separated by spaces>
+
+[GLPI]
+on = false
+userToken = <user token>
+apiToken = <api token>
+url = <API url>
+
+EOF
+fi
+
+SYSTEMDFILE="/etc/systemd/system/rudder-notify.service"
+
+# create systemd service
+if [ ! -f "${SYSTEMDFILE}" ]
+then
+  cat > "${SYSTEMDFILE}" <<EOF
+[Unit]
+Description=Rudder Notification Plugin
+
+[Service]
+User=root
+WorkingDirectory=/opt/rudder/share/python
+
+Restart=on-failure
+ExecStart=/usr/bin/python /opt/rudder/share/python/notifyd.py
+
+[Install]
+WantedBy=multi-user.target
+
 EOF
 fi
