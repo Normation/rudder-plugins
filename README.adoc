@@ -13,7 +13,7 @@ that repository or directly from the file system.
 Once `g8` command is installed (see http://www.foundweekends.org/giter8/setup.html), use: 
 
 ```
-% g8 file://.                                                                                                     [18-07-06 18:47:53]
+% g8 file://.
 ```
 You can alos use the github resolution:
 
@@ -59,19 +59,23 @@ corresponding Rudder version:
 
 ```
 - master (plugin compatible with Rudder next version, i.e developing branch)
-- branches/rudder/3.1 (plugins compatible with Rudder 3.1)
-- branches/rudder/4.1 (plugins compatible with Rudder 4.1)
+- branches/rudder/5.0 (plugins compatible with Rudder 5.0)
+- branches/rudder/5.1 (plugins compatible with Rudder 5.1)
 - etc
 ```
 
 This branch scheme allows to accomodate API changes between main Rudder versions.
 
 Most of the time, there is no need to recompile a plugin for the corresponding Rudder minor version, so that
-plugins compiled on branch `branches/rudder/4.1` should be compatible with all Rudder 4.1.x versions.
+plugins compiled on branch `branches/rudder/5.1` should be compatible with all Rudder 5.1.x versions.
 
 It may happens that at some point in the Rudder maintenance cycle, a Rudder minor version introduces a
 breaking change in a plugin API or a binary incompability in a plugin ABI. In such a case, we will
 explain which plugin versions are compatible with which Rudder versions in plugin readme file.
+
+=== Summary of binary compatibility for Rudder 5.0 branch
+
+Please see file: version-compat.adoc
 
 Plugin version and Tag convention
 ---------------------------------
