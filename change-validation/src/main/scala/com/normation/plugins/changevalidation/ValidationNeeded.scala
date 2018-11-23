@@ -136,11 +136,13 @@ class NodeGroupValidationNeeded(
     val start = System.currentTimeMillis()
     val res = for {
       rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId)))
+      // we need to add potentially new rules applied to that directive that the previous request does not cover
+      newRules  =  change.updatedRules
       monitored <- monitoredTargets()
       groups    <- groupLib.getFullGroupLibrary()
       nodeInfo  <- nodeInfoService.getAll()
     } yield {
-      checkNodeTargetByRule(groups, nodeInfo, monitored, rules.toSet)
+      checkNodeTargetByRule(groups, nodeInfo, monitored, (rules++newRules).toSet)
     }
     ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
     res
