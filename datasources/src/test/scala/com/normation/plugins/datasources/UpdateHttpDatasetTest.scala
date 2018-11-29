@@ -477,7 +477,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       )
 
     "comply with the limit of parallel queries" in {
-      val MAX_PARALLEL = 2
+      // Max paraallel is the minimum of 2 and the available thread on the machine
+      // So tests don't fait if the build machine has one core
+      val MAX_PARALLEL = Math.min(2, Runtime.getRuntime.availableProcessors)
       val ds = maxParDataSource(MAX_PARALLEL)
       val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
       //all node updated one time
