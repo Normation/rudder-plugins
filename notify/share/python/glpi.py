@@ -82,7 +82,6 @@ class glpiSession:
 
   def killSession(self):
     response = requests.get(self.baseUrl + '/killSession', headers=self.headers)
-    self.controlCode(['200'], response)
     exit()
 
   def openTicket(self, name, description):
