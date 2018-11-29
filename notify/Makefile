@@ -3,7 +3,7 @@
 # make licensed : will build a license limited version of the plugin
 #
 
-FILES = bin/ share/
+FILES = share/
 SCRIPTS = postinst
 
 include ../makefiles/common-plugin.mk
