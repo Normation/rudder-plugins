@@ -40,9 +40,12 @@ class NotifyWorker:
 
     def getFilters(self, filterName):
       try:
-        filt = (self.conf["FILTERS"][filterName]).split(',')
-        if isinstance(filt, list):
-          return filt
+        filters = (self.conf["FILTERS"][filterName]).split(',')
+        if isinstance(filters, list):
+          if all('' == filt or filt.isspace() for filt in filters):
+            return None
+          else:
+            return filters
         return None
       except:
         return None
