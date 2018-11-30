@@ -19,7 +19,7 @@ notifications and tickets opening in GLPI.
 == Installation
 
 * Your Rudder server must have python-requests and python-configparser
-installed.
+installed. (either by your favorite package manager or python module installer)
 * Install the package on the Rudder server :
   `/opt/rudder/bin/rudderpkg install-file <plugin>.rpkg`
 * Edit the configuration file in `/opt/rudder/etc/notify.conf`. This

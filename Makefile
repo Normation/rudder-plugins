@@ -10,7 +10,7 @@ PUB_LIBS =
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
-PLUGINS = api-authorizations auth-backends branding change-validation datasources helloworld node-external-reports scale-out-relay user-management vault glpi centreon
+PLUGINS = api-authorizations auth-backends branding change-validation datasources helloworld node-external-reports scale-out-relay user-management vault glpi centreon notify
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 
