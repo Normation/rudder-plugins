@@ -50,7 +50,7 @@ import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.parameters.ParameterName
-import com.normation.rudder.domain.queries. {NodeInfoMatcher, CriterionComposition}
+import com.normation.rudder.domain.queries.{CriterionComposition, NodeInfoMatcher}
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
@@ -76,6 +76,9 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
 import cats.effect._
+import com.normation.rudder.domain.policies.GlobalPolicyMode
+import com.normation.rudder.domain.policies.PolicyMode
+import com.normation.rudder.domain.policies.PolicyModeOverrides
 import fs2.Stream._
 import org.http4s.dsl.io._
 
@@ -296,6 +299,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   val noPostHook = (nodeIds: Set[NodeId], cause: UpdateCause) => ()
 
+  val alwaysEnforce = GlobalPolicyMode(PolicyMode.Enforce, PolicyModeOverrides.Always)
+
   object MyDatasource {
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
     val http = new HttpQueryDataSourceService(
@@ -304,6 +309,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , infos
       , interpolation
       , noPostHook
+      , () => Full(alwaysEnforce)
     )
     val uuidGen = new StringUuidGeneratorImpl()
   }
@@ -433,6 +439,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , infos
       , interpolation
       , noPostHook
+      , () => Full(alwaysEnforce)
     )
 
 
@@ -511,7 +518,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , path = "$.store.${node.properties[get-that]}"
     )
     "get the node" in  {
-      val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, Set(), 1.second, 5.seconds)
+      val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
 
       res mustFullEq(
           Some(DataSource.nodeProperty("test-get-one-node", compact("""{
@@ -531,7 +538,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
 
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook)
+    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => Full(alwaysEnforce))
 
 
     "correctly update all nodes" in {
@@ -577,7 +584,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     type PROPS = Map[NodeId, Option[JValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
       val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook)
+      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => Full(alwaysEnforce))
       val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
       val nodes = infos.getAll().openOrThrowException("test shall not throw")

@@ -40,7 +40,6 @@ package com.normation.plugins.datasources.api
 import com.normation.plugins.datasources._
 import java.util.concurrent.TimeUnit
 
-import bootstrap.rudder.plugin.DatasourcesConf.dataSourceRepository
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -54,7 +53,6 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 
 import scala.concurrent.duration.Duration
-import com.normation.rudder.rest.RestTestSetUp
 
 
 

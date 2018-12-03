@@ -40,19 +40,21 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.datasources._
+import com.normation.plugins.datasources.api.DataSourceApiImpl
+import com.normation.rudder.batch.AsyncDeploymentAgent
+import com.normation.rudder.batch.AutomaticStartDeployment
+import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodeManagerHooks
-import org.joda.time.DateTime
-import org.springframework.beans.factory.InitializingBean
-import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import org.springframework.context.annotation.{Bean, Configuration}
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
-import com.normation.rudder.batch.AutomaticStartDeployment
-import com.normation.rudder.domain.eventlog.RudderEventActor
-import com.normation.rudder.batch.AsyncDeploymentAgent
-import com.normation.plugins.datasources.api.DataSourceApiImpl
+import org.joda.time.DateTime
+import org.springframework.beans.factory.InitializingBean
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -72,7 +74,7 @@ class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentAgent) {
 object DatasourcesConf {
 
 
-  import bootstrap.liftweb.{ RudderConfig => Cfg }
+  import bootstrap.liftweb.{RudderConfig => Cfg}
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
@@ -87,6 +89,7 @@ object DatasourcesConf {
         , Cfg.woNodeRepository
         , Cfg.interpolationCompiler
         , regenerationHook.hook _
+        , Cfg.configService.rudder_global_policy_mode _
       )
     , Cfg.stringUuidGenerator
     , pluginStatusService
