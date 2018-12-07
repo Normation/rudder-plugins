@@ -41,6 +41,7 @@ import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.parameters.Parameter
+import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
@@ -53,6 +54,7 @@ import net.liftweb.common.Empty
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
+
 import scala.concurrent.Await
 
 
@@ -99,6 +101,7 @@ class HttpQueryDataSourceService(
   , nodeRepository  : WoNodeRepository
   , interpolCompiler: InterpolatedValueCompiler
   , onUpdatedHook   : (Set[NodeId], UpdateCause) => Unit
+  , globalPolicyMode: () => Box[GlobalPolicyMode]
 ) extends QueryDataSourceService {
 
   val getHttp = new GetDataset(interpolCompiler)
@@ -112,8 +115,8 @@ class HttpQueryDataSourceService(
 
   override def queryAll(datasource: DataSource, cause: UpdateCause): Box[Set[NodeUpdateResult]] = {
     query[Set[NodeUpdateResult]]("fetch data for all node", datasource, cause
-        , (d:DataSourceType.HTTP) => queryAllByNode(datasource.id, d, cause)
-        , (d:DataSourceType.HTTP) => queryAllByNode(datasource.id, d, cause)
+        , (d:DataSourceType.HTTP) => queryAllByNode(datasource.id, d, globalPolicyMode, cause)
+        , (d:DataSourceType.HTTP) => queryAllByNode(datasource.id, d, globalPolicyMode, cause)
         , s"All nodes data updated from data source '${datasource.name.value}' (${datasource.id.value})"
         , s"Error when fetching data from data source '${datasource.name.value}' (${datasource.id.value}) for all nodes"
     )
@@ -121,8 +124,8 @@ class HttpQueryDataSourceService(
 
   override def querySubset(datasource: DataSource, info: PartialNodeUpdate, cause: UpdateCause): Box[Set[NodeUpdateResult]] = {
     query[Set[NodeUpdateResult]](s"fetch data for a set of ${info.nodes.size}", datasource, cause
-        , (d:DataSourceType.HTTP) => querySubsetByNode(datasource.id, d, info, cause, onUpdatedHook)
-        , (d:DataSourceType.HTTP) => querySubsetByNode(datasource.id, d, info, cause, onUpdatedHook)
+        , (d:DataSourceType.HTTP) => querySubsetByNode(datasource.id, d, globalPolicyMode, info, cause, onUpdatedHook)
+        , (d:DataSourceType.HTTP) => querySubsetByNode(datasource.id, d, globalPolicyMode, info, cause, onUpdatedHook)
         , s"Requested nodes data updated from data source '${datasource.name.value}' (${datasource.id.value})"
         , s"Error when fetching data from data source '${datasource.name.value}' (${datasource.id.value}) for requested nodes"
     )
@@ -130,8 +133,8 @@ class HttpQueryDataSourceService(
 
   override def queryOne(datasource: DataSource, nodeId: NodeId, cause: UpdateCause): Box[NodeUpdateResult] = {
     query[NodeUpdateResult](s"fetch data for node '${nodeId.value}'", datasource, cause
-        , (d:DataSourceType.HTTP) => queryNodeByNode(datasource.id, d, nodeId, cause)
-        , (d:DataSourceType.HTTP) => queryNodeByNode(datasource.id, d, nodeId, cause)
+        , (d:DataSourceType.HTTP) => queryNodeByNode(datasource.id, d, globalPolicyMode, nodeId, cause)
+        , (d:DataSourceType.HTTP) => queryNodeByNode(datasource.id, d, globalPolicyMode, nodeId, cause)
         , s"Data for node '${nodeId.value}' updated from data source '${datasource.name.value}' (${datasource.id.value})"
         , s"Error when fetching data from data source '${datasource.name.value}' (${datasource.id.value}) for node '${nodeId.value}'"
     )
@@ -171,11 +174,12 @@ class HttpQueryDataSourceService(
 
   private[this] def buildOneNodeTask(
       datasourceId: DataSourceId
-    , datasource    : DataSourceType.HTTP
-    , nodeInfo      : NodeInfo
-    , policyServers : Map[NodeId, NodeInfo]
-    , parameters    : Set[Parameter]
-    , cause         : UpdateCause
+    , datasource      : DataSourceType.HTTP
+    , nodeInfo        : NodeInfo
+    , policyServers   : Map[NodeId, NodeInfo]
+    , globalPolicyMode: GlobalPolicyMode
+    , parameters      : Set[Parameter]
+    , cause           : UpdateCause
   ): Task[Box[NodeUpdateResult]] = {
     Task(
       (for {
@@ -184,7 +188,7 @@ class HttpQueryDataSourceService(
                           case Some(p) => Full(p)
                         })
                         //connection timeout: 5s ; getdata timeout: freq ?
-        optProperty  <- getHttp.getNode(datasourceId, datasource, nodeInfo, policyServer, parameters, datasource.requestTimeOut, datasource.requestTimeOut)
+        optProperty  <- getHttp.getNode(datasourceId, datasource, nodeInfo, policyServer, globalPolicyMode, parameters, datasource.requestTimeOut, datasource.requestTimeOut)
         nodeResult   <- optProperty match {
                           //on none, don't update anything, the life is wonderful (because 'none' means 'don't update')
                           case None           => Full(NodeUpdateResult.Unchanged(nodeInfo.id))
@@ -213,16 +217,17 @@ class HttpQueryDataSourceService(
   }
 
   def querySubsetByNode(
-      datasourceId : DataSourceId
-    , datasource   : DataSourceType.HTTP
-    , info         : PartialNodeUpdate
-    , cause        : UpdateCause
-    , onUpdatedHook: (Set[NodeId], UpdateCause) => Unit
+      datasourceId    : DataSourceId
+    , datasource      : DataSourceType.HTTP
+    , globalPolicyMode: () => Box[GlobalPolicyMode]
+    , info            : PartialNodeUpdate
+    , cause           : UpdateCause
+    , onUpdatedHook   : (Set[NodeId], UpdateCause) => Unit
   )(implicit scheduler: Scheduler): Box[Set[NodeUpdateResult]] = {
     import com.normation.utils.Control.bestEffort
     import net.liftweb.util.Helpers.tryo
 
-    def tasks(nodes: Map[NodeId, NodeInfo], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Task[List[Box[NodeUpdateResult]]] = {
+    def tasks(nodes: Map[NodeId, NodeInfo], policyServers: Map[NodeId, NodeInfo], globalPolicyMode: GlobalPolicyMode, parameters: Set[Parameter]): Task[List[Box[NodeUpdateResult]]] = {
 
       /*
        * Here, we are executing all the task (one by node) in parallel. We want to limit the number of
@@ -233,7 +238,7 @@ class HttpQueryDataSourceService(
       val semaphore = TaskSemaphore(maxParallelism = datasource.maxParallelRequest)
 
       Task.gatherUnordered(nodes.values.map { nodeInfo =>
-        semaphore.greenLight(buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, parameters, cause))
+        semaphore.greenLight(buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, globalPolicyMode, parameters, cause))
       })
     }
 
@@ -241,7 +246,8 @@ class HttpQueryDataSourceService(
     val timeout = datasource.requestTimeOut
 
     for {
-      updated       <- tryo(Await.result(tasks(info.nodes, info.policyServers, info.parameters).runAsync, timeout))
+      mode          <- globalPolicyMode()
+      updated       <- tryo(Await.result(tasks(info.nodes, info.policyServers, mode, info.parameters).runAsync, timeout))
                        // execute hooks
       _             =  onUpdatedHook(updated.collect { case Full(NodeUpdateResult.Updated(id)) => id }.toSet, cause)
       gatherErrors  <- compactFailure(bestEffort(updated)(identity).map( _.toSet ))
@@ -250,20 +256,21 @@ class HttpQueryDataSourceService(
     }
   }
 
-  def queryAllByNode(datasourceId: DataSourceId, datasource: DataSourceType.HTTP, cause: UpdateCause)(implicit scheduler: Scheduler): Box[Set[NodeUpdateResult]] = {
+  def queryAllByNode(datasourceId: DataSourceId, datasource: DataSourceType.HTTP, globalPolicyMode: () => Box[GlobalPolicyMode], cause: UpdateCause)(implicit scheduler: Scheduler): Box[Set[NodeUpdateResult]] = {
     for {
       nodes         <- nodeInfo.getAll()
       policyServers  = nodes.filter { case (_, n) => n.isPolicyServer }
       parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
-      updated       <- querySubsetByNode(datasourceId, datasource, PartialNodeUpdate(nodes, policyServers, parameters), cause, onUpdatedHook)
+      updated       <- querySubsetByNode(datasourceId, datasource, globalPolicyMode, PartialNodeUpdate(nodes, policyServers, parameters), cause, onUpdatedHook)
     } yield {
       updated
     }
   }
 
-  def queryNodeByNode(datasourceId: DataSourceId, datasource: DataSourceType.HTTP, nodeId: NodeId, cause: UpdateCause)(implicit scheduler: Scheduler): Box[NodeUpdateResult] = {
+  def queryNodeByNode(datasourceId: DataSourceId, datasource: DataSourceType.HTTP, globalPolicyMode: () => Box[GlobalPolicyMode], nodeId: NodeId, cause: UpdateCause)(implicit scheduler: Scheduler): Box[NodeUpdateResult] = {
     import net.liftweb.util.Helpers.tryo
     for {
+      mode          <- globalPolicyMode()
       allNodes      <- nodeInfo.getAll()
       node          <- allNodes.get(nodeId) match {
                          case None => Failure(s"The node with id '${nodeId.value}' was not found")
@@ -271,7 +278,7 @@ class HttpQueryDataSourceService(
                        }
       policyServers  = allNodes.filterKeys( _ == node.policyServerId)
       parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
-      updated       <- tryo(Await.result(buildOneNodeTask(datasourceId, datasource, node, policyServers, parameters, cause).runAsync, datasource.requestTimeOut))
+      updated       <- tryo(Await.result(buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause).runAsync, datasource.requestTimeOut))
       result        <- updated
     } yield {
       //post update hooks

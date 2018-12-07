@@ -46,6 +46,7 @@ import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.parameters.Parameter
 import com.normation.rudder.domain.parameters.ParameterName
+import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.services.policies.InterpolationContext
 import com.normation.utils.Control._
@@ -58,6 +59,7 @@ import net.liftweb.util.Helpers.tryo
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
 import net.minidev.json.JSONValue
+
 import scala.collection.immutable.TreeMap
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
@@ -97,6 +99,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     , datasource       : DataSourceType.HTTP
     , node             : NodeInfo
     , policyServer     : NodeInfo
+    , globalPolicyMode : GlobalPolicyMode
     , parameters       : Set[Parameter]
     , connectionTimeout: Duration
     , readTimeOut      : Duration
@@ -117,7 +120,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
 
     for {
       parameters <- sequence(parameters.toSeq)(compiler.compileParameters) ?~! "Error when transforming Rudder Parameter for variable interpolation"
-      expand     =  compiler.compileInput(node, policyServer, parameters.toMap) _
+      expand     =  compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap) _
       url        <- expand(datasource.url) ?~! s"Error when trying to parse URL ${datasource.url}"
       path       <- expand(datasource.path) ?~! s"Error when trying to compile JSON path ${datasource.path}"
       headers    <- expandMap(expand, datasource.headers)
@@ -213,10 +216,10 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
     compiler.compile(parameter.value).map(v => (parameter.name, v))
   }
 
-  def compileInput(node: NodeInfo, policyServer: NodeInfo, parameters: Map[ParameterName, InterpolationContext => Box[String]])(input: String): Box[String] = {
+  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[ParameterName, InterpolationContext => Box[String]])(input: String): Box[String] = {
 
     //build interpolation context from node:
-    val context = InterpolationContext(node, policyServer, TreeMap[String, Variable](), parameters, 5)
+    val context = InterpolationContext(node, policyServer, globalPolicyMode, TreeMap[String, Variable](), parameters, 5)
 
     for {
       compiled <- compiler.compile(input)
