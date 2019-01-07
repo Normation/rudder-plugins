@@ -1,0 +1,97 @@
+= Summary of binary compatibility for Rudder 5.0 branch
+
+This table shows the binary compatibility for plugins with Rudder 5.0 branch.
+
+|===
+|api-authorization | Rudder
+
+|5.0-1.3 to 5.0-1.4
+|any version
+|===
+
+|===
+|auth-backends | Rudder
+
+|5.0-1.0 to 5.0-1.1
+|5.0.0 to 5.0.1
+
+|5.0-1.2 to current
+|5.0.2 to current
+|===
+
+|===
+|branding | Rudder
+
+|5.0-1.2 to current
+|any version
+|===
+
+|===
+|centreon | Rudder
+
+|any version
+|any version
+|===
+
+
+|===
+|change-validation | Rudder
+
+|5.0-1.0 
+|5.0.0 
+
+|5.0-1.1 to current
+|5.0.1 to current
+|===
+
+|===
+|datasources | Rudder
+
+|5.0-1.5
+|any version
+|===
+
+|===
+|glpi | Rudder
+
+|any version
+|any version
+|===
+
+|===
+|node-external-reports | Rudder
+
+|5.0-1.6
+|any version
+|===
+
+|===
+|notify | Rudder
+
+|any version
+|any version
+|===
+
+|===
+|scale-out-relay | Rudder
+
+|5.0-1.0 to current
+|any version
+|===
+
+|===
+|user-management | Rudder
+
+|5.0-1.0 to current
+|any version
+|===
+
+|===
+|vault | Rudder
+
+|any version
+|any version
+|===
+
+
+
