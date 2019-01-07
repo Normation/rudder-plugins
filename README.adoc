@@ -1,5 +1,4 @@
-Rudder plugin: Auth Backends
------------------------------
+= Rudder plugin: Auth Backends
 
 This project is part of Rudder - Continuous configuration for effective compliance
 
@@ -15,7 +14,16 @@ See: http://rudder-project.org for more information.
 
 This plugins allows to use alternative authentication backends for Rudder: LDAP/AD and radius.
 
-=== Configure enabled backends
+== Rudder compatibility and breaking changes
+
+=== Version 5.0-1.2 needs Rudder 5.0.2 or above
+
+There was a problem in the initialization order that cause the plugin backends to never be loaded correctly. 
+
+- Rudder ticket: https://issues.rudder.io/issues/13695
+- Plugin ticket: https://issues.rudder.io/issues/13709
+
+== Configure enabled backends
 
 By default, both authentication and authorization are handle in the `rudder-users.xml`
 file. But you may want to rely on your existing entreprise Active Directory or LDAP
