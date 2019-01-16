@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mkdir -p /var/rudder/plugin-resources
+echo "0 * * * * /opt/rudder/bin/zabbix-plugin.py update " > /etc/cron.d/zabbix-rudder
