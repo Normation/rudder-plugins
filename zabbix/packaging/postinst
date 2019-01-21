@@ -1,4 +1,22 @@
 #!/bin/bash
 
+CONFFILE="/opt/rudder/etc/zabbix.conf"
+
 mkdir -p /var/rudder/plugin-resources
 echo "0 * * * * /opt/rudder/bin/zabbix-plugin.py update " > /etc/cron.d/zabbix-rudder
+
+# create configuration file
+if [ ! -f "${CONFFILE}" ]
+then
+  cat > "${CONFFILE}" <<EOF
+[ZABBIX]
+username = YOUR_ZABBIX_USERNAME
+password = YOUR_ZABBIX_PASSWORD
+ZabbixWebserviceURL = http://
+
+[RUDDER]
+rudderAPIURL = https://localhost/rudder/api/latest
+rudderAPIToken = YOUR_RUDDER_API_TOKEN
+EOF
+fi
+
