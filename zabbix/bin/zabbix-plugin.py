@@ -46,7 +46,7 @@ def addZabbixHost(zapi, node):
             nodeip = ip
             break
 
-    zapi.host.create(host=node["id"], groups=[{"groupid":zabbixGroupID(zapi, "Rudder nodes")}], interfaces=[{"type":"1", "main":"1", "useip":"1", "ip":nodeip, "dns":"", "port":"10050"}]) 
+    zapi.host.create(host=node["hostname"], groups=[{"groupid":zabbixGroupID(zapi, "Rudder nodes")}], interfaces=[{"type":"1", "main":"1", "useip":"1", "ip":nodeip, "dns":"", "port":"10050"}]) 
 
 def update(conf, register, zapi):
     zhosts = zapi.host.get()
@@ -55,15 +55,15 @@ def update(conf, register, zapi):
 
     # Add all nodes from Rudder to Zabbix and to the register upon addition
     for node in rnodes:
-        if node["id"] not in (h["host"] for h in zhosts):
+        if node["hostname"] not in (h["host"] for h in zhosts):
             addZabbixHost(zapi, node)
-            print("[ ] Adding node " + node["id"] +" to Zabbix...")
-        if not register.has_section(node["id"]):
-            register.add_section(node["id"])
+            print("[ ] Adding node " + node["hostname"] +" to Zabbix...")
+        if not register.has_section(node["hostname"]):
+            register.add_section(node["hostname"])
 
     # Delete every Zabbix host that's not in Rudder, but in the register; then delete it from the register
     for host in zhosts:
-        if host["host"] not in (node["id"] for node in rnodes) and host["host"] in register.sections():
+        if host["host"] not in (node["hostname"] for node in rnodes) and host["host"] in register.sections():
             print("[ ] Removing node " + host["host"] + " from Zabbix...")
             zapi.host.delete(zabbixHostID(host["host"], zhosts))
             register.remove_section(host["host"])
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     
     try:
         zapi = ZabbixAPI(conf["ZABBIX"]["ZabbixWebserviceURL"])
-        zapi.login(conf["ZABBIX"]["username"], password=conf["ZABBIX"]["password"])
+        zapi.login(conf["ZABBIX"]["username"], conf["ZABBIX"]["password"])
     except:
         print("[!] Unable to connect to the Zabbix API. Check your zabbix.conf")
         sys.exit(1)
@@ -136,10 +136,10 @@ if __name__ == "__main__":
         if args["add"]:
             node = getRequestToRudderAPI(conf, "/nodes/" + args["<id>"])["data"]["nodes"][0]
             zhosts = zapi.host.get()
-            if node["id"] not in (h["host"] for h in zhosts):
+            if node["hostname"] not in (h["host"] for h in zhosts):
                 addZabbixHost(zapi, node)
-                if not register.has_section(node["id"]):
-                    register.add_section(node["id"])
+                if not register.has_section(node["hostname"]):
+                    register.add_section(node["hostname"])
 
         elif args["rm"]:
             zhosts = zapi.host.get()
