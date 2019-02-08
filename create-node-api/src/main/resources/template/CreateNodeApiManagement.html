@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf8" />
+  <!-- everything here will be ignored and replaced by common-layout -->
+</head>
+<body data-lift-content-id="plugin-main">
+  <div id="plugin-main" data-lift="surround?with=common-layout;at=content">
+    <head_merge>
+      <title>Create Node API</title>
+      <link rel="stylesheet" type="text/css" href="/toserve/createnodeapi/create-node-api.css" media="screen" data-lift="with-cached-resource">
+      <script src="/toserve/createnodeapi/create-node-api.js" data-lift="with-cached-resource"></script>
+    </head_merge>
+
+    <h2>Create node API</h2>
+    <p>
+      This plugin add a new API to Rudder which can create new node *before* a first inventory is sent.
+    </p>
+    <p>
+      The created node can be created in either "pending" or "accepted" status. If "accepted" is chosen, the node
+      will go first in pending, and then it will be automatically accepted, which ensures all the standard triggers
+      and validation are executed.
+    </p>
+
+    <h3>API endpoint and format</h3>
+
+    <p>The API has only one endpoint: <span style="font-family: monospace;">PUT /latest/createnodes</span></p>
+    <p>It expects a JSON file as parameter, with the following format:</p>
+
+    <pre>
+      [
+        {
+          "id": "378740d3-c4a9-4474-8485-478e7e52db52"
+        , "hostname": "my.node.hostname.local"
+        , "status"  : "accepted"
+        , "os": {
+            "type": "linux"
+           , "name": "debian"
+           , "version": "9.5"
+           , "fullName": "Debian GNU/Linux 9 (stretch)"
+           }
+        , "policyServerId": "root"
+        , "machineType": "vmware"
+        , "state":  "enabled"
+        , "policyMode": "enforce"
+        , "properties": {
+            "tags": ["some", "tags"]
+          , "env": "prod"
+          , "vars": { "var1": "value1", "var2": "value2" }
+          }
+        , "ipAddresses": ["192.168.180.90, 127.0.0.1"]
+        , "timezone": {
+            "name":"CEST"
+          , "offset": "+0200"
+          }
+        }
+      , ... other nodes to create ...
+      ]
+    </pre>
+
+    <p>Some more details:</p>
+    <dl>
+      <dt>id</dt><dd>the Rudder node unique identifier in /opt/rudder/etc/uuid.hive</dd>
+      <dt>hostname</dt><dd>the fully qualified name of the node</dd>
+      <dt>status</dt>target status of the node: pending, accepted<dd></dd>
+      <dt>os.type</dt><dd>OS type: linux, windows, solaris, aix, freebsd, unknown</dd>
+      <dt>os.name</dt><dd>OS name: for linux, a distribution (debian, ubuntu, redhat, centos, fedora, suse, oracle, scientific, slackware). For Windows, the commercial name: xp, vista, seven, 10, 2000, 2003, 2008, 2008 r2, 2012, 2012 r2, 2016, 2016 r2</dd>
+      <dt>os.version</dt><dd>A string representation of the version.</dd>
+      <dt>os.fullName</dt><dd>The long description name of the os</dd>
+      <dt>os.sericePack</dt><dd>[optionnal] a service pack informationnal string</dd>
+      <dt>policyServerId</dt>[optional] the policy server ID for that node. By default, "root"<dd></dd>
+      <dt>machineType</dt><dd>The kind of machine for the node (use vm for a generic VM): physical, vm, solariszone, vbox, vmware, qemu, xen, aixlpar, hyperv, bsdjail</dd>
+      <dt>state</dt><dd>[Optional] Node lifecycle state. Can only be specified when status=accepted. If not specified, enable is used: enable, ignored, empty-policies, initializing, preparing-eol</dd>
+      <dt>policyMode</dt><dd>[optional] the policy mode for the node. Can only be specified when status=accepted. If not specified, the default (global) mode will be used: enforce, audit</dd>
+      <dt>agentKey</dt><dd>[optional] Information about agent key or certificate</dd>
+      <dt>agentKey.token.type</dt><dd>The security token type of the agent: publicKey, certificate</dd>
+      <dt>agentKey.token.value</dt><dd>The security token value (public key or certificate)</dd>
+      <dt>agentKey.status</dt><dd>[optional, default: undefined] Certification status of the security token. If "certified", inventory signature check will be enforced. certified, undefined</dd>
+      <dt>properties</dt><dd>Node properties in "key":"value" format, where "key" is a string, and "value" is either a string, a json array, or a json object.</dd>
+      <dt>ipAddresses</dt><dd>an array of IPs.</dd>
+      <dt>timezone</dt><dd>[optional] Timezone information of the node.</dd>
+      <dt>timezone.name</dt><dd>the standard name of the timezone: UTC, CEST, etc</dd>
+      <dt>timezone.offset</dt><dd>timezone offset compared to UTC, in +/-HHMM format</dd>
+    </dl>
+
+  </div>
+</body>
+</html>
+
