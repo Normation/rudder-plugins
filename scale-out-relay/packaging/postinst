@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # add post-installation script, like:
-
+rudder server trigger-policy-generation
