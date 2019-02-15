@@ -47,6 +47,36 @@ in `ldap`, fall-back in file authentication, you will specify:
 rudder.auth.provider=ldap,file
 ```
 
+For example, that `rudder-users.xml` file will configure "admin" by file access, and "joe" by LDAP:
+
+```
+<authentication hash="sha512">
+  <user name="admin" password="ab7f...b8a538dc69dd8de907ec" role="administrator" />
+  <user name="joe" password="LDAP" role="administrator" />
+</authentication>
+```
+
+
+[WARNING]
+======
+
+Be careful to have only one `rudder.auth.provider` property in your file!
+
+======
+
+[NOTE]
+=====
+
+In case your authentication backend does not work, you can still configure the
+`rootAccount` in `/opt/rudder/etc/rudder-web.properties` to regain an administrator
+access. Once logged as an administrator, you can go to the `Plugins > Authentication
+Backends` page to check that Rudder interpreted correctly your configuration. 
+
+In particular, check that `Computed list of providers` entry matches your will. 
+
+=====
+
+
 === LDAP / AD backend
 
 The configuration properties that need to be added in
