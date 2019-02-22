@@ -24,6 +24,7 @@ import sys
 import requests
 import urllib3
 import hashlib
+import subprocess
 sys.path.insert(0,"/opt/rudder/share/python")
 from docopt import docopt
 from requests.exceptions import HTTPError
@@ -84,7 +85,11 @@ def dictifyNode(node):
         if validateIPAddr(ip):
             ipAddr = ip
             break
-    return { 'hostname': node['hostname'], 'rudder_id': node['id'], 'node_type': 'server' if node['id'] == 'root' else 'agent', 'ip_address': ipAddr }
+    return { 'hostname': node['hostname'], 
+             'rudder_id': node['id'],
+             'node_type': 'server' if node['id'] == 'root' else 'agent', 
+             'ip_address': ipAddr,
+             'relay': node['policyServerId'] }
 
 def checkIfNodeInRudderGroup(nodeid, centreon_hosts):
     if not any(g['name'] == 'rudder-nodes' for g in centreon_hosts.gethostgroup(nodeid)['result']):
@@ -102,8 +107,20 @@ def updateNodesJSON():
         json.dump(rnodes, fd)
     print("[+] Done")
 
+def getCentronPoller(hostname, uuid, relay):
+    try:
+        poller_script = conf.get('POLLERS', 'poller-script')
+        poller = subprocess.check_output([poller_script, hostname, uuid])
+    except:
+        try:
+            poller = conf.get('POLLERS', relay)
+        except:
+            poller = conf.get('CENTREON', 'centreonPoller')
+    return poller
+
 # Add a single host to centreon
-def addHostToCentreon(centreon_hosts, hostname, alias, ip, poller):
+def addHostToCentreon(centreon_hosts, hostname, alias, ip, uuid, relay):
+    poller = getCentronPoller(hostname, uuid, relay)
     centreon_hosts.add(hostname, alias, ip, '', poller, '')
     # if there is a default template, add it
     try:
@@ -113,31 +130,45 @@ def addHostToCentreon(centreon_hosts, hostname, alias, ip, poller):
     if defaultTemplate != "":
         centreon_hosts.addtemplate(hostname, defaultTemplate)
         centreon_hosts.applytemplate(hostname)
+    return poller
+
+def restart_pollers(all_pollers, poller_list):
+    if all_pollers:
+        poller_csv = Webservice.getInstance().poller_list().text
+        poller_lines = poller_csv.splitlines()
+        del poller_lines[0]
+        del poller_lines[-1]
+        poller_list = [ x.split(";")[1] for x in poller_lines ]
+
+    for poller in poller_list:
+        Webservice.getInstance().restart_poller(poller)
+
+    return poller_list
+    
 
 # Manual pushing
-def updateCentreonHosts(poller):
+def updateCentreonHosts():
     print("[ ] Checking if Centreon is up-to-date...")
     checkRudderCentreonHostGroup()
     centreon_hosts = Host()
     with open(nodesTmp) as fd:
         rudder_nodes = json.load(fd)
-    changed = False
+    poller_list = set()
+    all_pollers = False
 
     for rn in rudder_nodes:
         if not any(h['name'] == rn['hostname'] for h in centreon_hosts.list()['result']):
             print("[ ] Unregistered Rudder node found: " + rn['hostname'] + " (id " + rn['rudder_id'] + "). Adding it to Centreon...")
-            addHostToCentreon(centreon_hosts, rn['hostname'], "Rudder " + rn['node_type'] + " node " + rn['rudder_id'], rn['ip_address'], poller)
+            poller_list.add(addHostToCentreon(centreon_hosts, rn['hostname'], "Rudder " + rn['node_type'] + " node " + rn['rudder_id'], rn['ip_address'], rn['rudder_id'], rn['relay']))
             checkIfNodeInRudderGroup(rn['hostname'], centreon_hosts)
-            changed = True
     for ch in centreon_hosts.list()['result']:
         if any(g['name'] == 'rudder-nodes' for g in centreon_hosts.gethostgroup(ch['name'])['result']) and not any(ch['name'] == rn['hostname'] for rn in rudder_nodes):
                 print("[ ] Host " + ch['name'] + " not listed in Rudder but appearing in rudder-nodes Centreon host group. Deleting host...")
                 centreon_hosts.disable(ch['name'])
                 centreon_hosts.delete(ch['name'])
-                changed = True
+                all_pollers = True
                 print("[+] Done")
-    if changed:
-        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+    restart_pollers(all_pollers, poller_list)
     print("[+] Done")
 
 def checkRudderCentreonHostGroup():
@@ -146,17 +177,17 @@ def checkRudderCentreonHostGroup():
         print("[ ] Host group 'rudder-nodes' not found on Centreon Central server, creating it...")
         centreon_hostGrps.add("rudder-nodes", "Rudder nodes Hosts Group")
 
-def addHostOnRudderHook(rudderID, poller):
+def addHostOnRudderHook(rudderID):
     data = getRequestToRudderAPI("/nodes/" + rudderID)
     node = dictifyNode(data['data']['nodes'][0])
     centreon_hosts = Host()
     changed = False
     if not any(h['name'] == node['hostname'] for h in centreon_hosts.list()['result']):
-        addHostToCentreon(centreon_hosts, node['hostname'], "Rudder " + node['node_type'] + " node " + node['rudder_id'], node['ip_address'], poller)
+        poller = addHostToCentreon(centreon_hosts, node['hostname'], "Rudder " + node['node_type'] + " node " + node['rudder_id'], node['ip_address'], node['rudder_id'], node['relay'])
         changed = True
     checkIfNodeInRudderGroup(node['hostname'], centreon_hosts)
     if changed:
-        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+        Webservice.getInstance().restart_poller(poller)
 
 def delHostOnRudderHook(rudderID):
    data = getRequestToRudderAPI("/nodes/" + rudderID)
@@ -165,7 +196,7 @@ def delHostOnRudderHook(rudderID):
    if any(h['name'] == node['hostname'] for h in centreon_hosts.list()['result']):
        centreon_hosts.disable(node['hostname'])
        centreon_hosts.delete(node['hostname'])
-       Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+       Webservice.getInstance().restart_poller(getCentronPoller(node['hostname'], node['rudder_id'], node['relay']))
 
 #When we add a template, we register it to prevent us from deleting templates we did not add when they do not appear in Rudder
 def registerTemplate(node, template, register):
@@ -200,7 +231,7 @@ def applyRudderMonitoringConfigurations(conf):
     centreon_hosts = Host()
     register = ConfigParser()
     register.read(registerFile)
-    changed = False
+    poller_list = set()
     rootPath = '/var/rudder/shared-files/root/files'
     if os.path.exists(templatesTmp):
         with open(templatesTmp) as fd:
@@ -247,7 +278,7 @@ def applyRudderMonitoringConfigurations(conf):
                             centreon_hosts.addtemplate(name, r[1])
                             centreon_hosts.applytemplate(name)
                             registerTemplate(name, r[1], register)
-                            changed = True
+                            poller_list.add(getCentronPoller(name))
                         except HTTPError:
                             print('[!] Centreon API error, check if template ' + r[1] + ' exists')
                     else:
@@ -257,7 +288,7 @@ def applyRudderMonitoringConfigurations(conf):
                     csvMacroKeyList.append(r[1])
                     centreon_hosts.setmacro(name, r[1], ''.join(r[2:]))
                     registerMacro(name, r[1], ''.join(r[2:]), register)
-                    changed = True
+                    poller_list.add(getCentronPoller(name))
                 else:
                     print('[!] Incorrect config parameter type ' + r[0] + ', skipping...')
     
@@ -265,13 +296,13 @@ def applyRudderMonitoringConfigurations(conf):
                 if not any(t['name'] == n for n in csvTmpList) and templateWasRegistered(name, t['name'], register):
                     unregisterTemplate(name, t['name'], register)
                     centreon_hosts.deletetemplate(name, t['name'])
-                    changed = True
+                    poller_list.add(getCentronPoller(name))
     
             for mk in centreon_hosts.getmacro(name)['result']:
                 if not any(mk['macro name'] == n for n in csvMacroKeyList) and macroWasRegistered(name, mk['macro name'], register):
                     unregisterMacro(name, mk['macro name'], register)
                     centreon_hosts.deletemacro(name, mk['macro name'])
-                    changed = True
+                    poller_list.add(getCentronPoller(name))
     
             #This ensures we get no duplicates in register in case we have to re-add an already registered
             #register[dir]['templates'] = ','.join(list(set(register[dir]['templates'].split(','))))
@@ -279,10 +310,8 @@ def applyRudderMonitoringConfigurations(conf):
             # update hash value
             hash_list[dir] = hash_value
 
-    if changed:
-        register.write(open(registerFile, 'w'))
-        print('[ ] Reloading Centreon poller config, restarting poller...')
-        Webservice.getInstance().restart_poller(conf.get('CENTREON', 'centreonPoller'))
+    poller_list = restart_pollers(False, poller_list)
+    register.write(open(registerFile, 'w'))
     # store new hash values
     with open(templatesTmp, 'w+') as fd:
         json.dump(hash_list, fd)
@@ -303,10 +332,10 @@ if __name__ == '__main__':
 
     if(args['synchronize-hosts']):
         updateNodesJSON()
-        updateCentreonHosts(conf.get('CENTREON', 'centreonPoller'))
+        updateCentreonHosts()
     elif(args['hook']):
         if(args['add']):
-            addHostOnRudderHook(args['<id>'], conf.get('CENTREON', 'centreonPoller'))
+            addHostOnRudderHook(args['<id>'])
         elif(args['rm']):
             delHostOnRudderHook(args['<id>'])
     elif(args['apply-configuration']):

@@ -13,6 +13,7 @@ then
 username = YOUR_CENTREON_USERNAME
 password = YOUR_CENTREON_PASSWORD
 centreonWebserviceURL = http://YOUR_CENTREON_SERVER/centreon
+# default poller
 centreonPoller = CENTREON_POLLER
 # Add this template automatically to all hosts added via Rudder
 # For a more fine grained choice, pleas use https://docs.rudder.io/reference/current/reference/generic_methods.html#monitoring_template
@@ -25,5 +26,14 @@ defaultTemplate = generic-active-host-custom
 
 # Put here IP networks that you don't want to appear in centreon (space separated)
 #ipBlacklist = 10.0.0.0/8 192.168.0.0/16
+
+[POLLERS]
+# a relay can be given a poller, every node behind theis relay is assigned to this poller
+#relay1 = poller1
+
+# alternatively, call this script to determine which poller to associate
+# will be called: ./poller-script hostname uuid
+#poller-script = /usr/local/bin/poller-script
+
 EOF
 fi
