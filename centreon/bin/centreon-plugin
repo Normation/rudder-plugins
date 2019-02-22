@@ -134,11 +134,9 @@ def addHostToCentreon(centreon_hosts, hostname, alias, ip, uuid, relay):
 
 def restart_pollers(all_pollers, poller_list):
     if all_pollers:
-        poller_csv = Webservice.getInstance().poller_list().text
-        poller_lines = poller_csv.splitlines()
-        del poller_lines[0]
-        del poller_lines[-1]
-        poller_list = [ x.split(";")[1] for x in poller_lines ]
+        poller_json = Webservice.getInstance().list_pollers().text
+        pollers = json.loads(poller_json)['result']
+        poller_list = [ x['name'] for x in pollers ]
 
     for poller in poller_list:
         Webservice.getInstance().restart_poller(poller)
