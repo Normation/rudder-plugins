@@ -116,7 +116,24 @@ class Webservice(object):
         )
         request.raise_for_status()
         return request
+    
+    def list_pollers(self):
+        if self.auth_token is None:
+            self.auth()
 
+        data = {}
+        data['action'] = 'POLLERLIST'
+        request = requests.post(
+            self.url + '/api/index.php?action=action&object=centreon_clapi',
+            headers={
+                'Content-Type': 'application/json',
+                'centreon-auth-token': self.auth_token
+            },
+            data=json.dumps(data)
+        )
+        request.raise_for_status()
+        return request
+ 
     @staticmethod
     def getInstance(url=None, username=None, password=None):
         """
