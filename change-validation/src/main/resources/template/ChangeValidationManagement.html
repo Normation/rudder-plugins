@@ -120,10 +120,16 @@
               </div>
             </div>
           </div>
-          <div id="supervised-targets-app"></div>
+          <div id="supervised-targets-app">
+            <div id="list-groups-change-validation"/>
+          </div>
+
           <script>
-            var node = document.getElementById("supervised-targets-app");
-            var app  = Elm.SupervisedTargets.embed(node, { contextPath: contextPath});
+              var main = document.getElementById("list-groups-change-validation");
+              var initValues = {
+                 contextPath : contextPath
+                };
+              var app  = Elm.SupervisedTargets.init({ node: main,  flags: initValues});
           </script>
 
         </div>
