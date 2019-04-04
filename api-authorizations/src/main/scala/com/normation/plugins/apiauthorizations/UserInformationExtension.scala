@@ -50,15 +50,22 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
           <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/user-api-token.js"></script>
         </head_merge>
-        <li id="user-token-app"></li>
+        <li id="user-token-app">
+          <div id="user-token-main">
+
+          </div>
+        </li>
+
         <script>
         //<![CDATA[
           // init elm app
           $(document).ready(function(){
-            var node = document.getElementById('user-token-app');
-            var app = Elm.UserApiToken.embed(node, {
-              contextPath: contextPath
-            });
+              var node = document.getElementById("user-token-main");
+              var initValues = {
+                  contextPath : contextPath
+              };
+              var app  = Elm.UserApiToken.init({node: node, flags: initValues});
+
             $('#userApiTokenManagement').on('click',function(e){
               e.preventDefault();
               e.stopPropagation();
