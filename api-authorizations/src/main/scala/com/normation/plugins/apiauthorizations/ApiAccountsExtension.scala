@@ -108,19 +108,26 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
         </head_merge>
         <div id="acl-configuration" ng-if="myNewAccount.authorizationType === 'acl'">
           <!-- load elm app -->
-          <div id="apiauthorization-app"></div>
+          <div id="apiauthorization-app">
+            <div id="apiauthorization-content"/>
+          </div>
           <script>
           //<![CDATA[
             if($('[ng-controller="AccountCtrl"]').scope()) { // wait for angularjs app to exists
               var account = $('[ng-controller="AccountCtrl"]').scope().myNewAccount;
 
               // init elm app
-              var node = document.getElementById('apiauthorization-app');
+              var node = document.getElementById("apiauthorization-app");
+              var main = document.getElementById("apiauthorization-content");
+
               var acl  = account.acl === undefined ? [] : account.acl;
-              var app  = Elm.ApiAuthorizations.embed(node, {
-                  token: { id: account.id, acl: acl}
+              var initValues = {
+                  contextPath : contextPath
+                , token: { id: account.id, acl: acl}
                 , rudderApis: rudderApis
-              });
+              };
+              var app  = Elm.ApiAuthorizations.init({node: main, flags: initValues});
+
 
               //set back seleced acl to angularjs variable
               app.ports.giveAcl.subscribe(function(acl) {

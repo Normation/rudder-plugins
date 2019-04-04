@@ -23,3 +23,4 @@ makefiles/m2_location.cache
 /doc
 rudder-plugins.adoc
 plugin-doc-assets/
+elm-upgrade*.log
