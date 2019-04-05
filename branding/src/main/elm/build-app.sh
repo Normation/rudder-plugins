@@ -11,7 +11,5 @@ cd $ELM_DIR
 # If you need a dependency that cannot be installed with elm-make (ie elm-ui)
 # Please for now delete elm-stuff file
 # On CI, since we clean repository before build, elm-stuff will not exist
-if [ ! -e elm-stuff ]; then
-  elm-install
-fi
-elm-make sources/Branding.elm --output=generated/branding.js --yes
+
+elm make sources/Branding.elm --output=generated/branding.js

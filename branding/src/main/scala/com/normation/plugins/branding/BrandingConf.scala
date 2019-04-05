@@ -60,12 +60,12 @@ final case class BrandingConf (
 )
 
 final case class JsonColor (
-    red   : Int
-  , green : Int
-  , blue  : Int
+    red   : Double
+  , green : Double
+  , blue  : Double
   , alpha : Double
 ) {
-  def toRgba= s"rgba(${red}, ${green}, ${blue}, ${alpha})"
+  def toRgba= s"rgba(${red*100}%, ${green*100}%, ${blue*100}%, ${alpha})"
 }
 
 

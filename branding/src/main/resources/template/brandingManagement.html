@@ -13,8 +13,8 @@
    <main></main>
    <script>
      var main = document.querySelector("main");
-     const flags = contextPath;
-     var app  = Elm.Branding.embed(main, flags);
+     var flags = { contextPath : contextPath };
+     var app  = Elm.Branding.init({ node : main, flags: flags});
      app.ports.applyCss.subscribe(function(settings) {
        var [bgColor, txtColor, txt] = settings;
        $('#headerBar').css('background-color', bgColor).css('color', txtColor);
