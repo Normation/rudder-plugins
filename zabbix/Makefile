@@ -15,11 +15,12 @@ $(targets): target/%: %
 
 master.zip:
 	wget https://github.com/adubkov/py-zabbix/archive/1.1.4.zip
+	mv 1.1.4.zip master.zip
 
 share/: master.zip
 	unzip master.zip
 	mkdir -p share/python
-	mv py-zabbix-master/{zabbix,pyzabbix} share/python/
+	mv py-zabbix-1.1.4/{zabbix,pyzabbix} share/python/
 	rm -r py-zabbix-master
 
 clean:
