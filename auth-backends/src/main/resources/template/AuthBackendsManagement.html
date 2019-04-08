@@ -30,10 +30,12 @@
             </p>
           </div>
 
-          <div id="auth-backends-app"></div>
+          <div id="auth-backends-app">
+
+          </div>
           <script>
             var node = document.getElementById("auth-backends-app");
-            var app  = Elm.AuthBackends.embed(node, { contextPath: contextPath});
+            var app  = Elm.AuthBackends.init( { node : node, flags : { contextPath: contextPath}});
           </script>
 
         </div>
