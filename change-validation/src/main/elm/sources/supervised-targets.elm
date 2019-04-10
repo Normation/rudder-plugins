@@ -115,12 +115,12 @@ getTargets model =
                 , headers = []
                 , url = url
                 , body = emptyBody
-                , expect = expectJson decodeApiCategory
+                , expect = expectJson GetTargets decodeApiCategory
                 , timeout = Nothing
-                , withCredentials = False
+                , tracker = Nothing
                 }
     in
-    send GetTargets req
+      req
 
 
 
@@ -136,12 +136,12 @@ saveTargets model =
                 , headers = []
                 , url = model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
                 , body = jsonBody (encodeTargets (getSupervisedIds model.allTargets))
-                , expect = expectJson decodeApiSave
+                , expect = expectJson SaveTargets decodeApiSave
                 , timeout = Nothing
-                , withCredentials = False
+                , tracker = Nothing
                 }
     in
-    send SaveTargets req
+    req
 
 
 
@@ -389,15 +389,8 @@ getErrorMessage e =
     let
         errMessage =
             case e of
-                Http.BadStatus b ->
-                    let
-                        status =
-                            b.status
-
-                        message =
-                            status.message
-                    in
-                    "Code " ++ String.fromInt status.code ++ " : " ++ message
+                Http.BadStatus status ->
+                    "Code " ++ String.fromInt status
 
                 Http.BadUrl str ->
                     "Invalid API url"
@@ -407,9 +400,9 @@ getErrorMessage e =
 
                 Http.NetworkError ->
                     "Network error"
+                Http.BadBody c->
+                  "Wront content in request body" ++ c
 
-                Http.BadPayload str rstr ->
-                    str
     in
     errMessage
 
