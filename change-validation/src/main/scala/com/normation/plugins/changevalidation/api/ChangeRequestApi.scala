@@ -83,27 +83,29 @@ import net.liftweb.json.JsonDSL._
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.web.model.CurrentUser
 import net.liftweb.common.Box
+import sourcecode.Line
+
 
 sealed trait ChangeRequestApi extends EndpointSchema with GeneralApi with SortIndex
 object ChangeRequestApi extends ApiModuleProvider[ChangeRequestApi] {
 
-  final case object ListChangeRequests extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object ListChangeRequests extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "List all change requests"
     val (action, path)  = GET / "changeRequests"
   }
-  final case object ChangeRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object ChangeRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Get information about given change request"
     val (action, path)  = GET / "changeRequests" / "{id}"
   }
-  final case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Decline given change request"
     val (action, path)  = DELETE / "changeRequests" / "{id}"
   }
-  final case object AcceptRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object AcceptRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Accept given change request"
     val (action, path)  = POST / "changeRequests" / "{id}" / "accept"
   }
-  final case object UpdateRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object UpdateRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Update information about given change request"
     val (action, path)  = POST / "changeRequests" / "{id}"
   }

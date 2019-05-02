@@ -63,6 +63,8 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.NoTypeHints
 import net.liftweb.json._
+import sourcecode.Line
+
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -75,12 +77,12 @@ sealed trait SupervisedTargetsApi extends EndpointSchema with InternalApi with S
 object SupervisedTargetsApi extends ApiModuleProvider[SupervisedTargetsApi] {
 
   final case object GetAllTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
-    val z = zz
+    val z = implicitly[Line].value
     val description    = "Get all available node groups with their role in change request validation"
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
   }
   final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
-    val z = zz
+    val z = implicitly[Line].value
     val description    = "Save the updated list of groups"
     val (action, path) = POST / "changevalidation" / "supervised" / "targets"
   }
