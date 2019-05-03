@@ -60,6 +60,7 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.JsonAST.JString
 import net.liftweb.json.NoTypeHints
+import sourcecode.Line
 
 
 
@@ -72,7 +73,7 @@ sealed trait UserManagementApi extends EndpointSchema with GeneralApi with SortI
 object UserManagementApi extends ApiModuleProvider[UserManagementApi] {
 
   final case object GetUserInfo extends UserManagementApi with ZeroParam with StartsAtVersion10 {
-    val z = zz
+    val z = implicitly[Line].value
     val description    = "Get information about registered users in Rudder"
     val (action, path) = GET / "usermanagement" / "users"
   }
@@ -82,7 +83,7 @@ object UserManagementApi extends ApiModuleProvider[UserManagementApi] {
    * but without revealing the actual list of users.
    */
   final case object ReloadUsersConf extends UserManagementApi with ZeroParam with StartsAtVersion10 {
-    val z = zz
+    val z = implicitly[Line].value
     val description    = "Reload (read again rudder-users.xml and process result) information about registered users in Rudder"
     val (action, path) = POST / "usermanagement" / "users" / "reload"
   }

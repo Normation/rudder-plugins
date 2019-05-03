@@ -40,6 +40,8 @@ package com.normation.plugins.datasources.api
 import com.normation.rudder.rest._
 import com.normation.rudder.api.HttpAction._
 import com.normation.rudder.rest.EndpointSchema.syntax._
+import sourcecode.Line
+
 
 sealed trait DataSourceApi extends EndpointSchema with GeneralApi with SortIndex
 object DataSourceApi extends ApiModuleProvider[DataSourceApi] {
@@ -57,57 +59,57 @@ object DataSourceApi extends ApiModuleProvider[DataSourceApi] {
    * And then the simpler on datasource CRUD
    */
 
-  final case object ReloadAllDatasourcesOneNode extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object ReloadAllDatasourcesOneNode extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Reload all datasources for the given node"
     val (action, path)  = POST / "datasources" / "reload" / "node" / "{nodeid}"
   }
 
-  final case object ReloadOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object ReloadOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Reload this given datasources for all nodes"
     val (action, path)  = POST / "datasources" / "reload" / "{datasourceid}"
   }
 
-  final case object ReloadOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object ReloadOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Reload the given datasource for the given node"
     val (action, path)  = POST / "datasources" / "reload" / "{datasourceid}" / "node" / "{nodeid}"
   }
 
-  final case object ReloadAllDatasourcesAllNodes extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object ReloadAllDatasourcesAllNodes extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Reload all datasources for all nodes"
     val (action, path)  = POST / "datasources" / "reload" / "node"
   }
 
-  final case object ClearValueOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object ClearValueOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Clear node property values on all nodes for given datasource"
     val (action, path)  = POST / "datasources" / "clear" / "{datasourceid}"
   }
 
-  final case object ClearValueOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object ClearValueOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Clear node property value set by given datasource on given node"
     val (action, path)  = POST / "datasources" / "clear" / "{datasourceid}" / "node" / "{nodeid}"
   }
 
-  final case object GetAllDataSources extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object GetAllDataSources extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Get the list of all defined datasources"
     val (action, path)  = GET / "datasources"
   }
 
-  final case object GetDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object GetDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Get information about the given datasource"
     val (action, path)  = GET / "datasources" / "{datasourceid}"
   }
 
-  final case object DeleteDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object DeleteDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Delete given datasource"
     val (action, path)  = DELETE / "datasources" / "{datasourceid}"
   }
 
-  final case object CreateDataSource extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object CreateDataSource extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Create given datasource"
     val (action, path)  = PUT / "datasources"
   }
 
-  final case object UpdateDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = zz
+  final case object UpdateDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Update information about the given datasource"
     val (action, path)  = POST / "datasources" / "{datasourceid}"
   }

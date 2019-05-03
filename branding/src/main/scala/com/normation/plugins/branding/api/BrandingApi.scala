@@ -8,24 +8,26 @@ import com.normation.utils.StringUuidGenerator
 import net.liftweb.common.Box
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.http.{LiftResponse, Req}
+import sourcecode.Line
+
 
 sealed trait BrandingApiSchema extends EndpointSchema with GeneralApi with SortIndex
 object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
   import EndpointSchema.syntax._
   final case object GetBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
-    val z = zz
+    val z = implicitly[Line].value
     val description = "Get branding plugin configuration"
     val (action, path)  = GET / "branding"
   }
 
   final case object UpdateBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
-    val z = zz
+    val z = implicitly[Line].value
     val description = "Update branding plugin configuration"
     val (action, path)  = POST / "branding"
   }
 
   final case object ReloadBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
-    val z = zz
+    val z = implicitly[Line].value
     val description = "Reload branding plugin configuration from config file"
     val (action, path)  = POST / "branding" / "reload"
   }
