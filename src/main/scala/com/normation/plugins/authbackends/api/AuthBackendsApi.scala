@@ -60,6 +60,7 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.NoTypeHints
 import net.liftweb.json._
+import sourcecode.Line
 
 
 
@@ -72,7 +73,7 @@ sealed trait AuthBackendsApi extends EndpointSchema with InternalApi with SortIn
 object AuthBackendsApi extends ApiModuleProvider[AuthBackendsApi] {
 
   final case object GetAuthenticationInformation extends AuthBackendsApi with ZeroParam with StartsAtVersion10 {
-    val z = zz
+    val z = implicitly[Line].value
     val description    = "Get information about current authentication configuration"
     val (action, path) = GET / "authbackends" / "current-configuration"
   }
