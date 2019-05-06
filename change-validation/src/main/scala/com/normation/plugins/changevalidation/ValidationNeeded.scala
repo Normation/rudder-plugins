@@ -16,6 +16,13 @@ import com.normation.rudder.services.workflows.RuleChangeRequest
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 
+object bddMock {
+  val USER_AUTH_NEEDED = Map(
+    "admin" -> false,
+    "Jean" -> true
+  )
+}
+
 /**
  * Check is an external validation is needed for the change, given some
  * arbitrary rules defined in implementation.
@@ -25,6 +32,52 @@ trait ValidationNeeded {
   def forDirective  (actor: EventActor, change: DirectiveChangeRequest  ): Box[Boolean]
   def forNodeGroup  (actor: EventActor, change: NodeGroupChangeRequest  ): Box[Boolean]
   def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean]
+}
+
+class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNeeded {
+
+  override def forDirective(actor: EventActor, change: DirectiveChangeRequest): Box[Boolean] = {
+    repo.get(actor) match {
+      case Full(ea) =>
+        ea match {
+          case Some(_) => Full(false)
+          case None => Full(true)
+        }
+      case _ => Full(true)
+    }
+  }
+
+  override def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean] = {
+    repo.get(actor) match {
+      case Full(ea) =>
+        ea match {
+          case Some(_) => Full(false)
+          case None => Full(true)
+        }
+      case _ => Full(true)
+    }
+  }
+
+  override def forNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[Boolean] = {
+    repo.get(actor) match {
+      case Full(ea) =>
+        ea match {
+          case Some(_) => Full(false)
+          case None => Full(true)
+        }
+      case _ => Full(true)
+    }
+  }
+  override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
+    repo.get(actor) match {
+      case Full(ea) =>
+        ea match {
+          case Some(_) => Full(false)
+          case None => Full(true)
+        }
+      case _ => Full(true)
+    }
+  }
 }
 
 

@@ -55,18 +55,20 @@ import com.normation.plugins.changevalidation.CheckRudderPluginEnableImpl
 import com.normation.plugins.changevalidation.NodeGroupValidationNeeded
 import com.normation.plugins.changevalidation.RoChangeRequestJdbcRepository
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
+import com.normation.plugins.changevalidation.RoValidatedUserJdbcRepository
 import com.normation.plugins.changevalidation.RoWorkflowJdbcRepository
 import com.normation.plugins.changevalidation.SupervisedTargetsReposiory
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
+import com.normation.plugins.changevalidation.UserValidationNeeded
+import com.normation.plugins.changevalidation.ValidatedUserMapper
 import com.normation.plugins.changevalidation.ValidationNeeded
 import com.normation.plugins.changevalidation.WoChangeRequestJdbcRepository
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
+import com.normation.plugins.changevalidation.WoValidatedUserJdbcRepository
+import com.normation.plugins.changevalidation.WoValidatedUserRepository
 import com.normation.plugins.changevalidation.WoWorkflowJdbcRepository
-import com.normation.plugins.changevalidation.api.ChangeRequestApi
-import com.normation.plugins.changevalidation.api.ChangeRequestApiImpl
-import com.normation.plugins.changevalidation.api.SupervisedTargetsApi
-import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
+import com.normation.plugins.changevalidation.api.{ChangeRequestApi, ChangeRequestApiImpl, SupervisedTargetsApi, SupervisedTargetsApiImpl, ValidatedUserApiImpl}
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.AuthorizationType.Deployer
 import com.normation.rudder.AuthorizationType.Validator
@@ -98,7 +100,7 @@ class ChangeValidationWorkflowLevelService(
     status                   : PluginStatus
   , defaultWorkflowService   : WorkflowService
   , validationWorkflowService: TwoValidationStepsWorkflowServiceImpl
-  , validationNeeded         : ValidationNeeded
+  , validationNeeded         : Seq[ValidationNeeded]
   , workflowEnabledByUser    : () => Box[Boolean]
 ) extends WorkflowLevelService {
 
@@ -129,17 +131,33 @@ class ChangeValidationWorkflowLevelService(
   }
 
   override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
-      getWorkflow(validationNeeded.forRule(actor, change))
+    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+      case (valid, Full(false)) => valid.forRule(actor,change)
+      case (_, res) => res
+    }
+      getWorkflow(result)
   }
 
   override def getForDirective(actor: EventActor, change: DirectiveChangeRequest): Box[WorkflowService] = {
-    getWorkflow(validationNeeded.forDirective(actor, change))
+    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+      case (valid, Full(false)) => valid.forDirective(actor,change)
+      case (_, res) => res
+    }
+    getWorkflow(result)
   }
   override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[WorkflowService] = {
-    getWorkflow(validationNeeded.forNodeGroup(actor, change))
+    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+      case (valid, Full(false)) => valid.forNodeGroup(actor,change)
+      case (_, res) => res
+    }
+    getWorkflow(result)
   }
   override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
-    getWorkflow(validationNeeded.forGlobalParam(actor, change))
+    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+      case (valid, Full(false)) => valid.forGlobalParam(actor,change)
+      case (_, res) => res
+    }
+    getWorkflow(result)
   }
 
   override def getByDirective(id: DirectiveId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
@@ -206,6 +224,14 @@ object ChangeValidationConf extends RudderPluginModule {
     new WoChangeRequestJdbcRepository(doobie, changeRequestMapper, roChangeRequestRepository)
   }
 
+  lazy val roValidatedUserRepository : RoValidatedUserJdbcRepository = {
+    new RoValidatedUserJdbcRepository(doobie, validatedUserMapper)
+  }
+
+  lazy val woValidatedUserRepository : WoValidatedUserRepository = {
+    new WoValidatedUserJdbcRepository(doobie, validatedUserMapper, roValidatedUserRepository)
+  }
+
 
   // other service instanciation / initialization
   RudderConfig.workflowLevelService.overrideLevel(
@@ -213,18 +239,22 @@ object ChangeValidationConf extends RudderPluginModule {
         pluginStatusService
       , RudderConfig.workflowLevelService.defaultWorkflowService
       , validationWorkflowService
-      , new NodeGroupValidationNeeded(
+      , Seq( new NodeGroupValidationNeeded(
             supervisedTargetRepo.load _
           , roChangeRequestRepository
           , RudderConfig.roRuleRepository
           , RudderConfig.roNodeGroupRepository
           , RudderConfig.nodeInfoService
         )
+        , new UserValidationNeeded(roValidatedUserRepository)
+      )
       , RudderConfig.configService.rudder_workflow_enabled _
     )
   )
 
   lazy val changeRequestMapper = new ChangeRequestMapper(RudderConfig.changeRequestChangesUnserialisation, RudderConfig.changeRequestChangesSerialisation)
+
+  lazy val validatedUserMapper = new ValidatedUserMapper()
 
   lazy val pluginDef = new ChangeValidationPluginDef(pluginStatusService)
 
@@ -243,6 +273,12 @@ object ChangeValidationConf extends RudderPluginModule {
       , techniqueRepository
       , workflowLevelService
       , commitAndDeployChangeRequest
+      , restDataSerializer
+    )
+    val api3 = new ValidatedUserApiImpl(
+        restExtractorService
+      , roValidatedUserRepository
+      , woValidatedUserRepository
       , restDataSerializer
     )
     new LiftApiModuleProvider[EndpointSchema] {
@@ -272,7 +308,7 @@ object ChangeValidationConf extends RudderPluginModule {
         }
       }
 
-      override def getLiftEndpoints(): List[LiftApiModule] = api1.getLiftEndpoints() ::: api2.getLiftEndpoints()
+      override def getLiftEndpoints(): List[LiftApiModule] = api1.getLiftEndpoints() ::: api2.getLiftEndpoints() ::: api3.getLiftEndpoints()
     }
   }
 

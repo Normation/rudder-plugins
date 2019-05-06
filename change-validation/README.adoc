@@ -195,3 +195,10 @@ You will be provided a Link to those change requests, so you can check if the ch
 
 image::workflows/Warning.png[]
 
+== Validated User
+
+A validated user is an user who is not subject to the workflow validation by change request. Any change done by a validated user
+is automatically deployed without any validation needed by another user
+Initially all validated users are displayed in change validation main page, you can manage the list by add or remove them from it.
+
+
