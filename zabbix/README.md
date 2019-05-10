@@ -57,18 +57,46 @@ modifications.
 In order to configure the monitoring of the Rudder nodes, you can provide Zabbix with parameters (macros) associated to its
 hosts. The "Monitoring parameter" generic method achieves this.
 
+```
+Make sure for addind monitoring parameter, the key field must be written in uppercase.
+```
+
 The data will be sent hourly to the Zabbix server. This can be changed by editing the /etc/cron.d/zabbix-rudder file.
 This operation can be manually executed by running
+
+Adding|Removing hosts
 ```
 /opt/rudder/bin/zabbix-plugin.py update
 ```
+
+Adding hosts
+```
+/opt/rudder/bin/zabbix-plugin.py hook addHost <id>
+```
+
+Removing hosts
+```
+/opt/rudder/bin/zabbix-plugin.py hook rmHost <hostname>
+```
 on the Rudder server.
+
+In order to configure the monitoring to the Rudder nodes, you can provide Zabbix with templates and parameters (macros) associated to Zabbix hosts.
+
+In Rudder, you can edit technique editors (monitoring templates - monitoring parameters) through generic methods provided by Rudder interface, assign then to a node via rule and eventually monitor theses directives by Zabbix.
+
+Once you done this, automatically a csv files will be creted to store theses directive names, to have a syncronization between Rudder and Zabbix ressources (Hosts - Templates - Macros).
+
+This operation can be mannually executed by running:
+```
+/opt/rudder/bin/zabbix-plugin.py apply-configuration
+```
 
 Authors
 -------
 
 Normation http://normation.com
 Victor Querette victor.querette@normation.com
+Nabil El khalii nabil.el-khalii@normation.com
 
 Contributing
 ------------
