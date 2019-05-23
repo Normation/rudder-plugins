@@ -1,0 +1,34 @@
+Rudder plugin: create-node-api
+-----------------------------
+
+This project is part of Rudder - Continuous configuration for effective compliance
+
+Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
+Automation & Compliance.
+
+See: http://rudder-project.org for more information.
+
+=== Description
+
+Create node by API
+
+This node allows to create a node via API.
+
+The goal is to be able to pre-accept (node in accepted status) or pre-defined (node in pending status) a node and defined some of his parameters, in particular properties.
+
+A node need at least the following information:
+
+- UUID,
+- hostname,
+- status,
+- OS: type, name
+
+Othre information are possible. See the plugin page in Rudder (or src/main/resources/template/CreateNodeApiManagement.html) for more information.
+
+Whatever the status, a node is created in pending status. Then, if the status is "accepted", node acceptation is automatically and immediately triggered. This ensure that nodes added by that API also follow the standard Rudder validation rules and dynamic group/policies are correctly updated.
+
+==== Request format
+
+The plugin provides a new API endpoint: PUT `/api/latest/createnode`
+
+See the plugin page in Rudder (or src/main/resources/template/CreateNodeApiManagement.html) for more information about request format.
