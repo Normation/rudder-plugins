@@ -16,8 +16,8 @@ $(targets): target/%: %
 	cp -a $< target/
 
 $(PYZABBIX_VERSION).zip:
-	wget https://github.com/lukecyca/pyzabbix/archive/$(PYZABBIX_VERSION).zip
-
+	# wget https://github.com/lukecyca/pyzabbix/archive/$(PYZABBIX_VERSION).zip
+	wget http://repository.rudder.io/build-dependencies/pyzabbix/$(PYZABBIX_VERSION).zip
 share/: $(PYZABBIX_VERSION).zip
 	unzip -o $(PYZABBIX_VERSION).zip
 	mkdir -p share/python

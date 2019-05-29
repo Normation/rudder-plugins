@@ -46,7 +46,8 @@ def getRequestToRudderAPI(conf, path):
             data = requests.get(conf["RUDDER"]["rudderAPIURL"] + path, headers={ 'X-API-Token': conf['RUDDER']['rudderAPIToken'] }, verify=False).json()
         except:
             print("[!] Error : check your Rudder API token")
-        return data
+            sys.exit(-1)
+            return data
 
 
 def addZabbixHost(zapi, node):
@@ -233,9 +234,7 @@ if __name__ == "__main__":
                                         for result in template["result"]:
                                             templateidADD = result["templateid"]
                                         linkTemplate = zapi.do_request("template.massadd", params={"output":"extend", "templates": [{ "templateid": templateidADD }], "hosts":[{"hostid": hostid }]})
-                                        print('[ ] Applying conf : the host ' + hostid + ' is linked to the template ' + templateidADD + ' ...')
-                                    #else:
-                                        #print('[ ] Template ' + row[1] + ' already applied to node ' + result['host'] + ' ...') 
+                                        print('[ ] Applying conf : the host ' + hostid + ' is linked to the template ' + templateidADD + ' ...') 
                             
                             
                             # Macros
