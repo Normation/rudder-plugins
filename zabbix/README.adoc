@@ -1,0 +1,85 @@
+Plugin for ZABBIX and Rudder
+----------------------------
+
+This project is part of Rudder - IT automation and compliance made easy.
+See: http://rudder-project.org for more information.
+
+Mailing list, irc : 
+https://www.rudder-project.org/site/community/mailing-lists/
+
+Synposis
+~~~~~~~~
+
+This plugin aims at providing Rudder integration with Zabbix. It can automatically
+add hosts to Zabbix when the corresponding node is set up for monitoring in Rudder.
+
+The nodes can also have Zabbix macros applied using the appropriate generic method directly in
+Rudder's technique editor.
+
+Generate the Rudder package if you do not already have the .rpkg file:
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+
+= Zabbix
+
+This plugin aims at providing Rudder integration with Zabbix. It can automatically add hosts to Zabbix
+when the corresponding node is set up for monitoring in Rudder.
+
+
+== Installation
+
+* Install the package on the Rudder server:
+
+----
+/opt/rudder/bin/rudder-pkg install-file <plugin>.rpkg
+----
+
+* Edit the configuration file `/opt/rudder/etc/zabbix.conf`. This config file has to contain your Zabbix
+  server's webservice API URL and the credentials to access it.
+  You also need to provide the Rudder API URL, and a token to access it, which you will need to issue : 
+  see https://www.rudder-project.org/rudder-api-doc/#api-_-Authentication[the API documentation] for more information.
+
+== Usage
+
+Now that the plugin is installed, you can check if it is working by adding new Rudder nodes. They will be automatically added to your list of Zabbix hosts (and removed on deletion of the Rudder node).
+
+
+In order to configure the monitoring of the Rudder nodes, you can provide Zabbix with parameters (macros) associated to its hosts. The "Monitoring parameter" generic method achieves this.
+
+NOTE: Make sure for adding monitoring parameter, the key field must be written in uppercase.
+
+
+The data will be sent hourly to the Zabbix server. This can be changed by editing the 
+`/etc/cron.d/zabbix-rudder` file. 
+
+This operation can be manually executed by running:
+
+Adding|Removing hosts:
+
+----
+/opt/rudder/bin/zabbix-plugin.py update
+----
+
+Adding hosts:
+
+----
+/opt/rudder/bin/zabbix-plugin.py hook addHost <id>
+----
+
+Removing hosts:
+
+----
+/opt/rudder/bin/zabbix-plugin.py hook rmHost <hostname>
+----
+
+on the Rudder server.
+
+In order to configure the monitoring to the Rudder nodes, you can provide Zabbix with templates and parameters (macros) associated to Zabbix hosts and will be synchronized with zabbix using its API.
+
+
+This operation can be mannually executed by running:
+
+----
+/opt/rudder/bin/zabbix-plugin.py apply-configuration
+----
