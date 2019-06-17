@@ -5,3 +5,4 @@
 ELM_DIR="$( cd "$( dirname "$0" )" && pwd )"
 cd $ELM_DIR
 elm make sources/supervised-targets.elm --output=generated/supervised-targets.js
+elm make sources/WorkflowUsers.elm --output=generated/WorkflowUsers.js
