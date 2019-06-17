@@ -12,6 +12,7 @@
       <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen" data-lift="with-cached-resource">
       <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
       <script src="/toserve/changevalidation/supervised-targets.js" data-lift="with-cached-resource"></script>
+      <script src="/toserve/changevalidation/WorkflowUsers.js" data-lift="with-cached-resource"></script>
     </head_merge>
 
     <div class="lift:ChangeValidationSettings.activation" id="workflowForm">
@@ -90,6 +91,23 @@
       </div>
     </div>
 
+    <div class="inner-portlet">
+      <div class="page-title">Configure Users with change validation</div>
+      <div class="portlet-content">
+        <div class="col-xs-12 callout-fade callout-warning">
+          <div class="marker">
+            <span class="glyphicon glyphicon-info-sign"></span>
+          </div>
+          <p>
+            Any change done by a Validated User will be automaticaly deployed without validation needed by another user.
+          </p>
+        </div>
+        <div id="WorkflowUsers-app">
+          <div id="validated-users-management"/>
+        </div>
+      </div>
+    </div>
+
     <div id="supervised-target">
       <div class="inner-portlet">
         <div class="page-title">Configure Groups with Change Validations</div>
@@ -123,13 +141,14 @@
           <div id="supervised-targets-app">
             <div id="list-groups-change-validation"/>
           </div>
-
           <script>
               var main = document.getElementById("list-groups-change-validation");
+              var wu = document.getElementById("validated-users-management");
               var initValues = {
                  contextPath : contextPath
-                };
+              };
               var app  = Elm.SupervisedTargets.init({ node: main,  flags: initValues});
+              var app2 = Elm.WorkflowUsers.init({ node: wu, flags: initValues})
           </script>
 
         </div>
