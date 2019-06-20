@@ -75,7 +75,7 @@ import sourcecode.Line
 
 sealed trait SupervisedTargetsApi extends EndpointSchema with InternalApi with SortIndex
 object SupervisedTargetsApi extends ApiModuleProvider[SupervisedTargetsApi] {
-
+  val zz=11
   final case object GetAllTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description    = "Get all available node groups with their role in change request validation"
@@ -142,6 +142,7 @@ class SupervisedTargetsApiImpl(
            RestUtils.toJsonResponse(None, Extraction.decompose(jsonRootCat))(schema.name, params.prettify)
         case eb:EmptyBox =>
           val err = (eb ?~! "Error when trying to get group information").messageChain
+          ChangeValidationLogger.error(err)
           RestUtils.toJsonError(None, JString(err))(schema.name, params.prettify)
       }
     }
@@ -173,7 +174,8 @@ class SupervisedTargetsApiImpl(
           case Full(x)      =>
             RestUtils.toJsonResponse(None, JString("Set of target needing validation has beed updated"))(schema.name, params.prettify)
           case eb: EmptyBox =>
-            val msg = (eb ?~! "An error occured when trying to save the set of rule target which needs validation").messageChain
+            val msg = (eb ?~! "An error occurred when trying to save the set of rule target which needs validation").messageChain
+            ChangeValidationLogger.error(msg)
             toJsonError(None, JString(msg))("updateRule",restExtractor.extractPrettify(req.params))
         }
       } else {

@@ -79,7 +79,10 @@ class SupervisedTargetsReposiory(
       FileUtils.writeStringToFile(path, jsonString, StandardCharsets.UTF_8)
       Full(())
     } catch {
-      case NonFatal(ex) => Failure(s"Error when saving list of group which trigger a change validation request from '${path.getAbsolutePath}'", Full(ex), Empty)
+      case NonFatal(ex) =>
+        val msg = s"Error when saving list of group which trigger a change validation request from '${path.getAbsolutePath}'"
+        ChangeValidationLogger.error(msg)
+        Failure(msg, Full(ex), Empty)
     }
   }
 
@@ -89,7 +92,10 @@ class SupervisedTargetsReposiory(
       try {
         Full(FileUtils.readFileToString(path, StandardCharsets.UTF_8))
       } catch {
-        case NonFatal(ex) => Failure(s"Error when reading list of group which trigger a change validation request from '${path.getAbsolutePath}'", Full(ex), Empty)
+        case NonFatal(ex) =>
+          val msg = s"Error when reading list of group which trigger a change validation request from '${path.getAbsolutePath}'"
+          ChangeValidationLogger.error(msg)
+          Failure(msg, Full(ex), Empty)
       }
     }
 
