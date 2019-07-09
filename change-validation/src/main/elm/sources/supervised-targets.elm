@@ -305,7 +305,7 @@ view model =
                 , div [ class "panel-footer" ] [ button [ onClick SendSave, class "btn btn-success pull-right" ] [ text "Save" ] ]
                 ]
             ]
-        , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
+        , div [ class "toasties"] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
         ]
 
 
@@ -420,6 +420,7 @@ defaultConfig =
             , style "list-style-type" "none"
             , style "padding" "0"
             , style "margin" "0"
+            , style "z-index" "9999"
             ]
 
 
