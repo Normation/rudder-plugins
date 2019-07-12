@@ -37,6 +37,7 @@
 
 package com.normation.plugins.usermanagement.snippet
 
+import better.files.Resource
 import bootstrap.liftweb.RudderConfig
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.http.js.JE._
@@ -52,6 +53,9 @@ class UserPlugin extends DispatchSnippet {
   def dispatch = {
     case "getAuthzConfig" => getAuthzConfig
   }
+
+
+  val t = Resource.getAsString("demo-rudder-users.xml")
 
   def getAuthzConfig: NodeSeq => NodeSeq = { xml : NodeSeq =>
     import com.normation.plugins.usermanagement.Serialisation._
