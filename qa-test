@@ -1,3 +1,4 @@
 #!/bin/bash
+set -e
 
 find . -name '*.py' | grep -v share/python | grep -v zabbix | xargs -r pylint -E --disable=C,R,undefined-variable  --persistent=n --init-hook="sys.path[0:0] = ['./centreon/share/python']"
