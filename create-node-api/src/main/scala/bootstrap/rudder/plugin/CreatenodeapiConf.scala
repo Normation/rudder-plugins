@@ -50,7 +50,7 @@ import com.normation.rudder.repository.ldap.LDAPEntityMapper
 object CreatenodeapiConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
   lazy val pluginDef = new CreateNodeApiPluginDef(CreatenodeapiConf.pluginStatusService)
 

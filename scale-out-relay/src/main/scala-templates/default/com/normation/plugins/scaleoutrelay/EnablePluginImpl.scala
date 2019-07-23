@@ -43,5 +43,7 @@ import com.normation.plugins.PluginEnableImpl
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginEnableImpl() extends PluginEnableImpl
+import com.normation.rudder.services.nodes.NodeInfoService
+
+final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends PluginEnableImpl
 

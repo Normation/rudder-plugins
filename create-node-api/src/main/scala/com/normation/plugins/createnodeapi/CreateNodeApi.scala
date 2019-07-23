@@ -66,9 +66,7 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.servers.NewNodeManager
 import com.normation.utils.StringUuidGenerator
-import net.liftweb.common.Empty
 import net.liftweb.common.EmptyBox
-import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -76,6 +74,11 @@ import net.liftweb.json.JString
 import net.liftweb.json.NoTypeHints
 import org.joda.time.DateTime
 import sourcecode.Line
+import com.normation.box._
+import zio._
+import zio.syntax._
+import com.normation.errors._
+import com.normation.zio.ZioRuntime
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -129,12 +132,12 @@ class CreateNodeApiImpl(
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
         json              <- req.json ?~! "This API only Accept JSON request"
-        nodes             <- Serialize.parseAll(json)
+        nodes             <- Serialize.parseAll(json).toBox
       } yield {
         import com.softwaremill.quicklens._
         nodes.foldLeft(ResultHolder(Nil, Nil)) { case (res, node) =>
           // now, try to save each node
-          saveNode(node, authzToken.actor) match {
+          ZioRuntime.unsafeRun(saveNode(node, authzToken.actor).either) match {
             case Right(id) => res.modify(_.created).using(_ :+id)
             case Left(err) => res.modify(_.failed ).using(_ :+ ((node.id, err)) )
           }
@@ -163,12 +166,12 @@ class CreateNodeApiImpl(
      * - if needed, accept
      * - now, setup node info (property, state, etc)
      */
-    def saveNode(nodeDetails: Rest.NodeDetails, eventActor: EventActor): Either[CreationError, NodeId] = {
+    def saveNode(nodeDetails: Rest.NodeDetails, eventActor: EventActor): IO[CreationError, NodeId] = {
       import Validated._
       def toCreationError(res: ValidatedNel[NodeValidationError, NodeTemplate]) = {
         res match {
-          case Invalid(nel) => Left(CreationError.OnValidation(nel))
-          case Valid(r)     => Right(r)
+          case Invalid(nel) => CreationError.OnValidation(nel).fail
+          case Valid(r)     => r.succeed
         }
       }
 
@@ -186,31 +189,19 @@ class CreateNodeApiImpl(
      * Save the inventory part. Alway save in "pending", acceptation
      * is done aftrward if needed.
      */
-    def saveInventory(inventory: FullInventory): Either[CreationError, NodeId] = {
-      (for {
-        iSaved <- inventoryRepos.save(inventory)
-      } yield {
-        inventory.node.main.id
-      }) match {
-        case Full(id)     => Right(id)
-        case eb: EmptyBox => Left(CreationError.OnSaveInventory((eb?~!"Error during node creation").messageChain))
-      }
+    def saveInventory(inventory: FullInventory): IO[CreationError, NodeId] = {
+      inventoryRepos.save(inventory).map(_ => inventory.node.main.id).mapError(err => CreationError.OnSaveInventory(s"Error during node creation: ${err.fullMsg}"))
     }
 
-    def accept(template: NodeTemplate, eventActor: EventActor): Either[CreationError, NodeSetup] = {
+    def accept(template: NodeTemplate, eventActor: EventActor): IO[CreationError, NodeSetup] = {
       val id = template.inventory.node.main.id
-      newNodeManager.accept(id, ModificationId(uuidGen.newUuid), eventActor) match {
-        case eb: EmptyBox =>
-          Left(CreationError.OnAcceptation((eb?~! s"Can not accept node '${id.value}'").messageChain))
-        case Full(x)      =>
-          val setup = template match {
+
+      newNodeManager.accept(id, ModificationId(uuidGen.newUuid), eventActor).toIO.mapError(err => CreationError.OnAcceptation((s"Can not accept node '${id.value}': ${err.fullMsg}"))) *> (template match {
             case AcceptedNodeTemplate(_, properties, policyMode, state) =>
               NodeSetup(properties, policyMode, state)
             case PendingNodeTemplate(_, properties) =>
               NodeSetup(properties, None, None)
-          }
-          Right(setup)
-      }
+          }).succeed
     }
 
     def mergeNodeSetup(node: Node, changes: NodeSetup): Node = {
@@ -234,27 +225,24 @@ class CreateNodeApiImpl(
      * we provide a default node context but we can't ensure that
      * policyMode / node state will be set (validation must forbid that)
      */
-    def saveRudderNode(id: NodeId, setup: NodeSetup): Either[CreationError, NodeId] = {
+    def saveRudderNode(id: NodeId, setup: NodeSetup): IO[CreationError, NodeId] = {
       // a default Node
-      def default() = Node(id, id.value, "", NodeState.Enabled, false, false, DateTime.now, ReportingConfiguration(None, None), Nil, None)
+      def default() = Node(id, id.value, "", NodeState.Enabled, false, false, DateTime.now, ReportingConfiguration(None, None, None), Nil, None)
 
       (for {
         ldap    <- ldapConnection
         // try t get node
-        current <- ldap.get(nodeDit.NODES.NODE.dn(id.value), NodeInfoService.nodeInfoAttributes:_*) match {
-                     case Full(x)   => ldapEntityMapper.entryToNode(x)
-                     case Empty     => Full(default())
-                     case f:Failure => f
+        entry   <- ldap.get(nodeDit.NODES.NODE.dn(id.value), NodeInfoService.nodeInfoAttributes:_*)
+        current <- entry match {
+                     case Some(x) => ldapEntityMapper.entryToNode(x).toIO
+                     case None    => default().succeed
                    }
         merged  =  mergeNodeSetup(current, setup)
         // we ony want to touch things that were asked by the user
         nSaved  <- ldap.save(ldapEntityMapper.nodeToEntry(merged))
       } yield {
         merged.id
-      }) match {
-        case Full(id)     => Right(id)
-        case eb: EmptyBox => Left(CreationError.OnSaveNode((eb?~!"Error during node creation").messageChain))
-      }
+      }).mapError(err => CreationError.OnSaveNode(s"Error during node creation: ${err.fullMsg}"))
     }
   }
 }

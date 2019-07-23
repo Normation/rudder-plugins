@@ -39,6 +39,7 @@ package com.normation.plugins.createnodeapi
 
 import cats.data._
 import cats.implicits._
+import com.normation.NamedZioLogger
 import com.normation.inventory.domain.AgentType.CfeCommunity
 import com.normation.inventory.domain.AgentType.Dsc
 import com.normation.inventory.domain._
@@ -48,20 +49,14 @@ import com.normation.plugins.createnodeapi.NodeTemplate.PendingNodeTemplate
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.PolicyMode
-import net.liftweb.common.Box
-import net.liftweb.common.Empty
-import net.liftweb.common.EmptyBox
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
-import net.liftweb.common.Logger
 import net.liftweb.json.JsonAST.JValue
-import org.slf4j.LoggerFactory
+import com.normation.errors._
 
 /**
  * Applicative log of interest for Rudder ops.
  */
-object CreatenodeapiLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("create-node-api")
+object CreatenodeapiLogger extends NamedZioLogger {
+  override def loggerName: String ="create-node-api"
 }
 
 
@@ -150,12 +145,8 @@ object Serialize {
   implicit val formats = DefaultFormats
 
 
-  def parseAll(json: JValue): Box[List[Rest.NodeDetails]] = {
-    try {
-      Full(json.extract[List[Rest.NodeDetails]])
-    } catch {
-      case ex: Exception => Failure(s"Error when deserializing a nodes for creation API: ${ex.getMessage}", Empty, Empty)
-    }
+  def parseAll(json: JValue): IOResult[List[Rest.NodeDetails]] = {
+    IOResult.effect(s"Error when deserializing a nodes for creation API")(json.extract[List[Rest.NodeDetails]])
   }
 
     /*
@@ -338,8 +329,8 @@ object Validation {
 
   def checkAgent(osType: OsType, agent: AgentKey): Validation[AgentInfo] = {
     def checkSecurityToken(agent: AgentType, token: JValue) : Validation[SecurityToken] = AgentInfoSerialisation.parseSecurityToken(agent, token, None) match {
-      case eb: EmptyBox => NodeValidationError.SecurityVal((eb ?~! "").messageChain).invalidNel
-      case Full(x)      => x.validNel
+      case Left(err) => NodeValidationError.SecurityVal(err.fullMsg).invalidNel
+      case Right(x)  => x.validNel
     }
     val tpe = osType match {
       case _: WindowsType => Dsc
@@ -352,8 +343,8 @@ object Validation {
   }
 
   def checkKeyStatus(s: String): Validation[KeyStatus] = KeyStatus(s) match {
-    case eb: EmptyBox => NodeValidationError.KeyStatus(s).invalidNel
-    case Full(x)      => x.validNel
+    case Left(err) => NodeValidationError.KeyStatus(s).invalidNel
+    case Right(x)  => x.validNel
   }
 
   /*

@@ -65,6 +65,7 @@ import net.liftweb.json.NoTypeHints
 import net.liftweb.json._
 import sourcecode.Line
 
+import com.normation.box._
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -134,7 +135,7 @@ class SupervisedTargetsApiImpl(
 
       (for {
         supervised  <- supervisedTargetsRepos.load()
-        jsonRootCat <- nodeGroupRepository.getFullGroupLibrary().map(_.toJson(supervised))
+        jsonRootCat <- nodeGroupRepository.getFullGroupLibrary().map(_.toJson(supervised)).toBox
       } yield {
         jsonRootCat
       }) match {

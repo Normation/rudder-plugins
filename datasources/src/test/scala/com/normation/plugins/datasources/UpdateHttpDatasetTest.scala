@@ -37,6 +37,8 @@
 
 package com.normation.plugins.datasources
 
+import java.util.concurrent.Executors
+
 import com.normation.plugins.PluginEnableImpl
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
@@ -61,7 +63,6 @@ import monix.execution.schedulers.TestScheduler
 import net.liftweb.common._
 import net.liftweb.json.JsonAST.JString
 import net.liftweb.json.JsonAST.JValue
-import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.util._
 import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
@@ -78,15 +79,26 @@ import com.normation.rudder.domain.queries.NodeInfoMatcher
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
-import fs2.Stream._
 import org.http4s.HttpService
-import cats.effect._
 import org.http4s._
 import org.http4s.dsl.io._
-
+import cats.effect._
+import cats.effect.concurrent.Ref
+import com.github.ghik.silencer.silent
+import com.normation.zio.ZioRuntime
+import org.http4s.server.Router
+import org.http4s.server.blaze.BlazeServerBuilder
+import zio.syntax._
+import zio.{IO => _, _}
+import com.normation.errors._
+import com.normation.zio._
 
 @RunWith(classOf[JUnitRunner])
-class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
+class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll  {
+
+  implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+  implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
+
 
   //utility to compact render a json string
   //will throws exceptions if errors
@@ -103,12 +115,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val counterSuccess = AtomicInt(0)
     val maxPar = AtomicInt(0)
 
-    // an fs2 scheduler
-    val scheduler = fs2.Scheduler[IO](1)
+    // a timer
+    val timer = cats.effect.IO.timer(blockingExecutionContext)
 
     // a delay methods that use the scheduler
-    def delayResponse(resp: IO[Response[IO]])(implicit F: cats.effect.Async[IO], ec: ExecutionContext = ExecutionContext.global): IO[Response[IO]] = {
-      scheduler.evalMap( _.effect.sleep(Random.nextInt(1000).millis) ).compile.drain.flatMap(_ =>
+    def delayResponse(resp: IO[Response[IO]]): IO[Response[IO]] = {
+      timer.sleep(Random.nextInt(1000).millis).flatMap(_ =>
         resp
       )
     }
@@ -120,7 +132,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
 
-    def service(implicit F: cats.effect.Async[IO], ec: ExecutionContext = ExecutionContext.global) = HttpService[IO] {
+    def service=  HttpRoutes.of[IO] {
       case _ -> Root =>
         IO.pure(Response(MethodNotAllowed))
 
@@ -197,19 +209,20 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         }
     }
 
+    @silent // deprecation warning
     def ioCountService(implicit F: cats.effect.Async[IO]): IO[HttpService[IO]] = {
       for {
-        currentConcurrent <- fs2.async.refOf[IO, Int](0)
-        maxConcurrent     <- fs2.async.refOf[IO, Int](0)
+        currentConcurrent <- Ref.of[IO, Int](0)
+        maxConcurrent     <- Ref.of[IO, Int](0)
         service           <- IO.pure(HttpService[IO] {
                                case GET -> Root / x =>
                                  for {
-                                   - <- currentConcurrent.modify(_ + 1)
+                                   - <- currentConcurrent.update(_ + 1)
                                    c <- currentConcurrent.get
-                                   _ <- maxConcurrent.modify(m => if(c > m) c else { maxPar.set(m) ; m})
+                                   _ <- maxConcurrent.update(m => if(c > m) c else { maxPar.set(m) ; m})
                                    m <- maxConcurrent.get
                                    x <- Ok { nodeJson(x) }
-                                   _ <- currentConcurrent.modify(_ - 1)
+                                   _ <- currentConcurrent.update(_ - 1)
                                  } yield x
                              } )
       } yield service
@@ -218,22 +231,21 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   }
 
   //start server on a free port
-  val server =
+  @silent // deprecation warning
+  val serverR =
     (for {
       count  <- NodeDataset.ioCountService
-      server <- BlazeBuilder.apply[IO].bindAny()
+      httpApp = Router("/datasources" -> NodeDataset.service, "/datasources/parallel" -> count).orNotFound
+      server = BlazeServerBuilder[IO].withExecutionContext(blockingExecutionContext).bindAny()
         .withConnectorPoolSize(1) //to make the server slow and validate that it still works
-        .mountService(NodeDataset.service, "/datasources")
-        .mountService(count, "/datasources/parallel")
-        .start
+        .withHttpApp(httpApp)
     } yield {
-      server
-    }).unsafeRunSync
+      server.resource
+    }).unsafeRunSync()
 
-  val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
+
 
   override def afterAll(): Unit = {
-    server.shutdownNow()
   }
 
   val actor = EventActor("Test-actor")
@@ -243,9 +255,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   val fetch = new GetDataset(interpolation)
 
   val parameterRepo = new RoParameterRepository() {
-    def getAllGlobalParameters() = Full(Seq())
-    def getAllOverridable() = Full(Seq())
-    def getGlobalParameter(parameterName: ParameterName) = Empty
+    def getAllGlobalParameters() = Seq().succeed
+    def getAllOverridable() = Seq().succeed
+    def getGlobalParameter(parameterName: ParameterName) = None.succeed
   }
 
   class TestNodeRepoInfo(initNodeInfo: Map[NodeId, NodeInfo]) extends WoNodeRepository with NodeInfoService {
@@ -255,20 +267,26 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     //used for test
     //number of time each node is updated
     val updates = scala.collection.mutable.Map[NodeId, Int]()
+    val semaphore = ZioRuntime.unsafeRun(Semaphore.make(1))
 
     // WoNodeRepository methods
-    def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): Box[Node] = this.synchronized {
+    override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]) = {
       for {
-        existing <- Box(nodes.get(node.id)) ?~! s"Missing node with key ${node.id.value}"
+        _        <- semaphore.acquire
+        existing <- nodes.get(node.id).notOptional(s"Missing node with key ${node.id.value}")
+        _        <- IOResult.effect {
+                      this.updates += (node.id -> (1 + updates.getOrElse(node.id, 0) ) )
+                      this.nodes = (nodes + (node.id -> existing.copy(node = node) ) )
+                    }
+        _        <- semaphore.release
       } yield {
-        this.updates += (node.id -> (1 + updates.getOrElse(node.id, 0) ) )
-        this.nodes = (nodes + (node.id -> existing.copy(node = node) ) )
         node
       }
     }
 
     // NodeInfoService
     def getAll() = synchronized(Full(nodes))
+    def getNumberOfManagedNodes: Int = nodes.size - 1
     def getAllNodes()                         = throw new IllegalAccessException("Thou shall not used that method here")
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
@@ -348,6 +366,27 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   }
 
   object Enabled extends PluginEnableImpl
+
+  import org.specs2.specification.core.Fragments
+  def withResource[A](r: Resource[IO, A])(fs: A => Fragments): Fragments =
+    r match {
+      case Resource.Allocate(alloc) =>
+        alloc
+          .map {
+            case (a, release) =>
+              fs(a).append(step(release(ExitCase.Completed).unsafeRunSync()))
+          }
+          .unsafeRunSync()
+      case Resource.Bind(r, f) =>
+        withResource(r)(a => withResource(f(a))(fs))
+      case Resource.Suspend(r) =>
+        withResource(r.unsafeRunSync() /* ouch */ )(fs)
+    }
+
+  withResource(serverR) { server =>
+
+  val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
+
 
   sequential
 
@@ -486,7 +525,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     "comply with the limit of parallel queries" in {
       // Max paraallel is the minimum of 2 and the available thread on the machine
       // So tests don't fait if the build machine has one core
-      val MAX_PARALLEL = Math.min(2, Runtime.getRuntime.availableProcessors)
+      val MAX_PARALLEL = Math.min(2, java.lang.Runtime.getRuntime.availableProcessors)
       val ds = maxParDataSource(MAX_PARALLEL)
       val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
       //all node updated one time
@@ -650,7 +689,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
         val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse(""), None)))).openOrThrowException("test must be able to set prop")
         val up = node.node.copy(properties = newProps)
-        infos.updateNode(up, modId, actor, None)
+        infos.updateNode(up, modId, actor, None).runNow
       }
 
       infos.updates.clear()
@@ -690,6 +729,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         props must havePairs( props.keySet.map(x => (x, Some(JString("test-404"))) ).toSeq:_* )
       }
     }
+  }
   }
 
   lazy val booksJson = """

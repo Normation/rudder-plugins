@@ -72,6 +72,7 @@ import net.liftweb.util.Helpers._
 import org.joda.time.DateTime
 
 import scala.xml._
+import com.normation.box._
 
 object ChangeRequestChangesForm {
   def form = ChooseTemplate(
@@ -102,7 +103,7 @@ class ChangeRequestChangesForm(
       _ =>
         changeRequest match {
           case cr: ConfigurationChangeRequest =>
-            ruleCategoryRepository.getRootCategory match {
+            ruleCategoryRepository.getRootCategory.toBox match {
               case Full(rootRuleCategory) =>
 
                 ( "#changeTree ul *" #>  treeNode(cr, rootRuleCategory).toXml &
@@ -564,7 +565,7 @@ class ChangeRequestChangesForm(
 
              val rule = change.diff.rule
             (for {
-                groupLib <- getGroupLib()
+                groupLib <- getGroupLib().toBox
             } yield {
 
               change.diff match {

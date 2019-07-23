@@ -77,6 +77,7 @@ import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.CompareProperties
 import net.liftweb.common.Failure
 import com.normation.plugins.datasources.api.{ DataSourceApi => API }
+import com.normation.box._
 
 class DataSourceApiImpl (
     extractor         : RestExtractorService
@@ -322,7 +323,7 @@ class DataSourceApiImpl (
           for {
             newProps     <- CompareProperties.updateProperties(node.properties, Some(Seq(newProp)))
             newNode      =  node.copy(properties = newProps)
-            nodeUpdated  <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason) ?~! s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'"
+            nodeUpdated  <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason).toBox ?~! s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'"
           } yield {
             NodeUpdateResult.Updated(nodeUpdated.id)
           }

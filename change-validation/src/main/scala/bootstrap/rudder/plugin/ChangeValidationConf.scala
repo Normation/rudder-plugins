@@ -91,7 +91,7 @@ import com.normation.rudder.services.workflows.WorkflowService
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 
-
+import com.normation.box._
 
 /*
  * The validation workflow level
@@ -191,7 +191,7 @@ class ChangeValidationWorkflowLevelService(
 object ChangeValidationConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
   lazy val roWorkflowRepository = new RoWorkflowJdbcRepository(RudderConfig.doobie)
   lazy val woWorkflowRepository = new WoWorkflowJdbcRepository(RudderConfig.doobie)
@@ -208,8 +208,8 @@ object ChangeValidationConf extends RudderPluginModule {
     , roChangeRequestRepository
     , woChangeRequestRepository
     , () => Full(RudderConfig.workflowLevelService.workflowEnabled)
-    , RudderConfig.configService.rudder_workflow_self_validation _
-    , RudderConfig.configService.rudder_workflow_self_deployment _
+    , () => RudderConfig.configService.rudder_workflow_self_validation.toBox
+    , () => RudderConfig.configService.rudder_workflow_self_deployment.toBox
   )
 
   lazy val supervisedTargetRepo = new SupervisedTargetsReposiory(
@@ -248,7 +248,7 @@ object ChangeValidationConf extends RudderPluginModule {
         )
         , new UserValidationNeeded(roValidatedUserRepository)
       )
-      , RudderConfig.configService.rudder_workflow_enabled _
+      , () => RudderConfig.configService.rudder_workflow_enabled.toBox
     )
   )
 

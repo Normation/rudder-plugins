@@ -379,32 +379,33 @@ class DataSourceJdbcRepository(
 
   import doobie._
 
-  implicit val DataSourceComposite: Composite[DataSource] = {
-    import com.normation.plugins.datasources.DataSourceJsonSerializer._
-    import net.liftweb.json.compactRender
+  implicit val dataSourceRead: Read[DataSource] = {
     import net.liftweb.json.parse
-    Composite[(DataSourceId,String)].imap(
+    Read[(DataSourceId,String)].map(
         tuple => DataSourceExtractor.CompleteJson.extractDataSource(tuple._1,parse(tuple._2)) match {
           case Full(s) => s
           case eb : EmptyBox  =>
             val fail = eb ?~! s"Error when deserializing data source ${tuple._1} from following data: ${tuple._2}"
             throw new RuntimeException(fail.messageChain)
         }
-      )(
-        source => (source.id, compactRender(serialize(source)))
       )
+  }
+  implicit val dataSourceWrite: Write[DataSource] = {
+    import com.normation.plugins.datasources.DataSourceJsonSerializer._
+    import net.liftweb.json.compactRender
+    Write[(DataSourceId,String)].contramap(source => (source.id, compactRender(serialize(source))))
   }
 
   override def getAllIds: Box[Set[DataSourceId]] = {
-    query[DataSourceId]("""select id from datasources""").to[Set].transact(xa).attempt.unsafeRunSync()
+    transactRunBox(xa => query[DataSourceId]("""select id from datasources""").to[Set].transact(xa))
   }
 
   override def getAll: Box[Map[DataSourceId,DataSource]] = {
-    query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.transact(xa).attempt.unsafeRunSync()
+    transactRunBox(xa => query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.transact(xa))
   }
 
   override def get(sourceId : DataSourceId): Box[Option[DataSource]] = {
-    sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.transact(xa).attempt.unsafeRunSync()
+    transactRunBox(xa => sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.transact(xa))
   }
 
   override def save(source : DataSource): Box[DataSource] = {
@@ -429,7 +430,7 @@ class DataSourceJdbcRepository(
 
     DataSource.reservedIds.get(source.id) match {
       case None =>
-        sql.map(_ => source).transact(xa).attempt.unsafeRunSync()
+        transactRunBox(xa => sql.map(_ => source).transact(xa))
 
       case Some(msg) =>
         Failure(s"You can't use the reserved data sources id '${source.id.value}': ${msg}")
@@ -438,7 +439,7 @@ class DataSourceJdbcRepository(
 
   override def delete(sourceId : DataSourceId): Box[DataSourceId] = {
     val query = sql"""delete from datasources where id = ${sourceId}"""
-    query.update.run.map(_ => sourceId).transact(xa).attempt.unsafeRunSync()
+    transactRunBox(xa => query.update.run.map(_ => sourceId).transact(xa))
   }
 
 }

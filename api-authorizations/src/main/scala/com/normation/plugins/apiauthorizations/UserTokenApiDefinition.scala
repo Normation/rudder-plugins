@@ -54,7 +54,7 @@ import net.liftweb.json._
 import org.joda.time.DateTime
 import com.normation.rudder.rest.{UserApi => API}
 
-
+import com.normation.box._
 
 class UserApi(
     restExtractor : RestExtractorService
@@ -87,7 +87,7 @@ class UserApi(
     val schema = API.GetApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      readApi.getById(ApiAccountId(authzToken.actor.name)) match {
+      readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
         case Full(Some(token)) =>
           val accounts: JValue = ("accounts" -> JArray(List(token.toJson)))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)
@@ -119,7 +119,7 @@ class UserApi(
         , now
       )
 
-      writeApi.save(account, ModificationId(uuidGen.newUuid), authzToken.actor) match {
+      writeApi.save(account, ModificationId(uuidGen.newUuid), authzToken.actor).toBox match {
         case Full(token) =>
           val accounts: JValue = ("accounts" -> JArray(List(token.toJson)))
           RestUtils.toJsonResponse(None,accounts)(schema.name, true)
@@ -135,7 +135,7 @@ class UserApi(
     val schema = API.DeleteApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      writeApi.delete(ApiAccountId(authzToken.actor.name), ModificationId(uuidGen.newUuid), authzToken.actor) match {
+      writeApi.delete(ApiAccountId(authzToken.actor.name), ModificationId(uuidGen.newUuid), authzToken.actor).toBox match {
         case Full(token) =>
           val accounts: JValue = ("accounts" -> ("id" -> token.value))
           RestUtils.toJsonResponse(None,accounts)(schema.name, true)
@@ -151,7 +151,7 @@ class UserApi(
     val schema = API.UpdateApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      readApi.getById(ApiAccountId(authzToken.actor.name)) match {
+      readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
         case Full(Some(token)) =>
           val accounts: JValue = ("accounts" -> JArray(List(token.toJson)))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)

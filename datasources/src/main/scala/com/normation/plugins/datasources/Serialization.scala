@@ -309,7 +309,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
                 Traverse[List].sequence(converted.toList)
               }
 
-            case JNothing   => emptyValue
+            case JNothing   => emptyValue(key)
             case x          => Failure(s"Invalid json to extract a json array, current value is: ${compactRender(x)}")
           }
         }
@@ -414,10 +414,9 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
 }
 
 object DataSourceExtractor {
-
   object OptionnalJson extends DataSourceExtractor[Option] {
     def monad = implicitly
-    def emptyValue[T] = Full(None)
+    def emptyValue[T](id : String) = Full(None)
     def getOrElse[T](value : Option[T], default : T) = value.getOrElse(default)
   }
 
@@ -425,7 +424,7 @@ object DataSourceExtractor {
 
   object CompleteJson extends DataSourceExtractor[Id] {
     def monad = implicitly
-    def emptyValue[T] = Failure(s"parameter cannot be empty")
+    def emptyValue[T](id : String) = Failure(s"parameter '${id}' cannot be empty")
     def getOrElse[T](value : T, default : T) = value
   }
 }

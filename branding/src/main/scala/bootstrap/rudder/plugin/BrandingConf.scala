@@ -50,7 +50,7 @@ import com.normation.rudder.rest.{BrandingApi, BrandingApiService}
 object BrandingPluginConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
   import bootstrap.liftweb.{ RudderConfig => Cfg }
 

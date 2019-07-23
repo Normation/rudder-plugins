@@ -68,6 +68,12 @@ trait LicensedPluginCheck extends PluginStatus {
   def pluginDeclaredVersion  : String
   def pluginId               : String
 
+// this one is generally provided by NodeInfoService
+  def getNumberOfNodes: Int
+
+// this one is only for evolution / futur check. No need to override it for now.
+  def checkAny: Option[Map[String, String] => Either[String, Unit]] = None
+
   /*
    * we don't want to check each time if the license is ok or not. So we only change if license or key file is updated
    */
@@ -108,7 +114,7 @@ trait LicensedPluginCheck extends PluginStatus {
     (for {
       info               <- maybeLicense
       (license, version) = info
-      check              <- LicenseChecker.checkLicense(license, DateTime.now, version, pluginId)
+      check              <- LicenseChecker.checkLicenseRuntime(license, DateTime.now, version, pluginId, getNumberOfNodes, checkAny)
     } yield {
       check
     }) match {
@@ -125,6 +131,8 @@ trait LicensedPluginCheck extends PluginStatus {
       , maxVersion = l.content.maxVersion.value.toString
       , startDate  = l.content.startDate.value
       , endDate    = l.content.endDate.value
+      , maxNodes   = l.content.maxNodes.value
+      , others     = l.content.others.map(_.raw).toMap
     )
   }
 }

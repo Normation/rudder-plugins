@@ -49,7 +49,7 @@ import net.liftweb.http._
 
 import scala.xml._
 
-
+import com.normation.box._
 
 
 class WorkflowInformation extends CometActor with CometListener with Loggable {
@@ -79,7 +79,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
     </li>
 
   def render = {
-    val xml = RudderConfig.configService.rudder_workflow_enabled match {
+    val xml = RudderConfig.configService.rudder_workflow_enabled.toBox match {
       case eb:EmptyBox =>
         val e = eb ?~! "Error when trying to read Rudder configuration for workflow activation"
         logger.error(e.messageChain)

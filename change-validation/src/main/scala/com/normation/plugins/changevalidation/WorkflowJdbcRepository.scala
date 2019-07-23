@@ -72,15 +72,15 @@ class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with
   val SELECT_SQL = fr"SELECT id, state FROM Workflow "
 
   def getAllByState(state : WorkflowNodeId) :  Box[Seq[ChangeRequestId]] = {
-    sql"""select id from workflow where state = ${state}""".query[ChangeRequestId].to[Vector].transact(xa).attempt.unsafeRunSync
+    transactRunBox(xa => sql"""select id from workflow where state = ${state}""".query[ChangeRequestId].to[Vector].transact(xa))
   }
 
   def getStateOfChangeRequest(crId: ChangeRequestId) : Box[WorkflowNodeId] = {
-    sql"""select state from workflow where id = ${crId}""".query[WorkflowNodeId].unique.transact(xa).attempt.unsafeRunSync
+    transactRunBox(xa => sql"""select state from workflow where id = ${crId}""".query[WorkflowNodeId].unique.transact(xa))
   }
 
   def getAllChangeRequestsState() : Box[Map[ChangeRequestId,WorkflowNodeId]] = {
-    sql"select id, state from workflow".query[(ChangeRequestId, WorkflowNodeId)].to[Vector].transact(xa).attempt.unsafeRunSync.map( _.toMap )
+    transactRunBox(xa => sql"select id, state from workflow".query[(ChangeRequestId, WorkflowNodeId)].to[Vector].transact(xa)).map( _.toMap )
   }
 }
 
@@ -101,7 +101,7 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
         state
       }
     }
-    process.transact(xa).attempt.unsafeRunSync
+    transactRunBox(xa => process.transact(xa))
   }
 
   def updateState(crId: ChangeRequestId, from :  WorkflowNodeId, state : WorkflowNodeId) : Box[WorkflowNodeId] = {
@@ -123,6 +123,6 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
         state
       }
     }
-    process.transact(xa).attempt.unsafeRunSync
+    transactRunBox(xa => process.transact(xa))
   }
 }

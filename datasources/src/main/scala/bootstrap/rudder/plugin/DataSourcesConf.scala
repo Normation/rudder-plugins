@@ -51,6 +51,7 @@ import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.plugins.datasources.api.DataSourceApiImpl
 import com.normation.rudder.batch.AsyncDeploymentActor
 
+import com.normation.box._
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -73,7 +74,7 @@ object DatasourcesConf extends RudderPluginModule {
   import bootstrap.liftweb.{RudderConfig => Cfg}
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
   lazy val regenerationHook = new OnUpdatedNodeRegenerate(RudderConfig.asyncDeploymentAgent)
 
@@ -85,7 +86,7 @@ object DatasourcesConf extends RudderPluginModule {
         , Cfg.woNodeRepository
         , Cfg.interpolationCompiler
         , regenerationHook.hook _
-        , Cfg.configService.rudder_global_policy_mode _
+        , () => Cfg.configService.rudder_global_policy_mode.toBox
       )
     , Cfg.stringUuidGenerator
     , pluginStatusService

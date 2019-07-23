@@ -30,7 +30,7 @@ class RoValidatedUserJdbcRepository(
 
   override def getValidatedUsers(): Box[Seq[EventActor]] = {
     val q = query[EventActor](SELECT_SQL)
-    q.to[Vector].transact(xa).attempt.unsafeRunSync()
+    transactRunBox(xa => q.to[Vector].transact(xa))
   }
 
   override def getUsers(): Box[Set[WorkflowUsers]] = {
@@ -66,7 +66,7 @@ class RoValidatedUserJdbcRepository(
 
   override def get(actor: EventActor): Box[Option[EventActor]] = {
     val q = Query[String, EventActor](SELECT_SQL + " where username = ?", None).toQuery0(actor.name)
-    q.option.transact(xa).attempt.unsafeRunSync()
+    transactRunBox(xa => q.option.transact(xa))
   }
 }
 
@@ -87,7 +87,7 @@ class WoValidatedUserJdbcRepository(
           case None =>
             val q = sql"""INSERT INTO change_validation_validated_users (username)
             VALUES (${newVU.name})""".update
-            val linesAffected: Either[Throwable, Int] = q.run.transact(xa).attempt.unsafeRunSync
+            val linesAffected: Either[Throwable, Int] = transactRun(xa => q.run.transact(xa).attempt)
             linesAffected match {
               case Right(1)          => Full(newVU)
               case Right(0)          =>
@@ -116,7 +116,7 @@ class WoValidatedUserJdbcRepository(
         case Some(_) =>
           val q = sql"""DELETE FROM change_validation_validated_users
               WHERE username = (${actor.name})""".update
-          val linesAffected: Either[Throwable, Int] = q.run.transact(xa).attempt.unsafeRunSync
+          val linesAffected: Either[Throwable, Int] = transactRun(xa => q.run.transact(xa).attempt)
           linesAffected match {
             case Right(1) => Full(actor)
             case Right(0) =>
@@ -159,6 +159,6 @@ class WoValidatedUserJdbcRepository(
 
 class ValidatedUserMapper() extends Loggable {
   implicit val ValidatedUserMeta: Meta[EventActor] =
-    Meta[String].xmap(ea => EventActor(ea), u => u.name)
+    Meta[String].timap(ea => EventActor(ea))(u => u.name)
 }
 

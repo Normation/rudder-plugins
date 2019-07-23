@@ -16,6 +16,8 @@ import com.normation.rudder.services.workflows.RuleChangeRequest
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 
+import com.normation.box._
+
 object bddMock {
   val USER_AUTH_NEEDED = Map(
     "admin" -> false,
@@ -115,7 +117,7 @@ class NodeGroupValidationNeeded(
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
     val start = System.currentTimeMillis()
     val res = for {
-      groups    <- groupLib.getFullGroupLibrary()
+      groups    <- groupLib.getFullGroupLibrary().toBox
       nodeInfo  <- nodeInfoService.getAll()
       monitored <- monitoredTargets()
     } yield {
@@ -164,7 +166,7 @@ class NodeGroupValidationNeeded(
     val start = System.currentTimeMillis()
 
     val res = for {
-      groups      <- groupLib.getFullGroupLibrary()
+      groups      <- groupLib.getFullGroupLibrary().toBox
       allNodeInfo <- nodeInfoService.getAll()
       monitored   <- monitoredTargets()
     } yield {
@@ -188,11 +190,11 @@ class NodeGroupValidationNeeded(
     val directiveId = change.newDirective.id
     val start = System.currentTimeMillis()
     val res = for {
-      rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId)))
+      rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId))).toBox
       // we need to add potentially new rules applied to that directive that the previous request does not cover
       newRules  =  change.updatedRules
       monitored <- monitoredTargets()
-      groups    <- groupLib.getFullGroupLibrary()
+      groups    <- groupLib.getFullGroupLibrary().toBox
       nodeInfo  <- nodeInfoService.getAll()
     } yield {
       checkNodeTargetByRule(groups, nodeInfo, monitored, (rules++newRules).toSet)

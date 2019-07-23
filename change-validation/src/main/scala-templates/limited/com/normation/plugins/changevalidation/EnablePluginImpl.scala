@@ -38,6 +38,7 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.plugins.LicensedPluginCheck
+import com.normation.rudder.services.nodes.NodeInfoService
 
 /*
  * This template file will processed at build time to choose
@@ -46,11 +47,13 @@ import com.normation.plugins.LicensedPluginCheck
  *
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
-final class CheckRudderPluginEnableImpl() extends LicensedPluginCheck {
+final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends LicensedPluginCheck {
   // here are processed variables
   def pluginResourcePublickey = "${plugin-resource-publickey}"
   def pluginResourceLicense   = "${plugin-resource-license}"
   def pluginDeclaredVersion   = "${plugin-declared-version}"
   def pluginId                = "${plugin-fullname}"
-} 
+
+  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes
+}
 

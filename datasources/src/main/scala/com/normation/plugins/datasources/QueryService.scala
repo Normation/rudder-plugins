@@ -57,7 +57,7 @@ import net.liftweb.common.Full
 
 import scala.concurrent.Await
 
-
+import com.normation.box._
 
 /*
  * This file contain the hight level logic to update
@@ -201,7 +201,7 @@ class HttpQueryDataSourceService(
                                 for {
                                   newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(Seq(property)))
                                   newNode      =  nodeInfo.node.copy(properties = newProps)
-                                  nodeUpdated  <- nodeRepository.updateNode(newNode, cause.modId, cause.actor, cause.reason) ?~! s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
+                                  nodeUpdated  <- nodeRepository.updateNode(newNode, cause.modId, cause.actor, cause.reason).toBox ?~! s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
                                 } yield {
                                   NodeUpdateResult.Updated(nodeUpdated.id)
                                 }
@@ -260,7 +260,7 @@ class HttpQueryDataSourceService(
     for {
       nodes         <- nodeInfo.getAll()
       policyServers  = nodes.filter { case (_, n) => n.isPolicyServer }
-      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
+      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] ).toBox
       updated       <- querySubsetByNode(datasourceId, datasource, globalPolicyMode, PartialNodeUpdate(nodes, policyServers, parameters), cause, onUpdatedHook)
     } yield {
       updated
@@ -277,7 +277,7 @@ class HttpQueryDataSourceService(
                          case Some(n) => Full(n)
                        }
       policyServers  = allNodes.filterKeys( _ == node.policyServerId)
-      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
+      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] ).toBox
       updated       <- tryo(Await.result(buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause).runAsync, datasource.requestTimeOut))
       result        <- updated
     } yield {

@@ -38,14 +38,16 @@
 package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.rudder.appconfig.ReadConfigService
-import com.normation.rudder.appconfig.UpdateConfigService
+import com.normation.appconfig.ReadConfigService
+import com.normation.appconfig.UpdateConfigService
 import net.liftweb.common._
 import net.liftweb.http._
 import net.liftweb.http.js.JsCmds.Run
 import net.liftweb.http.js.JsCmds.Script
 import net.liftweb.util.Helpers
 import net.liftweb.util.Helpers._
+
+import com.normation.box._
 
 import scala.xml.NodeSeq
 
@@ -62,9 +64,9 @@ class ChangeValidationSettings extends DispatchSnippet {
   def workflowConfiguration: NodeSeq => NodeSeq = { xml : NodeSeq =>
 
     //  initial values, updated on successfull submit
-    var initEnabled = configService.rudder_workflow_enabled
-    var initSelfVal = configService.rudder_workflow_self_validation
-    var initSelfDep = configService.rudder_workflow_self_deployment
+    var initEnabled = configService.rudder_workflow_enabled.toBox
+    var initSelfVal = configService.rudder_workflow_self_validation.toBox
+    var initSelfDep = configService.rudder_workflow_self_deployment.toBox
 
     // form values
     var enabled = initEnabled.getOrElse(false)
@@ -72,9 +74,9 @@ class ChangeValidationSettings extends DispatchSnippet {
     var selfDep = initSelfDep.getOrElse(false)
 
     def submit = {
-      configService.set_rudder_workflow_enabled(enabled).foreach(updateOk => initEnabled = Full(enabled))
-      configService.set_rudder_workflow_self_validation(selfVal).foreach(updateOk => initSelfVal = Full(selfVal))
-      configService.set_rudder_workflow_self_deployment(selfDep).foreach(updateOk => initSelfDep = Full(selfDep))
+      configService.set_rudder_workflow_enabled(enabled).toBox.foreach(updateOk => initEnabled = Full(enabled))
+      configService.set_rudder_workflow_self_validation(selfVal).toBox.foreach(updateOk => initSelfVal = Full(selfVal))
+      configService.set_rudder_workflow_self_deployment(selfDep).toBox.foreach(updateOk => initSelfDep = Full(selfDep))
         S.notice("updateWorkflow","Change Requests (validation workflow) configuration correctly updated")
       check()
     }

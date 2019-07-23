@@ -38,10 +38,11 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.plugins.PluginEnableImpl
+import com.normation.rudder.services.nodes.NodeInfoService
 
 /*
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginEnableImpl() extends PluginEnableImpl
+final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends PluginEnableImpl
 

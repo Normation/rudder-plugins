@@ -37,7 +37,6 @@
 
 package com.normation.plugins.changevalidation
 
-import cats.implicits._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.Doobie
@@ -66,7 +65,7 @@ class RoChangeRequestJdbcRepository(
 ) extends RoChangeRequestRepository with Loggable {
 
   import doobie._
-  import mapper.ChangeRequestComposite
+  import mapper.ChangeRequestRead
 
 
   val SELECT_SQL = "SELECT id, name, description, content, modificationId FROM ChangeRequest"
@@ -75,11 +74,11 @@ class RoChangeRequestJdbcRepository(
 
   //utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
   private[this] def execQuery(q: Query0[Box[ChangeRequest]]): Box[Vector[ChangeRequest]] = {
-    q.to[Vector].attempt.map(
+    transactRunBox(xa => q.to[Vector].map(
         // we are just ignoring change request with unserialisation
         // error. Does not seem the best.
-        _.map(_.flatten.toVector)
-    ).transact(xa).unsafeRunSync
+        _.flatten.toVector
+    ).transact(xa))
   }
 
   override def getAll() : Box[Vector[ChangeRequest]] = {
@@ -89,7 +88,7 @@ class RoChangeRequestJdbcRepository(
 
   override def get(changeRequestId:ChangeRequestId) : Box[Option[ChangeRequest]] = {
     val q = Query[ChangeRequestId, Box[ChangeRequest]](SELECT_SQL + " where id = ?", None).toQuery0(changeRequestId)
-    q.option.map(_.map(_.toOption)).transact(xa).unsafeRunSync
+    transactRunBox(xa =>q.option.map(_.flatMap(_.toOption)).transact(xa))
 
   }
 
@@ -187,7 +186,7 @@ class WoChangeRequestJdbcRepository(
        """.update.withUniqueGeneratedKeys[Int]("id")
 
     for {
-      id  <- (q.transact(xa).attempt.unsafeRunSync: Box[Int])
+      id  <- transactRunBox(xa => q.transact(xa))
       cr  <- roRepo.get(ChangeRequestId(id)).flatMap {
                case None    => Failure(s"The newly saved change request with ID ${id} was not found back in data base")
                case Some(x) => Full(x)
@@ -220,12 +219,12 @@ class WoChangeRequestJdbcRepository(
                      Failure(s"Cannot update non-existant Change Request with id ${changeRequest.id.value}")
                    case Some(x) => Full("ok")
                  }
-      update  <- ({
+      update  <- {
                    val (name, desc, xml, modId) = getAtom(changeRequest)
                    val q = sql"""update ChangeRequest set name = ${name}, description = ${desc}, content = ${xml}, modificationId = ${modId}
                                  where id = ${changeRequest.id}"""
-                   q.update.run.transact(xa).attempt.unsafeRunSync
-                 }: Box[Int])
+                   transactRunBox(xa => q.update.run.transact(xa))
+                 }
       updated <- roRepo.get(changeRequest.id).flatMap {
                    case None =>
                      logger.error(s"Couldn't find the updated entry when updating Change Request ${changeRequest.id.value}")
@@ -299,11 +298,7 @@ class ChangeRequestMapper(
     }
   }
 
-  implicit val ChangeRequestComposite: Composite[Box[ChangeRequest]] = {
-    Composite[CR].imap(
-        (t : CR                ) => unserialize(t._1, t._2, t._3, t._4, t._5))(
-        (cr: Box[ChangeRequest]) => serialize(cr) // not sure we really need that, but Doobie force symetry on Composite
-    )
-
+  implicit val ChangeRequestRead: Read[Box[ChangeRequest]] = {
+    Read[CR].map((t: CR) => unserialize(t._1, t._2, t._3, t._4, t._5))
   }
 }

@@ -59,7 +59,7 @@ class UserManagementAuthorizationLevel(status: PluginStatus) extends UserAuthori
 object UserManagementConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
   lazy val pluginDef = new UserManagementPluginDef(UserManagementConf.pluginStatusService)
 

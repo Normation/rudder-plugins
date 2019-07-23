@@ -15,7 +15,7 @@ import net.liftweb.common.Loggable
 object HelloWorldConf extends Loggable with RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
 
   lazy val pluginDef = new HelloWorldPluginDef(dbService, pluginStatusService)
