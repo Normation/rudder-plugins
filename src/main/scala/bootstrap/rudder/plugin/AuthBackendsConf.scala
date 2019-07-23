@@ -53,7 +53,7 @@ import com.normation.plugins.authbackends.api.AuthBackendsApiImpl
 object AuthBackendsConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
   lazy val authBackendsProvider = new AuthBackendsProvider {
     def authenticationBackends = Set("ldap", "radius")
