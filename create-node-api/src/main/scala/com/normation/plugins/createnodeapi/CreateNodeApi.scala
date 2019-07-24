@@ -42,11 +42,15 @@ import cats.data._
 import cats.implicits._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
+import com.normation.inventory.domain.AcceptedInventory
 import com.normation.inventory.domain.FullInventory
 import com.normation.inventory.domain.NodeId
+import com.normation.inventory.domain.PendingInventory
 import com.normation.inventory.ldap.core.LDAPFullInventoryRepository
+import com.normation.inventory.ldap.core.InventoryDit
 import com.normation.ldap.sdk.LDAPConnectionProvider
 import com.normation.ldap.sdk.RwLDAPConnection
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.createnodeapi.NodeTemplate.AcceptedNodeTemplate
 import com.normation.plugins.createnodeapi.NodeTemplate.PendingNodeTemplate
 import com.normation.plugins.createnodeapi.Serialize.ResultHolder
@@ -103,6 +107,9 @@ class CreateNodeApiImpl(
   , newNodeManager      : NewNodeManager
   , uuidGen             : StringUuidGenerator
   , nodeDit             : NodeDit
+  , status              : PluginStatus
+  , pendingDit          : InventoryDit
+  , acceptedDit         : InventoryDit
 ) extends LiftApiModuleProvider[CreateNodeApi] {
   api =>
 
@@ -128,8 +135,9 @@ class CreateNodeApiImpl(
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
-        json              <- req.json ?~! "This API only Accept JSON request"
-        nodes             <- Serialize.parseAll(json)
+        enabled <- if(status.isEnabled()) Full(()) else Failure(s"The plugin for that API is disable. Please check installation and licence information.")
+        json    <- req.json ?~! "This API only Accept JSON request"
+        nodes   <- Serialize.parseAll(json)
       } yield {
         import com.softwaremill.quicklens._
         nodes.foldLeft(ResultHolder(Nil, Nil)) { case (res, node) =>
@@ -174,11 +182,35 @@ class CreateNodeApiImpl(
 
       for {
         validated <- toCreationError(Validation.toNodeTemplate(nodeDetails))
+        _         <- checkUuid(validated.inventory.node.main.id)
         created   <- saveInventory(validated.inventory)
         nodeSetup <- accept(validated, eventActor)
         nodeId    <- saveRudderNode(validated.inventory.node.main.id, nodeSetup)
       } yield {
         nodeId
+      }
+    }
+
+    /*
+     * You can't use an existing UUID (neither pending nor accepted)
+     */
+    def checkUuid(nodeId: NodeId): Either[CreationError, Unit] = {
+      // we don't want a node in pending/accepted
+      def inventoryExists(con: RwLDAPConnection, id:NodeId) = {
+        Seq((acceptedDit, AcceptedInventory), (pendingDit, PendingInventory)).find { case(dit, s) =>
+          con.exists(dit.NODES.NODE.dn(id))
+        }.map( _._2 ) match {
+          case None    => Full(())
+          case Some(s) => Failure(s"A node with id '${nodeId.value}' already exists with status '${s.name}'")
+        }
+      }
+
+      (for {
+        con <- ldapConnection
+        _   <- inventoryExists(con, nodeId)
+      } yield ()) match {
+        case Full(_)      => Right(())
+        case eb: EmptyBox => Left(CreationError.OnSaveInventory((eb ?~! "Error during node ID check").messageChain))
       }
     }
 
