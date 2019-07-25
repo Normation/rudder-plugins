@@ -1,21 +1,17 @@
-Rudder plugin: Node properties data sources
--------------------------------------------
+# Rudder plugin: Node properties data sources
 
-This project is part of Rudder - Continuous configuration for effective compliance
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
-Automation & Compliance.
+See repository main README for information about licensing, contribution, and
+other general information.
 
-See: https://www.rudder.io/ for more information.
-
-=== Synopsis
+== Synopsis
 
 This plugin allows to auto fill node properties with data coming from third party
 REST-enable application.
 
-
-
-=== Logging
+== Logging
 
 You can log information about data source (behavior and errors) by adding the following lines in your ```logback.xml``` file:
 

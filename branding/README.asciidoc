@@ -1,13 +1,16 @@
-Rudder plugin: Branding
--------------------------------------------
+# Rudder plugin: Branding
 
-This project is part of Rudder - Continuous configuration for effective compliance
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
-Automation & Compliance.
+See repository main README for information about licensing, contribution, and
+other general information.
 
-See: https://www.rudder.io/ for more information.
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[branding]
+= Branding Plugin
 
-=== Synopsis
-
-This plugin allows to build advanced reports and export them in pdf format.
+This plugin allows to customize some part of Rudder UI to facilitate its integration with
+your other applications or internal branding but also to clearly differentiate among
+several Rudder instances (typically, with a dedicated color and message for test/qa/prod instances).

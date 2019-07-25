@@ -1,27 +1,10 @@
-Rudder plugin: Node external report
-----------------------------
+# Rudder plugin: Node external report
 
-This project is part of Rudder - IT infrastructure Automation and Compliance
-
+This project is part of Rudder - IT infrastructure Automation and Compliance.
 See: http://rudder.io for more information.
 
-=== Authors
-
-Normation http://normation.com
-
-- Francois "fanf" Armand francois.armand@normation.com
-
-=== License
-
-This project is licensed under GNU GPLv3 license,
-see the provided "LICENSE" file  or
-http://www.gnu.org/licenses/gpl-3.0.txt
-
-=== Contributing
-
-Thank you for your interest in your our project!
-The contribution process is detailed here:
-https://www.rudder.io/en/expand/contribute/
+See repository main README for information about licensing, contribution, and
+other general information.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====

@@ -1,14 +1,12 @@
-Plugin for ZABBIX and Rudder
-----------------------------
+# Plugin for ZABBIX and Rudder
 
-This project is part of Rudder - IT automation and compliance made easy.
-See: https://www.rudder.io/ for more information.
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Mailing list, irc :
-https://www.rudder-project.org/site/community/mailing-lists/
+See repository main README for information about licensing, contribution, and
+other general information.
 
-Synposis
-~~~~~~~~
+= Synposis
 
 This plugin aims at providing Rudder integration with Zabbix. It can automatically
 add hosts to Zabbix when the corresponding node is set up for monitoring in Rudder.
@@ -20,7 +18,7 @@ Generate the Rudder package if you do not already have the .rpkg file:
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
-
+[zabbix-plugin]
 = Zabbix
 
 This plugin aims at providing Rudder integration with Zabbix. It can automatically add hosts to Zabbix

@@ -1,15 +1,14 @@
-Plugin for Vault and Rudder
----------------------------
+# Plugin for Vault and Rudder
 
-This project is part of Rudder - IT automation and compliance made easy.
-See: https://www.rudder.io/ for more information.
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Mailing list, irc :
-https://www.rudder-project.org/site/community/mailing-lists/
+See repository main README for information about licensing, contribution, and
+other general information.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
-
+[vault-plugin]
 = Vault
 
 This plugin provides a possibility to fetch secrets from a Vault server

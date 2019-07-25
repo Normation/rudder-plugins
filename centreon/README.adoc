@@ -1,14 +1,12 @@
-Plugin for Centreon and Rudder
-------------------------------
+# Plugin for Centreon and Rudder
 
-This project is part of Rudder - IT automation and compliance made easy.
-See: https://www.rudder.io/ for more information.
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Mailing list, irc :
-https://www.rudder-project.org/site/community/mailing-lists/
+See repository main README for information about licensing, contribution, and
+other general information.
 
-Synposis
-~~~~~~~~
+== Synposis
 
 This plugin aims at providing Rudder integration with Centreon. It can
 automatically add or remove hosts in Centreon when the corresponding
@@ -19,7 +17,7 @@ appropriate generic methods in the technique editor.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
-
+[centreon-plugin]
 = Centreon
 
 This plugin aims at providing Rudder integration with Centreon. It can

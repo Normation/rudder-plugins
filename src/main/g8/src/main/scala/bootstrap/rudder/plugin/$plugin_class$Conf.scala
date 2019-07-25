@@ -37,6 +37,7 @@
 
 package bootstrap.rudder.plugin
 
+import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.$plugin_pkg$.$plugin_class$PluginDef
 import com.normation.plugins.$plugin_pkg$.CheckRudderPluginEnableImpl
 import net.liftweb.common.Loggable
@@ -48,8 +49,8 @@ import com.normation.plugins.RudderPluginModule
 object $plugin_class$Conf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl()
-  
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
+
   lazy val pluginDef = new $plugin_class$PluginDef($plugin_class$Conf.pluginStatusService)
 
   // other service instanciation / initialization
