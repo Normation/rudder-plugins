@@ -1,11 +1,11 @@
-= Rudder plugin: Auth Backends
+# Rudder plugin: Auth Backends
 
-This project is part of Rudder - Continuous configuration for effective compliance
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
-Automation & Compliance.
+See repository main README for information about licensing, contribution, and
+other general information.
 
-See: https://www.rudder.io/ for more information.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
