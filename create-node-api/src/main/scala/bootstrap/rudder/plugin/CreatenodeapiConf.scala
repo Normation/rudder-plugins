@@ -65,6 +65,9 @@ object CreatenodeapiConf extends RudderPluginModule {
       , RudderConfig.newNodeManager
       , RudderConfig.stringUuidGenerator
       , RudderConfig.nodeDit
+      , CreatenodeapiConf.pluginStatusService
+      , RudderConfig.pendingNodesDit
+      , RudderConfig.acceptedNodesDit
     )
   }
 }

@@ -42,11 +42,15 @@ import cats.data._
 import cats.implicits._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
+import com.normation.inventory.domain.AcceptedInventory
 import com.normation.inventory.domain.FullInventory
 import com.normation.inventory.domain.NodeId
+import com.normation.inventory.domain.PendingInventory
 import com.normation.inventory.ldap.core.LDAPFullInventoryRepository
+import com.normation.inventory.ldap.core.InventoryDit
 import com.normation.ldap.sdk.LDAPConnectionProvider
 import com.normation.ldap.sdk.RwLDAPConnection
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.createnodeapi.NodeTemplate.AcceptedNodeTemplate
 import com.normation.plugins.createnodeapi.NodeTemplate.PendingNodeTemplate
 import com.normation.plugins.createnodeapi.Serialize.ResultHolder
@@ -78,6 +82,7 @@ import com.normation.box._
 import zio._
 import zio.syntax._
 import com.normation.errors._
+import com.normation.inventory.domain.InventoryStatus
 import com.normation.zio.ZioRuntime
 
 /*
@@ -106,6 +111,9 @@ class CreateNodeApiImpl(
   , newNodeManager      : NewNodeManager
   , uuidGen             : StringUuidGenerator
   , nodeDit             : NodeDit
+  , status              : PluginStatus
+  , pendingDit          : InventoryDit
+  , acceptedDit         : InventoryDit
 ) extends LiftApiModuleProvider[CreateNodeApi] {
   api =>
 
@@ -131,8 +139,9 @@ class CreateNodeApiImpl(
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
-        json              <- req.json ?~! "This API only Accept JSON request"
-        nodes             <- Serialize.parseAll(json).toBox
+        enabled <- if(status.isEnabled()) UIO.unit else Inconsistancy(s"The plugin for that API is disable. Please check installation and licence information.").fail
+        json    <- (req.json ?~! "This API only Accept JSON request").toIO
+        nodes   <- Serialize.parseAll(json)
       } yield {
         import com.softwaremill.quicklens._
         nodes.foldLeft(ResultHolder(Nil, Nil)) { case (res, node) =>
@@ -142,7 +151,7 @@ class CreateNodeApiImpl(
             case Left(err) => res.modify(_.failed ).using(_ :+ ((node.id, err)) )
           }
         }
-      }) match {
+      }).toBox match {
         case Full(resultHolder) =>
           // if all succes, return success.
           // Or if at least one is not failed, return success ?
@@ -177,12 +186,38 @@ class CreateNodeApiImpl(
 
       for {
         validated <- toCreationError(Validation.toNodeTemplate(nodeDetails))
+        _         <- checkUuid(validated.inventory.node.main.id)
         created   <- saveInventory(validated.inventory)
         nodeSetup <- accept(validated, eventActor)
         nodeId    <- saveRudderNode(validated.inventory.node.main.id, nodeSetup)
       } yield {
         nodeId
       }
+    }
+
+    /*
+     * You can't use an existing UUID (neither pending nor accepted)
+     */
+    def checkUuid(nodeId: NodeId): IO[CreationError, Unit] = {
+      // we don't want a node in pending/accepted
+      def inventoryExists(con: RwLDAPConnection, id:NodeId) = {
+        ZIO.foldLeft(Seq((acceptedDit, AcceptedInventory), (pendingDit, PendingInventory)))(Option.empty[InventoryStatus]) { case(current, (dit, s)) =>
+          current match {
+            case None    => con.exists(dit.NODES.NODE.dn(id)).map(exists => if(exists) Some(s) else None)
+            case Some(v) => Some(v).succeed
+          }
+        }.flatMap {
+          case None => // ok, it doesn't exists
+            UIO.unit
+          case Some(s) => // oups, already present
+            Inconsistancy(s"A node with id '${nodeId.value}' already exists with status '${s.name}'").fail
+        }
+      }
+
+      (for {
+        con <- ldapConnection
+        _   <- inventoryExists(con, nodeId)
+      } yield ()).mapError(err => CreationError.OnSaveInventory(s"Error during node ID check: ${err.fullMsg}"))
     }
 
     /*

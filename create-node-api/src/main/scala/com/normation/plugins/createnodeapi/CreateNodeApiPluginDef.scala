@@ -61,11 +61,7 @@ class CreateNodeApiPluginDef(override val status: PluginStatus) extends DefaultP
   val configFiles = Seq()
 
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = {
-    if(status.isEnabled()) {
-      Some(CreatenodeapiConf.api)
-    } else {
-      None
-    }
+    Some(CreatenodeapiConf.api)
   }
 
   override def pluginMenuEntry: Option[Menu] = {

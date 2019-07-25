@@ -192,8 +192,8 @@ object Creation {
   object CreationError {
 
     final case class OnValidation(validations: NonEmptyList[Validation.NodeValidationError]) extends CreationError
-    final case class OnSaveInventory(message: String)                                                 extends CreationError
-    final case class OnSaveNode(message: String)                                                 extends CreationError
+    final case class OnSaveInventory(message: String)                                        extends CreationError
+    final case class OnSaveNode(message: String)                                             extends CreationError
     final case class OnAcceptation(message: String)                                          extends CreationError
   }
 
