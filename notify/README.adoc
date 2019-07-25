@@ -2,7 +2,7 @@ Rudder notifications plugin
 ---------------------------
 
 This project is part of Rudder - IT automation and compliance made easy.
-See: http://rudder-project.org for more information.
+See: https://www.rudder.io/ for more information.
 
 Mailing list, irc :
 https://www.rudder-project.org/site/community/mailing-lists/

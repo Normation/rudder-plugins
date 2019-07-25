@@ -1,13 +1,9 @@
-Rudder plugin: Hello world !
+Rudder plugin: Node external report
 ----------------------------
 
-This project is part of Rudder - IT infrastructure Automation and Compliance 
- 
-See: http://rudder-project.org for more information. 
+This project is part of Rudder - IT infrastructure Automation and Compliance
 
-[horizontal]
-Bug report:: http://www.rudder-project.org/redmine/projects/helloworldplugin/issues
-Mailing list, irc, ...:: https://www.rudder-project.org/site/community/mailing-lists/
+See: http://rudder.io for more information.
 
 === Authors
 
@@ -17,15 +13,15 @@ Normation http://normation.com
 
 === License
 
-This project is licensed under GNU GPLv3 license, 
-see the provided "LICENSE" file  or 
+This project is licensed under GNU GPLv3 license,
+see the provided "LICENSE" file  or
 http://www.gnu.org/licenses/gpl-3.0.txt
 
 === Contributing
 
 Thank you for your interest in your our project!
-The contribution process is detailed here: 
-http://www.rudder-project.org/HowToContribute
+The contribution process is detailed here:
+https://www.rudder.io/en/expand/contribute/
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
@@ -33,40 +29,40 @@ http://www.rudder-project.org/HowToContribute
 [[node-external-reports]]
 = Node external reports
 
-This plugin allows to add external, static documents in a new tab in node details. 
+This plugin allows to add external, static documents in a new tab in node details.
 
-With the plugin, you configure directories on Rudder server where are located 
+With the plugin, you configure directories on Rudder server where are located
 node specific documents. A new tab is created on node details page that allows to download
-documents for the corresponding node. 
+documents for the corresponding node.
 
 
 == Documents naming convention
 
 Documents must be stored in configured directories with a naming convention that allows
-Rudder to find back what document corresponds to a given node. 
+Rudder to find back what document corresponds to a given node.
 
-For that, the document name must contains the node `UUID` or `hostname` in *lower* case. 
+For that, the document name must contains the node `UUID` or `hostname` in *lower* case.
 The exact naming pattern if defined in the `fileformat` configuration parameter, and the
 value `@@node@@` is used to denotate the place where the node `UUID` or `hostname` will be.
-Both `UUID` and `hostname` are tested when looking for a matching file for a node. 
+Both `UUID` and `hostname` are tested when looking for a matching file for a node.
 
 == Plugin configuration
 
-This plugin is configured with a configuration file. Any modification in the file will be 
-reloaded immediately without the need to restart Rudder. 
+This plugin is configured with a configuration file. Any modification in the file will be
+reloaded immediately without the need to restart Rudder.
 
 
 == Configuration file location
 
-The default location for the configuration file is 
-`/opt/rudder/share/plugins/node-external-reports/node-external-reports.properties`. 
+The default location for the configuration file is
+`/opt/rudder/share/plugins/node-external-reports/node-external-reports.properties`.
 
-In case you need to change the configuration file location, you need to start Rudder with the JVM 
+In case you need to change the configuration file location, you need to start Rudder with the JVM
 option parameter `-Drudder.plugin.externalNodeInformation.config=/full/path/to/config/file`.
 
 == Configuration file format
 
-Plugin file format is as follow: 
+Plugin file format is as follow:
 
 ----
 plugin.node-external-reports.reports {
@@ -84,21 +80,21 @@ plugin.node-external-reports.reports {
 ----
 
 Note that quotes are mandatory only when the value contains `@@` (so most likely only for
-the `filename` parameter). 
+the `filename` parameter).
 
-- "01_first_report_type" is a unique key, used internaly (in logs for example) and for 
+- "01_first_report_type" is a unique key, used internaly (in logs for example) and for
   sorting reports display order in node page;
 - "title" is the name of section in the external document tab;
 - "dirname" is the base directory on the local file system where documents are stored;
 - "description" is a description for what the document is about;
 - "filename": the file template name to lookup the document name. `@@node@@` will
-              be replaced by the node `hostname` or `UUID`. 
-- "content-type": the HTTP content type to use for the new page. It allows to 
-                 direct what the browser will do (open a PDF viewer, display 
-                 an HTML page, etc). 
+              be replaced by the node `hostname` or `UUID`.
+- "content-type": the HTTP content type to use for the new page. It allows to
+                 direct what the browser will do (open a PDF viewer, display
+                 an HTML page, etc).
 
 For example, if you gather HTML "security" reports, text monitoring one, and PDF compliance
-KPI for your nodes, the configuration file will look like: 
+KPI for your nodes, the configuration file will look like:
 
 ----
 plugin.node-external-reports.reports {
@@ -129,20 +125,20 @@ plugin.node-external-reports.reports {
 }
 ----
 
-And the content of  `/var/reports/` will looks like: 
+And the content of  `/var/reports/` will looks like:
 
 ----
 /tmp/reports
 ├── compliance
 │   ├── compliance-node34.china1.bigcorp.com.html
 │   │   .....
-│   └── compliance-00000068-55a2-4b97-8529-5154cbb63a18.pdf    
+│   └── compliance-00000068-55a2-4b97-8529-5154cbb63a18.pdf
 ├── monitoring
-│   ├── monitor-compliance-node34.china1.bigcorp.com.txt 
+│   ├── monitor-compliance-node34.china1.bigcorp.com.txt
 │   │   .....
 │   └── monitor-00000068-55a2-4b97-8529-5154cbb63a18.txt
 └── security
-    ├── report-node34.china1.bigcorp-sec.com.html 
+    ├── report-node34.china1.bigcorp-sec.com.html
     │   .....
     └── report-00000068-55a2-4b97-8529-5154cbb63a18-sec.html
 ----

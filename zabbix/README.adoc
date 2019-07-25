@@ -2,9 +2,9 @@ Plugin for ZABBIX and Rudder
 ----------------------------
 
 This project is part of Rudder - IT automation and compliance made easy.
-See: http://rudder-project.org for more information.
+See: https://www.rudder.io/ for more information.
 
-Mailing list, irc : 
+Mailing list, irc :
 https://www.rudder-project.org/site/community/mailing-lists/
 
 Synposis
@@ -37,7 +37,7 @@ when the corresponding node is set up for monitoring in Rudder.
 
 * Edit the configuration file `/opt/rudder/etc/zabbix.conf`. This config file has to contain your Zabbix
   server's webservice API URL and the credentials to access it.
-  You also need to provide the Rudder API URL, and a token to access it, which you will need to issue : 
+  You also need to provide the Rudder API URL, and a token to access it, which you will need to issue :
   see https://www.rudder-project.org/rudder-api-doc/#api-_-Authentication[the API documentation] for more information.
 
 == Usage
@@ -50,8 +50,8 @@ In order to configure the monitoring of the Rudder nodes, you can provide Zabbix
 NOTE: Make sure for adding monitoring parameter, the key field must be written in uppercase.
 
 
-The data will be sent hourly to the Zabbix server. This can be changed by editing the 
-`/etc/cron.d/zabbix-rudder` file. 
+The data will be sent hourly to the Zabbix server. This can be changed by editing the
+`/etc/cron.d/zabbix-rudder` file.
 
 This operation can be manually executed by running:
 

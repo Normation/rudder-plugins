@@ -6,15 +6,30 @@ This project is part of Rudder - Continuous configuration for effective complian
 Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
 Automation & Compliance.
 
-See: http://rudder-project.org for more information.
+See: http://rudder.io for more information.
 
-=== Description
+=== License
 
-Create node by API
+This project is licensed under GNU GPLv3 license,
+see the provided "LICENSE" file  or
+http://www.gnu.org/licenses/gpl-3.0.txt
 
-This node allows to create a node via API.
+=== Contributing
+
+Thank you for your interest in your our project!
+The contribution process is detailed here:
+https://www.rudder.io/en/expand/contribute/
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[create-node-api]
+= Create Node API
+
+This node allows to create nodes via API.
 
 The goal is to be able to pre-accept (node in accepted status) or pre-defined (node in pending status) a node and defined some of his parameters, in particular properties.
+
+It's typically what you are looking for in your provisionning and integration patterns.
 
 A node need at least the following information:
 
@@ -23,12 +38,47 @@ A node need at least the following information:
 - status,
 - OS: type, name
 
-Othre information are possible. See the plugin page in Rudder (or src/main/resources/template/CreateNodeApiManagement.html) for more information.
+Other information are possible. See the plugin page in Rudder (or src/main/resources/template/CreateNodeApiManagement.html) for more information.
 
-Whatever the status, a node is created in pending status. Then, if the status is "accepted", node acceptation is automatically and immediately triggered. This ensure that nodes added by that API also follow the standard Rudder validation rules and dynamic group/policies are correctly updated.
+Whatever the final status, a node is created in pending status. Then, if the status is "accepted", node acceptation is automatically and immediately triggered. This ensure that nodes added by that API also follow the standard Rudder validation rules and dynamic group/policies are correctly updated.
 
-==== Request format
+== Request format
 
 The plugin provides a new API endpoint: PUT `/api/latest/createnode`
+
+So for example, for curl: curl -k -H "X-API-Token: 5YJnb4EenqDHzwx0U0eTPWWhgjTJ8mkk" -H "Content-Type: application/json" -X PUT 'https://your-server/rudder/api/latest/createnode' -d@/path/to/node.json
+
+With "node.json" expected to be a JSON file with the following format:
+
+```
+      [
+        {
+          "id"            : "378740d3-c4a9-4474-8485-478e7e52db52"
+        , "hostname"      : "my.node.hostname.local"
+        , "status"        : "accepted"
+        , "os"            : {
+                             "type"     : "linux"
+                            , "name"    : "debian"
+                            , "version" : "9.5"
+                            , "fullName": "Debian GNU/Linux 9 (stretch)"
+                            }
+        , "policyServerId": "root"
+        , "machineType"   : "vmware"
+        , "state"         : "enabled"
+        , "policyMode"    : "enforce"
+        , "properties"    : {
+                              "tags"    : ["some", "tags"]
+                            , "env"     : "prod"
+                            , "vars"    : { "var1": "value1", "var2": "value2" }
+                            }
+        , "ipAddresses"   : ["192.168.180.90, 127.0.0.1"]
+        , "timezone"      : {
+                              "name"    :"CEST"
+                            , "offset"  : "+0200"
+                            }
+        }
+      , ... other nodes to create ...
+      ]
+```
 
 See the plugin page in Rudder (or src/main/resources/template/CreateNodeApiManagement.html) for more information about request format.

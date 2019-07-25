@@ -6,7 +6,7 @@ This project is part of Rudder - Continuous configuration for effective complian
 Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
 Automation & Compliance.
 
-See: http://rudder-project.org for more information.
+See: https://www.rudder.io/ for more information.
 
 === Synopsis
 
@@ -169,6 +169,6 @@ You need to choose one behavior among:
 
 - Delete the node property corresponding to that data source (default behavior),
 - Do not change the node property corresponding to that data source,
-- Set the node property corresponding to the data source to a configured value. You have access to a field to fill the value, where JSON is accepted. If the field is let empty, the node property is deleted (ie equivalent to first option). 
+- Set the node property corresponding to the data source to a configured value. You have access to a field to fill the value, where JSON is accepted. If the field is let empty, the node property is deleted (ie equivalent to first option).
 
 

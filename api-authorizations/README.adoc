@@ -6,7 +6,7 @@ This project is part of Rudder - Continuous configuration for effective complian
 Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
 Automation & Compliance.
 
-See: http://rudder-project.org for more information.
+See: https://www.rudder.io/ for more information.
 
 === Synopsis
 
@@ -43,7 +43,7 @@ You can log information about ACL (behavior and errors) by adding the following 
 == User personnal API Token
 
 When you use `api-authorizations` plugin, any logged user can get a personnal API token by clicking on
-its login information: 
+its login information:
 
 image:api-authorizations/api-authorizations-user-no-token.png[User requesting a personnal API token]
 
@@ -51,7 +51,7 @@ Once you click on the button, you get you personnal API token that can get revok
 
 image:api-authorizations/api-authorizations-user-with-token.png[Personnal API token information]
 
-The user can use that token to execute API requests for the same action that his role allows him to do: 
+The user can use that token to execute API requests for the same action that his role allows him to do:
 
 image:api-authorizations/api-authorizations-user-curl.png[Personnal API token information]
 
@@ -62,8 +62,8 @@ image:api-authorizations/api-authorizations-user-event-log.png[Personnal API tok
 
 == API ACLs
 
-The plugin also allows to configure fine grained access control for a token. By selecting 
-"Custom ACL" access level, you can choose what endpoints are accessible for that API token. 
+The plugin also allows to configure fine grained access control for a token. By selecting
+"Custom ACL" access level, you can choose what endpoints are accessible for that API token.
 
 For example, you can create an API token which can only access compliance information:
 
@@ -71,11 +71,11 @@ image:api-authorizations/api-authorizations-new-token-description.png[Create a n
 
 image:api-authorizations/api-authorizations-new-token-acl.png[And only authorize access to compliance endpoints]
 
-That token can of course access `compliance` related endpoints: 
+That token can of course access `compliance` related endpoints:
 
 image:api-authorizations/api-authorizations-curl-success.png[Token can access compliance information]
 
-But if it tries to access an other endpoint, it get an authorization error: 
+But if it tries to access an other endpoint, it get an authorization error:
 
 image:api-authorizations/api-authorizations-curl-error.png[Token is not authorized to access directives information]
 

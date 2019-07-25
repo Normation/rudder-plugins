@@ -5,7 +5,7 @@ This project is part of Rudder - Continuous configuration for effective complian
 Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
 Automation & Compliance.
 
-See: http://rudder-project.org for more information.
+See: https://www.rudder.io/ for more information.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
@@ -18,7 +18,7 @@ This plugins allows to use alternative authentication backends for Rudder: LDAP/
 
 === Version 5.0-1.2 needs Rudder 5.0.2 or above
 
-There was a problem in the initialization order that cause the plugin backends to never be loaded correctly. 
+There was a problem in the initialization order that cause the plugin backends to never be loaded correctly.
 
 - Rudder ticket: https://issues.rudder.io/issues/13695
 - Plugin ticket: https://issues.rudder.io/issues/13709
@@ -70,9 +70,9 @@ Be careful to have only one `rudder.auth.provider` property in your file!
 In case your authentication backend does not work, you can still configure the
 `rootAccount` in `/opt/rudder/etc/rudder-web.properties` to regain an administrator
 access. Once logged as an administrator, you can go to the `Plugins > Authentication
-Backends` page to check that Rudder interpreted correctly your configuration. 
+Backends` page to check that Rudder interpreted correctly your configuration.
 
-In particular, check that `Computed list of providers` entry matches your will. 
+In particular, check that `Computed list of providers` entry matches your will.
 
 =====
 

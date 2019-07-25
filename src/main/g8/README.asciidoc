@@ -6,7 +6,7 @@ This project is part of Rudder - Continuous configuration for effective complian
 Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
 Automation & Compliance.
 
-See: http://rudder-project.org for more information.
+See: https://www.rudder.io/ for more information.
 
 === Description
 
