@@ -39,9 +39,12 @@ package com.normation.plugins.usermanagement
 
 import bootstrap.liftweb.PasswordEncoder
 import bootstrap.liftweb.UserDetailList
+import com.normation.rudder.Role
+import com.normation.rudder.Role.Custom
 import net.liftweb.common.Logger
 import net.liftweb.json.JsonAST.JValue
 import org.slf4j.LoggerFactory
+import net.liftweb.json.{Serialization => S}
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -62,9 +65,22 @@ object Serialisation {
         case PasswordEncoder.SHA512    => "SHA-512"
         case _                         => "plain text"
       }
-      val json = JsonAuthConfig(encoder, auth.users.map { case(_,u)=> JsonUser(u.getUsername, u.authz.displayAuthorizations) }.toList.sortBy( _.login ) )
+
+      val jUser = auth.users.map {
+        case(_,u) =>
+          val (rs, custom) = UserManagementService.computeRoleCoverage(Role.values, u.authz.authorizationTypes).getOrElse(Set.empty).partition {
+            case Custom(_) => false
+            case _ => true
+          }
+          JsonUser(
+          u.getUsername
+          ,  if (custom.isEmpty) Set.empty else custom.head.rights.displayAuthorizations.split(",").toSet
+          , rs.map(_.name)
+        )
+      }.toList.sortBy( _.login )
+      val json = JsonAuthConfig(encoder, jUser)
       import net.liftweb.json._
-      implicit val formats = Serialization.formats(NoTypeHints)
+      implicit val formats = S.formats(NoTypeHints)
       Extraction.decompose(json)
     }
   }
@@ -77,5 +93,6 @@ final case class JsonAuthConfig(
 
 final case class JsonUser(
     login: String
-  , authz: String
+  , authz: Set[String]
+  , role: Set[String]
 )

@@ -148,7 +148,6 @@ class WoValidatedUserJdbcRepository(
 
         toRemove.foreach(deleteUser)
         toAdd.foreach(createUser)
-//        Full(Map("newValidatedUsers" -> toAdd, "removedValidatedUser" -> toRemove))
         roRepo.getUsers()
       case eb: EmptyBox =>
         val fail = eb ?~! s"Error when trying to get all validated user to save workflow's users"
