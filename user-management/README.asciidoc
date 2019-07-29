@@ -1,14 +1,17 @@
-Rudder plugin: User Management
------------------------------
+# Rudder plugin: User Management
 
-This project is part of Rudder - Continuous configuration for effective compliance
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
-Automation & Compliance.
+See repository main README for information about licensing, contribution, and
+other general information.
 
-See: http://rudder-project.org for more information.
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[user-management-plugin]
+= User management
 
-=== Description
-
-Manage rudder users and their authorizations
+This plugin allows to manage rudder users and and add extended authorizations for them.
+Users also gain the possibility to have a personal API token with the same rights that
+they have themself.
 

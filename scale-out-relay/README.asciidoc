@@ -1,14 +1,21 @@
-Rudder plugin: Scale-out relay
------------------------------
+# Rudder plugin: Scale-out relay
 
-This project is part of Rudder - Continuous configuration for effective compliance
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
-Automation & Compliance.
+See repository main README for information about licensing, contribution, and
+other general information.
 
-See: http://rudder-project.org for more information.
-
-=== Description
+== Description
 
 Enable usage of scale-out relay servers
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[scale-out-relay]
+= Scale out relay servers
+
+This plugins allows Rudder infrastructure to use "relay servers".
+Relay servers are special nodes which are part of Rudder policy distribution and report gathering.
+They allows to spread load or hop between networks.
 

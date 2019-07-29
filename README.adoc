@@ -4,13 +4,13 @@ This is the repository for plugins for Rudder: Continuous configuration for effe
 
 https://www.rudder-project.org/site/documentation/
 
-Creating a new plugin
----------------------
+== Creating a new plugin
 
-If you want to create a new plugin, you can use giter8 (http://www.foundweekends.org/giter8/) on 
-that repository or directly from the file system. 
 
-Once `g8` command is installed (see http://www.foundweekends.org/giter8/setup.html), use: 
+If you want to create a new plugin, you can use giter8 (http://www.foundweekends.org/giter8/) on
+that repository or directly from the file system.
+
+Once `g8` command is installed (see http://www.foundweekends.org/giter8/setup.html), use:
 
 ```
 % g8 file://.
@@ -21,7 +21,7 @@ You can alos use the github resolution:
 % g8 normation/rudder-plugins
 ```
 
-And answer the questions. Only the `name` is mandatory: use the plugin short name, with 
+And answer the questions. Only the `name` is mandatory: use the plugin short name, with
 space and capital if you want  (see convetion below).
 Juste hitting <ENTER> choose the default value (the one between []).
 
@@ -37,11 +37,11 @@ plugin_class [NodeExternalReports]: <ENTER>
 ```
 
 If you don't want to use giter8, you can replace by hand the placeholders `$plugin_name$`,
-`$plugin_pkg$` and `$plugin_class$` using the same convention as the previous example. 
-Be careful to replace them in both file (with `sed` for example) and in path (with `mv`). 
+`$plugin_pkg$` and `$plugin_class$` using the same convention as the previous example.
+Be careful to replace them in both file (with `sed` for example) and in path (with `mv`).
 
-Repository structure
----------------------
+== Repository structure
+
 
 The repository is organized with one directory for each plugin under repository root directory.
 
@@ -50,8 +50,8 @@ minus 'rudder-plugin-" prefix.
 
 Each plugin build information are grouped in file `build.conf` in plugin root directory.
 
-Branch versionning and compability with Rudder versions
--------------------------------------------------------
+== Branch versionning and compability with Rudder versions
+
 
 Plugins are linked to Rudder main version, so we retrieve in `rudder-plugins` the same branch
 structure than in `rudder`. Moreover, one needs to always compile and use a plugin for the
@@ -77,8 +77,8 @@ explain which plugin versions are compatible with which Rudder versions in plugi
 
 Please see file: version-compat.adoc
 
-Plugin version and Tag convention
----------------------------------
+== Plugin version and Tag convention
+
 
 Plugin versions are composed in two parts separated by a `-`:
 
@@ -107,9 +107,10 @@ datasources-4.2-1.1
 
 ```
 
+== Building plugins
 
-Building and Java stack requirements
--------------------------------------
+=== Building and Java stack requirements
+
 
 All plugins share the same build infrastructure based on Make.
 
@@ -148,25 +149,37 @@ This package can then be transfered to a Rudder server and installed with the co
 /opt/rudder/bin/rudder-pkg install-file /path/to/pluginShortName-pluginVersion.rpkg
 ```
 
-Building licensed / limited plugin version
-------------------------------------------
+=== Building licensed / limited plugin version
+
 
 As of Rudder 4.1, plugins can have a license and adapt there behavior based on runtime license information.
 The licensing framework is not open source, and such plugin need access to Rudder private repositories.
 
 The common API can be build and installed in user local maven repository with the following command line
-when on `rudder-plugins` directory (for example for `datasources`, use the same `-licensed` naming 
+when on `rudder-plugins` directory (for example for `datasources`, use the same `-licensed` naming
 convention for other):
 
 ```
-make datasources-licensed SIGNED_LICENSE_PATH="./license.sign"  PUBLIC_KEY_PATH=/path/to/the/public/key.pub
+make datasources-licensed
 ```
 
 The file `license.sign` is a license information file signed with the private key matching the public one
 used in the command line. The path of `license.sign` is relative to the plugin directory, so in our example,
 it will be located at: `./datasources/license.sign`
 
-Licensing
----------
+== Licensing
 
 License are by-plugin and the license for a given plugin is specified in the LICENSE file in its plugin directory.
+
+Nonetheless most projects are licensed under GNU GPLv3 license (http://www.gnu.org/licenses/gpl-3.0.txt) or
+ASLv2 (https://www.apache.org/licenses/LICENSE-2.0)
+
+== Contributing
+
+Thank you for your interest in your our project!
+The contribution process is detailed here:
+https://www.rudder.io/en/expand/contribute/
+
+== Authors
+
+Authors are tracked by their git name and public git hostory of the project.
