@@ -1,11 +1,10 @@
 = Rudder plugin: Change Validation
 
-This project is part of Rudder - Continuous configuration for effective compliance
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Rudder is an easy to use, web-driven, role-based solution for IT Infrastructure
-Automation & Compliance.
-
-See: http://rudder-project.org for more information.
+See repository main README for information about licensing, contribution, and
+other general information.
 
 == Description
 
@@ -14,7 +13,7 @@ Enable configuration change requests and validation workflows in Rudder
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
-
+[change-validation]
 = Change validation
 
 The validation workflow is a feature whose purpose is to hold any changes (Rule, Directive, Group) made by users in the web interface,

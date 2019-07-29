@@ -1,34 +1,20 @@
-Rudder plugin: Hello world !
-----------------------------
+# Rudder plugin: Hello world !
 
-This project is part of Rudder - configuration management made easy. 
- 
-See: http://rudder-project.org for more information. 
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-[horizontal]
-Bug report:: http://www.rudder-project.org/redmine/projects/helloworldplugin/issues
-Mailing list, irc:: http://www.rudder-project.org/foswiki/Community/
+See repository main README for information about licensing, contribution, and
+other general information.
 
-=== Authors
-
-Normation http://normation.com
-
-- Francois "fanf" Armand francois.armand@normation.com
-- Nicolas "ncharles" Charles nicolas.charles@normation.com
-
-=== License
-
-This project is licensed under GNU GPLv3 license,
-see the provided "LICENSE" file  or 
-http://www.gnu.org/licenses/gpl-3.0.txt
-
-=== Contributing
-
-Thank you for your interest in your our project!
-The contribution process is detailed here: 
-http://www.rudder-project.org/HowToContribute
-
-=== Synopsis
+== Synopsis
 
 This is a sample plugin which purpose is to provide a clean and simple introduction to the creation
 of Rudder plugins, as well as displaying a nice "Hello world" in the Web UI.
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[helloworld-plugin]
+= Hello world plugin
+
+This plugin is just an example intented for demonstrate how to structure and use Rudder
+internal APIs in a plugin.

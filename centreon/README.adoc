@@ -1,14 +1,12 @@
-Plugin for Centreon and Rudder
-------------------------------
+# Plugin for Centreon and Rudder
 
-This project is part of Rudder - IT automation and compliance made easy.
-See: http://rudder-project.org for more information.
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
 
-Mailing list, irc :
-https://www.rudder-project.org/site/community/mailing-lists/
+See repository main README for information about licensing, contribution, and
+other general information.
 
-Synposis
-~~~~~~~~
+== Synposis
 
 This plugin aims at providing Rudder integration with Centreon. It can
 automatically add or remove hosts in Centreon when the corresponding
@@ -19,7 +17,7 @@ appropriate generic methods in the technique editor.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
-
+[centreon-plugin]
 = Centreon
 
 This plugin aims at providing Rudder integration with Centreon. It can
@@ -39,7 +37,7 @@ server.
 * Edit the configuration file `/opt/rudder/etc/centreon.conf`. This config
 file has to contain your Centreon server’s webservice API URL, the
 credentials to access it, and the name of the Centreon poller used to
-monitor Rudder nodes (Central by default). 
+monitor Rudder nodes (Central by default).
 
 NOTE: make sure that there is no /api in your centreonWebserviceURL.
 
@@ -77,21 +75,21 @@ servers to handle the modifications.
 
 === Monitoring with Centreon
 
-If you want to monitor your rudder-nodes 
+If you want to monitor your rudder-nodes
 
-In your rudder interface, you can choose among different available rudder directives 
+In your rudder interface, you can choose among different available rudder directives
 or create your own technique editor which is a description in code form of what the agent
-has to do on the node and it will be deployed on a rudder-nodes throufh rules. 
+has to do on the node and it will be deployed on a rudder-nodes throufh rules.
 
-Note: Rule is the application of one or more directives to a group of nodes. 
-It is the glue between both Asset Management and Configuration Management parts of 
+Note: Rule is the application of one or more directives to a group of nodes.
+It is the glue between both Asset Management and Configuration Management parts of
 the application.
 
 * Centreon comes with the possiblity to add monitoring templates to its hosts.
 
 * Create a service template model in centreon or check for available ones proposed by Centreon interface.
 
-Once you know the name of a suitable template for a Rudder node/nodegroup, you can add it using the *Monitoring template* 
+Once you know the name of a suitable template for a Rudder node/nodegroup, you can add it using the *Monitoring template*
 generic method from the technique editor.
 
 In order to configure the monitoring of the Rudder nodes, you can provide Centreon with parameters associated to its hosts. The *Monitoring parameter* generic method acheives this.
