@@ -52,6 +52,9 @@ With "node.json" expected to be a JSON file with the following format:
         , "machineType"   : "vmware"
         , "state"         : "enabled"
         , "policyMode"    : "enforce"
+        , "agentKey"      : {
+                              "value"   : "----BEGIN CERTIFICATE----...."
+          }
         , "properties"    : {
                               "tags"    : ["some", "tags"]
                             , "env"     : "prod"

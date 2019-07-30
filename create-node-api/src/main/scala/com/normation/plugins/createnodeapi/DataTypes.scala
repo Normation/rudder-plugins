@@ -76,7 +76,7 @@ object Rest {
   )
 
   final case class AgentKey(
-      token : JValue
+      token : String
     , status: Option[String]
   )
 
@@ -328,9 +328,13 @@ object Validation {
   }
 
   def checkAgent(osType: OsType, agent: AgentKey): Validation[AgentInfo] = {
-    def checkSecurityToken(agent: AgentType, token: JValue) : Validation[SecurityToken] = AgentInfoSerialisation.parseSecurityToken(agent, token, None) match {
+    def checkSecurityToken(agent: AgentType, token: String) : Validation[SecurityToken] = {
+      import net.liftweb.json.JsonDSL._
+      val tpe = if(token.contains("BEGIN CERTIFICATE")) Certificate.kind else PublicKey.kind
+      AgentInfoSerialisation.parseSecurityToken(agent, ("type" -> tpe) ~ ("value" -> token), None) match {
       case Left(err) => NodeValidationError.SecurityVal(err.fullMsg).invalidNel
       case Right(x)  => x.validNel
+      }
     }
     val tpe = osType match {
       case _: WindowsType => Dsc
@@ -485,6 +489,4 @@ object Validation {
         UnknownOS(fullName, version, servicePack, kernelVersion)
     }
   }
-
-
 }

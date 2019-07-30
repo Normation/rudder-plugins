@@ -44,6 +44,9 @@
         , "machineType": "vmware"
         , "state":  "enabled"
         , "policyMode": "enforce"
+        , "agentKey" : {
+            "value" : "----BEGIN CERTIFICATE---- ...."
+          }
         , "properties": {
             "tags": ["some", "tags"]
           , "env": "prod"
@@ -74,9 +77,8 @@
       <dt>state</dt><dd>[Optional] Node lifecycle state. Can only be specified when status=accepted. If not specified, enable is used: enable, ignored, empty-policies, initializing, preparing-eol</dd>
       <dt>policyMode</dt><dd>[optional] the policy mode for the node. Can only be specified when status=accepted. If not specified, the default (global) mode will be used: enforce, audit</dd>
       <dt>agentKey</dt><dd>[optional] Information about agent key or certificate</dd>
-      <dt>agentKey.token.type</dt><dd>The security token type of the agent: publicKey, certificate</dd>
-      <dt>agentKey.token.value</dt><dd>The security token value (public key or certificate)</dd>
-      <dt>agentKey.status</dt><dd>[optional, default: undefined] Certification status of the security token. If "certified", inventory signature check will be enforced. certified, undefined</dd>
+      <dt>agentKey.value</dt><dd>The security token value (public key or certificate)</dd>
+      <dt>agentKey.status</dt><dd>[optional, default: certified] Certification status of the security token. If "certified", inventory signature check will be enforced. certified, undefined</dd>
       <dt>properties</dt><dd>Node properties in "key":"value" format, where "key" is a string, and "value" is either a string, a json array, or a json object.</dd>
       <dt>ipAddresses</dt><dd>an array of IPs.</dd>
       <dt>timezone</dt><dd>[optional] Timezone information of the node.</dd>
