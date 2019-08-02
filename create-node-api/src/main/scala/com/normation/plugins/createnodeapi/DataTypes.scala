@@ -76,7 +76,7 @@ object Rest {
   )
 
   final case class AgentKey(
-      token : String
+      value : String
     , status: Option[String]
   )
 
@@ -341,7 +341,7 @@ object Validation {
       case _              => CfeCommunity
     }
 
-    checkSecurityToken(tpe, agent.token) andThen { token =>
+    checkSecurityToken(tpe, agent.value) andThen { token =>
       AgentInfo(tpe, None, token).validNel
     }
   }
