@@ -44,7 +44,7 @@ import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
-import com.normation.inventory.domain.NodeId
+import com.normation.inventory.domain.{KeyStatus, NodeId, SecurityToken}
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
 import com.normation.rudder.domain.nodes.CompareProperties
@@ -296,6 +296,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
+
+    def updateNodeKeyInfo(nodeId: NodeId, agentKey: Option[SecurityToken], agentKeyStatus: Option[KeyStatus], modId: ModificationId, actor:EventActor, reason:Option[String])                   = throw new IllegalAccessException("Thou shall not used that method here")
   }
 
   val root = NodeConfigData.root
