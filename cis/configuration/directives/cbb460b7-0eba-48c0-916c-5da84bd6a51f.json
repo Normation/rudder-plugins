@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure rsync service is not enabled",
+  "enabled": true,
+  "id": "cbb460b7-0eba-48c0-916c-5da84bd6a51f",
+  "longDescription": "Description:\nThe rsyncd service can be used to synchronize files between systems over network links.\nRationale:\nThe rsyncd service presents a security risk as it uses unencrypted protocols for\ncommunication.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "rsyncd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.21"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

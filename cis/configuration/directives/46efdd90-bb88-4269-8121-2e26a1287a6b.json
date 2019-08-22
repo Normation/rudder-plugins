@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure tftp server is not enabled",
+  "enabled": true,
+  "id": "46efdd90-bb88-4269-8121-2e26a1287a6b",
+  "longDescription": "Description:\nTrivial File Transfer Protocol (TFTP) is a simple file transfer protocol, typically used to\nautomatically transfer configuration or boot machines from a boot server. The packages\ntftp and atftp are both used to define and support a TFTP server.\nRationale:\nTFTP does not support authentication nor does it ensure the confidentiality or integrity of\ndata. It is recommended that TFTP be removed, unless there is a specific need for TFTP. In\nthat case, extreme caution must be used when configuring the services.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "tftp.socket"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.1"
+    },
+    {
+      "cis-item": "2.1.6"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,50 @@
+{
+  "displayName": "CIS - Ensure nodev option set on /dev/shm partition",
+  "enabled": true,
+  "id": "4beec8e9-cd7b-4bb5-9878-74db09fe0807",
+  "longDescription": "Description:\nThe nodev mount option specifies that the filesystem cannot contain special devices.\nRationale:\nSince the /dev/shm filesystem is not intended to support devices, set this option to ensure\nthat users cannot attempt to create special devices in /dev/shm partitions.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "11B7074D-62D8-4437-B5D5-17041BD79AC2",
+                  "value": "/dev/shm"
+                }
+              },
+              {
+                "var": {
+                  "name": "488F7662-A59B-4BD1-825D-7A3800FB6208",
+                  "value": "rw,nosuid,nodev,noexec,relatime"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.1"
+    },
+    {
+      "cis-item": "1.1.15"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_mounting_partition_is_correct",
+  "techniqueVersion": "1.0"
+}

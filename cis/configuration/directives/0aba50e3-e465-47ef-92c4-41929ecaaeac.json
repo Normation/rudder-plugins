@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure telnet server is not enabled",
+  "enabled": true,
+  "id": "0aba50e3-e465-47ef-92c4-41929ecaaeac",
+  "longDescription": "Description:\nThe telnet-server package contains the telnet daemon, which accepts connections from\nusers from other systems via the telnet protocol.\nRationale:\nThe telnet protocol is insecure and unencrypted. The use of an unencrypted transmission\nmedium could allow a user with access to sniff network traffic the ability to steal\ncredentials. The ssh package provides an encrypted session and stronger security.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "telnet.socket"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.19"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

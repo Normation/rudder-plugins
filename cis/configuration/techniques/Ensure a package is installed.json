@@ -1,0 +1,84 @@
+{
+  "type": "ncf_technique",
+  "version": 1,
+  "data": {
+    "bundle_args": [
+      "package",
+      "posthook",
+      "check_command"
+    ],
+    "bundle_name": "Ensure_a_package_is_installed",
+    "description": "",
+    "name": "Ensure a package is installed",
+    "version": "1.0",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
+        "name": "package"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
+        "name": "posthook"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "2310a2df-17bb-4c43-bcb0-c4e30911075c",
+        "name": "check_command"
+      }
+    ],
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "method_name": "condition_from_variable_existence",
+        "component": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${check_command}",
+          "0",
+          "999"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "method_name": "command_execution_result",
+        "component": "command_execution_result"
+      },
+      {
+        "args": [
+          "${package}",
+          "any",
+          "default",
+          "default"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "method_name": "package_present",
+        "component": "package_present"
+      },
+      {
+        "args": [
+          "${posthook}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false.package_present_${package}_repaired)",
+        "method_name": "command_execution",
+        "component": "command_execution"
+      }
+    ]
+  }
+}

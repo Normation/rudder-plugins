@@ -1,0 +1,87 @@
+#####################################################################################
+# Copyright 2019 Normation SAS
+#####################################################################################
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, Version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################################
+
+# @name Partition check mounted
+# @description Checks if a given mount point exists
+# @documentation This generic method check that a given path is a single mounted point
+# the partition doesn't exists or is not mounted.
+#
+# It uses the command findmnt to check for mounted options, which should already be available on most Linux
+# distributions.
+#
+#
+# The method will report a `success`:
+#
+# * If the given path correspond to a single mount point
+#
+# And an `error`:
+#
+# * if the path given does is not a mount point
+# * or if the command findmnt is not found in /mnt
+#
+# @parameter mount_point Mount point path (absolute mount path on the target node)
+#
+# @class_prefix mount_point
+# @class_parameter mount_point
+
+bundle agent partition_check_mounted(mount_point)
+{
+  vars:
+      "canonified_mount_point" string => canonify("${mount_point}");
+      "old_class_prefix"       string => canonify("partition_check_mounted_${mount_point}");
+      "args"                    slist => { "${mount_point}" };
+      "report_param"           string => join("_", args);
+      "full_class_prefix"      string => canonify("partition_check_mounted_${report_param}");
+      "class_prefix"           string => string_head("${full_class_prefix}", "1000");
+
+      "findmnt_output"         string => execresult("/bin/findmnt -nrT ${mount_point}", "noshell");
+      "parsing"                int    => parsestringarrayidx("parsed_output", "${findmnt_output}", "\s*#[^\n]*", " ", 4, 99999999999);
+      "current_mount_point"    string => "${parsed_output[0][0]}";
+
+  classes:
+      "pass3"              expression => "pass2";
+      "pass2"              expression => "pass1";
+      "pass1"              expression => "any";
+
+      "findmnt_found"      expression => isexecutable("/bin/findmnt");
+    findmnt_found.pass2.!pass3::
+      "${canonified_mount_point}" expression => strcmp("${current_mount_point}", "${mount_point}");
+
+  methods:
+    pass3::
+      "not_mounted_${canonified_mount_point}" usebundle => _classes_failure("${old_class_prefix}"),
+        ifvarclass => "!findmnt_found|!${canonified_mount_point}";
+      "not_mounted_${canonified_mount_point}" usebundle => _classes_failure("${class_prefix}"),
+        ifvarclass => "!findmnt_found|!${canonified_mount_point}";
+
+    pass3.findmnt_found::
+      "mounted_${canonified_mount_point}" usebundle => _classes_success("${old_class_prefix}"),
+        ifvarclass => "${canonified_mount_point}";
+      "mounted_${canonified_mount_point}" usebundle => _classes_success("${class_prefix}"),
+        ifvarclass => "${canonified_mount_point}";
+
+    pass3.!findmnt_found::
+      "report" usebundle => _log_v3("Command findmnt not found in /bin, check if mount point ${mount_point} exists and is mounted", "${mount_point}", "${old_class_prefix}", "${class_prefix}", @{args});
+
+    pass3.findmnt_found::
+      "report_succes" usebundle => _log_v3("Check if mount point ${mount_point} exists and is mounted", "${mount_point}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${canonified_mount_point}";
+
+      "report_error"  usebundle => _log_v3("Mount point ${mount_point} found under ${current_mount_point}", "${mount_point}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "!${canonified_mount_point}";
+}

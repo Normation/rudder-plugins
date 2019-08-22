@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Disable Automounting",
+  "enabled": true,
+  "id": "533c3b62-c7ac-4119-ba18-46779ccb1b68",
+  "longDescription": "Description:\nautofs allows automatic mounting of devices, typically including CD/DVDs and USB drives.\n\nRationale:\nWith automounting enabled anyone with physical access could attach a USB drive or disc\nand have its contents available in system even if they lacked permissions to mount it\nthemselves.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "autofs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.1"
+    },
+    {
+      "cis-item": "1.1.22"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "2"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

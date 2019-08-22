@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure talk server is not enabled",
+  "enabled": true,
+  "id": "b1b1f979-7519-46ac-a07f-4f5eb3f36a61",
+  "longDescription": "Description:\nThe talk software makes it possible for users to send and receive messages across systems\nthrough a terminal session. The talk client (allows initiate of talk sessions) is installed by\ndefault.\nRationale:\nThe software presents a security risk as it uses unencrypted protocols for communication.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "ntalk"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.18"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,121 @@
+#!/usr/bin/python
+import sys, json, re
+# Hack to import rudder lib, remove, some day ...
+sys.path.insert(0, "/usr/share/rudder-api-client/")
+from rudder import RudderEndPoint, RudderError
+
+with open('/var/rudder/run/api-token') as ftoken:
+    TOKEN = ftoken.read()
+RUDDER_URL="https://localhost/rudder"
+TRACK_FILE_PATH="/var/rudder/packages/rudder-plugin-cis/cis.json"
+
+endpoint = RudderEndPoint(RUDDER_URL, TOKEN, verify=False)
+RED = '\033[91m'
+ENDC = '\033[0m'
+GREEN = '\033[92m'
+
+GLOBAL_QUERY = None
+
+try:
+    input = raw_input
+except NameError:
+    pass
+
+
+def canonify(string):
+  string = string.encode("utf-8").decode("iso-8859-1")
+  regex = re.compile("[^a-zA-Z0-9_]")
+  return regex.sub("_", string)
+
+def queryYesNo(question):
+    global GLOBAL_QUERY
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if GLOBAL_QUERY == None:
+        while True:
+            sys.stdout.write(question)
+            choice = raw_input()
+
+            if choice == "Y":
+                GLOBAL_QUERY = True
+                return True
+            elif choice == "N":
+                GLOBAL_QUERY = False
+                return False
+            elif choice in valid:
+                return valid[choice]
+            else:
+                sys.stdout.write("Please respond with 'y' or 'no' "
+                                 "(or 'Y' or 'N' for all next inputs).\n")
+    else:
+        return GLOBAL_QUERY
+
+def removeRules(rules):
+    global GLOBAL_QUERY
+    GLOBAL_QUERY = None
+    for iRule in rules:
+        try:
+            if iRule in RULES:
+                if queryYesNo("Do you want to remove Rule %s? [y/n/Y/N]"%iRule):
+                    delete = endpoint.delete_rule(iRule)
+                    print(GREEN + "Successfully removed rule %s"%iRule + ENDC)
+                else:
+                    print("Keeping rule %s"%iDirective)
+            else:
+                print(GREEN + "Could not find rule %s"%iRule + ENDC)
+        except RudderError as e:
+            print(RED + e.message + ENDC)
+
+def removeDirectives(directives):
+    global GLOBAL_QUERY
+    GLOBAL_QUERY = None
+    for iDirective in directives:
+        try:
+            if iDirective in DIRECTIVES:
+                if queryYesNo("Do you want to remove directive %s? [y/n/Y/N]"%iDirective):
+                    delete = endpoint.delete_directive(iDirective)
+                    print(GREEN + "Successfully removed directive %s"%iDirective + ENDC)
+                else:
+                    print("Keeping directive %s"%iDirective)
+            else:
+                print(GREEN + "Could not find directive %s"%iRule + ENDC)
+        except RudderError as e:
+            print(RED + e.message + ENDC)
+
+def removeTechniques(techniques):
+    global GLOBAL_QUERY
+    GLOBAL_QUERY = None
+    techniquesEndpoint = RudderEndPoint("https://localhost/ncf", TOKEN, verify=False)
+    for iTechnique in techniques:
+        try:
+            with open("/var/rudder/packages/rudder-plugin-cis/techniques/" + iTechnique) as f:
+                data = json.load(f)["data"]
+            techniqueName = data["name"]
+            if canonify(techniqueName) in TECHNIQUES:
+                if queryYesNo("Do you want to remove Technique %s? [y/n/Y/N]"%techniqueName):
+                    delete = techniquesEndpoint.request("DELETE", "/api/techniques/" + canonify(techniqueName) + "?path=/var/rudder/configuration-repository/ncf")
+                    print(GREEN + "Successfully removed technique %s"%techniqueName + ENDC)
+                else:
+                    print("Keeping technique %s"%iDirective)
+            else:
+                print(GREEN + "Could not find technique %s"%techniqueName + ENDC)
+        except RudderError as e:
+            print(RED + e.message + ENDC)
+
+try:
+    with open(TRACK_FILE_PATH) as f:
+        data = json.load(f)
+except Exception as e:
+    print("Could not open %s"%TRACK_FILE_PATH)
+    print(e)
+    exit(1)
+
+RULES = [iRule["id"] for iRule in endpoint.list_rules()["rules"]]
+DIRECTIVES = [iDirective["id"] for iDirective in endpoint.list_directives()["directives"]]
+TECHNIQUES = [iTechnique["name"] for iTechnique in endpoint.list_techniques()["techniques"]]
+
+removeRules(data["rules"])
+removeDirectives(data["directives"])
+removeTechniques(data["techniques"])
+
+

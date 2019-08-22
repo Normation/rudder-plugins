@@ -1,0 +1,175 @@
+#!/usr/bin/python3
+
+import json
+import re
+import os, sys
+import subprocess
+
+def make_jsonfile(filename, content):
+  os.makedirs(os.path.dirname(filename), exist_ok=True)
+  with open(filename, "w") as fd:
+    fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
+
+def mergeDicts(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
+
+def getSections(path):
+    command  = ["/usr/bin/pdftotext",  path, "-"]
+    output = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True).stdout
+    pattern = re.findall(r"(\d\.\d\.\d\.\d\s+[\w ]{5,})\((?:Scored|Unscored)\)", output)
+    print(pattern)
+
+def parsePDF(path):
+    command  = ["/usr/bin/pdftotext",  path, "-"]
+    output = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True).stdout
+    r = re.compile(r"""(?P<id>(?:\d+\.)+\d+)\s+(?P<name>(?:([\S ]{5,})\n?([\S ])?))\(Scored\)\s*
+Profile\s+Applicability:\s+(?:\d+ \| P a g e\s+)?(?:\W+Level\s+(?P<server>1|2)[\s-]+Server)?(?:\s+\W+Level\s+(?P<workstation>1|2)[\s-]+Workstation)?\s+(?P<description>Description:[\S \n]+?)(?=Audit|Remediation)""")
+    items = [m.groupdict() for m in r.finditer(output)]
+    for iItem in items:
+        for k,v in iItem.items():
+            if v is not None:
+                iItem[k] = v.rstrip("\n").strip()
+    return items
+
+def getTagsFromPDF(items, itemName):
+    tags = []
+    for iItem in items:
+        if iItem["name"] in itemName.strip():
+            # items number
+            ids = iItem["id"].split(".")
+            for i in range(1,len(ids)):
+                ids[i] = ids[i-1] + "." + ids[i]
+                tags.append({"cis-item": ids[i] })
+
+            # server level
+            if iItem["server"] is not None:
+                tags.append({"cis-server":  iItem["server"]})
+            # workstation level
+            if iItem["workstation"] is not None:
+                tags.append({"cis-workstation": iItem["workstation"]})
+            return tags
+    return None
+
+def is_directive(data):
+    if "techniqueName" in data and "techniqueVersion" in data:
+        return True
+    return False
+
+def is_rule(data):
+    if "directives" in data and "targets" in data:
+        return True
+    return False
+
+def is_technique(data):
+    if "type" in data and "version" in data and "data" in data:
+        return True
+    return False
+
+def writeCis(items, path):
+    with open(path) as f:
+        data = json.load(f)
+    if is_directive(data) == True:
+        tags = getTagsFromPDF(items, data["displayName"])
+        if tags is not None:
+            data["tags"] = tags
+        description = list(filter(lambda x: x.get("name") in data["displayName"], items))
+        data["longDescription"] = description[0]["description"]
+        data["policyMode"] = "audit"
+        make_jsonfile(path, data)
+
+def writeAllCis(basePath, pdfPath):
+    items = parsePDF(pdfPath)
+    for root, dirs, files in os.walk(basePath):
+        for file in files:
+            if file.endswith('.json'):
+                writeCis(items, os.path.join(root, file))
+
+def getDirectives(basePath):
+    directives = []
+    for root, dirs, files in os.walk(basePath):
+        for file in files:
+            if file.endswith('.json'):
+               with open(os.path.join(root, file)) as f:
+                   data = json.load(f)
+               if is_directive(data) == True:
+                   directives.append(data)
+    return directives
+
+def getRules(basePath):
+    rules = []
+    for root, dirs, files in os.walk(basePath):
+        for file in files:
+            if file.endswith('.json'):
+               with open(os.path.join(root, file)) as f:
+                   data = json.load(f)
+               if is_rule(data) == True:
+                   rules.append(data)
+    return rules
+
+def getTechniques(basePath):
+    techniques = []
+    for root, dirs, files in os.walk(basePath + "/techniques"):
+        for file in files:
+            if file.endswith('.json'):
+               with open(os.path.join(root, file)) as f:
+                   data = json.load(f)
+               if is_technique(data) == True:
+                   techniques.append(file)
+    return techniques
+
+def findMissing(basePath, pdfPath):
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    GREEN = '\033[92m'
+
+    items = parsePDF(pdfPath)
+    directives = getDirectives(basePath)
+    implemented = set([i["displayName"].replace("CIS - ", "") for i in directives])
+    expected = set([i["name"] for i in items])
+    result = list(expected - implemented)
+
+    for i in items:
+        if i["name"] in implemented:
+            print(GREEN + "[OK]   " + i["id"] + " - " + i["name"] + ENDC)
+        else:
+            print(RED + "[FAIL] " + i["id"] + " - " + i["name"] + ENDC)
+    print("%s items covered out of %s"%(len(implemented), len(expected)))
+
+def trackRules(basePath):
+    try:
+        with open("packaging/cis.json") as f:
+            data = json.load(f)
+    except:
+        data = {}
+    data["rules"] = [i["id"] for i in getRules(basePath)]
+    make_jsonfile("packaging/cis.json", data)
+
+def trackDirectives(basePath):
+    try:
+        with open("packaging/cis.json") as f:
+            data = json.load(f)
+    except:
+        data = {}
+    data["directives"] = [i["id"] for i in getDirectives(basePath)]
+    make_jsonfile("packaging/cis.json", data)
+
+def trackTechniques(basePath):
+    try:
+        with open("packaging/cis.json") as f:
+            data = json.load(f)
+    except:
+        data = {}
+    data["techniques"] = getTechniques(basePath)
+    make_jsonfile("packaging/cis.json", data)
+
+def trackConfig(basePath):
+    trackRules(basePath)
+    trackDirectives(basePath)
+    trackTechniques(basePath)
+
+
+writeAllCis("configuration", "pdfs/cis_redhat.pdf")
+findMissing("configuration", "pdfs/cis_redhat.pdf")
+trackConfig("configuration")

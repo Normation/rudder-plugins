@@ -1,0 +1,62 @@
+{
+  "displayName": "CIS - Ensure permissions on /etc/cron.d are configured",
+  "enabled": true,
+  "id": "e0d1fb6a-42f8-4d54-b21b-29ce24715b7e",
+  "longDescription": "Description:\nThe /etc/cron.d directory contains system cron jobs that need to run in a similar manner\nto the hourly, daily weekly and monthly jobs from /etc/crontab , but require more\ngranular control as to when they run. The files in this directory cannot be manipulated by\nthe crontab command, but are instead edited by system administrators using a text editor.\nThe commands below restrict read/write and search access to user and group root,\npreventing regular users from accessing this directory.\nRationale:\nGranting write access to this directory for non-privileged users could provide them the\nmeans for gaining unauthorized elevated privileges. Granting read access to this directory\ncould give an unprivileged user insight in how to gain elevated privileges or circumvent\nauditing controls.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "586D5935-1730-4266-9D07-9A380D822400",
+                  "value": "/etc/cron.d"
+                }
+              },
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "600"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "root"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "root"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "5.1"
+    },
+    {
+      "cis-item": "5.1.7"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Set_permissions",
+  "techniqueVersion": "1.0"
+}

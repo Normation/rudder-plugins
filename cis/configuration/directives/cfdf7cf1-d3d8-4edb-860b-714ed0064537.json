@@ -1,0 +1,47 @@
+{
+  "displayName": "CIS - Ensure mounting of udf filesystems is disabled",
+  "enabled": true,
+  "id": "cfdf7cf1-d3d8-4edb-860b-714ed0064537",
+  "longDescription": "Description:\nThe udf filesystem type is the universal disk format used to implement ISO/IEC 13346 and\nECMA-167 specifications. This is an open vendor filesystem type for data storage on a\nbroad range of media. This filesystem type is necessary to support writing DVDs and newer\noptical disc formats.\nRationale:\nRemoving support for unneeded filesystem types reduces the local attack surface of the\nsystem. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "udf"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.1"
+    },
+    {
+      "cis-item": "1.1.1"
+    },
+    {
+      "cis-item": "1.1.1.7"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}
