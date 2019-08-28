@@ -1,6 +1,6 @@
 package com.normation.plugins.usermanagement
 
-import com.normation.plugins.usermanagement.UserManagementUtilities.computeRoleCoverage
+import com.normation.plugins.usermanagement.UserManagementService.computeRoleCoverage
 import com.normation.rudder.Role.Custom
 import com.normation.rudder.RoleToRights.parseRole
 import com.normation.rudder.{AuthorizationType, Role, RoleToRights}
