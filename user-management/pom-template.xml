@@ -43,7 +43,11 @@
   </build>
 
   <dependencies>
-    <!-- Add other plugin specific dependencies -->
+    <dependency>
+      <groupId>com.github.pathikrit</groupId>
+      <artifactId>better-files_${scala-binary-version}</artifactId>
+      <version>3.7.0</version>
+    </dependency>
   </dependencies>
 
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->
