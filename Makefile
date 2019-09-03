@@ -51,5 +51,7 @@ clean:
 very-clean: clean 
 	./makefiles/find_m2_repo.sh clean
 	
+optipng:
+	find . -name "*.png" -exec optipng -strip all {} \;
 
 .PHONY: $(LIBS) $(PLUGINS) doc
