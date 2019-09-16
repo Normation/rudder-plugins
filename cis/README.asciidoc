@@ -18,6 +18,25 @@ This plugin will bring a set of techniques to help auditing the CIS benchmark wi
 This plugin needs the package `rudder-api-client` to be installed on your Rudder Server and the
 `python3-requests` to be installed on your server.
 
+= Build
+
+Since there are no easy way to have access to the CIS Benchmark data, the plugin build is based on pdfs parsing. To generate a plugin providing rules for one or more benchmark, you should deposit the associated pdfs in the `pdfs` folder with the folowing naming convention:
+
+....
+cis_<benchmark_short_name>.pdf
+....
+
+This will generate rules named: `CIS - <benchmark_short_name> sample rule`.
+Each directives used in the different rules will then be tagged as follow:
+
+....
+# Ex with item 1.1.22 of the redhat7 benchmark
+cis-redhat7: 1, 1.1, 1.1.22
+cis-server: 1
+cis-workstation: 2
+....
+
+
 = Usage
 
 The plugin provides rules to help you audit some CIS benchmarks. Each item will be represented in Rudder
