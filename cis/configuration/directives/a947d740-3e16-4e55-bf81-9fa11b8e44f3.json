@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure LDAP server is not enabled",
+  "enabled": true,
+  "id": "a947d740-3e16-4e55-bf81-9fa11b8e44f3",
+  "longDescription": "Description:\nThe Lightweight Directory Access Protocol (LDAP) was introduced as a replacement for\nNIS/YP. It is a service that provides a method for looking up information from a central\ndatabase.\nRationale:\nIf the system will not need to act as an LDAP server, it is recommended that the software be\ndisabled to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "slapd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.6"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

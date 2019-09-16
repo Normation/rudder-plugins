@@ -1,0 +1,255 @@
+#!/usr/bin/python
+
+"""
+Rudder synchronize
+
+Usage:
+    rudder-synchronize export <rudder_item> <uuid> <path> [--debug]
+    rudder-synchronize import <rudder_item> <path> [--debug]
+
+"""
+
+import json, logging, traceback
+import re
+import os, sys
+import requests
+# Hack to import rudder lib, remove, some day ...
+sys.path.insert(0, "/usr/share/rudder-api-client/")
+sys.path.insert(0, "/opt/rudder/share/python")
+import docopt
+from rudder import RudderEndPoint, RudderError
+
+LOG_PATH="./run.log"
+
+class colors:
+  BLUE = '\033[94m'
+  GREEN = '\033[92m'
+  YELLOW = '\033[93m'
+  RED = '\033[91m'
+  ENDC = '\033[0m'
+
+with open('/var/rudder/run/api-token') as ftoken:
+    TOKEN = ftoken.read()
+RUDDER_URL="https://localhost/rudder"
+endpoint = RudderEndPoint(RUDDER_URL, TOKEN, verify=False)
+
+def startLogger(logLevel):
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    # stdout logger
+    stdoutHandler = logging.StreamHandler(sys.stdout)
+    stdoutFormatter = logging.Formatter('%(message)s')
+    stdoutHandler.setFormatter(stdoutFormatter)
+    if logLevel == 'INFO':
+        stdoutHandler.setLevel(logging.INFO)
+    elif logLevel == 'DEBUG':
+        stdoutHandler.setLevel(logging.DEBUG)
+    else:
+        fail("unknow loglevel %s"%(logLevel))
+
+    # log file logger
+    fileHandler = logging.FileHandler(filename=LOG_PATH , mode='w')
+    fileHandler.setLevel(logging.DEBUG)
+    fileFormatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    fileHandler.setFormatter(fileFormatter)
+
+    root.addHandler(stdoutHandler)
+    root.addHandler(fileHandler)
+
+def fail(message, code=1, exit=False):
+    logging.error(colors.RED + message + colors.ENDC)
+    if exit == True:
+        exit(code)
+
+def make_jsonfile(filename, content):
+  logging.debug("Writing to %s"%filename)
+  if not os.path.exists(os.path.dirname(filename)):
+    os.makedirs(os.path.dirname(filename))
+  with open(filename, "w") as fd:
+    fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
+
+def is_directive(data):
+    if "techniqueName" in data and "techniqueVersion" in data:
+        return True
+    return False
+
+def is_rule(data):
+    if "directives" in data and "targets" in data:
+        return True
+    return False
+
+def is_technique(data):
+    if "type" in data and "version" in data and "data" in data:
+        return True
+    return False
+
+def export_rule(uuid, path):
+    logging.debug("Exporting rule %s"%uuid)
+    try:
+        rule = endpoint.rule_details(uuid)['rules'][0]
+        make_jsonfile(path + "/rules/" + uuid + ".json", rule)
+
+        directives = []
+        for iDirective in rule['directives']:
+            export_directive(iDirective, path)
+    except RudderError as e:
+        fail("Error while exporting technique %s:\n%s"%(uuid,e.message))
+
+def export_directive(uuid, path):
+    logging.debug("Exporting directive %s"%uuid)
+    try:
+        directive = endpoint.directive_details(uuid)['directives'][0]
+        # This is needed because of #8687, the API does not know these parameters at creation
+        if "isEnabled" in directive:
+            del directive["isEnabled"]
+        if "isSystem" in directive:
+            del directive["isSystem"]
+        if "priority" in directive:
+            del directive["priority"]
+        if "tags" in directive:
+            del directive["tags"]
+        if "policyMode" in directive:
+            del directive["policyMode"]
+        if "system" in directive:
+            del directive["system"]
+        make_jsonfile( path + "/directives/" + uuid + ".json", directive)
+
+        export_technique(directive["techniqueName"], directive["techniqueVersion"], path)
+
+    except RudderError as e:
+        fail("Error while exporting technique %s:\n%s"%(uuid, e.message))
+
+def export_technique(uuid, version, path):
+    #TODO proper export
+    logging.error("Could not download technique %s in version %s"%(uuid, version))
+
+def import_technique(path):
+    try:
+        with open(path) as f:
+            data = json.load(f)["data"]
+        # Call the technique API
+        techniquesEndpoint = RudderEndPoint("https://localhost/ncf", TOKEN, verify=False)
+        techniqueData = { "path": "/var/rudder/configuration-repository/ncf", "technique": data, "methods": [] }
+        response = techniquesEndpoint.request("PUT", "/api/techniques", None, techniqueData, return_raw=True)
+
+        # Extend the technique json with GM
+        gms = get_all_generic_methods()
+        for iGM in techniqueData["technique"]["method_calls"]:
+           gmData = gms[iGM["method_name"]]
+           if "documentation" in gmData:
+               gmData.pop("documentation")
+           techniqueData["methods"].append(gmData)
+        techniqueData["reason"] = "Importing technique %s from rudder-synchronize"%techniqueData["technique"]["name"]
+
+        # Call the ncf API
+        ncfEndpoint = RudderEndPoint("https://localhost/rudder", TOKEN, verify=False)
+        technique = ncfEndpoint.request("POST", "/api/ncf", None, techniqueData, return_raw=False)
+        logging.info(colors.GREEN + "Successfully imported technique %s"%techniqueData["technique"]["name"] + colors.ENDC)
+
+    except RudderError as e:
+        fail("Error while importing technique %s:\n%s\n%s"%(techniqueData["technique"]["name"], e.response, e.message))
+
+def import_directive(path):
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        directive = endpoint.create_directive(
+                                     techniqueName   = data["techniqueName"],
+                                     displayName      = data["displayName"],
+                                     parameters       = data["parameters"],
+                                     shortDescription = data["shortDescription"],
+                                     longDescription  = data["longDescription"],
+                                     id               = data["id"],
+                                     techniqueVersion = data["techniqueVersion"],
+                                     priority         = data.get("priority"),
+                                     tags             = data.get("tags"),
+                                     policyMode       = data.get("policyMode")
+                                    )
+        logging.info(colors.GREEN + "Successfully imported directive %s"%data["id"] + colors.ENDC)
+    except RudderError as e:
+        fail("Error while importing directive %s:\n%s"%(path,e.message))
+
+
+def import_rule(path):
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        if is_rule(data):
+            rule = endpoint.create_rule(
+                    displayName = data["displayName"],
+                    id = data["id"],
+                    shortDescription = data["shortDescription"],
+                    longDescription = data["longDescription"],
+                    directives = data["directives"],
+                    tags = data["tags"]
+                   )
+            logging.info(colors.GREEN + "Successfully imported rule %s"%data["id"] + colors.ENDC)
+    except RudderError as e:
+        fail("Error while importing rule %s:\n%s"%(path, e.message))
+
+def import_directives(path):
+    if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.endswith('.json'):
+                     import_directive(os.path.join(root, file))
+    else:
+        import_directive(path)
+
+def import_rules(path):
+    if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.endswith('.json'):
+                     import_rule(os.path.join(root, file))
+    else:
+        import_rule(path)
+
+def import_techniques(path):
+    if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.endswith('.json'):
+                     import_technique(os.path.join(root, file))
+    else:
+        import_technique(path)
+
+GMS = {}
+def get_all_generic_methods():
+    global GMS
+    if GMS == {}:
+        # Call the technique API
+        ncfEndpoint = RudderEndPoint("https://localhost/ncf", TOKEN, verify=False)
+        GMS = ncfEndpoint.request("GET", "/api/techniques?path=/var/rudder/configuration-repository/ncf", None, None, return_raw=False)["generic_methods"]
+    return GMS
+
+
+##########################
+# Command line interface #
+##########################
+
+if __name__ == "__main__":
+  args = docopt.docopt(__doc__)
+  if args['--debug']:
+      startLogger('DEBUG')
+  else:
+      startLogger('INFO')
+
+  if args['export']:
+      if args['<rudder_item>'] == "technique":
+          export_technique(args['<uuid>'], args['<path>']),
+      elif args['<rudder_item>'] == "directive":
+          export_directive(args['<uuid>'], args['<path>']),
+      elif args['<rudder_item>'] == "rule":
+          export_rule(args['<uuid>'], args['<path>']),
+      else:
+          fail("Unknown Rudder Item %s"%args['<rudder_item>'])
+  elif args['import']:
+      if args['<rudder_item>'] == "technique":
+          import_techniques(args['<path>']),
+      elif args['<rudder_item>'] == "directive":
+          import_directives(args['<path>']),
+      elif args['<rudder_item>'] == "rule":
+          import_rules(args['<path>']),
+      else:
+          fail("Unknown Rudder Item %s"%args['<rudder_item>'])

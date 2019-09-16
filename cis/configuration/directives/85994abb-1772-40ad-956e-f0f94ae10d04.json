@@ -1,0 +1,47 @@
+{
+  "displayName": "CIS - Ensure mounting of squashfs filesystems is disabled",
+  "enabled": true,
+  "id": "85994abb-1772-40ad-956e-f0f94ae10d04",
+  "longDescription": "Description:\nThe squashfs filesystem type is a compressed read-only Linux filesystem embedded in\nsmall footprint systems (similar to cramfs ). A squashfs image can be used without having\nto first decompress the image.\nRationale:\nRemoving support for unneeded filesystem types reduces the local attack surface of the\nsystem. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "squashfs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.1"
+    },
+    {
+      "cis-item": "1.1.1"
+    },
+    {
+      "cis-item": "1.1.1.6"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

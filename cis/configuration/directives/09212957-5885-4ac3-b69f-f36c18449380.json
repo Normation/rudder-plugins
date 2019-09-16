@@ -1,0 +1,47 @@
+{
+  "displayName": "CIS - Ensure mounting of cramfs filesystems is disabled",
+  "enabled": true,
+  "id": "09212957-5885-4ac3-b69f-f36c18449380",
+  "longDescription": "Description:\nThe cramfs filesystem type is a compressed read-only Linux filesystem embedded in small\nfootprint systems. A cramfs image can be used without having to first decompress the\nimage.\nRationale:\nRemoving support for unneeded filesystem types reduces the local attack surface of the\nserver. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "cramfs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.1"
+    },
+    {
+      "cis-item": "1.1.1"
+    },
+    {
+      "cis-item": "1.1.1.1"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

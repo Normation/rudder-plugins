@@ -1,0 +1,62 @@
+# Rudder plugin: cis
+
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
+
+See repository main README for information about licensing, contribution, and
+other general information.
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[cis-plugin]
+= cis
+
+This plugin will bring a set of techniques to help auditing the CIS benchmark with Rudder.
+
+= Prerequisites
+
+This plugin needs the package `rudder-api-client` to be installed on your Rudder Server and the
+`python3-requests` to be installed on your server.
+
+= Usage
+
+The plugin provides rules to help you audit some CIS benchmarks. Each item will be represented in Rudder
+by a unique `directive`, referenced by their name.
+If you want to search for a specific items you should use a tag-based search.
+
+If you want to disable some specific items on some nodes:
+* You need to identify the associated directives, note their `Directive Rudder ID` found in their
+respective page under `show technical details`.
+* Add a JSON `node property` named *skip* on the targetted nodes containing keys corresponding to the
+previously noted `Directives Rudder ID`.
++
+....
+# An example of the skip property value
+{
+  "c180245d-2c34-48fc-bc86-b63c60306d8b": "True",
+  "bfd4f6c6-1f81-4c38-878b-d38d43bbb64c": "True"
+}
+....
+
+= Modifying the provided configuration
+
+Install the plugin on your current test Server. Then, modify/create the rules you want to
+see in the plugin.
+
+* Install the plugin
+* Modify or create the rules you want to add to the plugin
+* Export them by running:
++
+....
+/var/rudder/packages/rudder-plugin-cis/rudder-synchronize export rule <rule-id> <destination-file>
+....
+* And add the content of `<destination-file>/directives` and `<destination-file>/rules` to the plugin
+repo under the `configuration` directory.
+
+= Troubleshootings
+
+The plugin is still unreleased and comes with several known bugs:
+
+* The rules distributed by the plugin always come with wrong uuid and so, the plugin will be unable to
+update or remove it at upgrade or uninstall.
+

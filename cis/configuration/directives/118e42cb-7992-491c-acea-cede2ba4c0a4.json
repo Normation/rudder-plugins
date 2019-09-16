@@ -1,0 +1,62 @@
+{
+  "displayName": "CIS - Ensure talk client is not installed",
+  "enabled": true,
+  "id": "118e42cb-7992-491c-acea-cede2ba4c0a4",
+  "longDescription": "Description:\nThe talk software makes it possible for users to send and receive messages across systems\nthrough a terminal session. The talk client, which allows initialization of talk sessions, is\ninstalled by default.\nRationale:\nThe software presents a security risk as it uses unencrypted protocols for communication.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "529B1F1A-0DB6-4244-B84A-7ABF0216DA39",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "talk"
+                }
+              },
+              {
+                "var": {
+                  "name": "F2DA3DFF-0634-48B0-8A8E-8C27393388CB",
+                  "value": "/bin/true"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.3"
+    },
+    {
+      "cis-item": "2.3.3"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_a_package_is_not_installed",
+  "techniqueVersion": "1.0"
+}

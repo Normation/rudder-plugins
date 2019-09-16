@@ -1,0 +1,47 @@
+{
+  "displayName": "CIS - Ensure mounting of FAT filesystems is disabled",
+  "enabled": true,
+  "id": "3926d5cb-d5e3-4716-9c2c-dcaaee6e3e40",
+  "longDescription": "Description:\nThe FAT filesystem format is primarily used on older windows systems and portable USB\ndrives or flash modules. It comes in three types FAT12 , FAT16 , and FAT32 all of which are\nsupported by the vfat kernel module.\nRationale:\nRemoving support for unneeded filesystem types reduces the local attack surface of the\nsystem. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "vfat"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.1"
+    },
+    {
+      "cis-item": "1.1.1"
+    },
+    {
+      "cis-item": "1.1.1.8"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "2"
+    }
+  ],
+  "techniqueName": "Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

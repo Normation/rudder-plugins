@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure HTTP server is not enabled",
+  "enabled": true,
+  "id": "7ef765fa-2824-497c-a769-60b1cddd15f8",
+  "longDescription": "Description:\nHTTP or web servers provide the ability to host web site content.\nRationale:\nUnless there is a need to run the system as a web server, it is recommended that the service\nbe disabled to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "httpd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.10"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

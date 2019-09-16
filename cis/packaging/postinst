@@ -1,0 +1,25 @@
+#!/bin/bash
+CONFIGURATION_PATH=/var/rudder/packages/rudder-plugin-cis
+
+# Import Generic Methods
+cd /var/rudder/configuration-repository/
+git reset
+for file in "ncf/30_generic_methods/cis"
+do
+
+  chown -R root:rudder $file
+  chmod 664 -R $file
+  chmod -R +X $file
+  git add $file
+done
+git commit -m "CIS plugin installation"
+
+# Import Techniques
+${CONFIGURATION_PATH}/rudder-synchronize import technique ${CONFIGURATION_PATH}/techniques
+rudder server reload-techniques
+
+# Import Directives
+${CONFIGURATION_PATH}/rudder-synchronize import directive ${CONFIGURATION_PATH}/directives
+
+# Import Rules
+${CONFIGURATION_PATH}/rudder-synchronize import rule ${CONFIGURATION_PATH}/rules

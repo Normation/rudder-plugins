@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure Avahi Server is not enabled",
+  "enabled": true,
+  "id": "14a737da-09a4-408e-834a-e8d22d9e5ea7",
+  "longDescription": "Description:\nAvahi is a free zeroconf implementation, including a system for multicast DNS/DNS-SD\nservice discovery. Avahi allows programs to publish and discover services and hosts\nrunning on a local network with no specific configuration. For example, a user can plug a\ncomputer into a network and Avahi automatically finds printers to print to, files to look at\nand people to talk to, as well as network services running on the machine.\nRationale:\nAutomatic discovery of network services is not normally required for system functionality.\nIt is recommended to disable the service to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "avahi-daemon"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.3"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

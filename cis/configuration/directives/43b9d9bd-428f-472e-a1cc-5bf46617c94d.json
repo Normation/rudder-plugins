@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure IMAP and POP3 server is not enabled",
+  "enabled": true,
+  "id": "43b9d9bd-428f-472e-a1cc-5bf46617c94d",
+  "longDescription": "Description:\ndovecot is an open source IMAP and POP3 server for Linux based systems.\n\nRationale:\nUnless POP3 and/or IMAP servers are to be provided by this system, it is recommended\nthat the service be disabled to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "dovecot"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.11"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

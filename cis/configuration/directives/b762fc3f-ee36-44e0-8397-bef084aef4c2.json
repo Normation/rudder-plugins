@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - Ensure gpgcheck is globally activated",
+  "enabled": true,
+  "id": "b762fc3f-ee36-44e0-8397-bef084aef4c2",
+  "longDescription": "Description:\nThe gpgcheck option, found in the main section of the /etc/yum.conf and individual\n/etc/yum/repos.d/* files determines if an RPM package's signature is checked prior to its\ninstallation.\nRationale:\nIt is important to ensure that an RPM's package signature is always checked prior to\ninstallation to ensure that the software is obtained from a trusted source.",
+  "parameters": {
+    "section": {
+      "name": "sections"
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.2"
+    },
+    {
+      "cis-item": "1.2.2"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_gpgcheck_is_globally_activated",
+  "techniqueVersion": "1.0"
+}

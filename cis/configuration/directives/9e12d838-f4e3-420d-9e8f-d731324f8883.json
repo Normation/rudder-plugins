@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure the MCS Translation Service (mcstrans) is not installed",
+  "enabled": true,
+  "id": "9e12d838-f4e3-420d-9e8f-d731324f8883",
+  "longDescription": "Description:\nThe mcstransd daemon provides category label information to client processes requesting\ninformation. The label translations are defined in /etc/selinux/targeted/setrans.conf\nRationale:\nSince this service is not used very often, remove it to reduce the amount of potentially\nvulnerable code running on the system.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "529B1F1A-0DB6-4244-B84A-7ABF0216DA39",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "mcstrans"
+                }
+              },
+              {
+                "var": {
+                  "name": "F2DA3DFF-0634-48B0-8A8E-8C27393388CB",
+                  "value": "/bin/true"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.6"
+    },
+    {
+      "cis-item": "1.6.1"
+    },
+    {
+      "cis-item": "1.6.1.5"
+    },
+    {
+      "cis-server": "2"
+    },
+    {
+      "cis-workstation": "2"
+    }
+  ],
+  "techniqueName": "Ensure_a_package_is_not_installed",
+  "techniqueVersion": "1.0"
+}

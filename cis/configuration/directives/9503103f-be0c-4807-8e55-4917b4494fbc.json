@@ -1,0 +1,62 @@
+{
+  "displayName": "CIS - Ensure permissions on /etc/cron.daily are configured",
+  "enabled": true,
+  "id": "9503103f-be0c-4807-8e55-4917b4494fbc",
+  "longDescription": "Description:\nThe /etc/cron.daily directory contains system cron jobs that need to run on a daily basis.\nThe files in this directory cannot be manipulated by the crontab command, but are instead\nedited by system administrators using a text editor. The commands below restrict\nread/write and search access to user and group root, preventing regular users from\naccessing this directory.\nRationale:\nGranting write access to this directory for non-privileged users could provide them the\nmeans for gaining unauthorized elevated privileges. Granting read access to this directory\ncould give an unprivileged user insight in how to gain elevated privileges or circumvent\nauditing controls.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "586D5935-1730-4266-9D07-9A380D822400",
+                  "value": "/etc/cron.daily"
+                }
+              },
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "600"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "root"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "root"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "5.1"
+    },
+    {
+      "cis-item": "5.1.4"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Set_permissions",
+  "techniqueVersion": "1.0"
+}

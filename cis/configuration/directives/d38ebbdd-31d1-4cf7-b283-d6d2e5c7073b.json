@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure DNS Server is not enabled",
+  "enabled": true,
+  "id": "d38ebbdd-31d1-4cf7-b283-d6d2e5c7073b",
+  "longDescription": "Description:\nThe Domain Name System (DNS) is a hierarchical naming system that maps names to IP\naddresses for computers, services and other resources connected to a network.\nRationale:\nUnless a system is specifically designated to act as a DNS server, it is recommended that the\nservice be disabled to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "named"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.8"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

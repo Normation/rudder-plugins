@@ -1,0 +1,44 @@
+{
+  "displayName": "CIS - Ensure SNMP Server is not enabled",
+  "enabled": true,
+  "id": "22cc1be3-95e6-41d1-93a3-4b538f522c21",
+  "longDescription": "Description:\nThe Simple Network Management Protocol (SNMP) server is used to listen for SNMP\ncommands from an SNMP management system, execute the commands or collect the\ninformation and then send results back to the requesting system.\nRationale:\nThe SNMP server communicates using SNMP v1, which transmits data in the clear and does\nnot require authentication to execute commands. Unless absolutely necessary, it is\nrecommended that the SNMP service not be used.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "snmpd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "2.2"
+    },
+    {
+      "cis-item": "2.2.14"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

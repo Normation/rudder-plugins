@@ -1,0 +1,62 @@
+{
+  "displayName": "CIS - Ensure prelink is disabled",
+  "enabled": true,
+  "id": "851fd761-9a10-4fd2-ae2e-c3ca2a313427",
+  "longDescription": "Description:\nprelinkis a program that modifies ELF shared libraries and ELF dynamically linked\n\nbinaries in such a way that the time needed for the dynamic linker to perform relocations\nat startup significantly decreases.\nRationale:\nThe prelinking feature can interfere with the operation of AIDE, because it changes\nbinaries. Prelinking can also increase the vulnerability of the system if a malicious user is\nable to compromise a common library such as libc.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "529B1F1A-0DB6-4244-B84A-7ABF0216DA39",
+                  "value": "rpm -q prelink"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "prelink"
+                }
+              },
+              {
+                "var": {
+                  "name": "F2DA3DFF-0634-48B0-8A8E-8C27393388CB",
+                  "value": "prelink -ua"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-item": "1.5"
+    },
+    {
+      "cis-item": "1.5.4"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_a_package_is_not_installed",
+  "techniqueVersion": "1.0"
+}

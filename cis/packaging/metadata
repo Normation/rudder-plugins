@@ -1,0 +1,11 @@
+{
+  "type": "plugin",
+  "name": "${plugin-id}",
+  "version": "${plugin-version}",
+  "build-date": "${maven.build.timestamp}",
+  "build-commit": "${commit-id}",
+  "content": {
+    "files.txz": "/var/rudder/configuration-repository",
+    "configuration.txz": "/var/rudder/packages/rudder-plugin-cis/"
+  }
+}
