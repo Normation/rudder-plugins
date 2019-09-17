@@ -33,6 +33,9 @@ $(PLUGINS-LICENSED):%-licensed:
 generate-all-pom: generate-pom
 	for i in $(ALL); do cd $$i; $(MAKE) generate-pom; cd ..; done
 
+generate-all-pom-nightly: generate-pom-nightly
+	for i in $(ALL); do cd $$i; $(MAKE) generate-pom-nightly; cd ..; done
+
 doc-pages:
 	mkdir -p doc/pages
 	for i in $(PLUGINS); do cd $$i; [ -f README.adoc ] && sed '1,/\/\/ ====doc====/d' README.adoc >> ../doc/pages/$$i.adoc; cd ..; done
