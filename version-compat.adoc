@@ -2,95 +2,100 @@
 
 This table shows the binary compatibility for plugins with Rudder 5.0 branch.
 
+Compatibility of plugins was tested with Rudder 5.0.13, so the upper bound of "All versions" is 5.0.13
+This does not mean that the plugin is not valid with a newer version, but it has not been tested
+
+|===
+|aix | Rudder
+|1.3 | All versions
+|===
+
+
 |===
 |api-authorization | Rudder
-
-|5.0-1.3 to 5.0-1.4
-|any version
+|1.3 - 1.4         | All versions
 |===
 
 |===
-|auth-backends | Rudder
-
-|5.0-1.0 to 5.0-1.1
-|5.0.0 to 5.0.1
-
-|5.0-1.2 to current
-|5.0.2 to current
+|auth-backend | Rudder
+|1.0 1.1      | < 5.0.2
+|1.2          | >= 5.0.2
 |===
 
 |===
-|branding | Rudder
-
-|5.0-1.2 to current
-|any version
+|branding  | Rudder
+|1.2 - 1-3 | < 5.0.6
+|1.4       | >= 5.0.6
 |===
 
 |===
-|centreon | Rudder
-
-|any version
-|any version
+|centreon  | Rudder
+|1.1 - 1.2 | All Versions
 |===
-
 
 |===
 |change-validation | Rudder
+|1.0               | 5.0.0
+|1.1               | 5.0.1
+|1.2               | >= 5.0.2
+|1.3               | >= 5.0.6
+|===
 
-|5.0-1.0 
-|5.0.0 
+|===
+|create-node-api | Rudder
+|1.0 - 1.1       | >= 5.0.6
+|===
 
-|5.0-1.1 to current
-|5.0.1 to current
+|===
+|cve | Rudder
+|0.1 | >= 5.0.6
 |===
 
 |===
 |datasources | Rudder
-
-|5.0-1.5
-|any version
+|1.5         | < 5.0.6
+|1.6         | >= 5.0.6
 |===
 
 |===
 |glpi | Rudder
-
-|any version
-|any version
+|1.1  | All versions
 |===
 
 |===
 |node-external-reports | Rudder
-
-|5.0-1.6
-|any version
+|1.6                   | All versions
 |===
 
 |===
 |notify | Rudder
+|1.0    | All versions
+|===
 
-|any version
-|any version
+|===
+|reporting       | Rudder
+|1.0 - 1.1 - 1.2 | >= 5.0.6
 |===
 
 |===
 |scale-out-relay | Rudder
-
-|5.0-1.0 to current
-|any version
+|1.0 - 1.1       | All versions
 |===
 
 |===
 |user-management | Rudder
-
-|5.0-1.0 to current
-|any version
+|1.0 - 1.1       | < 5.0.2
+|1.2             | >= 5.0.2
 |===
 
 |===
 |vault | Rudder
+|1.1   | All versions
+|===
 
-|any version
-|any version
+|===
+|zabbix | Rudder
+|1.0    | All versions
 |===
 
 
