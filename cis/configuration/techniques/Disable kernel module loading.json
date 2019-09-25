@@ -1,14 +1,39 @@
 {
-  "type": "ncf_technique",
-  "version": 1,
   "data": {
     "bundle_args": [
       "module"
     ],
     "bundle_name": "Disable_kernel_module_loading",
     "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${module}",
+          "install ${module} /bin/false"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "kernel_module_configuration",
+        "method_name": "kernel_module_configuration"
+      },
+      {
+        "args": [
+          "${module}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "kernel_module_not_loaded",
+        "method_name": "kernel_module_not_loaded"
+      }
+    ],
     "name": "Disable kernel module loading",
-    "version": "1.0",
     "parameter": [
       {
         "constraints": {
@@ -20,33 +45,9 @@
         "name": "module"
       }
     ],
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "method_name": "condition_from_variable_existence",
-        "component": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "${module}",
-          "install ${module} /bin/false"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "kernel_module_configuration",
-        "component": "kernel_module_configuration"
-      },
-      {
-        "args": [
-          "${module}"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "kernel_module_not_loaded",
-        "component": "kernel_module_not_loaded"
-      }
-    ]
-  }
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": 1
 }

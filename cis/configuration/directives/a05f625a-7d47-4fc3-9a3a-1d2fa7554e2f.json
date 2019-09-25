@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure secure ICMP redirects are not accepted (net.ipv4.conf.all.secure_redirects)",
+  "enabled": true,
+  "id": "a05f625a-7d47-4fc3-9a3a-1d2fa7554e2f",
+  "longDescription": "Description:\nSecure ICMP redirects are the same as ICMP redirects, except they come from gateways\nlisted on the default gateway list. It is assumed that these gateways are known to your\nsystem, and that they are likely to be secure.\nRationale:\nIt is still possible for even known gateways to be compromised. Setting\nnet.ipv4.conf.all.secure_redirects to 0 protects the system from routing table\nupdates by possibly compromised known gateways.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.conf.all.secure_redirects"
+                }
+              },
+              {
+                "var": {
+                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "0"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "3"
+    },
+    {
+      "cis-redhat7": "3.2"
+    },
+    {
+      "cis-redhat7": "3.2.3"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueVersion": "1.0"
+}

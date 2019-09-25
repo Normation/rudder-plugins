@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure SSH X11 forwarding is disabled",
+  "enabled": true,
+  "id": "452bcaec-faa4-4df2-bb11-7e60adb79075",
+  "longDescription": "Description:\nThe X11Forwarding parameter provides the ability to tunnel X11 traffic through the\nconnection to enable remote graphic connections.\nRationale:\nDisable X11 forwarding unless there is an operational requirement to use X11 applications\ndirectly. There is a small risk that the remote X11 servers of users who are logged in via\nSSH with X11 forwarding could be compromised by other users on the X11 server. Note\nthat even if X11 forwarding is disabled, users can always install their own forwarders.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "X11Forwarding"
+                }
+              },
+              {
+                "var": {
+                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
+                  "value": "${ncf_const.s}"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/ssh/sshd_config"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "no"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "5"
+    },
+    {
+      "cis-redhat7": "5.2"
+    },
+    {
+      "cis-redhat7": "5.2.4"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueVersion": "1.0"
+}

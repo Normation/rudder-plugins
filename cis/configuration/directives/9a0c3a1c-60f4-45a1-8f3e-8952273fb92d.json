@@ -1,0 +1,42 @@
+{
+  "displayName": "CIS - Ensure eventsthat modify the system's network environment are collected (32_bit)",
+  "enabled": true,
+  "id": "9a0c3a1c-60f4-45a1-8f3e-8952273fb92d",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "32_bit"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "-a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-locale\r\n-w /etc/issue -p wa -k system-locale\r\n-w /etc/issue.net -p wa -k system-locale\r\n-w /etc/hosts -p wa -k system-locale\r\n-w /etc/sysconfig/network -p wa -k system-locale"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/audit/audit.rules"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}

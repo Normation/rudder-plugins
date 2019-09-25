@@ -1,6 +1,4 @@
 {
-  "type": "ncf_technique",
-  "version": 1,
   "data": {
     "bundle_args": [
       "check_command",
@@ -9,8 +7,46 @@
     ],
     "bundle_name": "Execute_command",
     "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "cis",
+          "command_check_${report_data.directive_id}",
+          "${check_command}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "variable_string_from_command",
+        "method_name": "variable_string_from_command"
+      },
+      {
+        "args": [
+          "check_command_${report_data.directive_id}",
+          "cis.command_check_${report_data.directive_id}",
+          "${expected_match}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "condition_from_variable_match",
+        "method_name": "condition_from_variable_match"
+      },
+      {
+        "args": [
+          "${remediate}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false.check_command_${report_data.directive_id}_false)",
+        "component": "command_execution",
+        "method_name": "command_execution"
+      }
+    ],
     "name": "Execute command",
-    "version": "1.0",
     "parameter": [
       {
         "constraints": {
@@ -40,44 +76,9 @@
         "name": "remediate"
       }
     ],
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "method_name": "condition_from_variable_existence",
-        "component": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "cis",
-          "command_check_${report_data.directive_id}",
-          "${check_command}"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "variable_string_from_command",
-        "component": "variable_string_from_command"
-      },
-      {
-        "args": [
-          "check_command_${report_data.directive_id}",
-          "cis.command_check_${report_data.directive_id}",
-          "${expected_match}"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "condition_from_variable_match",
-        "component": "condition_from_variable_match"
-      },
-      {
-        "args": [
-          "${remediate}"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false.check_command_${report_data.directive_id}_false)",
-        "method_name": "command_execution",
-        "component": "command_execution"
-      }
-    ]
-  }
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": 1
 }

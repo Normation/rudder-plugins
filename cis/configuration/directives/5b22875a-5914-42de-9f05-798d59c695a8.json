@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure ICMP redirects are not accepted (net.ipv4.conf.all.accept_redirects)",
+  "enabled": true,
+  "id": "5b22875a-5914-42de-9f05-798d59c695a8",
+  "longDescription": "Description:\nICMP redirect messages are packets that convey routing information and tell your host\n(acting as a router) to send packets via an alternate path. It is a way of allowing an outside\nrouting device to update your system routing tables. By setting\nnet.ipv4.conf.all.accept_redirects to 0, the system will not accept any ICMP redirect\nmessages, and therefore, won't allow outsiders to update the system's routing tables.\nRationale:\nAttackers could use bogus ICMP redirect messages to maliciously alter the system routing\ntables and get them to send packets to incorrect networks and allow your system packets\nto be captured.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.conf.all.accept_redirects"
+                }
+              },
+              {
+                "var": {
+                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "0"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "3"
+    },
+    {
+      "cis-redhat7": "3.2"
+    },
+    {
+      "cis-redhat7": "3.2.2"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueVersion": "1.0"
+}

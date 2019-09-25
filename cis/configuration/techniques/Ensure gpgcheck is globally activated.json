@@ -1,13 +1,8 @@
 {
-  "type": "ncf_technique",
-  "version": 1,
   "data": {
     "bundle_args": [],
     "bundle_name": "Ensure_gpgcheck_is_globally_activated",
     "description": "",
-    "name": "Ensure gpgcheck is globally activated",
-    "version": "1.0",
-    "parameter": [],
     "method_calls": [
       {
         "args": [
@@ -15,8 +10,8 @@
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
-        "method_name": "condition_from_variable_existence",
-        "component": "condition_from_variable_existence"
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
       },
       {
         "args": [
@@ -26,8 +21,8 @@
           "="
         ],
         "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "file_key_value_present",
-        "component": "file_key_value_present"
+        "component": "file_key_value_present",
+        "method_name": "file_key_value_present"
       },
       {
         "args": [
@@ -37,9 +32,15 @@
           "="
         ],
         "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "file_key_value_present",
-        "component": "file_key_value_present"
+        "component": "file_key_value_present",
+        "method_name": "file_key_value_present"
       }
-    ]
-  }
+    ],
+    "name": "Ensure gpgcheck is globally activated",
+    "parameter": [],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": 1
 }

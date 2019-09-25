@@ -1,6 +1,4 @@
 {
-  "type": "ncf_technique",
-  "version": 1,
   "data": {
     "bundle_args": [
       "owner",
@@ -10,8 +8,29 @@
     ],
     "bundle_name": "Set_permissions",
     "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${path}",
+          "${mode}",
+          "${owner}",
+          "${group_owner}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "permissions_recursive",
+        "method_name": "permissions_recursive"
+      }
+    ],
     "name": "Set permissions",
-    "version": "1.0",
     "parameter": [
       {
         "constraints": {
@@ -50,27 +69,9 @@
         "name": "path"
       }
     ],
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "method_name": "condition_from_variable_existence",
-        "component": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "${path}",
-          "${mode}",
-          "${owner}",
-          "${group_owner}"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "permissions_recursive",
-        "component": "permissions_recursive"
-      }
-    ]
-  }
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": 1
 }
