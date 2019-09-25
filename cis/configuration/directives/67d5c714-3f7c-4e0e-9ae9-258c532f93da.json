@@ -45,10 +45,13 @@
   "shortDescription": "",
   "tags": [
     {
-      "cis-item": "6.1"
+      "cis-redhat7": "6"
     },
     {
-      "cis-item": "6.1.7"
+      "cis-redhat7": "6.1"
+    },
+    {
+      "cis-redhat7": "6.1.7"
     },
     {
       "cis-server": "1"

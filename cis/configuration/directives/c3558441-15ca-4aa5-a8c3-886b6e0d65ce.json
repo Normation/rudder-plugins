@@ -1,0 +1,59 @@
+{
+  "displayName": "CIS - Ensure session initiation information is collected",
+  "enabled": true,
+  "id": "c3558441-15ca-4aa5-a8c3-886b6e0d65ce",
+  "longDescription": "Description:\nMonitor session initiation events. The parameters in this section track changes to the files\nassociated with session events. The file /var/run/utmp file tracks all currently logged in\nusers. The /var/log/wtmp file tracks logins, logouts, shutdown, and reboot events. All audit\nrecords will be tagged with the identifier \"session.\" The file /var/log/btmp keeps track of\nfailed login attempts and can be read by entering the command /usr/bin/last -f\n/var/log/btmp . All audit records will be tagged with the identifier \"logins.\"\nRationale:\nMonitoring these files for changes could alert a system administrator to logins occurring at\nunusual hours, which could indicate intruder activity (i.e. a user logging in at a time when\nthey do not normally log in).",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "any"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "-w /var/run/utmp -p wa -k session\r\n-w /var/log/wtmp -p wa -k session\r\n-w /var/log/btmp -p wa -k session"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/audit/audit.rules"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "4"
+    },
+    {
+      "cis-redhat7": "4.1"
+    },
+    {
+      "cis-redhat7": "4.1.9"
+    },
+    {
+      "cis-server": "2"
+    },
+    {
+      "cis-workstation": "2"
+    }
+  ],
+  "techniqueName": "Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}

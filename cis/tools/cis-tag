@@ -82,6 +82,8 @@ def writeCis(items, path, osName):
         if description != []:
             data["longDescription"] = description[0]["description"]
             data["policyMode"] = "audit"
+        if data["displayName"].startswith("CIS - ") == False:
+            data["displayName"] = "CIS - " + data["displayName"]
         makeJsonFile(path, data)
 
 def writeAllCis(basePath, pdfPath, osName):
@@ -131,7 +133,12 @@ def findMissing(basePath, pdfPath):
 
     items = parsePDF(pdfPath)
     directives = getDirectives(basePath)
+    # Some items are split in multiples directives, marked with a ( xxxx ) displayname suffix
+    for iDirective in directives:
+        if re.match(r".*\(.*\)$", iDirective["displayName"]):
+            iDirective["displayName"] = re.sub("\s+\(.*\)$", "", iDirective["displayName"])
     implemented = set([i["displayName"].replace("CIS - ", "") for i in directives])
+
     expected = set([i["name"] for i in items])
     result = list(expected - implemented)
 
@@ -211,10 +218,10 @@ def removeTags(basePath):
                makeJsonFile(os.path.join(root, file), data)
 
 targets = [
-              { "basePath": "configuration",
-                "pdfPath": "pdfs/cis_debian9.pdf",
-                "osName": "debian9"
-              },
+            #  { "basePath": "configuration",
+            #    "pdfPath": "pdfs/cis_debian9.pdf",
+            #    "osName": "debian9"
+            #  },
 
               { "basePath": "configuration",
                 "pdfPath": "pdfs/cis_redhat7.pdf",
@@ -233,6 +240,6 @@ for iRule in targets:
     # Add CIS infos like tags, description, etc...
     writeAllCis(iRule["basePath"], iRule["pdfPath"], osName)
     # Print items coverage
-    #findMissing(iRule["basePath"], iRule["pdfPath"])
+    findMissing(iRule["basePath"], iRule["pdfPath"])
 
 trackConfig("configuration")

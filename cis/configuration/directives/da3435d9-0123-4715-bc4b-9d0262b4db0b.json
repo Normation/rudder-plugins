@@ -1,0 +1,59 @@
+{
+  "displayName": "CIS - Ensure file deletion events by users are collected (32_bit)",
+  "enabled": true,
+  "id": "da3435d9-0123-4715-bc4b-9d0262b4db0b",
+  "longDescription": "Description:\nMonitor the use of system calls associated with the deletion or renaming of files and file\nattributes. This configuration statement sets up monitoring for the unlink (remove a file),\nunlinkat (remove a file attribute), rename (rename a file) and renameat (rename a file\nattribute) system calls and tags them with the identifier \"delete\".\nRationale:\nMonitoring these calls from non-privileged users could provide a system administrator\nwith evidence that inappropriate removal of files and file attributes associated with\nprotected files is occurring. While this audit option will look at all events, system\nadministrators will want to look for specific privileged files that are being deleted or\naltered.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "32_bit"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/audit/audit.rules"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "4"
+    },
+    {
+      "cis-redhat7": "4.1"
+    },
+    {
+      "cis-redhat7": "4.1.14"
+    },
+    {
+      "cis-server": "2"
+    },
+    {
+      "cis-workstation": "2"
+    }
+  ],
+  "techniqueName": "Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}

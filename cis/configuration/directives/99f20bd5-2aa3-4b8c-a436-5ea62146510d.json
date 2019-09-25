@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure SSH LoginGraceTime is set to one minute or less",
+  "enabled": true,
+  "id": "99f20bd5-2aa3-4b8c-a436-5ea62146510d",
+  "longDescription": "Description:\nThe LoginGraceTime parameter specifies the time allowed for successful authentication to\nthe SSH server. The longer the Grace period is the more open unauthenticated connections\ncan exist. Like other session controls in this session the Grace Period should be limited to\nappropriate organizational limits to ensure the service is available for needed access.\nRationale:\nSetting the LoginGraceTime parameter to a low number will minimize the risk of successful\nbrute force attacks to the SSH server. It will also limit the number of concurrent\nunauthenticated connections While the recommended setting is 60 seconds (1 Minute), set\nthe number based on site policy.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "LoginGraceTime"
+                }
+              },
+              {
+                "var": {
+                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
+                  "value": "${ncf_const.s}"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/ssh/sshd_config"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "60"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "5"
+    },
+    {
+      "cis-redhat7": "5.2"
+    },
+    {
+      "cis-redhat7": "5.2.14"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure broadcast ICMP requests are ignored",
+  "enabled": true,
+  "id": "89b95bb5-02bb-4bfd-981f-9590161169ad",
+  "longDescription": "Description:\nSetting net.ipv4.icmp_echo_ignore_broadcasts to 1 will cause the system to ignore all\nICMP echo and timestamp requests to broadcast and multicast addresses.\nRationale:\nAccepting ICMP echo and timestamp requests with broadcast or multicast destinations for\nyour network could be used to trick your host into starting (or participating) in a Smurf\nattack. A Smurf attack relies on an attacker sending large amounts of ICMP broadcast\nmessages with a spoofed source address. All hosts receiving this message and responding\nwould send echo-reply messages back to the spoofed address, which is probably not\nroutable. If many hosts respond to the packets, the amount of traffic on the network could\nbe significantly multiplied.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.icmp_echo_ignore_broadcasts"
+                }
+              },
+              {
+                "var": {
+                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "3"
+    },
+    {
+      "cis-redhat7": "3.2"
+    },
+    {
+      "cis-redhat7": "3.2.5"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueVersion": "1.0"
+}

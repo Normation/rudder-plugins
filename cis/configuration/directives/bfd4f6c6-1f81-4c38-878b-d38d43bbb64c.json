@@ -33,10 +33,13 @@
   "shortDescription": "",
   "tags": [
     {
-      "cis-item": "1.1"
+      "cis-redhat7": "1"
     },
     {
-      "cis-item": "1.1.6"
+      "cis-redhat7": "1.1"
+    },
+    {
+      "cis-redhat7": "1.1.6"
     },
     {
       "cis-server": "2"

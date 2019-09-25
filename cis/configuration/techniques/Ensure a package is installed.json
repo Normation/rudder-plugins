@@ -1,6 +1,4 @@
 {
-  "type": "ncf_technique",
-  "version": 1,
   "data": {
     "bundle_args": [
       "package",
@@ -9,8 +7,47 @@
     ],
     "bundle_name": "Ensure_a_package_is_installed",
     "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${check_command}",
+          "0",
+          "999"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "command_execution_result",
+        "method_name": "command_execution_result"
+      },
+      {
+        "args": [
+          "${package}",
+          "any",
+          "default",
+          "default"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "package_present",
+        "method_name": "package_present"
+      },
+      {
+        "args": [
+          "${posthook}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false.package_present_${package}_repaired)",
+        "component": "command_execution",
+        "method_name": "command_execution"
+      }
+    ],
     "name": "Ensure a package is installed",
-    "version": "1.0",
     "parameter": [
       {
         "constraints": {
@@ -40,45 +77,9 @@
         "name": "check_command"
       }
     ],
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "method_name": "condition_from_variable_existence",
-        "component": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "${check_command}",
-          "0",
-          "999"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "command_execution_result",
-        "component": "command_execution_result"
-      },
-      {
-        "args": [
-          "${package}",
-          "any",
-          "default",
-          "default"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
-        "method_name": "package_present",
-        "component": "package_present"
-      },
-      {
-        "args": [
-          "${posthook}"
-        ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false.package_present_${package}_repaired)",
-        "method_name": "command_execution",
-        "component": "command_execution"
-      }
-    ]
-  }
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": 1
 }

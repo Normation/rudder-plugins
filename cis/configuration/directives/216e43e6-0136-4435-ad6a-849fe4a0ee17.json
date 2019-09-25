@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure SSH LogLevel is set to INFO",
+  "enabled": true,
+  "id": "216e43e6-0136-4435-ad6a-849fe4a0ee17",
+  "longDescription": "Description:\nThe INFO parameter specifies that login and logout activity will be logged.\nRationale:\nSSH provides several logging levels with varying amounts of verbosity. DEBUG is specifically\nnot recommended other than strictly for debugging SSH communications since it provides\nso much data that it is difficult to identify important security information. INFO level is the\nbasic level that only records login activity of SSH users. In many situations, such as Incident\nResponse, it is important to determine when a particular user was active on a system. The\nlogout record can eliminate those users who disconnected, which helps narrow the field.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "LogLevel"
+                }
+              },
+              {
+                "var": {
+                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
+                  "value": "${ncf_const.s}"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/ssh/sshd_config"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "INFO"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [
+    {
+      "cis-redhat7": "5"
+    },
+    {
+      "cis-redhat7": "5.2"
+    },
+    {
+      "cis-redhat7": "5.2.3"
+    },
+    {
+      "cis-server": "1"
+    },
+    {
+      "cis-workstation": "1"
+    }
+  ],
+  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueVersion": "1.0"
+}

@@ -27,10 +27,13 @@
   "shortDescription": "",
   "tags": [
     {
-      "cis-item": "2.2"
+      "cis-redhat7": "2"
     },
     {
-      "cis-item": "2.2.18"
+      "cis-redhat7": "2.2"
+    },
+    {
+      "cis-redhat7": "2.2.18"
     },
     {
       "cis-server": "1"
