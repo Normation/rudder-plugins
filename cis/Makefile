@@ -30,3 +30,4 @@ packaging/cis.json:
 clean:
 	rm -f  $(FULL_NAME)-*.rpkg pom.xml packaging/cis.json
 	rm -rf target ncf
+	rm -rf configuration/rules/*

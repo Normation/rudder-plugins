@@ -1,7 +1,7 @@
 {
-  "displayName": "CIS - Ensure address space layout randomization (ASLR) is enabled",
+  "displayName": "CIS - Ensure address space layout randomization (ASLR) is enabled (live)",
   "enabled": true,
-  "id": "047867df-ca4d-49e3-bedb-6e8ed7c6c5be",
+  "id": "7ade9894-cc47-4257-8b7a-1a4ac59150e8",
   "longDescription": "Description:\nAddress space layout randomization (ASLR) is an exploit mitigation technique which\nrandomly arranges the address space of key data areas of a process.\nRationale:\nRandomly placing virtual memory regions will make it difficult to write memory page\nexploits as the memory placement will be consistently shifting.",
   "parameters": {
     "section": {
@@ -14,13 +14,13 @@
               {
                 "var": {
                   "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
-                  "value": "sysctl -w kernel.randomize_va_space=2"
+                  "value": "${paths.sysctl} -w kernel.randomize_va_space=2"
                 }
               },
               {
                 "var": {
                   "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
-                  "value": "sysctl kernel.randomize_va_space"
+                  "value": "${paths.sysctl} kernel.randomize_va_space"
                 }
               },
               {

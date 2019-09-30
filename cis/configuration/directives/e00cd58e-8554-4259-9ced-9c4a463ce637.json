@@ -1,7 +1,7 @@
 {
   "displayName": "CIS - Ensure IP forwarding is disabled",
   "enabled": true,
-  "id": "f1085008-3555-4f36-9c50-23f9ede0eae2",
+  "id": "e00cd58e-8554-4259-9ced-9c4a463ce637",
   "longDescription": "Description:\nThe net.ipv4.ip_forward flag is used to tell the system whether it can forward packets or\nnot.\nRationale:\nSetting the flag to 0 ensures that a system with multiple interfaces (for example, a hard\nproxy), will never be able to forward packets, and therefore, never serve as a router.",
   "parameters": {
     "section": {
@@ -15,18 +15,6 @@
                 "var": {
                   "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
                   "value": "net.ipv4.ip_forward"
-                }
-              },
-              {
-                "var": {
-                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
-                  "value": ""
-                }
-              },
-              {
-                "var": {
-                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
-                  "value": ""
                 }
               },
               {
@@ -60,6 +48,6 @@
       "cis-workstation": "1"
     }
   ],
-  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
   "techniqueVersion": "1.0"
 }

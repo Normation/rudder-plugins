@@ -35,6 +35,7 @@
       ]
     }
   },
+  "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
   "techniqueName": "Ensure_lines_present_in_file",

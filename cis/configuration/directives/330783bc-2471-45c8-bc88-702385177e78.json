@@ -1,8 +1,8 @@
 {
-  "displayName": "CIS - Ensure permissions on /etc/hosts.deny are 644",
+  "displayName": "CIS - Ensure permissions on bootloader config are configured",
   "enabled": true,
-  "id": "bcd40c46-a5a5-4afb-8611-e1571872620c",
-  "longDescription": "Description:\nThe /etc/hosts.deny file contains network information that is used by many system\napplications and therefore must be readable for these applications to operate.\nRationale:\nIt is critical to ensure that the /etc/hosts.deny file is protected from unauthorized write\naccess. Although it is protected by default, the file permissions could be changed either\ninadvertently or through malicious actions.",
+  "id": "330783bc-2471-45c8-bc88-702385177e78",
+  "longDescription": "Description:\nThe grub configuration file contains information on boot settings and passwords for\nunlocking boot options. The grub configuration is usually located at /boot/grub2/grub.cfg\nand linked as /etc/grub2.conf .\nRationale:\nSetting the permissions to read and write for root only prevents non-root users from\nseeing the boot parameters or changing them. Non-root users who read the boot\nparameters may be able to identify weaknesses in security upon boot and be able to exploit\nthem.",
   "parameters": {
     "section": {
       "name": "sections",
@@ -14,13 +14,13 @@
               {
                 "var": {
                   "name": "586D5935-1730-4266-9D07-9A380D822400",
-                  "value": "/etc/hosts.deny"
+                  "value": "/boot/grub2/grub.cfg"
                 }
               },
               {
                 "var": {
                   "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
-                  "value": "644"
+                  "value": "600"
                 }
               },
               {
@@ -45,13 +45,13 @@
   "shortDescription": "",
   "tags": [
     {
-      "cis-redhat7": "3"
+      "cis-redhat7": "1"
     },
     {
-      "cis-redhat7": "3.4"
+      "cis-redhat7": "1.4"
     },
     {
-      "cis-redhat7": "3.4.5"
+      "cis-redhat7": "1.4.1"
     },
     {
       "cis-server": "1"
