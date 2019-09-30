@@ -81,9 +81,9 @@ def writeCis(items, path, osName):
         description = list(filter(lambda x: x.get("name") in data["displayName"], items))
         if description != []:
             data["longDescription"] = description[0]["description"]
-            data["policyMode"] = "audit"
         if data["displayName"].startswith("CIS - ") == False:
             data["displayName"] = "CIS - " + data["displayName"]
+        data["policyMode"] = "audit"
         makeJsonFile(path, data)
 
 def writeAllCis(basePath, pdfPath, osName):

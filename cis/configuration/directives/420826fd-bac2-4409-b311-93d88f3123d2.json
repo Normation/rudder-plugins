@@ -1,7 +1,7 @@
 {
   "displayName": "CIS - Ensure bogus ICMP responses are ignored",
   "enabled": true,
-  "id": "d5d2a3cc-1446-43af-976c-df7db580cf28",
+  "id": "420826fd-bac2-4409-b311-93d88f3123d2",
   "longDescription": "Description:\nSetting icmp_ignore_bogus_error_responses to 1 prevents the kernel from logging bogus\nresponses (RFC-1122 non-compliant) from broadcast reframes, keeping file systems from\nfilling up with useless log messages.\nRationale:\nSome routers (and some attackers) will send responses that violate RFC-1122 and attempt\nto fill up a log file system with many useless error messages.",
   "parameters": {
     "section": {
@@ -15,18 +15,6 @@
                 "var": {
                   "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
                   "value": "net.ipv4.icmp_ignore_bogus_error_responses"
-                }
-              },
-              {
-                "var": {
-                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
-                  "value": ""
-                }
-              },
-              {
-                "var": {
-                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
-                  "value": ""
                 }
               },
               {
@@ -60,6 +48,6 @@
       "cis-workstation": "1"
     }
   ],
-  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
   "techniqueVersion": "1.0"
 }

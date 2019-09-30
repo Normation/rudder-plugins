@@ -4,7 +4,7 @@
       "key",
       "expected_value"
     ],
-    "bundle_name": "Ensure_key_value_in_file",
+    "bundle_name": "Ensure_sysctl_key_value_IPV4",
     "description": "",
     "method_calls": [
       {

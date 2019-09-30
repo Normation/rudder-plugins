@@ -1,7 +1,7 @@
 {
-  "displayName": "CIS - Ensure source routed packets are not accepted (net.ipv4.conf.all.accept_source_route)",
+  "displayName": "CIS - Ensure source routed packets are not accepted (net.ipv4.conf.default.accept_source_route)",
   "enabled": true,
-  "id": "2cca574a-2d72-477c-857c-09b036045476",
+  "id": "fe120766-526c-456b-bc54-e69d9acba92e",
   "longDescription": "Description:\nIn networking, source routing allows a sender to partially or fully specify the route packets\ntake through a network. In contrast, non-source routed packets travel a path determined\nby routers in the network. In some cases, systems may not be routable or reachable from\nsome locations (e.g. private addresses vs. Internet routable), and so source routed packets\nwould need to be used.\nRationale:\nSetting net.ipv4.conf.all.accept_source_route and\nnet.ipv4.conf.default.accept_source_route to 0 disables the system from accepting\nsource routed packets. Assume this system was capable of routing packets to Internet\nroutable addresses on one interface and private addresses on another interface. Assume\nthat the private addresses were not routable to the Internet routable addresses and vice\nversa. Under normal routing circumstances, an attacker from the Internet routable\naddresses could not use the system as a way to reach the private address systems. If,\nhowever, source routed packets were allowed, they could be used to gain access to the\nprivate address systems as the route could be specified, rather than rely on routing\nprotocols that did not allow this routing.",
   "parameters": {
     "section": {
@@ -14,19 +14,7 @@
               {
                 "var": {
                   "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
-                  "value": "net.ipv4.conf.all.accept_source_route"
-                }
-              },
-              {
-                "var": {
-                  "name": "8E66BCAB-1D35-495A-92FD-7A30CB30F3F9",
-                  "value": ""
-                }
-              },
-              {
-                "var": {
-                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
-                  "value": ""
+                  "value": "net.ipv4.conf.default.accept_source_route"
                 }
               },
               {
@@ -60,6 +48,6 @@
       "cis-workstation": "1"
     }
   ],
-  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
   "techniqueVersion": "1.0"
 }
