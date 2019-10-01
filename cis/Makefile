@@ -15,7 +15,7 @@ $(targets): target/%: % target/configuration.txz
 
 configuration: target/configuration.txz
 
-target/configuration.txz:
+target/configuration.txz: packaging/cis.json
 	cp -ar configuration/rules target/
 	cp -ar configuration/directives target/
 	cp -ar configuration/techniques target/
