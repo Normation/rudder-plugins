@@ -9,18 +9,102 @@ other general information.
 // Everything after this line goes into Rudder documentation
 // ====doc====
 [cis-plugin]
-= cis
+= CIS
 
-This plugin will bring a set of techniques to help auditing the CIS benchmark with Rudder.
+This plugin will bring a set of directives to help auditing the CIS benchmark with Rudder.
+All directives will be provided in `Audit mode` enabled to prevents any unwanted changes on your systems.
+
+The directives set is not meant to be use in `Enforce mode` without manual customization of the provided
+configurations. Without any changes, it will most likely break your system.
+
+Currently, the plugin only support parts of the `Debian9` and `RedHat7` benchmarks. It is still in development
+and may not behave as you expect. You can still try to make it works for other benchmarks, see <<Build, below>>.
+
+
+image::workflows/cis.png[]
 
 = Prerequisites
 
-This plugin needs the package `rudder-api-client` to be installed on your Rudder Server and the
-`python3-requests` to be installed on your server.
+This plugin needs the package `rudder-api-client` and `python3-requests` to be installed on your Rudder Server.
+
+
+= Usage
+
+The plugin provides one rule per supported/builded benchmark to help you audit them with Rudder.
+*We recommend to not modify the rules provided by the plugin* and to apply them to your audit wanted groups of nodes. For most commons cases, skipping items on a per node basis as described below should be enough to adapt the rule set to your needs and will make eventual plugin upgrade much more easier.
+
+== Installation
+
+As most of the Rudder plugins, you must install the plugin with the rudder-pkg tool on your Server Rudder.
+
+....
+/opt/rudder/bin/rudder-pkg install-file <path to the rpkg>
+....
+
+This will install a set of Techniques, Directives and Rules to your Rudder Server. All of them are tracked by the plugin and can be removed at any time by removing the plugin from the Server.
+
+== Uninstallation
+
+When removing the plugin, you will be asked for each Rule/Directive/Technique if you want to remove it.
+Except if you did customize the Techniques or Directives distributed with the plugin, we strongly recommend to always wipe all the content distributed with it when asked for.
+
+....
+/opt/rudder/bin/rudder-pkg remove rudder-plugin-cis
+....
+
+== Upgrade
+
+Since the plugin provides a lot of different Rudder objects which are most likely going to be modify on our side or yours, the upgrade process need to be kept as simple as possible.
+
+Currently, an upgrade is litteraly a remove followed by an install. Note that it means that if you make changes on the provided configuration, it is more likely to be wiped out at upgrade.
+
+== Directives
+
+Each benchmark item will be translated as one or more directives with the following:
+
+* The `directive name` follows the syntax: `CIS - <item name> (<extra infos if any>)`
+** Where `extra infos` is optional and only used when a single benchmark item needs multiple directives to be audited.
+** For the RHEL7 benchmark with the item: "3.2.4 Ensure suspicious packets are logged (Scored)"
+This items is declined in two directives, called: "CIS - Ensure suspicious packets are logged (net.ipv4.conf.all.log_martians)" and "CIS - Ensure suspicious packets are logged (net.ipv4.conf.default.log_martians)".
+* The directives are all *tagged* based on the benchmarks:
+** If we take one of the two directives descrive above we will have the following tags to help you organize and quickly search for specific items:
++
+....
+{
+"cis-redhat7" : ["3", "3.2", "3.2.4"], #Based on the benchmark item number
+"cis-server" : "1",                    #Based on the benchmark level for server
+"cis-workstation" : "1"                #Based on the benchmark level for workstation
+}
+....
+* Each directive is based on techniques written from the `Technique Editor`, this will let you modify it easily if needed.
+
+== Test a subset of the benchmark
+
+In most cases you will not want to test every single items of the CIS benchmarks on your servers.
+You can *skip* items on a node basis without changing the rules provided.
+
+To do it:
+
+* For a specific node, identify the CIS-directives that you want to be skipped and note their `Directive Rudder ID` found in their respective page under `show technical details` in the directive tree.
+
+* Add a JSON `node property` named *skip* on the target node containing keys corresponding to the
+previously noted `Directives Rudder ID`.
++
+....
+# An example of the skip property value to skip the "Ensure suspicious packets are logged" item
+{
+  "0b8e988c-fa02-42a0-813c-e07ff6eafb9a": "True",
+  "0b8e988c-fa02-42a0-813c-e07ff6eafb9a": "True"
+}
+....
 
 = Build
+[#Build]
+Since there are no easy way to have access to the CIS Benchmark data, the plugin build is based on pdfs benchmark parsing. Each items parsed from the pdfs will be tested by regex matching on their name with a directive bank put in the configuration folder. If an item name match with a directive name, it will tagg the directive based on the pdfs, edit its description and add it to the distributed configuration.
 
-Since there are no easy way to have access to the CIS Benchmark data, the plugin build is based on pdfs parsing. To generate a plugin providing rules for one or more benchmark, you should deposit the associated pdfs in the `pdfs` folder with the folowing naming convention:
+There is no proper check on what the directive is doing, we assume they were written by users and should be generic enough to support multiple benchmarks if the items name are identical.
+
+To generate a plugin providing rules for one or more benchmark, you should deposit the associated pdfs in the `pdfs` folder with the folowing naming convention:
 
 ....
 cis_<benchmark_short_name>.pdf
@@ -37,29 +121,7 @@ cis-workstation: 2
 ....
 
 
-= Usage
-
-The plugin provides rules to help you audit some CIS benchmarks. Each item will be represented in Rudder
-by a unique `directive`, referenced by their name.
-If you want to search for a specific items you should use a tag-based search.
-
-If you want to disable some specific items on some nodes:
-* You need to identify the associated directives, note their `Directive Rudder ID` found in their
-respective page under `show technical details`.
-* Add a JSON `node property` named *skip* on the targetted nodes containing keys corresponding to the
-previously noted `Directives Rudder ID`.
-+
-....
-# An example of the skip property value
-{
-  "c180245d-2c34-48fc-bc86-b63c60306d8b": "True",
-  "bfd4f6c6-1f81-4c38-878b-d38d43bbb64c": "True"
-}
-....
-
-= Modifying the provided configuration
-
-Install the plugin on your current test Server. Then, modify/create the rules you want to
+= Contribute to the provided configuration Install the plugin on your current test Server. Then, modify/create the rules you want to
 see in the plugin.
 
 * Install the plugin
@@ -72,10 +134,34 @@ see in the plugin.
 * And add the content of `<destination-file>/directives` and `<destination-file>/rules` to the plugin
 repo under the `configuration` directory.
 
+Each added Technique should be as generic as possible to limit their number. And each one should start with a condition from variable existence defined as follows:
+
+image::workflows/condition_from_variable_existence.png[]
+
+And each generic methods used in the Technique should then be guarded by the condition:
+
+....
+skip_item_${report_data.directive_id}_false
+....
+
+To skip the directive if needed.
+
 = Troubleshootings
 
-The plugin is still unreleased and comes with several known bugs:
-
-* The rules distributed by the plugin always come with wrong uuid and so, the plugin will be unable to
-update or remove it at upgrade or uninstall.
+* After install, the generation status in the Rudder UI may be in error, stating about some missing bundles, try to run a `rudder agent update` on your
+server, and force a `Policy Regeneration` in the UI.
+* Since the CIS plugin audit hundreds of components, you may come across some journald limitations, which may stop syslog before the end of the agent execution.
+This lead to non reporting nodes, and messages in /var/log/messages before the end of the agent execution like:
++
+....
+Oct  1 08:41:40 localhost systemd: Stopping System Logging Service...
+....
++
+This can be fixed by removing the burst limits in your journald configuration:
++
+....
+# In /etc/systemd/journald.conf
+RateLimitInterval=0
+RateLimitBurst=0
+....
 
