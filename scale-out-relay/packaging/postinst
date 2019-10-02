@@ -1,4 +1,5 @@
 #!/bin/bash
 
-# add post-installation script, like:
-rudder server trigger-policy-generation
+# Force policy regeneration at restart
+touch /opt/rudder/etc/trigger-policy-generation
+
