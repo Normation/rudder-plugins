@@ -10,7 +10,7 @@
     "method_calls": [
       {
         "args": [
-          "skip_item_${report_data.directive_id}",
+          "skip_item_${report_data.canonified_directive_id}",
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
@@ -23,7 +23,7 @@
           "${lines}",
           "false"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false.${extra_condition})",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.${extra_condition})",
         "component": "File content",
         "method_name": "file_content"
       }

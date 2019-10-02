@@ -10,7 +10,7 @@
     "method_calls": [
       {
         "args": [
-          "skip_item_${report_data.directive_id}",
+          "skip_item_${report_data.canonified_directive_id}",
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
@@ -23,7 +23,7 @@
           "0",
           "999"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "command_execution_result",
         "method_name": "command_execution_result"
       },
@@ -34,7 +34,7 @@
           "default",
           "default"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "package_present",
         "method_name": "package_present"
       },
@@ -42,7 +42,7 @@
         "args": [
           "${posthook}"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false.package_present_${package}_repaired)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.package_present_${package}_repaired)",
         "component": "command_execution",
         "method_name": "command_execution"
       }

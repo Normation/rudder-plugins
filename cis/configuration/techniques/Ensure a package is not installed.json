@@ -11,7 +11,7 @@
     "method_calls": [
       {
         "args": [
-          "skip_item_${report_data.directive_id}",
+          "skip_item_${report_data.canonified_directive_id}",
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
@@ -24,7 +24,7 @@
           "0",
           "999"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "command_execution_result",
         "method_name": "command_execution_result"
       },
@@ -32,7 +32,7 @@
         "args": [
           "${prerm}"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false.command_execution_result_${check_command}_error)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.command_execution_result_${check_command}_error)",
         "component": "command_execution",
         "method_name": "command_execution"
       },
@@ -43,7 +43,7 @@
           "default",
           "default"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "package_absent",
         "method_name": "package_absent"
       },
@@ -51,7 +51,7 @@
         "args": [
           "${posthook}"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false.package_absent_${package}_repaired)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.package_absent_${package}_repaired)",
         "component": "command_execution",
         "method_name": "command_execution"
       }

@@ -8,7 +8,7 @@
     "method_calls": [
       {
         "args": [
-          "skip_item_${report_data.directive_id}",
+          "skip_item_${report_data.canonified_directive_id}",
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
@@ -19,7 +19,7 @@
         "args": [
           "${service}"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "service_enabled",
         "method_name": "service_enabled"
       },
@@ -27,7 +27,7 @@
         "args": [
           "${service}"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "service_started",
         "method_name": "service_started"
       }
