@@ -6,7 +6,7 @@
     "method_calls": [
       {
         "args": [
-          "skip_item_${report_data.directive_id}",
+          "skip_item_${report_data.canonified_directive_id}",
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
@@ -20,7 +20,7 @@
           "1",
           "="
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "file_key_value_present",
         "method_name": "file_key_value_present"
       },
@@ -31,7 +31,7 @@
           "1",
           "="
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "file_key_value_present",
         "method_name": "file_key_value_present"
       }

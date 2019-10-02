@@ -11,7 +11,7 @@
     "method_calls": [
       {
         "args": [
-          "skip_item_${report_data.directive_id}",
+          "skip_item_${report_data.canonified_directive_id}",
           "node.properties[skip][${report_data.directive_id}]"
         ],
         "class_context": "any",
@@ -25,7 +25,7 @@
           "${owner}",
           "${group_owner}"
         ],
-        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "permissions_recursive",
         "method_name": "permissions_recursive"
       }
