@@ -114,14 +114,22 @@ def export_directive(uuid, path):
             del directive["system"]
         make_jsonfile( path + "/directives/" + uuid + ".json", directive)
 
-        export_technique(directive["techniqueName"], directive["techniqueVersion"], path)
+        export_technique(directive["techniqueName"], path)
 
     except RudderError as e:
         fail("Error while exporting technique %s:\n%s"%(uuid, e.message))
 
-def export_technique(uuid, version, path):
-    #TODO proper export
-    logging.error("Could not download technique %s in version %s"%(uuid, version))
+def export_technique(uuid, path):
+    try:
+        techniques = get_all_techniques()
+        if uuid in techniques.keys():
+            data = { "data" : techniques[uuid], "type": "ncf_technique", "version": "1" }
+            make_jsonfile(path + "/techniques/" + uuid + ".json", data)
+        else:
+             fail("Could not find technique %s"%uuid)
+    except RudderError as e:
+        fail("Error while exporting technique %s:\n%s\n%s"%(uuid, e.response, e.message))
+        logging.error("Could not download technique %s"%uuid)
 
 def import_technique(path):
     try:
@@ -215,13 +223,24 @@ def import_techniques(path):
         import_technique(path)
 
 GMS = {}
-def get_all_generic_methods():
+TECHNIQUES = {}
+def get_all_ncf():
     global GMS
-    if GMS == {}:
+    global TECHNIQUES
+    if GMS == {} or TECHNIQUES == {}:
         # Call the technique API
         ncfEndpoint = RudderEndPoint("https://localhost/ncf", TOKEN, verify=False)
-        GMS = ncfEndpoint.request("GET", "/api/techniques?path=/var/rudder/configuration-repository/ncf", None, None, return_raw=False)["generic_methods"]
+        ALL = ncfEndpoint.request("GET", "/api/techniques?path=/var/rudder/configuration-repository/ncf", None, None, return_raw=False)
+        GMS = ALL["generic_methods"]
+        TECHNIQUES = ALL["techniques"]
+
+def get_all_generic_methods():
+    get_all_ncf()
     return GMS
+
+def get_all_techniques():
+    get_all_ncf()
+    return TECHNIQUES
 
 
 ##########################
