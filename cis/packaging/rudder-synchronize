@@ -222,25 +222,21 @@ def import_techniques(path):
     else:
         import_technique(path)
 
-GMS = {}
-TECHNIQUES = {}
+NCF_CACHE = {}
 def get_all_ncf():
-    global GMS
-    global TECHNIQUES
-    if GMS == {} or TECHNIQUES == {}:
+    global NCF_CACHE
+    if not NCF_CACHE:
         # Call the technique API
         ncfEndpoint = RudderEndPoint("https://localhost/ncf", TOKEN, verify=False)
-        ALL = ncfEndpoint.request("GET", "/api/techniques?path=/var/rudder/configuration-repository/ncf", None, None, return_raw=False)
-        GMS = ALL["generic_methods"]
-        TECHNIQUES = ALL["techniques"]
+        NCF_CACHE = ncfEndpoint.request("GET", "/api/techniques?path=/var/rudder/configuration-repository/ncf", None, None, return_raw=False)
 
 def get_all_generic_methods():
     get_all_ncf()
-    return GMS
+    return NCF_CACHE["generic_methods"]
 
 def get_all_techniques():
     get_all_ncf()
-    return TECHNIQUES
+    return NCF_CACHE["techniques"]
 
 
 ##########################
