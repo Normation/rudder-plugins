@@ -105,7 +105,7 @@ class ChangeRequestChangesForm(
             ruleCategoryRepository.getRootCategory match {
               case Full(rootRuleCategory) =>
 
-                ( "#changeTree ul *" #>  treeNode(cr, rootRuleCategory).toXml &
+                ( "#changeTree ul *" #>  new ChangesTreeNode(cr, rootRuleCategory).toXml &
                   "#history *" #> displayHistory (
                                       rootRuleCategory
                                     , cr.directives.values.map(_.changes).toList
@@ -133,18 +133,18 @@ class ChangeRequestChangesForm(
         }
   }
 
- def treeNode(changeRequest:ConfigurationChangeRequest, rootRuleCategory: RuleCategory) = new JsTreeNode{
+ class ChangesTreeNode(changeRequest:ConfigurationChangeRequest, rootRuleCategory: RuleCategory) extends JsTreeNode{
 
   def directiveChild(directiveId:DirectiveId) = new JsTreeNode{
-    val changes = changeRequest.directives(directiveId).changes
-    val directiveName = changes.initialState.map(_._2.name).getOrElse(changes.firstChange.diff.directive.name)
+    def changes = changeRequest.directives(directiveId).changes
+    def directiveName = changes.initialState.map(_._2.name).getOrElse(changes.firstChange.diff.directive.name)
 
-    val body = SHtml.a(
+    def body = SHtml.a(
         () => SetHtml("history",displayHistory(rootRuleCategory, List(changes)))
       , <span>{directiveName}</span>
     )
 
-    val children = Nil
+   def children = Nil
   }
 
   val directivesChild = new JsTreeNode{

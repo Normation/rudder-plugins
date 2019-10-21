@@ -131,7 +131,7 @@ class ChangeValidationWorkflowLevelService(
   }
 
   override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
       case (valid, Full(false)) => valid.forRule(actor,change)
       case (_, res) => res
     }
@@ -139,21 +139,21 @@ class ChangeValidationWorkflowLevelService(
   }
 
   override def getForDirective(actor: EventActor, change: DirectiveChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
       case (valid, Full(false)) => valid.forDirective(actor,change)
       case (_, res) => res
     }
     getWorkflow(result)
   }
   override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
       case (valid, Full(false)) => valid.forNodeGroup(actor,change)
       case (_, res) => res
     }
     getWorkflow(result)
   }
   override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded :\ (Full(false) : Box[Boolean])) {
+    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
       case (valid, Full(false)) => valid.forGlobalParam(actor,change)
       case (_, res) => res
     }

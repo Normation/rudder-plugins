@@ -213,7 +213,7 @@ class ChangeRequestApiImpl (
                 res     <- boxSequence(statuses.map(listChangeRequestsByStatus)) ?~ ("Could not fetch ChangeRequests")
                 results <- boxSequence(res) ?~ ("Could not fetch ChangeRequests") ?~ ("Could not fetch ChangeRequests")
               } yield {
-                val res : JValue = (results :\ JArray(List())) (concatenateJArray)
+                val res : JValue = (results foldRight JArray(List())) (concatenateJArray)
                 toJsonResponse(None, res)
               }) match {
                 case Full(response) =>

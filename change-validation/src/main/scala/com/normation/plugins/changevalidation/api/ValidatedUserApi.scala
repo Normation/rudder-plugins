@@ -61,19 +61,20 @@ import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST._
 import net.liftweb.json.JsonAST.JArray
 import net.liftweb.json.JsonDSL._
+import sourcecode.Line
 
 sealed trait ValidatedUserApi extends EndpointSchema with GeneralApi with SortIndex
 object ValidatedUserApi extends ApiModuleProvider[ValidatedUserApi] {
 
-  final case object ListUsers extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object ListUsers extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "List all users"
     val (action, path)  = GET / "users"
   }
-  final case object DeleteValidatedUsersDetails extends ValidatedUserApi with OneParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object DeleteValidatedUsersDetails extends ValidatedUserApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Remove validated user"
     val (action, path)  = DELETE / "validatedUsers" / "{username}"
   }
-  final case object SaveWorkflowUsers extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = zz
+  final case object SaveWorkflowUsers extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "save list of workflow's users"
     val (action, path)  = POST / "validatedUsers"
   }
