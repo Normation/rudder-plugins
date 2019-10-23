@@ -63,7 +63,6 @@ import net.liftweb.json.JsonAST.JArray
 import net.liftweb.json.JsonDSL._
 import sourcecode.Line
 
-
 sealed trait ValidatedUserApi extends EndpointSchema with GeneralApi with SortIndex
 object ValidatedUserApi extends ApiModuleProvider[ValidatedUserApi] {
 
