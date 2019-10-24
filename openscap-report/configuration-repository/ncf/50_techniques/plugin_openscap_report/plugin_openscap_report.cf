@@ -1,0 +1,25 @@
+# @name plugin_openscap_report
+# @description This technique will trigger an openscap audit every hour on the agent.
+# @version 1.0
+# @parameter {"id": "0bad6c1e-59c9-44ca-a935-210af4188643", "name": "profile", "constraints": {"allow_whitespace_string": false, "allow_empty_string": false, "max_length": 16384}}
+# @parameter {"id": "182dffe7-4310-4e01-bdd0-3f7db8272e2f", "name": "scap_file", "constraints": {"allow_whitespace_string": false, "allow_empty_string": false, "max_length": 16384}}
+
+bundle agent plugin_openscap_report(profile, scap_file)
+{
+  methods:
+    "Schedule Simple_context_${report_data.directive_id}_0" usebundle => _method_reporting_context("Schedule Simple", "openscap");
+    "Schedule Simple" usebundle => schedule_simple("openscap", "5", "5", "0", "10", "15", "1", "0", "1", "0", "nodups"),
+      ifvarclass => concat("any");
+    "Package present_context_${report_data.directive_id}_1" usebundle => _method_reporting_context("Package present", "openscap-scanner");
+    "Package present" usebundle => package_present("openscap-scanner", "", "", ""),
+      ifvarclass => concat("any");
+    "Package present_context_${report_data.directive_id}_2" usebundle => _method_reporting_context("Package present", "scap-security-guide");
+    "Package present" usebundle => package_present("scap-security-guide", "", "", ""),
+      ifvarclass => concat("any");
+    "run scan Openscap_context_${report_data.directive_id}_3" usebundle => _method_reporting_context("run scan Openscap", "oscap xccdf eval --profile ${profile} --report /var/rudder/tmp/openscap_report.html ${scap_file}");
+    "run scan Openscap" usebundle => command_execution_result("oscap xccdf eval --profile ${profile} --report /var/rudder/tmp/openscap_report.html ${scap_file}", "0,2", "254"),
+      ifvarclass => concat("any.(schedule_simple_openscap_repaired)");
+    "send report to server_context_${report_data.directive_id}_4" usebundle => _method_reporting_context("send report to server", "report.html");
+    "send report to server" usebundle => sharedfile_to_node("root", "report.html", "/var/rudder/tmp/openscap_report.html", "1d"),
+      ifvarclass => concat("any");
+}
