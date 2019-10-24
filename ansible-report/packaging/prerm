@@ -1,0 +1,18 @@
+#!/bin/bash
+set -x
+
+# Import Ansible Technique
+NAME=ansible_report
+FOLDERS="ncf/50_techniques techniques dsc/ncf/50_techniques techniques/ncf_techniques"
+cd /var/rudder/configuration-repository/
+git reset
+for folder in $FOLDERS
+do
+  git rm -r $folder/$NAME
+done
+git commit -m "Ansible-report plugin uninstallation"
+# need to be run 2 times to be updated, first one will fail
+# TODO #16053
+rudder server reload-techniques || /bin/true
+rudder server reload-techniques
+
