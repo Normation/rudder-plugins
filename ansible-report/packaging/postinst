@@ -1,0 +1,16 @@
+#!/bin/bash
+set -x
+
+# Import Ansible Technique
+FOLDERS="ncf/50_techniques/ansible_report techniques/ansible_report techniques/ncf_techniques"
+cd /var/rudder/configuration-repository/
+git reset
+for folder in $FOLDERS
+do
+  chown -R ncf-api-venv:rudder $folder
+  chmod 664 -R $folder
+  chmod -R +X $folder
+  git add $folder
+done
+git commit -m "Ansible-report plugin installation"
+rudder server reload-techniques
