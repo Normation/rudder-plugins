@@ -143,7 +143,6 @@ object UserManagementService {
         Failure(err.msg)
       case Right(path) =>
         val srcXML = ConstructingParser.fromFile(File(path).toJava, preserveWS = true).document.children
-        val digest =  new PasswordEncoder.DigestEncoder((srcXML \\ "authentication" \ "@hash").text)
         (srcXML \\ "authentication").head match {
           case e: Elem =>
             val newXml = e.copy(child = e.child ++ newUser.copy(password = getHash((srcXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
@@ -178,7 +177,6 @@ object UserManagementService {
         Failure(err.msg)
       case Right(path) =>
         val srcXML = ConstructingParser.fromFile(File(path).toJava, preserveWS = true).document.children
-        val digest =  new PasswordEncoder.DigestEncoder((srcXML \\ "authentication" \ "@hash").text)
         val toUpdate = (srcXML \\ "authentication").head
         val newXml = new RuleTransformer(new RewriteRule {
           override def transform(n: Node): NodeSeq = n match {

@@ -223,7 +223,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
           case AddChangeRequest(_)    => "Created"
           case DeleteChangeRequest(_) => "Deleted"
         }
-        (s"${actionName} on ${DateFormaterService.getFormatedDate(e.creationDate)} by ${e.principal.name}",Some(e.creationDate))
+        (s"${actionName} on ${DateFormaterService.getDisplayDate(e.creationDate)} by ${e.principal.name}",Some(e.creationDate))
     }
 
     // Last workflow change on that change Request
@@ -233,7 +233,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       case Full(Some(event)) =>
         val changeStep = eventlogDetailsService.getWorkflotStepChange(event.details).map(step => s"State changed from ${step.from} to ${step.to}").getOrElse("Step changed")
 
-        (s"${changeStep} on ${DateFormaterService.getFormatedDate(event.creationDate)} by ${event.principal.name}",Some(event.creationDate))
+        (s"${changeStep} on ${DateFormaterService.getDisplayDate(event.creationDate)} by ${event.principal.name}",Some(event.creationDate))
     }
 
     // Compare both to find the oldest

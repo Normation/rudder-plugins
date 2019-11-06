@@ -58,6 +58,7 @@ class RoleComputationTest extends Specification {
                   success
                 else
                   failure(s"wrong rights")
+              case None => failure(s"Missing role : $rs")
             }
           }
           else

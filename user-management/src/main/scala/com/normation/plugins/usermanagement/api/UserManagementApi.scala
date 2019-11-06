@@ -47,7 +47,6 @@ import com.normation.rudder.rest.lift.{DefaultParams, LiftApiModule, LiftApiModu
 import com.normation.rudder.{Role, RoleToRights}
 import net.liftweb.common.{Box, Failure, Full}
 import net.liftweb.http.{LiftResponse, Req}
-import net.liftweb.json.JsonAST.JString
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.{JValue, NoTypeHints}
 import sourcecode.Line
@@ -203,7 +202,6 @@ class UserManagementApiImpl(
     val restExtractor = api.restExtractorService
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val prettify = restExtractor.extractPrettify(req.params)
       implicit val action = "addUser"
 
       val value: Box[JValue]  = for {
@@ -224,7 +222,6 @@ class UserManagementApiImpl(
     val restExtractor = api.restExtractorService
 
     def process(version: ApiVersion, path: ApiPath, id: String ,req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val prettify = restExtractor.extractPrettify(req.params)
       implicit val action = "deleteUser"
 
       val value: Box[JValue]  = for {
@@ -242,7 +239,6 @@ class UserManagementApiImpl(
     val restExtractor = api.restExtractorService
 
     def process(version: ApiVersion, path: ApiPath, id: String ,req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val prettify = restExtractor.extractPrettify(req.params)
       implicit val action = "updateInfosUser"
 
       val value: Box[JValue]  = for {
@@ -263,7 +259,6 @@ class UserManagementApiImpl(
     val restExtractor = api.restExtractorService
 
     def process(version: ApiVersion, path: ApiPath, id: String ,req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val prettify = restExtractor.extractPrettify(req.params)
       implicit val action = "rolesCoverageOnRights"
 
       val value: Box[JValue] = for {

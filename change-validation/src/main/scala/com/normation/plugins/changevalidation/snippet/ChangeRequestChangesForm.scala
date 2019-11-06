@@ -63,7 +63,6 @@ import com.normation.rudder.rule.category.RuleCategory
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.components.DateFormaterService
 import com.normation.rudder.web.model._
-import com.normation.rudder.web.services.DiffDisplayer
 import net.liftweb.common._
 import net.liftweb.http._
 import net.liftweb.http.js.JE._
@@ -95,6 +94,7 @@ class ChangeRequestChangesForm(
   private[this] val ruleCategoryService = RudderConfig.ruleCategoryService
   private[this] val ruleCategoryRepository = RudderConfig.roRuleCategoryRepository
   private[this] val linkUtil = RudderConfig.linkUtil
+  private[this] val diffDisplayer = RudderConfig.diffDisplayer
 
   import linkUtil._
 
@@ -362,8 +362,8 @@ class ChangeRequestChangesForm(
     ( "#ruleID" #> createRuleLink(rule.id) &
       "#ruleName" #> rule.name &
       "#category" #> categoryName &
-      "#target" #> DiffDisplayer.displayRuleTargets(rule.targets.toSeq, rule.targets.toSeq, groupLib) &
-      "#policy" #> DiffDisplayer.displayDirectiveChangeList(rule.directiveIds.toSeq, rule.directiveIds.toSeq) &
+      "#target" #> diffDisplayer.displayRuleTargets(rule.targets.toSeq, rule.targets.toSeq, groupLib) &
+      "#policy" #> diffDisplayer.displayDirectiveChangeList(rule.directiveIds.toSeq, rule.directiveIds.toSeq) &
       "#isEnabled" #> rule.isEnabled &
       "#isSystem" #> rule.isSystem &
       "#shortDescription" #> rule.shortDescription &
@@ -389,11 +389,11 @@ class ChangeRequestChangesForm(
       "#ruleName" #> displaySimpleDiff(diff.modName, "name", Text(rule.name)) &
       "#category" #> displaySimpleDiff(modCategory, "name", Text(categoryName)) &
       "#target" #> diff.modTarget.map{
-        case SimpleDiff(oldOnes,newOnes) => DiffDisplayer.displayRuleTargets(oldOnes.toSeq,newOnes.toSeq, groupLib)
-        }.getOrElse(DiffDisplayer.displayRuleTargets(rule.targets.toSeq, rule.targets.toSeq, groupLib)) &
+        case SimpleDiff(oldOnes,newOnes) => diffDisplayer.displayRuleTargets(oldOnes.toSeq,newOnes.toSeq, groupLib)
+        }.getOrElse(diffDisplayer.displayRuleTargets(rule.targets.toSeq, rule.targets.toSeq, groupLib)) &
       "#policy" #> diff.modDirectiveIds.map{
-        case SimpleDiff(oldOnes,newOnes) => DiffDisplayer.displayDirectiveChangeList(oldOnes.toSeq,newOnes.toSeq)
-        }.getOrElse(DiffDisplayer.displayDirectiveChangeList(rule.directiveIds.toSeq, rule.directiveIds.toSeq)) &
+        case SimpleDiff(oldOnes,newOnes) => diffDisplayer.displayDirectiveChangeList(oldOnes.toSeq,newOnes.toSeq)
+        }.getOrElse(diffDisplayer.displayDirectiveChangeList(rule.directiveIds.toSeq, rule.directiveIds.toSeq)) &
       "#isEnabled"        #> displaySimpleDiff(diff.modIsActivatedStatus, "active", Text(rule.isEnabled.toString)) &
       "#shortDescription" #> displaySimpleDiff(diff.modShortDescription, "short", Text(rule.shortDescription)) &
       "#longDescription"  #> displaySimpleDiff(diff.modLongDescription, "long", Text(rule.longDescription))
@@ -684,7 +684,7 @@ class ChangeRequestChangesForm(
    ( "#action *" #> {action } &
      "#actor *" #> actor.name &
      "#reason *" #> changeMessage &
-     "#date *"  #> DateFormaterService.getFormatedDate(date)
+     "#date *"  #> DateFormaterService.getDisplayDate(date)
    ).apply(CRLine)
 
   def displayChangeRequestEvent(crEvent:ChangeRequestEventLog) = {

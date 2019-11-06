@@ -96,7 +96,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     , workflowStateMap: Map[ChangeRequestId,WorkflowNodeId]
     , eventsMap : Map[ChangeRequestId, EventLog]
   ) extends JsTableLine {
-    val date = eventsMap.get(changeRequest.id).map(event => DateFormaterService.getFormatedDate(event.creationDate)).getOrElse("Unknown")
+    val date = eventsMap.get(changeRequest.id).map(event => DateFormaterService.serialize(event.creationDate)).getOrElse("Unknown")
 
     val json = {
       JsObj(
