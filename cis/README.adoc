@@ -1,5 +1,3 @@
-# Rudder plugin: cis
-
 This project is part of Rudder - IT infrastructure Automation and Compliance.
 See: http://rudder.io for more information.
 
@@ -14,12 +12,17 @@ other general information.
 This plugin will bring a set of directives to help auditing the CIS benchmark with Rudder.
 All directives will be provided in `Audit mode` enabled to prevents any unwanted changes on your systems.
 
-The directives set is not meant to be use in `Enforce mode` without manual customization of the provided
+
+WARNING: The plugin brings a sizable number of directives (>100) and may obfuscate your current set of techniques and directives. Until it is better organized *we strongly recommend to test the plugin in a dedicated test Rudder Server*.
+
+
+*The directives set is not meant to be used in `Enforce mode` without manual customization* of the provided
 configurations. Without any changes, it will most likely break your system.
 
-Currently, the plugin only support parts of the `Debian9` and `RedHat7` benchmarks. It is still in development
-and may not behave as you expect. You can still try to make it works for other benchmarks, see <<Build, below>>.
+*Currently, the plugin is still in a Beta version* and only support parts of the `RedHat7` benchmarks. It is still in active development
+and may not behave as you expect. Check the <<Troubleshootings, troubleshooting section below>>.
 
+*You can still try to make it works for other benchmarks, see <<Build, below>>*.
 
 image::workflows/cis.png[]
 
@@ -54,11 +57,11 @@ Except if you did customize the Techniques or Directives distributed with the pl
 
 == Upgrade
 
-Since the plugin provides a lot of different Rudder objects which are most likely going to be modify on our side or yours, the upgrade process need to be kept as simple as possible.
+Since the plugin provides a lot of different Rudder objects which you may want to modify, the upgrade process needs to be kept as simple as possible.
 
-Currently, an upgrade is litteraly a remove followed by an install. Note that it means that if you make changes on the provided configuration, it is more likely to be wiped out at upgrade.
+Currently, an upgrade is litteraly a remove followed by an install. It means that if you make changes on the provided configuration, you will need to skip the remove part of the modified directives and techniques if you do not want them to be replaced at upgrade.
 
-== Directives
+== How it works
 
 Each benchmark item will be translated as one or more directives with the following:
 
@@ -98,13 +101,38 @@ previously noted `Directives Rudder ID`.
 }
 ....
 
-= Build
+The skipping process is more detailed in the <<Skip_directive, section below>>.
+
+[#Troubleshootings]
+= Troubleshootings
+
+* After install, the generation status in the Rudder UI may be in error, stating about some missing bundles, try to run a `rudder agent update` on your
+server, and force a `Policy Regeneration` in the UI.
+* Since the CIS plugin audits hundreds of components, you may come across some journald limitations, which may stop syslog before the end of the agent execution.
+This lead to non reporting nodes, and messages in /var/log/messages before the end of the agent execution like:
++
+....
+Oct  1 08:41:40 localhost systemd: Stopping System Logging Service...
+....
++
+This can be fixed by removing the burst limits in your journald configuration:
++
+....
+# In /etc/systemd/journald.conf
+RateLimitInterval=0
+RateLimitBurst=0
+....
+
 [#Build]
-Since there are no easy way to have access to the CIS Benchmark data, the plugin build is based on pdfs benchmark parsing. Each items parsed from the pdfs will be tested by regex matching on their name with a directive bank put in the configuration folder. If an item name match with a directive name, it will tagg the directive based on the pdfs, edit its description and add it to the distributed configuration.
+= Build for others benchmarks
 
-There is no proper check on what the directive is doing, we assume they were written by users and should be generic enough to support multiple benchmarks if the items name are identical.
+The plugin build is based on pdfs benchmark parsing. Each items parsed from the pdfs will be tested by regex matching on their name with a directive bank put in the configuration folder.
 
-To generate a plugin providing rules for one or more benchmark, you should deposit the associated pdfs in the `pdfs` folder with the folowing naming convention:
+If an item name matches with a directive name, it will tagg the directive based on the pdfs, edit its description and add it to the distributed configuration.
+
+*There is no proper check on what the directive is doing, we assume they were written by users and should be generic enough to support multiple benchmarks if the items name are identical.*
+
+To generate a plugin providing rules for one or more non supported benchmarks, deposit the associated pdfs in the `pdfs` folder with the folowing naming convention:
 
 ....
 cis_<benchmark_short_name>.pdf
@@ -121,11 +149,10 @@ cis-workstation: 2
 ....
 
 
-= Contribute to the provided configuration Install the plugin on your current test Server. Then, modify/create the rules you want to
-see in the plugin.
+= Extend, improve the directives
 
 * Install the plugin
-* Modify or create the rules you want to add to the plugin
+* Modify or create the directives or techniques you want to add to the plugin
 * Export them by running:
 +
 ....
@@ -133,35 +160,17 @@ see in the plugin.
 ....
 * And add the content of `<destination-file>/directives` and `<destination-file>/rules` to the plugin
 repo under the `configuration` directory.
+* You may need to run a build and a clean to normalize the newly added jsons.
 
-Each added Technique should be as generic as possible to limit their number. And each one should start with a condition from variable existence defined as follows:
+[#Skip_directive]
+Each added Technique should be as generic as possible to limit their number. Each one of them must start with a condition from `variable existence defined` as follows:
 
 image::workflows/condition_from_variable_existence.png[]
 
-And each generic methods used in the Technique should then be guarded by the condition:
+Each generic methods used in the Technique should then be guarded by the condition:
 
 ....
 skip_item_${report_data.directive_id}_false
 ....
 
-To skip the directive if needed.
-
-= Troubleshootings
-
-* After install, the generation status in the Rudder UI may be in error, stating about some missing bundles, try to run a `rudder agent update` on your
-server, and force a `Policy Regeneration` in the UI.
-* Since the CIS plugin audit hundreds of components, you may come across some journald limitations, which may stop syslog before the end of the agent execution.
-This lead to non reporting nodes, and messages in /var/log/messages before the end of the agent execution like:
-+
-....
-Oct  1 08:41:40 localhost systemd: Stopping System Logging Service...
-....
-+
-This can be fixed by removing the burst limits in your journald configuration:
-+
-....
-# In /etc/systemd/journald.conf
-RateLimitInterval=0
-RateLimitBurst=0
-....
 
