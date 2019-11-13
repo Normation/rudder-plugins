@@ -189,7 +189,10 @@ class WoChangeRequestJdbcRepository(
     for {
       id  <- (q.transact(xa).attempt.unsafeRunSync: Box[Int])
       cr  <- roRepo.get(ChangeRequestId(id)).flatMap {
-               case None    => Failure(s"The newly saved change request with ID ${id} was not found back in data base")
+               case None    =>
+                 val msg = s"The newly saved change request with ID ${id} was not found back in data base"
+                 ChangeValidationLogger.error(msg)
+                 Failure(msg)
                case Some(x) => Full(x)
              }
     } yield {
@@ -216,8 +219,9 @@ class WoChangeRequestJdbcRepository(
       cr      <- roRepo.get(changeRequest.id)
       ok      <- cr match {
                    case None =>
-                     logger.warn(s"Cannot update non-existant Change Request with id ${changeRequest.id.value}")
-                     Failure(s"Cannot update non-existant Change Request with id ${changeRequest.id.value}")
+                     val msg = s"Cannot update non-existent Change Request with id ${changeRequest.id.value}"
+                     ChangeValidationLogger.warn(msg)
+                     Failure(msg)
                    case Some(x) => Full("ok")
                  }
       update  <- ({
@@ -228,8 +232,9 @@ class WoChangeRequestJdbcRepository(
                  }: Box[Int])
       updated <- roRepo.get(changeRequest.id).flatMap {
                    case None =>
-                     logger.error(s"Couldn't find the updated entry when updating Change Request ${changeRequest.id.value}")
-                     Failure(s"Couldn't find the updated entry when saving Change Request with ID ${changeRequest.id.value}")
+                     val msg = s"Couldn't find the updated entry when updating Change Request ${changeRequest.id.value}"
+                     ChangeValidationLogger.error(msg)
+                     Failure(msg)
                    case Some(x) => Full(x)
                  }
     } yield {
@@ -270,13 +275,13 @@ class ChangeRequestMapper(
 
           case eb:EmptyBox =>
             val fail = eb ?~! s"could not deserialize directive change of change request #${id} cause is: ${eb}"
-            logger.error(fail)
+            ChangeValidationLogger.error(fail)
             fail
         }
 
       case eb:EmptyBox =>
         val fail = eb ?~! s"Error when trying to get the content of the change request ${id} : ${eb}"
-        logger.error(fail.msg)
+        ChangeValidationLogger.error(fail.msg)
         fail
     }
   }
@@ -295,7 +300,9 @@ class ChangeRequestMapper(
         }
         (cr.id.value, name, desc, elem, cr.modId.map(_.value))
 
-      case _ => throw new IllegalArgumentException(s"We can only serialize Full(ChangeRequest)")
+      case _ =>
+        ChangeValidationLogger.error(s"We can only serialize Full(ChangeRequest), not a ${optCR}")
+        throw new IllegalArgumentException(s"We can only serialize Full(ChangeRequest)")
     }
   }
 
