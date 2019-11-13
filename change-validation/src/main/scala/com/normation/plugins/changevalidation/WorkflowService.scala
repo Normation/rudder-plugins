@@ -235,7 +235,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       case Deployed.id   => false
       case Cancelled.id  => false
       case WorkflowNodeId(x) =>
-        ChangeValidationLogger.warn(s"An unknow workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it")
+        ChangeValidationLogger.warn(s"An unknown workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it")
         false
     }
   }
@@ -247,7 +247,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       case Deployed.id   => false
       case Cancelled.id  => false
       case WorkflowNodeId(x) =>
-        ChangeValidationLogger.warn(s"An unknow workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it")
+        ChangeValidationLogger.warn(s"An unknown workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it")
         false
     }
   }

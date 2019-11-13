@@ -140,7 +140,10 @@ object Ser {
   def parseTargetId(s: String): Box[SimpleTarget] = {
     RuleTarget.unser(s) match {
       case Some(x: SimpleTarget) => Full(x)
-      case _                     => Failure(s"Error: the string '${s}' can not parsed as a valid rule target", Empty, Empty)
+      case _                     =>
+        val msg = s"Error: the string '${s}' can not parsed as a valid rule target"
+        ChangeValidationLogger.error(msg)
+        Failure(msg, Empty, Empty)
     }
   }
 
@@ -163,7 +166,10 @@ object Ser {
   def parseSupervised(json: JValue): Box[List[String]] = {
     (json \ "supervised") match {
       case JArray(list) => Control.sequence(list)( s => Box(s.extractOpt[String])).map( _.toList)
-      case _ => Failure("Error when trying to parse JSON content as a set of rule target.", Empty, Empty)
+      case _            =>
+        val msg = s"Error when trying to parse JSON content ${json.toString} as a set of rule target."
+        ChangeValidationLogger.error(msg)
+        Failure("Error when trying to parse JSON content as a set of rule target.", Empty, Empty)
     }
   }
 
@@ -176,7 +182,10 @@ object Ser {
       json    <- try {
                    Full(parse(source))
                  } catch {
-                   case NonFatal(ex) => Failure(s"Error when trying to parse source document as JSON.", Full(ex), Empty)
+                   case NonFatal(ex) =>
+                     val msg = s"Error when trying to parse source document as JSON ${source}"
+                     ChangeValidationLogger.error(msg)
+                     Failure(s"Error when trying to parse source document as JSON.", Full(ex), Empty)
                  }
       targets <- parseJsonTargets(json)
     } yield {

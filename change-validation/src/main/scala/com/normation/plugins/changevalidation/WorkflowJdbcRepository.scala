@@ -94,8 +94,10 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
         exists  <- sql"""select state from workflow where id = ${crId}""".query[WorkflowNodeId].option
         created <- exists match {
                      case None    => sql"""insert into workflow (id, state) values (${crId},${state})""".update.run.attempt
-                     case Some(s) => (Left(s"Cannot start a workflow for Change Request id ${crId.value}, "+
-                                     s"as it is already part of a workflow in state '${s}'")).pure[ConnectionIO]
+                     case Some(s) =>
+                       val msg = s"Cannot start a workflow for Change Request id ${crId.value}, as it is already part of a workflow in state '${s}'"
+                       ChangeValidationLogger.error(msg)
+                       (Left(msg)).pure[ConnectionIO]
                    }
       } yield {
         state
@@ -113,11 +115,15 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
                        if(s == from) {
                          sql"""update workflow set state = ${state} where id = ${crId}""".update.run.attempt
                        } else {
-                         (Left(s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' "+
-                              s"but we were expecting '${from.value}'. Perhaps someone else changed it concurently?").pure[ConnectionIO])
+                         val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' "+
+                           s"but we were expecting '${from.value}'. Perhaps someone else changed it concurently?"
+                         ChangeValidationLogger.error(msg)
+                         (Left(msg).pure[ConnectionIO])
                        }
-                     case None    => (Left(s"Cannot change a workflow for Change Request id ${crId.value}, "+
-                                     s"as it is not part of any workflow yet").pure[ConnectionIO])
+                     case None    =>
+                         val msg = s"Cannot change a workflow for Change Request id ${crId.value}, as it is not part of any workflow yet"
+                         ChangeValidationLogger.error(msg)
+                         (Left(msg).pure[ConnectionIO])
                    }
       } yield {
         state
