@@ -4,6 +4,9 @@
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
+  "depends": {
+    "binary": [ "python-requests" ]
+  },
   "content": {
     "files.txz": "/opt/rudder/"
   }
