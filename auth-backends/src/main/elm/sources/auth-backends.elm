@@ -361,7 +361,7 @@ displayProvidConfig config =
             ]
         , div [ class "row form-group" ]
             [ label [ class "col-xs-12" ] [ text "Computed list of providers" ]
-            , div [ class "col-xs-12 text-info" ] [ text "This is the list of providers actually used by Rudder, once hooks and plugin status are resolbed." ]
+            , div [ class "col-xs-12 text-info" ] [ text "This is the list of providers actually used by Rudder, once hooks and plugin status are resolved." ]
             , div [ class "col-xs-12 tag-list" ] (config.computedProviders |> List.map (\x -> span [ class "tag" ] [ text x ]))
             ]
         ]
