@@ -15,3 +15,44 @@ This plugin allows to manage rudder users and and add extended authorizations fo
 Users also gain the possibility to have a personal API token with the same rights that
 they have themself.
 
+In the xml file, the role attribute is a list of permissions/roles, separated by
+a comma. Each one adds permissions to the user. If one is wrong, or not correctly
+spelled, the user is set to the lowest rights (NoRights), having access only to the
+dashboard and nothing else.
+
+== Pre-defined roles
+
+|====
+|Name                | Access level
+|administrator | All authorizations granted, can access and modify everything
+|administration_only | Only access to administration part of rudder, can do everything within it.
+|user | Can access and modify everything but the administration part
+|configuration | Can only access and act on configuration section
+|read_only | Can access to every read only part, can perform no action
+|inventory | Access to information about nodes, can see their inventory, but can't act on them
+|rule_only | Access to information about rules, but can't modify them
+|====
+
+For each user you can define more than one role, each role adding its authorization to the user.
+
+Example: "rule_only,administration_only" will only give access to the "Administration" tab as well as the
+Rules.
+
+== Custom roles
+
+You can set a custom set of permissions instead of a pre-defined role.
+
+A permission is composed of a type and a level:
+
+* Type:  Indicates what kind of data will be displayed and/or can be set/updated by the user
+** *configuration*, *rule*, *directive*, *technique*, *node*, *group*, *administration*, *deployment*.
+* Level: Access level to be granted on the related type
+** *read*, *write*, *edit*, *all* (Can read, write, and edit)
+
+Depending on that value(s) you give, the user will have access to different pages and action in Rudder.
+
+Usage example:
+
+* *configuration_read* -> Will give read access to the configuration (Rule management, Directives and Parameters)
+* *rule_write, node_read* -> Will give read and write access to the Rules and read access to the Nodes
+
