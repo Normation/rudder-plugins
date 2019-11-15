@@ -330,6 +330,7 @@ class ChangeRequestChangesForm(
         <li><b>Enabled:&nbsp;</b><value id="isEnabled"/></li>
         <li><b>System:&nbsp;</b><value id="isSystem"/></li>
         <li><b>Long description:&nbsp;</b><value id="longDescription"/></li>
+        <li><b>Policy Mode:&nbsp;</b><value id="policyMode"/></li>
         <li><b>Parameters:&nbsp;</b><value id="parameters"/></li>
       </ul>
     </div>
@@ -470,6 +471,11 @@ class ChangeRequestChangesForm(
         <div> directive.parameters </div>
       }
 
+      val policyMode = directive.policyMode match {
+        case Some(mode) => mode.name
+        case None => "default"
+      }
+
     ( "#directiveID" #> createDirectiveLink(directive.id) &
       "#directiveName" #> directive.name &
       "#techniqueVersion" #> directive.techniqueVersion.toString &
@@ -481,6 +487,7 @@ class ChangeRequestChangesForm(
       "#isSystem" #> directive.isSystem &
       "#shortDescription" #> directive.shortDescription &
       "#longDescription" #> directive.longDescription &
+      "#policyMode" #> policyMode &
       "#parameters" #> <pre>{parameters}</pre>
     ) (DirectiveXML)
   }
@@ -492,6 +499,11 @@ class ChangeRequestChangesForm(
       , rootSection   : SectionSpec
   ) = {
 
+    val policyMode = directive.policyMode match {
+      case Some(mode) => mode.name
+      case None => "default"
+    }
+
     ( "#directiveID"      #> createDirectiveLink(directive.id) &
       "#techniqueName"    #> techniqueName.value &
       "#isSystem"         #> directive.isSystem &
@@ -501,6 +513,11 @@ class ChangeRequestChangesForm(
       "#isEnabled"        #> displaySimpleDiff(diff.modIsActivated, "active", Text(directive.isEnabled.toString)) &
       "#shortDescription" #> displaySimpleDiff(diff.modShortDescription, "short", Text(directive.shortDescription)) &
       "#longDescription"  #> displaySimpleDiff(diff.modLongDescription, "long", Text(directive.longDescription)) &
+      "#policyMode"  #> {
+        val transPolicy = diff.modPolicyMode.map(d => SimpleDiff(d.oldValue.map(_.name).getOrElse("Global mode"), d.newValue.map(_.name).getOrElse("Global mode")))
+        displaySimpleDiff(transPolicy, "policy", Text(policyMode))
+      } &
+
       "#parameters"       #> {
         implicit val fun = (section:SectionVal) => xmlPretty.format(SectionVal.toXml(section))
         val parameters = <pre>{fun(SectionVal.directiveValToSectionVal(rootSection,directive.parameters))}</pre>
