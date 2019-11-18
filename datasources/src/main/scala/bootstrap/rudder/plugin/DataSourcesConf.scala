@@ -45,23 +45,24 @@ import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodeManagerHooks
 import org.joda.time.DateTime
 import net.liftweb.common.Box
-import net.liftweb.common.Full
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.plugins.datasources.api.DataSourceApiImpl
 import com.normation.rudder.batch.AsyncDeploymentActor
-
+import com.normation.zio.ZioRuntime
+import com.normation.errors._
+import com.normation.zio._
 import com.normation.box._
 
 /*
  * An update hook which triggers a configuration generation if needed
  */
 class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentActor) {
-  def hook(updatedNodeIds: Set[NodeId], cause: UpdateCause): Unit = {
+  def hook(updatedNodeIds: Set[NodeId], cause: UpdateCause): IOResult[Unit] = {
     // we don't trigger a new update if the update cause was during a generation
-    if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
+    IOResult.effect(if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
       regenerate ! AutomaticStartDeployment(cause.modId, RudderEventActor)
-    }
+    })
   }
 }
 
@@ -80,13 +81,15 @@ object DatasourcesConf extends RudderPluginModule {
 
   lazy val dataSourceRepository = new DataSourceRepoImpl(
       new DataSourceJdbcRepository(Cfg.doobie)
+    , ZioRuntime.environment
     , new HttpQueryDataSourceService(
           Cfg.nodeInfoService
         , Cfg.roLDAPParameterRepository
         , Cfg.woNodeRepository
         , Cfg.interpolationCompiler
         , regenerationHook.hook _
-        , () => Cfg.configService.rudder_global_policy_mode.toBox
+        , () => Cfg.configService.rudder_global_policy_mode
+        , ZioRuntime.environment
       )
     , Cfg.stringUuidGenerator
     , pluginStatusService
@@ -96,18 +99,15 @@ object DatasourcesConf extends RudderPluginModule {
   Cfg.deploymentService.appendPreGenCodeHook(new PromiseGenerationHooks() {
     def beforeDeploymentSync(generationTime: DateTime): Box[Unit] = {
       //that doesn't actually wait for the return. Not sure how to do it.
-      Full(dataSourceRepository.onGenerationStarted(generationTime))
+      dataSourceRepository.onGenerationStarted(generationTime).toBox
     }
   })
 
   Cfg.newNodeManager.appendPostAcceptCodeHook(new NewNodeManagerHooks() {
     def afterNodeAcceptedAsync(nodeId: NodeId): Unit = {
-      dataSourceRepository.onNewNode(nodeId)
+      dataSourceRepository.onNewNode(nodeId).runNow
     }
   })
-
-  // initialize datasources to start schedule
-  dataSourceRepository.initialize()
 
   val dataSourceApi9 = new DataSourceApiImpl(
       Cfg.restExtractorService

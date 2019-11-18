@@ -37,6 +37,7 @@
 
 package com.normation.plugins.datasources
 
+import com.normation.NamedZioLogger
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.NodePropertyProvider
@@ -44,7 +45,8 @@ import net.liftweb.common.Logger
 import net.liftweb.json.JsonAST.JValue
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import scala.concurrent.duration.FiniteDuration
+
+import zio.duration._
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -53,13 +55,19 @@ object DataSourceLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("datasources")
 }
 
-object DataSourceTimingLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("datasources.timing")
+object DataSourceLoggerPure extends NamedZioLogger {
+  override def loggerName: String = "datasources"
+
+  object Scheduler extends NamedZioLogger {
+    override def loggerName: String = "datasources.scheduler"
+  }
+  object Timing extends NamedZioLogger {
+    override def loggerName: String = "datasources.timing"
+  }
 }
 
-
 final object DataSource {
-  val defaultDuration = FiniteDuration(5,"minutes")
+  val defaultDuration = 5.minutes
 
   val providerName = NodePropertyProvider("datasources")
 
@@ -112,7 +120,7 @@ final object DataSourceType {
     , path               : String
     , maxParallelRequest : Int                 // maximum number of output parallel requests
     , requestMode        : HttpRequestMode
-    , requestTimeOut     : FiniteDuration
+    , requestTimeOut     : Duration
     , missingNodeBehavior: MissingNodeBehavior
   ) extends DataSourceType {
     val name = HTTP.name
@@ -163,18 +171,18 @@ final case class DataSourceName(value : String)
 final case class DataSourceId  (value : String)
 
 sealed trait DataSourceSchedule {
-  def duration : FiniteDuration
+  def duration : Duration
 }
 
 final object DataSourceSchedule {
   final case class NoSchedule(
-    savedDuration : FiniteDuration
+    savedDuration : Duration
   ) extends DataSourceSchedule {
     val duration = savedDuration
   }
 
   final case class Scheduled(
-    duration : FiniteDuration
+    duration : Duration
   ) extends DataSourceSchedule
 }
 
@@ -218,7 +226,7 @@ final case class DataSource (
   , runParam      : DataSourceRunParameters
   , description   : String
   , enabled       : Boolean
-  , updateTimeOut : FiniteDuration
+  , updateTimeOut : Duration
 ) {
   val scope = "all"
 }

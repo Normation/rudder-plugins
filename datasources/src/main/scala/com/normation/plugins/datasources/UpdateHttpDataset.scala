@@ -49,22 +49,20 @@ import com.normation.rudder.domain.parameters.ParameterName
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.services.policies.InterpolationContext
-import com.normation.utils.Control._
-import net.liftweb.common.Box
-import net.liftweb.common.Empty
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
 import net.liftweb.json.JsonAST
-import net.liftweb.util.Helpers.tryo
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
 import net.minidev.json.JSONValue
 
 import scala.collection.immutable.TreeMap
-import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
+
+import zio._
+import zio.syntax._
+import com.normation.errors._
+import zio.duration._
 
 /*
  * This file contain the logic to update dataset from an
@@ -103,10 +101,10 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     , parameters       : Set[Parameter]
     , connectionTimeout: Duration
     , readTimeOut      : Duration
-  ) : Box[Option[NodeProperty]] = {
+  ) : IOResult[Option[NodeProperty]] = {
     //utility to expand both key and values of a map
-    def expandMap(expand: String => Box[String], map: Map[String, String]): Box[Map[String, String]] = {
-      (sequence(map.toList) { case (key, value) =>
+    def expandMap(expand: String => IOResult[String], map: Map[String, String]): IOResult[Map[String, String]] = {
+      (ZIO.traverse(map.toList) { case (key, value) =>
           for {
             newKey   <- expand(key)
             newValue <- expand(value)
@@ -119,22 +117,22 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     //actual logic
 
     for {
-      parameters <- sequence(parameters.toSeq)(compiler.compileParameters) ?~! "Error when transforming Rudder Parameter for variable interpolation"
+      parameters <- ZIO.traverse(parameters)(compiler.compileParameters).chainError("Error when transforming Rudder Parameter for variable interpolation")
       expand     =  compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap) _
-      url        <- expand(datasource.url) ?~! s"Error when trying to parse URL ${datasource.url}"
-      path       <- expand(datasource.path) ?~! s"Error when trying to compile JSON path ${datasource.path}"
+      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
+      path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
-      time_0     =  System.currentTimeMillis
-      body       <- QueryHttp.QUERY(datasource.httpMethod, url, headers, httpParams, datasource.sslCheck, connectionTimeout, readTimeOut) ?~! s"Error when fetching data from ${url}"
-      _          =  DataSourceTimingLogger.trace(s"[${System.currentTimeMillis - time_0} ms] node '${node.id.value}': GET ${headers.map{case(k,v) => s"$k=$v"}.mkString("[","|","]")} ${url} // ${path}")
+      time_0     <- UIO.effectTotal(System.currentTimeMillis)
+      body       <- QueryHttp.QUERY(datasource.httpMethod, url, headers, httpParams, datasource.sslCheck, connectionTimeout, readTimeOut).chainError(s"Error when fetching data from ${url}")
+      _          <- DataSourceLoggerPure.Timing.trace(s"[${System.currentTimeMillis - time_0} ms] node '${node.id.value}': GET ${headers.map{case(k,v) => s"$k=$v"}.mkString("[","|","]")} ${url} // ${path}")
       optJson    <- body match {
-                      case Some(body) => JsonSelect.fromPath(path, body).map(x => Some(x)) ?~! s"Error when extracting sub-json at path ${path} from ${body}"
+                      case Some(body) => JsonSelect.fromPath(path, body).map(x => Some(x)).chainError(s"Error when extracting sub-json at path ${path} from ${body}")
                       // this mean we got a 404 => choose behavior based on onMissing value
                       case None => datasource.missingNodeBehavior match {
-                        case MissingNodeBehavior.Delete              => Full(Some(Nil))
-                        case MissingNodeBehavior.DefaultValue(value) => Full(Some(JsonAST.compactRender(value) :: Nil))
-                        case MissingNodeBehavior.NoChange            => Full(None)
+                        case MissingNodeBehavior.Delete              => Some(Nil).succeed
+                        case MissingNodeBehavior.DefaultValue(value) => Some(JsonAST.compactRender(value) :: Nil).succeed
+                        case MissingNodeBehavior.NoChange            => None.succeed
                       }
                     }
     } yield {
@@ -152,7 +150,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
    * Get information for many nodes.
    * Policy servers for each node must be in the map.
    */
-  def getMany(datasource: DataSource, nodes: Seq[NodeId], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Seq[Box[NodeProperty]] = {
+  def getMany(datasource: DataSource, nodes: Seq[NodeId], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Seq[IOResult[NodeProperty]] = {
     ???
   }
 
@@ -167,7 +165,7 @@ object QueryHttp {
    * Simple synchronous http get/post, return the response
    * body as a string.
    */
-  def QUERY(method: HttpMethod, url: String, headers: Map[String, String], params: Map[String, String], checkSsl: Boolean, connectionTimeout: Duration, readTimeOut: Duration): Box[Option[String]] = {
+  def QUERY(method: HttpMethod, url: String, headers: Map[String, String], params: Map[String, String], checkSsl: Boolean, connectionTimeout: Duration, readTimeOut: Duration): IOResult[Option[String]] = {
     val options = (
         HttpOptions.connTimeout(connectionTimeout.toMillis.toInt)
      :: HttpOptions.readTimeout(readTimeOut.toMillis.toInt)
@@ -187,15 +185,15 @@ object QueryHttp {
     }
 
     for {
-      response <- tryo { client.asString }
+      response <- IOResult.effect(client.asString)
       result   <- if(response.isSuccess) {
-                    Full(Some(response.body))
+                    Some(response.body).succeed
                   } else {
                     // If we have a 404 response, we need to remove the property from datasource by setting an empty string here
                     if (response.code == 404) {
-                      Full(None)
+                      None.succeed
                     } else {
-                      Failure(s"Failure updating datasource with URL '${url}': code ${response.code}: ${response.body}")
+                      Unexpected(s"Failure updating datasource with URL '${url}': code ${response.code}: ${response.body}").fail
                     }
                   }
     } yield {
@@ -212,11 +210,11 @@ object QueryHttp {
  */
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
-  def compileParameters(parameter: Parameter): Box[(ParameterName, InterpolationContext => Box[String])] = {
+  def compileParameters(parameter: Parameter): IOResult[(ParameterName, InterpolationContext => IOResult[String])] = {
     compiler.compile(parameter.value).map(v => (parameter.name, v))
   }
 
-  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[ParameterName, InterpolationContext => Box[String]])(input: String): Box[String] = {
+  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[ParameterName, InterpolationContext => IOResult[String]])(input: String): IOResult[String] = {
 
     //build interpolation context from node:
     val context = InterpolationContext(node, policyServer, globalPolicyMode, TreeMap[String, Variable](), parameters, 5)
@@ -240,7 +238,7 @@ object JsonSelect {
    * Configuration for json path:
    * - always return list,
    * - We don't want "SUPPRESS_EXCEPTIONS" because null are returned
-   *   in place => better to Box it.
+   *   in place => better to IOResult it.
    * - We don't want ALWAYS_RETURN_LIST, because it blindly add an array
    *   around the value, even if the value is already an array.
    */
@@ -255,7 +253,7 @@ object JsonSelect {
    *
    * The list may be empty if 0 node matches the results.
    */
-  def fromPath(path: String, json: String): Box[List[String]] = {
+  def fromPath(path: String, json: String): IOResult[List[String]] = {
     for {
       p <- compilePath(path)
       j <- parse(json)
@@ -269,8 +267,8 @@ object JsonSelect {
   /// implementation logic - protected visibility for tests ///
   ///                                                       ///
 
-  protected[datasources] def parse(json: String): Box[DocumentContext] = {
-    tryo(JsonPath.using(config).parse(json))
+  protected[datasources] def parse(json: String): IOResult[DocumentContext] = {
+    IOResult.effect(JsonPath.using(config).parse(json))
   }
 
   /*
@@ -279,15 +277,15 @@ object JsonSelect {
    * - If path is empty, replace it by "$" or the path compilation fails,
    *   an empty path means accepting the whole json
    */
-  protected[datasources] def compilePath(path: String): Box[JsonPath] = {
+  protected[datasources] def compilePath(path: String): IOResult[JsonPath] = {
     val effectivePath = if (path.isEmpty()) "$" else path
-    tryo(JsonPath.compile(effectivePath))
+    IOResult.effect(JsonPath.compile(effectivePath))
   }
 
   /*
    * not exposed to user due to risk to not use the correct config
    */
-  protected[datasources] def select(path: JsonPath, json: DocumentContext): Box[List[String]] = {
+  protected[datasources] def select(path: JsonPath, json: DocumentContext): IOResult[List[String]] = {
 
     // so, this lib seems to be a whole can of unconsistancies on String quoting.
     // we would like to NEVER have quoted string if they are not in a JSON object
@@ -307,17 +305,17 @@ object JsonSelect {
     import scala.collection.JavaConverters.asScalaBufferConverter
 
     for {
-      jsonValue <- try {
-                     Full(json.read[JSONAware](path))
+      jsonValue <- IOResult.effectM(try {
+                     json.read[JSONAware](path).succeed
                    } catch {
                      case _: ClassCastException =>
                        try {
-                         Full(json.read[Any](path).toString)
+                         json.read[Any](path).toString.succeed
                        } catch {
-                         case NonFatal(ex) => Failure(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", Full(ex), Empty)
+                         case NonFatal(ex) => SystemError(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", ex).fail
                        }
-                     case NonFatal(ex) => Failure(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", Full(ex), Empty)
-                   }
+                     case NonFatal(ex) => SystemError(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", ex).fail
+                   })
     } yield {
       jsonValue match {
         case x:JSONArray  => x.asScala.toList.map(toJsonString)

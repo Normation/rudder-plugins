@@ -43,11 +43,9 @@ import com.normation.plugins.datasources.DataSource
 import com.normation.plugins.datasources.DataSourceId
 import com.normation.plugins.datasources.DataSourceJsonSerializer
 import com.normation.plugins.datasources.DataSourceName
-import com.normation.plugins.datasources.DataSourceRepository
 import com.normation.plugins.datasources.DataSourceRunParameters
 import com.normation.plugins.datasources.DataSourceSchedule
 import com.normation.plugins.datasources.DataSourceType
-import com.normation.plugins.datasources.DataSourceUpdateCallbacks
 import com.normation.plugins.datasources.HttpMethod
 import com.normation.plugins.datasources.HttpRequestMode
 import com.normation.plugins.datasources.MissingNodeBehavior
@@ -76,8 +74,10 @@ import com.normation.utils.Control
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.CompareProperties
 import net.liftweb.common.Failure
-import com.normation.plugins.datasources.api.{ DataSourceApi => API }
+import com.normation.plugins.datasources.api.{DataSourceApi => API}
 import com.normation.box._
+import net.liftweb.json.JsonAST.JArray
+import zio.duration.Duration
 
 class DataSourceApiImpl (
     extractor         : RestExtractorService
@@ -215,12 +215,12 @@ class DataSourceApiImpl (
     val schema = API.GetAllDataSources
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val res: Box[JValue] = for {
+      val res = for {
         sources <- dataSourceRepo.getAll
       } yield {
-        sources.values.map(DataSourceJsonSerializer.serialize(_))
+        JArray(sources.values.map(DataSourceJsonSerializer.serialize(_)).toList)
       }
-      response(res, req, "Could not get data sources", None)(schema.name)
+      response(res.toBox, req, "Could not get data sources", None)(schema.name)
     }
   }
 
@@ -228,13 +228,12 @@ class DataSourceApiImpl (
     val schema = API.GetDataSource
     val restExtractor = extractor
     def process(version: ApiVersion, path: ApiPath, sourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val res: Box[JValue] = for {
-        optSource <- dataSourceRepo.get(DataSourceId(sourceId))
-        source    <- Box(optSource) ?~! s"Data source ${sourceId} does not exist."
+      val res = for {
+        source <- dataSourceRepo.get(DataSourceId(sourceId)).notOptional(s"Data source ${sourceId} does not exist.")
       } yield {
-        DataSourceJsonSerializer.serialize(source) :: Nil
+        JArray(DataSourceJsonSerializer.serialize(source) :: Nil)
       }
-      response(res, req, s"Could not get data sources from '${sourceId}'", None)(schema.name)
+      response(res.toBox, req, s"Could not get data sources from '${sourceId}'", None)(schema.name)
     }
   }
 
@@ -243,13 +242,13 @@ class DataSourceApiImpl (
     val restExtractor = extractor
     def process(version: ApiVersion, path: ApiPath, sourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
-      val res: Box[JValue] = for {
+      val res = for {
         source <- dataSourceRepo.delete(DataSourceId(sourceId))
       } yield {
-        (( "id" -> sourceId) ~ ("message" -> s"Data source ${sourceId} deleted")) :: Nil
+        JArray((( "id" -> sourceId) ~ ("message" -> s"Data source ${sourceId} deleted")) :: Nil)
       }
 
-      response(res, req, s"Could not delete data sources '${sourceId}'", None)(schema.name)
+      response(res.toBox, req, s"Could not delete data sources '${sourceId}'", None)(schema.name)
     }
   }
 
@@ -264,7 +263,7 @@ class DataSourceApiImpl (
         sourceId <- extractId(req){ a => val id = DataSourceId(a); Full(id)}.flatMap( Box(_) ?~! "You need to define datasource id to create it via api")
         base     =  DataSource.apply(sourceId, DataSourceName(""), baseSourceType, baseRunParam, "", false, defaultDuration)
         source   <- extractReqDataSource(req, base)
-        _        <- dataSourceRepo.save(source)
+        _        <- dataSourceRepo.save(source).toBox
       } yield {
         DataSourceJsonSerializer.serialize(source) :: Nil
       }
@@ -277,9 +276,9 @@ class DataSourceApiImpl (
     val restExtractor = extractor
     def process(version: ApiVersion, path: ApiPath, sourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       val res: Box[JValue] = for {
-        base    <- dataSourceRepo.get(DataSourceId(sourceId)).flatMap { Box(_) ?~! s"Cannot update data source '${sourceId}', because it does not exist" }
+        base    <- dataSourceRepo.get(DataSourceId(sourceId)).toBox.flatMap { Box(_) ?~! s"Cannot update data source '${sourceId}', because it does not exist" }
         updated <- extractReqDataSource(req, base)
-        _       <- dataSourceRepo.save(updated)
+        _       <- dataSourceRepo.save(updated).toBox
       } yield {
        DataSourceJsonSerializer.serialize(updated) :: Nil
       }
@@ -307,7 +306,7 @@ class DataSourceApiImpl (
             , sourceType    = getOrElse(sourceType.map(_.withBase(base.sourceType)),base.sourceType)
             , description   = description.getOrElse(base.description)
             , enabled       = enabled.getOrElse(base.enabled)
-            , updateTimeOut = timeOut.getOrElse(base.updateTimeOut)
+            , updateTimeOut = timeOut.map(Duration.fromScala).getOrElse(base.updateTimeOut)
             , runParam      = getOrElse(runParam.map(_.withBase(base.runParam)),base.runParam)
           )
         }

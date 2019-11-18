@@ -37,6 +37,7 @@
 
 package com.normation.plugins.datasources
 
+import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
@@ -49,16 +50,17 @@ import com.normation.rudder.domain.parameters.Parameter
 import com.normation.utils.StringUuidGenerator
 import doobie._
 import doobie.implicits._
-import net.liftweb.common.Box
-import net.liftweb.common.EmptyBox
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
-import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 
-import scala.concurrent.duration._
+import zio.duration._
 import com.normation.plugins.PluginStatus
-import cats.implicits._
+import com.normation.errors._
+import com.normation.zio._
+import zio._
+import zio.clock.Clock
+import zio.syntax._
+import com.github.ghik.silencer.silent
+
 
 final case class PartialNodeUpdate(
     nodes        : Map[NodeId, NodeInfo] //the node to update
@@ -75,15 +77,15 @@ trait DataSourceRepository {
    * as soon as the datasource is defined, even if disabled,
    * the property can not be interactively managed.
    */
-  def getAllIds: Box[Set[DataSourceId]]
+  def getAllIds: IOResult[Set[DataSourceId]]
 
-  def getAll : Box[Map[DataSourceId,DataSource]]
+  def getAll : IOResult[Map[DataSourceId,DataSource]]
 
-  def get(id : DataSourceId) : Box[Option[DataSource]]
+  def get(id : DataSourceId) : IOResult[Option[DataSource]]
 
-  def save(source : DataSource) : Box[DataSource]
+  def save(source : DataSource) : IOResult[DataSource]
 
-  def delete(id : DataSourceId) : Box[DataSourceId]
+  def delete(id : DataSourceId) : IOResult[DataSourceId]
 }
 
 /*
@@ -93,12 +95,12 @@ trait DataSourceRepository {
  */
 trait DataSourceUpdateCallbacks {
 
-  def onNewNode(node: NodeId): Unit
-  def onGenerationStarted(generationTimeStamp: DateTime): Unit
-  def onUserAskUpdateAllNodes(actor: EventActor): Unit
-  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): Unit
-  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): Unit
-  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): Unit
+  def onNewNode(node: NodeId): IOResult[Unit]
+  def onGenerationStarted(generationTimeStamp: DateTime): IOResult[Unit]
+  def onUserAskUpdateAllNodes(actor: EventActor): IOResult[Unit]
+  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): IOResult[Unit]
+  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): IOResult[Unit]
+  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): IOResult[Unit]
 
   /*
    * Initialise all datasource so that they are ready to schedule their
@@ -109,44 +111,43 @@ trait DataSourceUpdateCallbacks {
    * 1 minute and min(period / 2, 30 minute) to avoid to extenghish
    * all resources on them.
    */
-  def startAll(): Unit
+  def startAll(): IOResult[Unit]
 
   /*
    * Define all datasource scheduler from data sources in backend
    */
-  def initialize(): Unit
+  def initialize(): IOResult[Unit]
 }
 
 trait NoopDataSourceCallbacks extends DataSourceUpdateCallbacks {
-  def onNewNode(node: NodeId): Unit = ()
-  def onGenerationStarted(generationTimeStamp: DateTime): Unit = ()
-  def onUserAskUpdateAllNodes(actor: EventActor): Unit = ()
-  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): Unit = ()
-  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): Unit = ()
-  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): Unit = ()
-  def startAll(): Unit = ()
-  def initialize(): Unit = ()
+  def onNewNode(node: NodeId): IOResult[Unit] = UIO.unit
+  def onGenerationStarted(generationTimeStamp: DateTime): IOResult[Unit] = UIO.unit
+  def onUserAskUpdateAllNodes(actor: EventActor): IOResult[Unit] = UIO.unit
+  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): IOResult[Unit] = UIO.unit
+  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): IOResult[Unit] = UIO.unit
+  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): IOResult[Unit] = UIO.unit
+  def startAll(): IOResult[Unit] = UIO.unit
+  def initialize(): IOResult[Unit] = UIO.unit
 }
 
 class MemoryDataSourceRepository extends DataSourceRepository {
+  val print = ZioRuntime.environment.console.putStrLn _
 
-  private[this] var sources : Map[DataSourceId,DataSource] = Map()
+  private[this] val sourcesRef = zio.Ref.make(Map[DataSourceId, DataSource]()).runNow
 
-  def getAllIds = synchronized(Full(sources.keySet))
+  def getAllIds = sourcesRef.get.map(_.keySet)
 
-  def getAll = synchronized(Full(sources))
+  def getAll = sourcesRef.get
 
-  def get(id : DataSourceId) : Box[Option[DataSource]]= synchronized(Full(sources.get(id)))
+  def get(id : DataSourceId) : IOResult[Option[DataSource]]= sourcesRef.get.map(_.get(id))
 
-  def save(source : DataSource) = synchronized {
-    sources = sources +  ((source.id,source))
-    Full(source)
-  }
+  def save(source : DataSource) = sourcesRef.update { sources =>
+    sources +  ((source.id,source))
+  }*> source.succeed
 
-  def delete(id : DataSourceId) : Box[DataSourceId] = synchronized {
-     sources = sources - (id)
-     Full(id)
-  }
+  def delete(id : DataSourceId) : IOResult[DataSourceId] = sourcesRef.update { sources =>
+     sources - (id)
+  } *> id.succeed
 }
 
 /**
@@ -159,95 +160,100 @@ class MemoryDataSourceRepository extends DataSourceRepository {
  */
 class DataSourceRepoImpl(
     backend     : DataSourceRepository
+  , clock       : Clock
   , fetch       : QueryDataSourceService
   , uuidGen     : StringUuidGenerator
   , pluginStatus: PluginStatus
 ) extends DataSourceRepository with DataSourceUpdateCallbacks {
 
+  val dataSourcesLock = Semaphore.make(1).runNow
+
   /*
    * Be careful, ALL modification to datasource must be synchronized
    */
   private[this] object datasources extends AnyRef {
-    private[this] var internal = Map[DataSourceId, DataSourceScheduler]()
+    private[this] val semaphore = Semaphore.make(1).runNow
+    private[this] var internalRef = Ref.make(Map[DataSourceId, DataSourceScheduler]()).runNow
+
     // utility methods on datasources
     // stop a datasource - must be called when the datasource still in "datasources"
     private[this] def stop(id: DataSourceId) = {
-      DataSourceLogger.debug(s"Stopping data source with id '${id.value}'")
-      internal.get(id) match {
+      DataSourceLoggerPure.debug(s"Stopping data source with id '${id.value}'") *>
+      internalRef.get.map(_.get(id) match {
         case None      => DataSourceLogger.trace(s"Data source with id ${id.value} was not found running")
         case Some(dss) => dss.cancel()
-      }
+      })
     }
-    def save(dss: DataSourceScheduler): Unit = synchronized {
-      stop(dss.datasource.id)
-      internal = internal + (dss.datasource.id -> dss)
+
+    def save(dss: DataSourceScheduler) = semaphore.withPermit {
+      stop(dss.datasource.id) *>
+      internalRef.update(_ + (dss.datasource.id -> dss))
     }
-    def delete(id : DataSourceId): Unit = synchronized {
-      stop(id)
-      internal = internal - id
+    def delete(id : DataSourceId) = semaphore.withPermit {
+      stop(id) *>
+      internalRef.update(_ - id)
     }
     //get alls - return an immutable map
-    def all() = synchronized { internal.toMap }
+    def all(): IOResult[Map[DataSourceId, DataSourceScheduler]] = semaphore.withPermit { internalRef.get }
   }
 
   // Initialize data sources scheduler, with all sources present in backend
-  def initialize() = {
-    getAll match {
-      case Full(sources) =>
-        for {
-          (_,source) <- sources
-        } yield {
-          updateDataSourceScheduler(source, Some(source.runParam.schedule.duration))
-        }
-      case eb: EmptyBox  =>
-        val e = eb ?~! "Error when initializing datasources"
-        throw new RuntimeException(e.messageChain)
-    }
+  def initialize(): IOResult[Unit] = {
+    getAll.flatMap(sources =>
+        ZIO.traverse(sources) { case (_, source) =>
+          updateDataSourceScheduler(clock, source, Some(source.runParam.schedule.duration))
+        }.unit
+    ).chainError("Error when initializing datasources")
   }
 
   // get datasource scheduler which match the condition
-  private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => Unit): Unit = {
-    datasources.all.filter { case(_, dss) => condition(dss.datasource) }.foreach { case (_, dss) => action(dss) }
-    datasources.all.foreach { case (_, dss) =>
+  private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
+    datasources.all.flatMap(m => ZIO.traverse(m.toIterable) { case (_, dss) =>
       if(condition(dss.datasource)) {
         action(dss)
       } else {
-        DataSourceLogger.debug(s"Skipping data source '${dss.datasource.name}' (${dss.datasource.id.value}): disabled or trigger not configured")
+        DataSourceLoggerPure.debug(s"Skipping data source '${dss.datasource.name}' (${dss.datasource.id.value}): disabled or trigger not configured")
       }
-    }
-
+    }).unit : @silent //suppress "a type was inferred to be `Any`"
   }
-  private[this] def updateDataSourceScheduler(source: DataSource, delay: Option[FiniteDuration]): Unit = {
+  private[this] def updateDataSourceScheduler(clock: Clock, source: DataSource, delay: Option[Duration]): IOResult[Unit] = {
     // create live instance
-    import monix.execution.Scheduler.Implicits.global
     val dss = new DataSourceScheduler(
           source
-        , global
+        , clock
         , pluginStatus
         , () => ModificationId(uuidGen.newUuid)
-        , (cause: UpdateCause) => fetch.queryAll(source, cause)
+        , (cause: UpdateCause) => fetch.queryAll(source, cause).unit
     )
-    datasources.save(dss)
-    //start new
-    delay match {
-      case None    => dss.restartScheduleTask()
-      case Some(d) => dss.startWithDelay(d)
-    }
+    datasources.save(dss) *> (
+      //start new
+      delay match {
+        case None    =>
+          dss.restartScheduleTask()
+        case Some(d) =>
+          dss.startWithDelay(d)
+      }
+    )
   }
 
   ///
   ///         DB READ ONLY
   /// read only method are just forwarder to backend
   ///
-  override def getAllIds : Box[Set[DataSourceId]] = backend.getAllIds
-  override def getAll : Box[Map[DataSourceId,DataSource]] = {
-    DataSourceLogger.debug(s"Live data sources: ${datasources.all.map {case(_, dss) =>
-      s"'${dss.datasource.name.value}' (${dss.datasource.id.value}): ${if(dss.datasource.enabled) "enabled" else "disabled"}"
-    }.mkString("; ")}")
+  override def getAllIds : IOResult[Set[DataSourceId]] = backend.getAllIds
 
-    backend.getAll
+  override def getAll : IOResult[Map[DataSourceId,DataSource]] = {
+    ZIO.when(DataSourceLoggerPure.logEffect.isDebugEnabled()) {
+      for {
+        all <- datasources.all()
+        _   <- DataSourceLoggerPure.debug(s"Live data sources: ${all.map {case(_, dss) =>
+                 s"'${dss.datasource.name.value}' (${dss.datasource.id.value}): ${if(dss.datasource.enabled) "enabled" else "disabled"}"
+               }.mkString("; ")}")
+      } yield ()
+    } *> backend.getAll
   }
-  override def get(id : DataSourceId) : Box[Option[DataSource]] = backend.get(id)
+
+  override def get(id : DataSourceId) : IOResult[Option[DataSource]] = backend.get(id)
 
   ///
   ///         DB WRITE ONLY
@@ -261,26 +267,26 @@ class DataSourceRepoImpl(
    * on update, we need to stop the corresponding optionnaly existing
    * scheduler, and update with the new one.
    */
-  override def save(source : DataSource) : Box[DataSource] = datasources.synchronized {
+  override def save(source : DataSource) : IOResult[DataSource] = dataSourcesLock.withPermit {
     //only create/update the "live" instance if the backend succeed
-    backend.save(source) match {
-      case eb: EmptyBox =>
-        val msg = (eb ?~! s"Error when saving data source '${source.name.value}' (${source.id.value})").messageChain
-        DataSourceLogger.error(msg)
-        eb
-      case Full(s)      =>
-        updateDataSourceScheduler(source, delay = None)
-        DataSourceLogger.debug(s"Data source '${source.name.value}' (${source.id.value}) udpated")
-        Full(s)
+    for {
+      _ <- backend.save(source).chainError(s"Error when saving data source '${source.name.value}' (${source.id.value})").foldM(
+               err => DataSourceLoggerPure.error(err.fullMsg)
+             , ok  => ok.succeed
+           )
+      _ <- updateDataSourceScheduler(clock, source, delay = None)
+      _ <- DataSourceLoggerPure.debug(s"Data source '${source.name.value}' (${source.id.value}) udpated")
+    } yield {
+      source
     }
   }
 
   /*
    * delete need to clean existing live resource
    */
-  override def delete(id : DataSourceId) : Box[DataSourceId] = datasources.synchronized {
+  override def delete(id : DataSourceId) : IOResult[DataSourceId] = dataSourcesLock.withPermit {
     //start by cleaning
-    datasources.delete(id)
+    datasources.delete(id) *>
     backend.delete(id)
   }
 
@@ -291,38 +297,37 @@ class DataSourceRepoImpl(
   // no need to synchronize callback, they only
   // need a reference to the immutable datasources map.
 
-  override def onNewNode(nodeId: NodeId): Unit = {
-    DataSourceLogger.info(s"Fetching data from data source for new node '${nodeId}'")
+  override def onNewNode(nodeId: NodeId): IOResult[Unit] = {
+    DataSourceLoggerPure.info(s"Fetching data from data source for new node '${nodeId}'") *>
     foreachDatasourceScheduler(ds => ds.enabled && ds.runParam.onNewNode){ dss =>
       val msg = s"Fetching data for data source ${dss.datasource.name.value} (${dss.datasource.id.value}) for new node '${nodeId.value}'"
-      DataSourceLogger.debug(msg)
+      DataSourceLoggerPure.debug(msg) *>
       //no scheduler reset for new node
       fetch.queryOne(dss.datasource, nodeId, UpdateCause(
           ModificationId(uuidGen.newUuid)
         , RudderEventActor
         , Some(msg)
-      ))
+      )).unit //error is logged in query
     }
   }
 
-  override def onGenerationStarted(generationTimeStamp: DateTime): Unit = {
-    DataSourceLogger.info(s"Fetching data from data source for all node for generation ${generationTimeStamp.toString()}")
+  override def onGenerationStarted(generationTimeStamp: DateTime): IOResult[Unit] = {
+    DataSourceLoggerPure.info(s"Fetching data from data source for all node for generation ${generationTimeStamp.toString()}")
     foreachDatasourceScheduler(ds => ds.enabled && ds.runParam.onGeneration){ dss =>
       //for that one, do a scheduler restart
       val msg = s"Getting data for source ${dss.datasource.name.value} for policy generation started at ${generationTimeStamp.toString()}"
-      DataSourceLogger.debug(msg)
-      dss.doActionAndSchedule(fetch.queryAll(dss.datasource, UpdateCause(ModificationId(uuidGen.newUuid), RudderEventActor, Some(msg), true)
-      ))
+      DataSourceLoggerPure.debug(msg) *>
+      dss.doActionAndSchedule(fetch.queryAll(dss.datasource, UpdateCause(ModificationId(uuidGen.newUuid), RudderEventActor, Some(msg), true)).unit)
     }
   }
 
-  override def onUserAskUpdateAllNodes(actor: EventActor): Unit = {
-    DataSourceLogger.info(s"Fetching data from data sources for all node because ${actor.name} asked for it")
+  override def onUserAskUpdateAllNodes(actor: EventActor): IOResult[Unit] = {
+    DataSourceLoggerPure.info(s"Fetching data from data sources for all node because ${actor.name} asked for it") *>
     fetchAllNode(actor, None)
   }
 
-  override def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): Unit = {
-    DataSourceLogger.info(s"Fetching data from data source '${datasourceId.value}' for all node because ${actor.name} asked for it")
+  override def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): IOResult[Unit] = {
+    DataSourceLoggerPure.info(s"Fetching data from data source '${datasourceId.value}' for all node because ${actor.name} asked for it") *>
     fetchAllNode(actor, Some(datasourceId))
   }
 
@@ -331,19 +336,18 @@ class DataSourceRepoImpl(
     foreachDatasourceScheduler(ds => ds.enabled && datasourceId.fold(true)(id => ds.id == id)){ dss =>
       //for that one, do a scheduler restart
       val msg = s"Refreshing data from data source ${dss.datasource.name.value} on user ${actor.name} request"
-      DataSourceLogger.debug(msg)
-      dss.doActionAndSchedule(fetch.queryAll(dss.datasource, UpdateCause(ModificationId(uuidGen.newUuid), actor, Some(msg))
-      ))
+      DataSourceLoggerPure.debug(msg) *>
+      dss.doActionAndSchedule(fetch.queryAll(dss.datasource, UpdateCause(ModificationId(uuidGen.newUuid), actor, Some(msg))).unit)
     }
   }
 
-  override def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): Unit = {
-    DataSourceLogger.info(s"Fetching data from data source for node '${nodeId.value}' because '${actor.name}' asked for it")
+  override def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): IOResult[Unit] = {
+    DataSourceLoggerPure.info(s"Fetching data from data source for node '${nodeId.value}' because '${actor.name}' asked for it") *>
     fetchOneNode(actor, nodeId, None)
   }
 
-  override def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): Unit = {
-    DataSourceLogger.info(s"Fetching data from data source for node '${nodeId.value}' because '${actor.name}' asked for it")
+  override def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): IOResult[Unit] = {
+    DataSourceLoggerPure.info(s"Fetching data from data source for node '${nodeId.value}' because '${actor.name}' asked for it") *>
     fetchOneNode(actor, nodeId, Some(datasourceId))
   }
 
@@ -351,31 +355,31 @@ class DataSourceRepoImpl(
     foreachDatasourceScheduler(ds => ds.enabled && datasourceId.fold(true)(id => ds.id == id)){ dss =>
       //for that one, no scheduler restart
       val msg = s"Fetching data for data source ${dss.datasource.name.value} (${dss.datasource.id.value}) for node '${nodeId.value}' on user '${actor.name}' request"
-      DataSourceLogger.debug(msg)
-      fetch.queryOne(dss.datasource, nodeId, UpdateCause(ModificationId(uuidGen.newUuid), RudderEventActor, Some(msg)))
+      DataSourceLoggerPure.debug(msg) *>
+      fetch.queryOne(dss.datasource, nodeId, UpdateCause(ModificationId(uuidGen.newUuid), RudderEventActor, Some(msg))).unit
     }
   }
 
-  override def startAll() = {
+  override def startAll(): IOResult[Unit] = {
     //sort by period (the least frequent the last),
     //then start them every minutes
-    val toStart = datasources.all.values.flatMap { dss =>
+    val toStart = datasources.all.map(_.values.flatMap { dss =>
       dss.datasource.runParam.schedule match {
         case Scheduled(d) => Some((d, dss))
         case _            => None
       }
-    }.toList.sortBy( _._1.toMillis ).zipWithIndex
+    }.toList.sortBy( _._1.toMillis ).zipWithIndex)
 
-    toStart.foreach { case ((period, dss), i) =>
+    toStart.map(l => ZIO.traverse(l) { case ((period, dss), i) =>
       dss.startWithDelay((i+1).minutes)
-    }
+    }): @silent //suppress "a type was inferred to be `Any`"
   }
 
 }
 
 class DataSourceJdbcRepository(
     doobie    : Doobie
-) extends DataSourceRepository with Loggable {
+) extends DataSourceRepository {
 
   import doobie._
 
@@ -383,8 +387,8 @@ class DataSourceJdbcRepository(
     import net.liftweb.json.parse
     Read[(DataSourceId,String)].map(
         tuple => DataSourceExtractor.CompleteJson.extractDataSource(tuple._1,parse(tuple._2)) match {
-          case Full(s) => s
-          case eb : EmptyBox  =>
+          case net.liftweb.common.Full(s) => s
+          case eb : net.liftweb.common.EmptyBox  =>
             val fail = eb ?~! s"Error when deserializing data source ${tuple._1} from following data: ${tuple._2}"
             throw new RuntimeException(fail.messageChain)
         }
@@ -396,29 +400,29 @@ class DataSourceJdbcRepository(
     Write[(DataSourceId,String)].contramap(source => (source.id, compactRender(serialize(source))))
   }
 
-  override def getAllIds: Box[Set[DataSourceId]] = {
-    transactRunBox(xa => query[DataSourceId]("""select id from datasources""").to[Set].transact(xa))
+  override def getAllIds: IOResult[Set[DataSourceId]] = {
+    transactIOResult("Error when getting datasource IDs")(xa => query[DataSourceId]("""select id from datasources""").to[Set].transact(xa))
   }
 
-  override def getAll: Box[Map[DataSourceId,DataSource]] = {
-    transactRunBox(xa => query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.transact(xa))
+  override def getAll: IOResult[Map[DataSourceId,DataSource]] = {
+    transactIOResult("Error when getting datasource")(xa => query[DataSource]("""select id, properties from datasources""").to[Vector].map { _.map( ds => (ds.id,ds)).toMap }.transact(xa))
   }
 
-  override def get(sourceId : DataSourceId): Box[Option[DataSource]] = {
-    transactRunBox(xa => sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.transact(xa))
+  override def get(sourceId : DataSourceId): IOResult[Option[DataSource]] = {
+    transactIOResult(s"Error when getting datasource '${sourceId.value}'")(xa => sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.transact(xa))
   }
 
-  override def save(source : DataSource): Box[DataSource] = {
+  override def save(source : DataSource): IOResult[DataSource] = {
     import net.liftweb.json.compactRender
     val json = compactRender(DataSourceJsonSerializer.serialize(source))
     val insert = """insert into datasources (id, properties) values (?, ?)"""
     val update = s"""update datasources set properties = ? where id = ?"""
-
+    import cats.implicits._
     val sql = for {
       rowsAffected <- Update[(String,String)](update).run((json, source.id.value))
       result       <- rowsAffected match {
                         case 0 =>
-                          logger.debug(s"source ${source.id} is not present in database, creating it")
+                          DataSourceLogger.debug(s"source ${source.id} is not present in database, creating it")
                           Update[DataSource](insert).run(source)
                         case 1 => 1.pure[ConnectionIO]
                         case n => throw new RuntimeException(s"Expected 0 or 1 change, not ${n} for ${source.id}")
@@ -430,16 +434,16 @@ class DataSourceJdbcRepository(
 
     DataSource.reservedIds.get(source.id) match {
       case None =>
-        transactRunBox(xa => sql.map(_ => source).transact(xa))
+        transactIOResult(s"Error when saving datasource '${source.id.value}'")(xa => sql.map(_ => source).transact(xa))
 
       case Some(msg) =>
-        Failure(s"You can't use the reserved data sources id '${source.id.value}': ${msg}")
+        Inconsistancy(s"You can't use the reserved data sources id '${source.id.value}': ${msg}").fail
     }
   }
 
-  override def delete(sourceId : DataSourceId): Box[DataSourceId] = {
+  override def delete(sourceId : DataSourceId): IOResult[DataSourceId] = {
     val query = sql"""delete from datasources where id = ${sourceId}"""
-    transactRunBox(xa => query.update.run.map(_ => sourceId).transact(xa))
+    transactIOResult(s"Error when deleting datasource '${sourceId.value}'")(xa => query.update.run.map(_ => sourceId).transact(xa))
   }
 
 }

@@ -8,7 +8,7 @@
       <NAME>technique_any</NAME>
     </BUNDLES>
     <FILES>
-      <FILE name="RUDDER_CONFIGURATION_REPOSITORY/ncf/50_techniques/technique_any/technique_any.cf">
+      <FILE name="RUDDER_CONFIGURATION_REPOSITORY/techniques/ncf_techniques/technique_any/1.0/technique.cf">
         <INCLUDED>true</INCLUDED>
       </FILE>
     </FILES>
@@ -18,13 +18,13 @@
       <NAME>Technique-Any</NAME>
     </BUNDLES>
     <FILES>
-      <FILE name="RUDDER_CONFIGURATION_REPOSITORY/dsc/ncf/50_techniques/technique_any/1.0/technique_any.ps1">
+      <FILE name="RUDDER_CONFIGURATION_REPOSITORY/techniques/ncf_techniques/technique_any/1.0/technique.ps1">
         <INCLUDED>true</INCLUDED>
       </FILE>
     </FILES>
   </AGENT>
   <SECTIONS>
-    <SECTION component="true" multivalued="true" name="Package install version">
+    <SECTION component="true" multivalued="true" name="Test component$&amp;é)à\'&quot;">
       <REPORTKEYS>
         <VALUE>${node.properties[apache_package_name]}</VALUE>
       </REPORTKEYS>

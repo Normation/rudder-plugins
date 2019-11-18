@@ -41,18 +41,29 @@ import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.plugins.datasources.HttpRequestMode._
 import com.normation.rudder.repository.json.JsonExctractorUtils
 import java.util.concurrent.TimeUnit
+
 import net.liftweb.common.Full
 import net.liftweb.common.Failure
 import net.liftweb.common.Box
 import net.liftweb.json._
 import net.liftweb.util.ControlHelpers.tryo
+
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import com.normation.rudder.domain.nodes.NodeProperty
 import cats._
 import cats.implicits._
+import zio.duration.Duration
+
+object Translate {
+  implicit class DurationToScala(d: Duration) {
+    def toScala = FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
+  }
+}
+import Translate._
 
 object DataSourceJsonSerializer{
+
   def serialize(source : DataSource) : JValue = {
     import net.liftweb.json.JsonDSL._
     ( ( "name"        -> source.name.value  )
@@ -73,7 +84,7 @@ object DataSourceJsonSerializer{
                 ~ ( "path"           -> path    )
                 ~ ( "checkSsl"       -> checkSsl)
                 ~ ( "maxParallelReq" -> maxReq )
-                ~ ( "requestTimeout" -> timeOut.toSeconds )
+                ~ ( "requestTimeout" -> timeOut.toScala.toSeconds )
                 ~ ( "requestMethod"  -> method.name )
                 ~ ( "requestMode"    ->
                     ( ( "name" -> mode.name )
@@ -105,10 +116,10 @@ object DataSourceJsonSerializer{
                           case _:Scheduled => "scheduled"
                           case _:NoSchedule => "notscheduled"
                         } ) )
-        ~ ( "duration" -> source.runParam.schedule.duration.toSeconds)
+        ~ ( "duration" -> source.runParam.schedule.duration.toScala.toSeconds)
         ) )
       ) )
-    ~ ( "updateTimeout" -> source.updateTimeOut.toSeconds )
+    ~ ( "updateTimeout" -> source.updateTimeOut.toScala.toSeconds )
     ~ ( "enabled"    -> source.enabled )
     )
   }
@@ -150,7 +161,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   ) {
     def to = {
       monad.map10(url, headers, httpMethod, params, sslCheck, path, maxParallelReq, requestMode, requestTimeout, onMissing){
-        case (a,b,c,d,e,f,g,h,i,j) => DataSourceType.HTTP(a,b,c,d,e,f,g,h,i,j)
+        case (a,b,c,d,e,f,g,h,i,j) => DataSourceType.HTTP(a,b,c,d,e,f,g,h,Duration.fromScala(i),j)
       }
     }
     def withBase (base : DataSourceType) : DataSourceType = {
@@ -165,7 +176,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             , getOrElse(path          , httpBase.path)
             , getOrElse(maxParallelReq, httpBase.maxParallelRequest)
             , getOrElse(requestMode   , httpBase.requestMode)
-            , getOrElse(requestTimeout, httpBase.requestTimeOut)
+            , Duration.fromScala(getOrElse(requestTimeout, httpBase.requestTimeOut.toScala))
             , getOrElse(onMissing     , httpBase.missingNodeBehavior)
           )
       }
@@ -185,7 +196,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
       val unwrapRunParam = monad.flatMap(runParam)(_.to)
       val unwrapType = monad.flatMap(sourceType)(_.to)
         monad.map6(name, unwrapType, unwrapRunParam, description, enabled, updateTimeout){
-          case (a,b,c,d,e,f) => DataSource(id,a,b,c,d,e,f)
+          case (a,b,c,d,e,f) => DataSource(id,a,b,c,d,e,Duration.fromScala(f))
         }
     }
     def withBase (base : DataSource) = {
@@ -198,7 +209,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
         , getOrElse(unwrapRunParam, base.runParam)
         , getOrElse(description   , base.description)
         , getOrElse(enabled       , base.enabled)
-        , getOrElse(updateTimeout , base.updateTimeOut)
+        , Duration.fromScala(getOrElse(updateTimeout , base.updateTimeOut.toScala))
       )
     }
   }
@@ -250,8 +261,8 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             scheduleBase  <- {
 
               val t: Box[M[M[DataSourceSchedule]]] = extractJsonString(obj, "type",  _ match {
-                case "scheduled" => Full(monad.map(duration)(d => Scheduled(d)))
-                case "notscheduled" => Full(monad.map(duration)(d => NoSchedule(d)))
+                case "scheduled" => Full(monad.map(duration)(d => Scheduled(Duration.fromScala(d))))
+                case "notscheduled" => Full(monad.map(duration)(d => NoSchedule(Duration.fromScala(d))))
                 case _ => Failure("not a valid value for datasource schedule")
               })
               t.map( monad.flatten(_))

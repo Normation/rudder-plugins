@@ -58,8 +58,6 @@ import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
-import monix.execution.atomic.AtomicInt
-import monix.execution.schedulers.TestScheduler
 import net.liftweb.common._
 import net.liftweb.json.JsonAST.JString
 import net.liftweb.json.JsonAST.JValue
@@ -72,7 +70,6 @@ import org.specs2.specification.AfterAll
 import org.specs2.runner.JUnitRunner
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 import scala.util.Random
 import com.normation.rudder.domain.queries.CriterionComposition
 import com.normation.rudder.domain.queries.NodeInfoMatcher
@@ -92,6 +89,50 @@ import zio.syntax._
 import zio.{IO => _, _}
 import com.normation.errors._
 import com.normation.zio._
+import org.specs2.matcher.EqualityMatcher
+import zio.test.environment.TestClock
+import zio.duration._
+//import scala.language.postfixOps
+
+object TheSpaced {
+
+
+  val prog = TestClock.make(TestClock.DefaultData).use(testClock => for {
+    queue <- Queue.unbounded[Unit]
+    f <- (UIO(println("Hello!")) *> queue.offer(())).repeat(Schedule.fixed(5.minutes)).provide(testClock).fork
+    _ <- UIO(println("set to 0 min")) *> testClock.clock.adjust(0.nano) *> queue.take
+    _ <- UIO(println("set to 1 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 2 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 3 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 4 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 5 min")) *> testClock.clock.adjust(1.minute) *> queue.take
+    _ <- UIO(println("set to 6 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 7 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 8 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 9 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 10 min")) *> testClock.clock.adjust(1.minute) *> queue.take
+    _ <- UIO(println("set to 11 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 25 min")) *> testClock.clock.adjust(10.minute)
+    _ <- f.join
+  } yield ())
+
+  val prog2 = TestClock.make(TestClock.DefaultData).use(testClock => for {
+    q <- Queue.unbounded[Unit]
+    _ <- (q.offer(()).delay(60.minutes)).forever.provide(testClock).fork
+    a <- q.poll.map(_.isEmpty)
+    _ <- testClock.clock.adjust(60.minutes)
+    x <- q.poll.map(_.nonEmpty)
+    b <- q.take.as(true)
+    c <- q.poll.map(_.isEmpty)
+    _ <- testClock.clock.adjust(60.minutes)
+    d <- q.take.as(true)
+    e <- q.poll.map(_.isEmpty)
+  } yield a && b && c && d && e && x)
+
+  def main(args: Array[String]): Unit = {
+    println(ZioRuntime.unsafeRun(prog2))
+  }
+}
 
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll  {
@@ -99,6 +140,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
   implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
 
+  implicit class DurationToScala(d: Duration) {
+    def toScala = scala.concurrent.duration.FiniteDuration(d.toMillis, "millis")
+  }
 
   //utility to compact render a json string
   //will throws exceptions if errors
@@ -107,28 +151,32 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     compactRender(parse(json))
   }
 
+  implicit class RunNowTimeout[A](effect: IOResult[A]) {
+    def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provide(ZioRuntime.environment).runNow
+  }
+
   //create a rest server for test
   object NodeDataset {
 
     //for debuging - of course works correctly only if sequential
-    val counterError   = AtomicInt(0)
-    val counterSuccess = AtomicInt(0)
-    val maxPar = AtomicInt(0)
+    val counterError   = zio.Ref.make(0).runNow
+    val counterSuccess = zio.Ref.make(0).runNow
+    val maxPar = zio.Ref.make(0).runNow
 
     // a timer
     val timer = cats.effect.IO.timer(blockingExecutionContext)
 
     // a delay methods that use the scheduler
     def delayResponse(resp: IO[Response[IO]]): IO[Response[IO]] = {
-      timer.sleep(Random.nextInt(1000).millis).flatMap(_ =>
+      timer.sleep(Random.nextInt(1000).millis.toScala).flatMap(_ =>
         resp
       )
     }
 
 
     def reset(): Unit = {
-      counterError.set(0)
-      counterSuccess.set(0)
+      counterError.set(0).runNow
+      counterSuccess.set(0).runNow
     }
 
 
@@ -138,13 +186,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       case GET -> Root / "single_node1" =>
         Ok{
-          counterSuccess.add(1)
+          counterSuccess.update(_+1).runNow
           booksJson
         }
 
       case GET -> Root / "single_node2" =>
         Ok{
-          counterSuccess.add(1)
+          counterSuccess.update(_+1).runNow
           """{"foo":"bar"}"""
         }
 
@@ -153,7 +201,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       case GET -> Root / x =>
         Ok {
-          counterSuccess.add(1)
+          counterSuccess.update(_+1).runNow
           nodeJson(x)
         }
 
@@ -161,13 +209,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         r.headers.get(CaseInsensitiveString("nodeId")).map( _.value) match {
           case Some(`x`) =>
             delayResponse(Ok {
-              counterSuccess.add(1)
+              counterSuccess.update(_+1).runNow
               nodeJson(x)
             })
 
           case _ =>
             Forbidden {
-              counterError.add(1)
+              counterError.update(_+1).runNow
               "node id was not found in the 'nodeid' header"
             }
         }
@@ -182,13 +230,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           (headerId, formId) match {
             case (Some(x), Some(y)) if x == y =>
               delayResponse( Ok {
-                  counterSuccess.add(1)
+                  counterSuccess.update(_+1).runNow
                   nodeJson("plop")
               })
 
             case _ =>
               Forbidden {
-                counterError.add(1)
+                counterError.update(_+1).runNow
                 "node id was not found in post form (key=nodeId)"
               }
           }
@@ -198,12 +246,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         // x === "nodeXX" or root
         if(x != "root" && x.replaceAll("node", "").toInt % 2 == 0) {
           Forbidden {
-            counterError.add(1)
+            counterError.update(_+1).runNow
             "Not authorized"
           }
         } else {
           Ok {
-            counterSuccess.add(1)
+            counterSuccess.update(_+1).runNow
             nodeJson(x)
           }
         }
@@ -219,7 +267,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
                                  for {
                                    - <- currentConcurrent.update(_ + 1)
                                    c <- currentConcurrent.get
-                                   _ <- maxConcurrent.update(m => if(c > m) c else { maxPar.set(m) ; m})
+                                   _ <- maxConcurrent.update(m => if(c > m) c else { maxPar.set(m).runNow ; m})
                                    m <- maxConcurrent.get
                                    x <- Ok { nodeJson(x) }
                                    _ <- currentConcurrent.update(_ - 1)
@@ -271,17 +319,15 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
     // WoNodeRepository methods
     override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]) = {
-      for {
-        _        <- semaphore.acquire
+      semaphore.withPermit(for {
         existing <- nodes.get(node.id).notOptional(s"Missing node with key ${node.id.value}")
         _        <- IOResult.effect {
                       this.updates += (node.id -> (1 + updates.getOrElse(node.id, 0) ) )
                       this.nodes = (nodes + (node.id -> existing.copy(node = node) ) )
                     }
-        _        <- semaphore.release
       } yield {
         node
-      }
+      })
     }
 
     // NodeInfoService
@@ -350,9 +396,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   }
 
-  val noPostHook = (nodeIds: Set[NodeId], cause: UpdateCause) => ()
+  val noPostHook = (nodeIds: Set[NodeId], cause: UpdateCause) => UIO.unit
 
   val alwaysEnforce = GlobalPolicyMode(PolicyMode.Enforce, PolicyModeOverrides.Always)
+
+  val realClock = ZioRuntime.environment
 
   object MyDatasource {
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
@@ -362,7 +410,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , infos
       , interpolation
       , noPostHook
-      , () => Full(alwaysEnforce)
+      , () => alwaysEnforce.succeed
+      , realClock // this one need a real clock to be able to do the requests
     )
     val uuidGen = new StringUuidGeneratorImpl()
   }
@@ -389,6 +438,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
 
+  def nodeUpdatedMatcher(nodeIds: Set[NodeId]): EqualityMatcher[Set[NodeUpdateResult]] = {
+    ===(nodeIds.map(n => NodeUpdateResult.Updated(n)))
+  }
+
+  implicit class QueueFailIfNonEmpty[A](queue: Queue[A]) {
+    def failIfNonEmpty = queue.poll.map(_.map(_ => ().fail))
+  }
+
 
   sequential
 
@@ -402,99 +459,153 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val action = (c: UpdateCause) => {
       // here we need to give him the default scheduler, not the test one,
       // to actually have the fetch logic done
-      MyDatasource.http.queryAll(datasource, c) match {
-        case Full(_) => //ok
-        case x       => logger.error(s"oh no! Got a $x")
-      }
+      IOResult.effect(MyDatasource.http.queryAll(datasource, c).either.runNow match {
+        case Right(_)  => //nothing
+        case Left(err) => logger.error(s"oh no! Got a $err")
+      })
     }
 
-    "does nothing if scheduler is disabled" in {
-      val testScheduler = TestScheduler()
-      val dss = new DataSourceScheduler(
-          datasource.copy(enabled = false)
-        , testScheduler
-        , Enabled
-        , () => ModificationId(MyDatasource.uuidGen.newUuid)
-        , action
-     )
+    // test clock needs explicit await to works, so we add them with a queue offer/take
+    val testAction = (q: Queue[Unit]) => (c: UpdateCause) => action(c) *> q.offer(()).unit
 
-      //reset counter
-      NodeDataset.reset()
-      // before start, nothing is done
-      val total_0 = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      dss.restartScheduleTask()
-      //then, event after days, nothing is done
-      testScheduler.tick(1.day)
-      val total_1d = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
+    "does nothing if scheduler is disabled" in {
+      val (total_0, total_1d) = (TestClock.make(TestClock.DefaultData).use { testClock =>
+        val queue = Queue.unbounded[Unit].runNow
+
+        val dss = new DataSourceScheduler(
+            datasource.copy(enabled = false)
+          , testClock
+          , Enabled
+          , () => ModificationId(MyDatasource.uuidGen.newUuid)
+          , testAction(queue)
+       )
+
+        //reset counter
+        NodeDataset.reset()
+        // before start, nothing is done
+        for {
+          ce_0    <- NodeDataset.counterError.get
+          cs_0    <- NodeDataset.counterSuccess.get
+          total_0 =  ce_0 + cs_0
+          _       <- dss.restartScheduleTask()
+                     //then, event after days, nothing is done
+          _       <- testClock.clock.adjust(1 day)
+          ce_1d   <- NodeDataset.counterError.get
+          cs_1d   <- NodeDataset.counterSuccess.get
+        } yield {
+          (total_0, ce_1d + cs_1d)
+        }
+      }).runTimeout(1 minute)
 
       (total_0, total_1d) must beEqualTo(
       (0      , 0       ))
     }
 
     "allows interactive updates with disabled scheduler (but not data source)" in {
-      val testScheduler = TestScheduler()
-      val dss = new DataSourceScheduler(
-          datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
-        , testScheduler
-        , Enabled
-        , () => ModificationId(MyDatasource.uuidGen.newUuid)
-        , action
-     )
+      val (total_0, total_1d, total_postGen) = (TestClock.make(TestClock.DefaultData).use { testClock =>
+        val queue = Queue.unbounded[Unit].runNow
 
-      //reset counter
-      NodeDataset.reset()
-      // before start, nothing is done
-      val total_0 = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      dss.restartScheduleTask()
-      //then, event after days, nothing is done
-      testScheduler.tick(1.day)
-      val total_1d = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      //but asking for a direct update do the queries immediatly - task need at least 1ms to notice it should run
-      dss.doActionAndSchedule(action(UpdateCause(ModificationId("plop"), RudderEventActor, None)))
-      testScheduler.tick(1.millis)
-      val total_postGen = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
+        val dss = new DataSourceScheduler(
+            datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
+          , testClock
+          , Enabled
+          , () => ModificationId(MyDatasource.uuidGen.newUuid)
+          , testAction(queue)
+        )
 
+       val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
+       logger.setLevel(Level.TRACE)
+        //reset counter
+        NodeDataset.reset()
+        // before start, nothing is done
+        for {
+          _       <- queue.failIfNonEmpty
+          ce_0    <- NodeDataset.counterError.get
+          cs_0    <- NodeDataset.counterSuccess.get
+          total_0 =  ce_0 + cs_0
+          _       <- dss.restartScheduleTask()
+                     //then, event after days, nothing is done
+          _       <- testClock.clock.adjust(1 day)
+          _       <- queue.failIfNonEmpty
+          ce_1    <- NodeDataset.counterError.get
+          cs_1    <- NodeDataset.counterSuccess.get
+          total_1 =  ce_1 + cs_1
+          //but asking for a direct update do the queries immediatly - task need at least 1ms to notice it should run
+          _       <- dss.doActionAndSchedule(action(UpdateCause(ModificationId("plop"), RudderEventActor, None)))
+          _       <- testClock.clock.adjust(1 millis)
+          _       <- queue.failIfNonEmpty
+          ce_2    <- NodeDataset.counterError.get
+          cs_2    <- NodeDataset.counterSuccess.get
+          total_2 =  ce_2 + cs_2
+        } yield (total_0, total_1, total_2)
+      }).runTimeout(1 minute)
+
+       val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
+       logger.setLevel(Level.OFF)
       (total_0, total_1d, total_postGen                   ) must beEqualTo(
       (0      , 0       , NodeConfigData.allNodesInfo.size))
 
     }
 
     "create a new schedule from data source information" in {
-      val testScheduler = TestScheduler()
-      val dss = new DataSourceScheduler(
-          datasource
-        , testScheduler
-        , Enabled
-        , () => ModificationId(MyDatasource.uuidGen.newUuid)
-        , action
-     )
+      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = (TestClock.make(TestClock.DefaultData).use { testClock =>
+        // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
+        val queue = Queue.unbounded[Unit].runNow
 
-      //reset counter
-      NodeDataset.reset()
+        val dss = new DataSourceScheduler(
+            datasource.copy(name = DataSourceName("create a new schedule"))
+          , testClock
+          , Enabled
+          , () => ModificationId(MyDatasource.uuidGen.newUuid)
+          , testAction(queue)
+        )
 
-      // before start, nothing is done
-      val total_0 = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      dss.restartScheduleTask()
-      //then just after, we have the first exec - it still need at least a ms to tick
-      //still nothing here
-      val total_0plus = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      testScheduler.tick(1.millis)
-      //here we have results
-      val total_1s = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      //then nothing happens before 5 minutes
-      testScheduler.tick(4.minutes)
-      val total_4min = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-      //then all the nodes gets their info
-      testScheduler.tick(1.minute)
-      val total_5min = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
-
-      //then nothing happen anymore
-      testScheduler.tick(3.minutes)
-      val total_8min = NodeDataset.counterError.get + NodeDataset.counterSuccess.get
+        //reset counter
+        NodeDataset.reset()
+        for {
+          // before start, nothing is done
+          _        <- queue.failIfNonEmpty
+          ce_0     <- NodeDataset.counterError.get
+          cs_0     <- NodeDataset.counterSuccess.get
+          total_0  =  ce_0 + cs_0
+          _        <- dss.restartScheduleTask()
+          //then just after, we have the first exec - it still need at least a ms to tick
+          //still nothing here
+          _        <- testClock.clock.setTime(1 millis)
+          //here we have results
+          _        <- queue.take
+          ce_0s    <- NodeDataset.counterError.get
+          cs_0s    <- NodeDataset.counterSuccess.get
+          total_0s =  ce_0s + cs_0s
+          //then nothing happens before 5 minutes
+          _        <- testClock.clock.setTime(1 second)
+          _        <- queue.failIfNonEmpty
+          ce_1s    <- NodeDataset.counterError.get
+          cs_1s    <- NodeDataset.counterSuccess.get
+          total_1s =  ce_1s + cs_1s
+          _        <- testClock.clock.setTime(4 minutes)
+          _        <- queue.failIfNonEmpty
+          ce_4m    <- NodeDataset.counterError.get
+          cs_4m    <- NodeDataset.counterSuccess.get
+          total_4m =  ce_4m + cs_4m
+          //then all the nodes gets their info
+          _        <- testClock.clock.setTime(5 minutes)
+          _        <- queue.take
+          ce_5m    <- NodeDataset.counterError.get
+          cs_5m    <- NodeDataset.counterSuccess.get
+          total_5m =  ce_5m + cs_5m
+          //then nothing happen anymore
+          _        <- testClock.clock.setTime(8 minutes)
+          _        <- queue.failIfNonEmpty
+          ce_8m    <- NodeDataset.counterError.get
+          cs_8m    <- NodeDataset.counterSuccess.get
+          total_8m =  ce_8m + cs_8m
+        } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m)
+      }).runTimeout(1 minute)
 
       val size = NodeConfigData.allNodesInfo.size
-      (total_0, total_0plus, total_1s, total_4min, total_5min, total_8min) must beEqualTo(
-      (0      , 0          , size    , size      ,  size*2,    size*2    ))
+      (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo(
+      (0      , size    , size    , size    ,  size*2 , size*2  ))
     }
 
   }
@@ -513,16 +624,17 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , infos
       , interpolation
       , noPostHook
-      , () => Full(alwaysEnforce)
+      , () => alwaysEnforce.succeed
+      , realClock
     )
 
     def maxParDataSource(n: Int) = NewDataSource(
-          "test-lot-of-nodes-max-parallel-GET"
-        , url  = s"${REST_SERVER_URL}/parallel/$${rudder.node.id}"
-        , path = "$.hostname"
-        , headers = Map( "nodeId" -> "${rudder.node.id}" )
-        , maxPar = n
-      )
+        "test-lot-of-nodes-max-parallel-GET"
+      , url  = s"${REST_SERVER_URL}/parallel/$${rudder.node.id}"
+      , path = "$.hostname"
+      , headers = Map( "nodeId" -> "${rudder.node.id}" )
+      , maxPar = n
+    )
 
     "comply with the limit of parallel queries" in {
       // Max paraallel is the minimum of 2 and the available thread on the machine
@@ -535,9 +647,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
-        NodeDataset.counterError.get must_===  0
-      ) and (NodeDataset.maxPar.get must_===  MAX_PARALLEL)
+      res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
+        NodeDataset.counterError.get.runNow must_===  0
+      ) and (NodeDataset.maxPar.get.runNow must_===  MAX_PARALLEL)
     }
 
     "work even if nodes don't reply at same speed with GET" in {
@@ -553,9 +665,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
+      res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
-      ) and (NodeDataset.counterError.get must_=== 0) and (NodeDataset.counterSuccess.get must_=== nodeIds.size)
+      ) and (NodeDataset.counterError.get.runNow must_=== 0) and (NodeDataset.counterSuccess.get.runNow must_=== nodeIds.size)
     }
 
     "work even if nodes don't reply at same speed with POST" in {
@@ -573,9 +685,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       NodeDataset.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
+      res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
-      ) and (NodeDataset.counterError.get must_=== 0) and (NodeDataset.counterSuccess.get must_=== nodeIds.size)
+      ) and (NodeDataset.counterError.get.runNow must_=== 0) and (NodeDataset.counterSuccess.get.runNow must_=== nodeIds.size)
     }
 
     "work for odd node even if even nodes fail" in {
@@ -596,12 +708,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       //all node updated one time
       infos.updates.clear()
 
-      val res = http.queryAll(ds, UpdateCause(modId, actor, None))
+      val res = http.queryAll(ds, UpdateCause(modId, actor, None)).either.runNow
 
       //set back level
       logger.setLevel(Level.WARN)
 
-      res mustFails() and (
+      res must beLeft and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       )
 
@@ -617,13 +729,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     "get the node" in  {
       val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
 
-      res mustFullEq(
+      res.either.runNow must beRight(===(
           Some(DataSource.nodeProperty("test-get-one-node", compact("""{
             "category": "reference",
             "author": "Nigel Rees",
             "title": "Sayings of the Century",
             "price": 8.95
-          }"""))))
+          }"""))):Option[NodeProperty]))
     }
   }
 
@@ -635,7 +747,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
 
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => Full(alwaysEnforce))
+    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
 
 
     "correctly update all nodes" in {
@@ -644,7 +756,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       infos.updates.clear()
       val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
-      res mustFullEq(nodeIds.map(n => NodeUpdateResult.Updated(n))) and (
+      res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
       )
     }
@@ -659,7 +771,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       infos.updates.clear()
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
-      res mustFullEq(NodeUpdateResult.Updated(root.id)) and (
+      res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
         infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
             NodeProperty("test-http-service", JString("bar"), Some(DataSource.providerName))
         )
@@ -681,7 +793,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     type PROPS = Map[NodeId, Option[JValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
       val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => Full(alwaysEnforce))
+      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
       val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
       val nodes = infos.getAll().openOrThrowException("test shall not throw")
@@ -698,7 +810,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
       val nodeIds = nodes.keySet
-      (res mustFullEq(nodeIds.map(n =>  if(expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n)))) and (
+      val matcher = ===(nodeIds.map(n => if(expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n)):Set[NodeUpdateResult])
+
+      res.either.runNow must beRight(matcher) and (
         if(expectMod) {
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         } else {

@@ -51,13 +51,18 @@ import com.normation.plugins.PluginStatus
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 
+import com.normation.zio._
+
 class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.datasources"
 
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
 
-  def init = {}
+  def init = {
+    // initialize datasources to start schedule
+    ZioRuntime.unsafeRun(DatasourcesConf.dataSourceRepository.initialize().fork)
+  }
 
   def oneTimeInit : Unit = {}
 

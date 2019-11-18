@@ -53,11 +53,9 @@ import net.liftweb.json.JsonParser
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
+import zio.duration._
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
-
-
+import com.normation.zio._
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {
@@ -78,10 +76,7 @@ class RestDataSourceTest extends Specification with Loggable {
   }
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
 
-  // TODO: Test API in Rudder 4.3 & up
-  // this need to be ported to new way of doing API tests
-
-    val dataSourceApi9 = new DataSourceApiImpl(
+  val dataSourceApi9 = new DataSourceApiImpl(
       RestTestSetUp.restExtractorService
     , RestTestSetUp.restDataSerializer
     , datasourceRepo
@@ -98,7 +93,7 @@ class RestDataSourceTest extends Specification with Loggable {
 
   val d1Json = DataSourceJsonSerializer.serialize(datasource1)
 
-  datasourceRepo.save(datasource1)
+  datasourceRepo.save(datasource1).runNow
 
   val datasource2 = datasource1.copy(id = DataSourceId("datasource2"))
   val d2Json = DataSourceJsonSerializer.serialize(datasource2)
@@ -156,7 +151,7 @@ class RestDataSourceTest extends Specification with Loggable {
       , "result.environment"
       , DataSourceType.HTTP.defaultMaxParallelRequest
       , HttpRequestMode.OneRequestByNode
-      , FiniteDuration(194, SECONDS)
+      , Duration(194, SECONDS)
       , MissingNodeBehavior.Delete
     )
     val source =  DataSource(
@@ -164,13 +159,13 @@ class RestDataSourceTest extends Specification with Loggable {
       , DataSourceName("source")
       , sourceType
       , DataSourceRunParameters(
-          DataSourceSchedule.Scheduled(FiniteDuration(4921, SECONDS))
+          DataSourceSchedule.Scheduled(Duration(4921, SECONDS))
         , onGeneration = true
         , onNewNode    = false
       )
       , ""
       , enabled = true
-      , FiniteDuration(165, SECONDS)
+      , Duration(165, SECONDS)
     )
 
 

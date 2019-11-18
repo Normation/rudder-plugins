@@ -37,20 +37,18 @@
 
 package com.normation.plugins.datasources
 
+import com.github.ghik.silencer.silent
+import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
-import monix.eval.Task
-import monix.execution.Cancelable
-import monix.execution.Scheduler
-import monix.reactive.Observable
-import net.liftweb.common.Loggable
-
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 import com.normation.plugins.PluginStatus
-
+import zio._
+import zio.syntax._
+import com.normation.zio._
+import zio.clock.Clock
+import zio.duration._
 
 final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String], triggeredByGeneration: Boolean = false)
 
@@ -63,15 +61,15 @@ final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Opt
  * - the scheduler is initially STOPPED. It can be start with the start() method.
  * - the scheduler can be stopped (when already stopped, it's a noop) with the cancel() method.
  * - there is callback that should be call each time a node is added / a generation is
- *   started - the data source configuration will decide is something is to done or not.
+ *   started - the data source configuration will decide if something has to be done or not.
  */
 class DataSourceScheduler(
-             val datasource  : DataSource
-  , implicit val scheduler   : Scheduler
-  ,              pluginStatus: PluginStatus
-  ,              newUuid     : ()          => ModificationId
-  ,              updateAll   : UpdateCause => Unit
-) extends Loggable {
+    val datasource  : DataSource
+  ,     clock       : Clock
+  ,     pluginStatus: PluginStatus
+  ,     newUuid     : ()          => ModificationId
+  ,     updateAll   : UpdateCause => IOResult[Unit]
+) {
 
   /**
    * So, the idea is to build an observable that tick every period (if period defined)
@@ -80,93 +78,105 @@ class DataSourceScheduler(
    *
    * At each tick, we fetch data.
    */
+  private[this] val semaphore = Semaphore.make(1).runNow
 
   //for that datasource, this is the timer
-  private[this] val source = (datasource.runParam.schedule match {
+  private[this] val source : UIO[Unit] = {
+
+    val schedule = datasource.runParam.schedule match {
       case Scheduled(d)  =>
         if(datasource.enabled) {
-          Observable.interval(d)
+          DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes") *>
+          Schedule.spaced(d).succeed
         } else {
-          Observable.empty[Long]
+          DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
+          Schedule.never.succeed
         }
-      case NoSchedule(_) => //in that case, our source does produce anything
-        Observable.empty[Long]
+      case NoSchedule(_) => //in that case, our source doesn't produce anything
+        DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and but no schedule is configured") *>
+        Schedule.never.succeed
     }
-  //and now, map the actual behavior to produce at each tick
-  ).mapAsync { tick =>
-    Task{
-      val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value})"
-      DataSourceLogger.info(msg)
-      DataSourceLogger.trace(s"details: ${datasource}")
-      updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))
+
+    val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value}): ${schedule}"
+
+    // The full action with loggin. We don't want it to be able to fail, because it would stop
+    // futur update. So we catch all error and log them (in debug because they are (should) already log in error, we
+    // only want to be sure to have them)
+    val prog = (DataSourceLoggerPure.info(msg) *> DataSourceLoggerPure.trace(s"details: ${datasource}") *>
+                 updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))
+               ).catchAll(err => DataSourceLoggerPure.debug(err.fullMsg)) : @silent //suppress "a type was inferred to be `Any`"
+
+    for {
+      s <- schedule
+      p <- prog.repeat(s).provide(clock).unit
+    } yield {
+      p
     }
   }
-  // we add an auto restart in case a getData lead to an error
-  .onErrorRestart(5)
 
   // here is the place where we will store the currently
-  // running time, so that we are able the stop it and restart
+  // running task, so that we are able the stop it and restart
   // it on user action.
-  private[this] var scheduledTask = Option.empty[Cancelable]
+  private[this] val scheduledTask : Ref[Option[Fiber[_,_]]] = Ref.make(Option.empty[Fiber[_, _]]).runNow
 
 
   /*
    * start scheduling after given delay
    * (so that the first action is actually done after that delay)
    */
-  def startWithDelay(delay: FiniteDuration): Unit = {
-    Task(restartScheduleTask()).delayExecution(delay).runAsync
+  def startWithDelay(delay: Duration): IOResult[Unit] = {
+    // don't forget to fork is you don't want to block for "delay"!
+    restartScheduleTask().delay(delay).provide(clock).fork.unit
   }
 
   /*
    * This is the main interesting method, seting
    * things up for schedule
    */
-  def restartScheduleTask(): Unit = {
+  def restartScheduleTask(): IOResult[Unit] = {
     // clean existing
-    cancel()
+    cancel() *> (
     // actually start the scheduler by subscribing to it
     if(datasource.enabled) {
       if(pluginStatus.isEnabled) {
-        DataSourceLogger.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
-        scheduledTask = Some(source.subscribe())
+        for {
+          _     <- DataSourceLoggerPure.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
+          fiber <- source.fork
+          _     <- scheduledTask.set(Some(fiber))
+        } yield ()
       } else {
         // the plugin is disabled, does nothing
-        DataSourceLogger.warn(s"The datasource with id '${datasource.id.value}' is enabled but the plugin is disabled (reason: ${pluginStatus.current}). Not scheduling future runs for it.")
+        DataSourceLoggerPure.warn(s"The datasource with id '${datasource.id.value}' is enabled but the plugin is disabled (reason: ${pluginStatus.current}). Not scheduling future runs for it.")
       }
     } else {
-      DataSourceLogger.trace(s"The datasource with id '${datasource.id.value}' is disabled. Not scheduling future runs for it.")
-    }
+      DataSourceLoggerPure.trace(s"The datasource with id '${datasource.id.value}' is disabled. Not scheduling future runs for it.")
+    })
   }
 
   // the cancel method just stop the current time if
   // exists, and clean things up
-  def cancel() : Unit = {
-    scheduledTask.foreach{ dss =>
-      DataSourceLogger.trace(s"Removing (if needed) any future scheduled tasks for data source '${datasource.name}' (${datasource.id.value})")
-      dss.cancel()
-    }
-    scheduledTask = None
-  }
+  def cancel() : IOResult[Unit] = { semaphore.withPermit {
+    for {
+      _   <- DataSourceLoggerPure.trace(s"Removing (if needed) any future scheduled tasks for data source '${datasource.name.value}' (${datasource.id.value})")
+      opt <- scheduledTask.get
+      _   <- opt match {
+               case None        => None.succeed
+               case Some(fiber) => fiber.interrupt *> None.succeed
+             }
+      _   <- scheduledTask.set(None)
+    } yield ()
+  } }
 
   /**
    * This is the method that actually do a fetch data and manage
    * the scheduler restart.
    * We must avoid exceptions.
    */
-  def doActionAndSchedule(action: => Unit): Unit = {
-    cancel()
-    try {
-      Task(action).runAsync
-    } catch {
-      case NonFatal(ex) => logger.error(s"Error when fetching data", ex)
-    } finally {
-      datasource.runParam.schedule match {
+  def doActionAndSchedule(action: IOResult[Unit]): IOResult[Unit] = {
+    cancel() *> action *> (datasource.runParam.schedule match {
         case Scheduled(p)  => startWithDelay(p)
-        case NoSchedule(_) => //nothing
-      }
-    }
+        case NoSchedule(_) => UIO.unit//nothing
+      })
   }
-
 }
 

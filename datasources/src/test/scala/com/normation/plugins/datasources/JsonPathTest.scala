@@ -43,6 +43,7 @@ import net.liftweb.json._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
+import com.normation.zio._
 
 @RunWith(classOf[JUnitRunner])
 class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
@@ -52,24 +53,24 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
   "These path are valid" should {
 
     "just an identifier" in  {
-      JsonSelect.compilePath("foo").map( _.getPath ) mustFullEq( "$['foo']" )
+      JsonSelect.compilePath("foo").map( _.getPath ).either.runNow must beRight( "$['foo']" )
     }
   }
 
 
   "The selection" should {
     "fail if source is not a json" in {
-      JsonSelect.fromPath("$", """{ not a json!} ,pde at all!""") mustFails
+      JsonSelect.fromPath("$", """{ not a json!} ,pde at all!""").either.runNow must beLeft
     }
 
     "fail if input path is not valid " in {
-      JsonSelect.fromPath("$$$..$", """not a json! missing quotes!""") mustFails
+      JsonSelect.fromPath("$$$..$", """not a json! missing quotes!""").either.runNow must beLeft
     }
 
     "retrieve first" in {
-      val res = JsonSelect.fromPath("$.store.book", json).map( _.head )
+      val res = JsonSelect.fromPath("$.store.book", json).map( _.head ).either.runNow
 
-      res mustFullEq( compactRender(parse("""
+      res must beRight( compactRender(parse("""
             {
                 "category": "reference",
                 "author": "Nigel Rees",
@@ -82,7 +83,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
   "get childrens" should {
     "retrieve JSON childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*]", json) mustFullEq(List(
+      JsonSelect.fromPath("$.store.book[*]", json).either.runNow must beRight(List(
           """{
                 "category": "reference",
                 "author": "Nigel Rees",
@@ -111,25 +112,25 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
             }""").map(s => compactRender(parse(s))))
     }
     "retrieve NUMBER childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].price", json) mustFullEq(List("8.95", "12.99", "8.99", "22.99"))
+      JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight(List("8.95", "12.99", "8.99", "22.99"))
     }
     "retrieve STRING childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].category", json) mustFullEq(List("reference", "fiction", "\"quotehorror\"", "fiction"))
+      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight(List("reference", "fiction", "\"quotehorror\"", "fiction"))
     }
     "retrieve JSON childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle", json) mustFullEq(List("""{"color":"red","price":19.95}"""))
+      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight(List("""{"color":"red","price":19.95}"""))
     }
     "retrieve NUMBER childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle.price", json) mustFullEq(List("19.95"))
+      JsonSelect.fromPath("$.store.bicycle.price", json).either.runNow must beRight(List("19.95"))
     }
     "retrieve STRING childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle.color", json) mustFullEq(List("red"))
+      JsonSelect.fromPath("$.store.bicycle.color", json).either.runNow must beRight(List("red"))
     }
     "retrieve ARRAY INT childrens (one)" in {
-      JsonSelect.fromPath("$.intTable", json) mustFullEq(List("1", "2", "3"))
+      JsonSelect.fromPath("$.intTable", json).either.runNow must beRight(List("1", "2", "3"))
     }
     "retrieve ARRAY STRING childrens (one)" in {
-      JsonSelect.fromPath("$.stringTable", json) mustFullEq(List("one", "two"))
+      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight(List("one", "two"))
     }
   }
 
