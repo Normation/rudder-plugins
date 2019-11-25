@@ -45,10 +45,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/agpl.html>.
       This file allows to configure authentication with Radius.
      -->
 
-    <beans:bean id="radiusAuthenticationProvider" class="bootstrap.liftweb.RadiusAuthenticationProvider">
+    <beans:bean id="radiusAuthenticationProvider" class="com.normation.plugins.authbackends.RadiusAuthenticationProvider">
        <beans:constructor-arg ref="rudderUserDetailsService"/>
        <beans:constructor-arg value="${rudder.auth.radius.host.name}"/>
-       <beans:constructor-arg value="${rudder.auth.radius.host.authPort}"/>
+       <beans:constructor-arg value="${rudder.auth.radius.host.auth.port}"/>
        <beans:constructor-arg value="${rudder.auth.radius.auth.protocol}"/>
        <beans:constructor-arg value="${rudder.auth.radius.host.sharedSecret}"/>
        <beans:constructor-arg value="${rudder.auth.radius.auth.timeout}"/>

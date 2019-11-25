@@ -121,6 +121,7 @@ class RadiusAuthenticationProvider(
   , retries           : Int = 0
 ) extends AbstractUserDetailsAuthenticationProvider {
 
+
   AttributeFactory.loadAttributeDictionary("net.jradius.dictionary.AttributeDictionaryImpl")
 
   private[this] val radiusClient: RadiusClient = {
@@ -143,7 +144,7 @@ class RadiusAuthenticationProvider(
       case null => new PAPAuthenticator()
       case x => x
     }
-    }
+  }
 
   private[this] def buildRequest(username: String, password: String): AccessRequest = {
       val attrs = new AttributeList()
