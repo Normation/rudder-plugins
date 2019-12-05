@@ -56,6 +56,7 @@ import doobie.postgres.implicits._
 import net.liftweb.common.Loggable
 import net.liftweb.common._
 import org.joda.time.DateTime
+import zio.interop.catz._
 
 import scala.xml.Elem
 

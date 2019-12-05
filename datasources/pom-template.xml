@@ -57,11 +57,10 @@
       <version>2.2.0</version>
     </dependency>
 
-    <!-- Task/Observable: monix -->
+    <!-- it seems to not be resolved, don't know why -->
     <dependency>
-      <groupId>io.monix</groupId>
-      <artifactId>monix-reactive_${scala-binary-version}</artifactId>
-      <version>${monix-version}</version>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-parser-combinators_${scala-binary-version}</artifactId>
     </dependency>
 
     <!-- Test: rudder -->

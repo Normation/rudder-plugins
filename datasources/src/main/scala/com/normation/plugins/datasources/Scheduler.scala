@@ -87,7 +87,7 @@ class DataSourceScheduler(
       case Scheduled(d)  =>
         if(datasource.enabled) {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes") *>
-          Schedule.spaced(d).succeed
+          ZSchedule.spaced(d).succeed
         } else {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
           Schedule.never.succeed

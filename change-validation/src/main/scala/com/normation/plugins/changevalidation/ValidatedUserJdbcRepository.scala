@@ -12,6 +12,7 @@ import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import doobie._
 import doobie.implicits._
+import zio.interop.catz._
 
 /**
   * userExists indicates if a Validated User is present in user file description
@@ -87,7 +88,7 @@ class WoValidatedUserJdbcRepository(
           case None =>
             val q = sql"""INSERT INTO change_validation_validated_users (username)
             VALUES (${newVU.name})""".update
-            val linesAffected: Either[Throwable, Int] = transactRun(xa => q.run.transact(xa).attempt)
+            val linesAffected: Either[Throwable, Int] = transactRun(xa => q.run.transact(xa).either)
             linesAffected match {
               case Right(1)          => Full(newVU)
               case Right(0)          =>
@@ -116,7 +117,7 @@ class WoValidatedUserJdbcRepository(
         case Some(_) =>
           val q = sql"""DELETE FROM change_validation_validated_users
               WHERE username = (${actor.name})""".update
-          val linesAffected: Either[Throwable, Int] = transactRun(xa => q.run.transact(xa).attempt)
+          val linesAffected: Either[Throwable, Int] = transactRun(xa => q.run.transact(xa).either)
           linesAffected match {
             case Right(1) => Full(actor)
             case Right(0) =>

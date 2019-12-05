@@ -96,10 +96,11 @@ import zio.duration._
 
 object TheSpaced {
 
+  val makeTestClock = ZManaged.make(TestClock.make(TestClock.DefaultData))(_ => UIO.unit)
 
-  val prog = TestClock.make(TestClock.DefaultData).use(testClock => for {
+  val prog = makeTestClock.use(testClock => for {
     queue <- Queue.unbounded[Unit]
-    f <- (UIO(println("Hello!")) *> queue.offer(())).repeat(Schedule.fixed(5.minutes)).provide(testClock).fork
+    f <- (UIO(println("Hello!")) *> queue.offer(())).repeat(ZSchedule.fixed(5.minutes)).provide(testClock).fork
     _ <- UIO(println("set to 0 min")) *> testClock.clock.adjust(0.nano) *> queue.take
     _ <- UIO(println("set to 1 min")) *> testClock.clock.adjust(1.minute)
     _ <- UIO(println("set to 2 min")) *> testClock.clock.adjust(1.minute)
@@ -116,7 +117,7 @@ object TheSpaced {
     _ <- f.join
   } yield ())
 
-  val prog2 = TestClock.make(TestClock.DefaultData).use(testClock => for {
+  val prog2 = makeTestClock.use(testClock => for {
     q <- Queue.unbounded[Unit]
     _ <- (q.offer(()).delay(60.minutes)).forever.provide(testClock).fork
     a <- q.poll.map(_.isEmpty)
@@ -136,6 +137,7 @@ object TheSpaced {
 
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll  {
+  val makeTestClock = ZManaged.make(TestClock.make(TestClock.DefaultData))(_ => UIO.unit)
 
   implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
   implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
@@ -469,7 +471,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val testAction = (q: Queue[Unit]) => (c: UpdateCause) => action(c) *> q.offer(()).unit
 
     "does nothing if scheduler is disabled" in {
-      val (total_0, total_1d) = (TestClock.make(TestClock.DefaultData).use { testClock =>
+      val (total_0, total_1d) = (makeTestClock.use { testClock =>
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
@@ -502,7 +504,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "allows interactive updates with disabled scheduler (but not data source)" in {
-      val (total_0, total_1d, total_postGen) = (TestClock.make(TestClock.DefaultData).use { testClock =>
+      val (total_0, total_1d, total_postGen) = (makeTestClock.use { testClock =>
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
@@ -548,7 +550,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "create a new schedule from data source information" in {
-      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = (TestClock.make(TestClock.DefaultData).use { testClock =>
+      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = (makeTestClock.use { testClock =>
         // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
         val queue = Queue.unbounded[Unit].runNow
 

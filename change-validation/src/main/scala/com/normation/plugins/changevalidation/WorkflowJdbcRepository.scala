@@ -46,6 +46,7 @@ import net.liftweb.common.Loggable
 import net.liftweb.common.Box
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.domain.workflows.ChangeRequestId
+import zio.interop.catz._
 
 /**
  * Repository to manage the Workflow part

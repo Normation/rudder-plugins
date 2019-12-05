@@ -60,6 +60,7 @@ import zio._
 import zio.clock.Clock
 import zio.syntax._
 import com.github.ghik.silencer.silent
+import zio.interop.catz._
 
 
 final case class PartialNodeUpdate(
