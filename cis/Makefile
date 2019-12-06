@@ -3,15 +3,11 @@
 # make licensed : will build a license limited version of the plugin
 #
 
-FILES = ncf
+FILES = configuration-repository
 SCRIPTS = postinst prerm cis.json rudder-synchronize
 OTHER_ARCHIVES = target/configuration.txz
 
 include ../makefiles/common-plugin.mk
-targets = $(addprefix target/, $(FILES))
-
-$(targets): target/%: % target/configuration.txz
-	cp -ar $< target/
 
 configuration: target/configuration.txz
 
@@ -21,8 +17,9 @@ target/configuration.txz: packaging/cis.json
 	cp -ar configuration/techniques target/
 	tar cJ -C target -f target/configuration.txz rules directives techniques
 
-ncf:
-	cp -ar configuration/ncf .
+target/configuration-repository: configuration
+	mkdir -p target/configuration-repository
+	cp -ar configuration/ncf target/configuration-repository/
 
 packaging/cis.json:
 	tools/cis-tag
