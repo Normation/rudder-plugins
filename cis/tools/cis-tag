@@ -218,10 +218,10 @@ def removeTags(basePath):
                makeJsonFile(os.path.join(root, file), data)
 
 targets = [
-            #  { "basePath": "configuration",
-            #    "pdfPath": "pdfs/cis_debian9.pdf",
-            #    "osName": "debian9"
-            #  },
+              { "basePath": "configuration",
+                "pdfPath": "pdfs/cis_debian9.pdf",
+                "osName": "debian9"
+              },
 
               { "basePath": "configuration",
                 "pdfPath": "pdfs/cis_redhat7.pdf",

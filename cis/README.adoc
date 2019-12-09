@@ -138,6 +138,9 @@ To generate a plugin providing rules for one or more non supported benchmarks, d
 cis_<benchmark_short_name>.pdf
 ....
 
+A modification in the Makefile (to remove the private download of the pdfs, made on our side) and in the "targets" variable defined in the tools/cis-tag will be necessary
+to build it at your convenience.
+
 This will generate rules named: `CIS - <benchmark_short_name> sample rule`.
 Each directives used in the different rules will then be tagged as follow:
 
