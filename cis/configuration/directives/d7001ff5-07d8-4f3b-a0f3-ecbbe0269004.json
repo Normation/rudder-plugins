@@ -13,12 +13,6 @@
             "vars": [
               {
                 "var": {
-                  "name": "2310A2DF-17BB-4C43-BCB0-C4E30911075C",
-                  "value": "/bin/true"
-                }
-              },
-              {
-                "var": {
                   "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
                   "value": "/bin/true"
                 }
