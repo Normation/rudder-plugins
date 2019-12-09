@@ -20,7 +20,7 @@
       {
         "args": [
           "cis",
-          "command_check_${report_data.directive_id}",
+          "command_check_${report_data.canonified_directive_id}",
           "${check_command}"
         ],
         "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
@@ -29,8 +29,8 @@
       },
       {
         "args": [
-          "check_command_${report_data.directive_id}",
-          "cis.command_check_${report_data.directive_id}",
+          "check_command_${report_data.canonified_directive_id}",
+          "cis.command_check_${report_data.canonified_directive_id}",
           "${expected_match}"
         ],
         "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
@@ -41,7 +41,7 @@
         "args": [
           "${remediate}"
         ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.directive_id}_false)",
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
         "component": "command_execution",
         "method_name": "command_execution"
       }
@@ -80,5 +80,5 @@
   },
   "tags": [],
   "type": "ncf_technique",
-  "version": 1
+  "version": "1"
 }

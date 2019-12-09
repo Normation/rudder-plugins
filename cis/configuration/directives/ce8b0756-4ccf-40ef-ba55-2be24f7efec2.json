@@ -1,7 +1,7 @@
 {
   "displayName": "CIS - Ensure SELinux is installed",
   "enabled": true,
-  "id": "df3fc1c6-4701-4c40-8b61-ebd8b656fc67",
+  "id": "ce8b0756-4ccf-40ef-ba55-2be24f7efec2",
   "longDescription": "Description:\nSELinux provides Mandatory Access Controls.\nRationale:\nWithout a Mandatory Access Control system installed only the default Discretionary Access\nControl system will be available.",
   "parameters": {
     "section": {
@@ -19,20 +19,8 @@
               },
               {
                 "var": {
-                  "name": "529B1F1A-0DB6-4244-B84A-7ABF0216DA39",
-                  "value": "/bin/true"
-                }
-              },
-              {
-                "var": {
                   "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
                   "value": "libselinux"
-                }
-              },
-              {
-                "var": {
-                  "name": "F2DA3DFF-0634-48B0-8A8E-8C27393388CB",
-                  "value": "/bin/true"
                 }
               }
             ]
@@ -60,6 +48,6 @@
       "cis-workstation": "2"
     }
   ],
-  "techniqueName": "Ensure_a_package_is_not_installed",
+  "techniqueName": "Ensure_a_package_is_installed",
   "techniqueVersion": "1.0"
 }

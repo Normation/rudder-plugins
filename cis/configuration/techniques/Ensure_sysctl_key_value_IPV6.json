@@ -28,9 +28,9 @@
       },
       {
         "args": [
-          "check_command_${report_data.directive_id}",
+          "check_command_${report_data.canonified_directive_id}",
           "cis.command_check_${report_data.canonified_directive_id}",
-          ".*${key} = ${expected_value}.*"
+          ".*${key}\\s*=\\s*${expected_value}.*"
         ],
         "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "condition_from_variable_match",
@@ -43,7 +43,7 @@
           "${expected_value}",
           "="
         ],
-        "class_context": "any.(check_command_${report_data.directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "class_context": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "component": "File key-value present",
         "method_name": "file_key_value_present"
       },
@@ -51,7 +51,7 @@
         "args": [
           "${paths.sysctl} -w ${key}=${expected_value}"
         ],
-        "class_context": "any.(check_command_${report_data.directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "class_context": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "component": "Command execution",
         "method_name": "command_execution"
       },
@@ -59,7 +59,7 @@
         "args": [
           "${paths.sysctl} -w net.ipv6.route.flush=1"
         ],
-        "class_context": "any.(check_command_${report_data.directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "class_context": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "component": "Command execution",
         "method_name": "command_execution"
       }
@@ -89,5 +89,5 @@
   },
   "tags": [],
   "type": "ncf_technique",
-  "version": 1
+  "version": "1"
 }
