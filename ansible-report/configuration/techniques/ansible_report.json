@@ -1,0 +1,85 @@
+{
+  "data": {
+    "bundle_args": [
+      "PathPlaybookServer",
+      "PathPlaybookAgent"
+    ],
+    "bundle_name": "ansible_report",
+    "description": "This technique install and deploy an Ansible Playbook on a target node and execute it. Its result will be reported in details in a Rudder report.",
+    "method_calls": [
+      {
+        "args": [
+          "ansible",
+          "",
+          "",
+          ""
+        ],
+        "class_context": "any",
+        "component": "Package present",
+        "method_name": "package_present"
+      },
+      {
+        "args": [
+          "${PathPlaybookServer}",
+          "${PathPlaybookAgent}",
+          "sha256"
+        ],
+        "class_context": "any",
+        "component": "File copy from Rudder shared folder",
+        "method_name": "file_from_shared_folder"
+      },
+      {
+        "args": [
+          "/var/rudder/packages/rudder-plugin-ansible-report/ansible.sh \"${PathPlaybookAgent}\" \"${this.promiser_pid}\" \"${report_data.canonified_directive_id}\"",
+          "0",
+          "2"
+        ],
+        "class_context": "any",
+        "component": "Command execution result",
+        "method_name": "command_execution_result"
+      },
+      {
+        "args": [
+          "/var/rudder/tmp/ansible_report_${this.promiser_pid}_${report_data.canonified_directive_id}",
+          "",
+          ""
+        ],
+        "class_context": "any",
+        "component": "File report content",
+        "method_name": "file_report_content"
+      },
+      {
+        "args": [
+          "/var/rudder/tmp/ansible_report_${this.promiser_pid}_${report_data.canonified_directive_id}"
+        ],
+        "class_context": "any",
+        "component": "File absent",
+        "method_name": "file_absent"
+      }
+    ],
+    "name": "ansible report",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "dd26d25f-4315-41e6-9387-8df289710de4",
+        "name": "PathPlaybookServer"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "0ca6b218-2dd1-44e6-a216-88e7bdf2a5ef",
+        "name": "PathPlaybookAgent"
+      }
+    ],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

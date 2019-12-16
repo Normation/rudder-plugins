@@ -5,6 +5,6 @@
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
   "content": {
-    "files.txz": "/var/rudder/configuration-repository"
+      "files.txz": "/var/rudder/packages/${plugin-id}/"
   }
 }
