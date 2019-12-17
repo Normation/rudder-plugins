@@ -1,0 +1,97 @@
+{
+  "type": "ncf_technique",
+  "version": 1,
+  "data": {
+    "bundle_args": [
+      "profile",
+      "scap_file"
+    ],
+    "bundle_name": "plugin_openscap_report",
+    "description": "This technique will trigger an openscap audit every hour on the agent.",
+    "name": "plugin_openscap_report",
+    "version": "1.0",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "0bad6c1e-59c9-44ca-a935-210af4188643",
+        "name": "profile"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "182dffe7-4310-4e01-bdd0-3f7db8272e2f",
+        "name": "scap_file"
+      }
+    ],
+    "method_calls": [
+      {
+        "args": [
+          "openscap",
+          "5",
+          "5",
+          "0",
+          "10",
+          "15",
+          "1",
+          "0",
+          "1",
+          "0",
+          "nodups"
+        ],
+        "class_context": "any",
+        "method_name": "schedule_simple",
+        "component": "Schedule Simple"
+      },
+      {
+        "args": [
+          "openscap-scanner",
+          "",
+          "",
+          ""
+        ],
+        "class_context": "any",
+        "method_name": "package_present",
+        "component": "Package present"
+      },
+      {
+        "args": [
+          "scap-security-guide",
+          "",
+          "",
+          ""
+        ],
+        "class_context": "any",
+        "method_name": "package_present",
+        "component": "Package present"
+      },
+      {
+        "args": [
+          "oscap xccdf eval --profile ${profile} --report /var/rudder/tmp/openscap_report.html ${scap_file}",
+          "0,2",
+          "254"
+        ],
+        "class_context": "any.(schedule_simple_openscap_repaired)",
+        "method_name": "command_execution_result",
+        "component": "run scan Openscap"
+      },
+      {
+        "args": [
+          "root",
+          "report.html",
+          "/var/rudder/tmp/openscap_report.html",
+          "1d"
+        ],
+        "class_context": "any",
+        "method_name": "sharedfile_to_node",
+        "component": "send report to server"
+      }
+    ]
+  }
+}

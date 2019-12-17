@@ -1,16 +1,50 @@
 #!/bin/bash
 set -x
+PLUGIN_FULL_NAME="rudder-plugin-openscap-policies"
+PLUGIN_NAME="openscap-policies"
+PRETTY_NAME="OpenSCAP Policies"
+CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
 
-# Import Ansible Technique
-FOLDERS="ncf/50_techniques/plugin_openscap_report techniques/plugin_openscap_report techniques/ncf_techniques"
-cd /var/rudder/configuration-repository/
-git reset
-for folder in $FOLDERS
-do
-  chown -R ncf-api-venv:rudder $folder
-  chmod 664 -R $folder
-  chmod -R +X $folder
-  git add $folder
+# Code below should be mostly comon between the plugins
+SOURCE_DIR=${CONFIGURATION_PATH}/techniques
+CONFIG_REPO=/var/rudder/configuration-repository
+
+CATEGORY="$PRETTY_NAME plugin"
+C_CATEGORY=$(echo $CATEGORY | sed "s/[^a-zA-Z0-9_]/_/g")
+FOLDERS="techniques/$C_CATEGORY techniques/ncf_techniques"
+
+mkdir -p $CONFIG_REPO/techniques/$C_CATEGORY
+
+cat <<EOT > $CONFIG_REPO/techniques/$C_CATEGORY/category.xml
+<xml>
+  <name>$CATEGORY</name>
+  <description>
+    Techniques from the $PRETTY_NAME plugin
+  </description>
+</xml>
+EOT
+
+
+for file in $SOURCE_DIR/*; do
+  BASE=$(echo $file | sed "s/.*\///" | sed "s/\.[^.]*$//")
+  C_BASE=$(echo $BASE | sed "s/[^a-zA-Z0-9_]/_/g")
+  mkdir -p $CONFIG_REPO/techniques/$C_CATEGORY/$C_BASE
+  cd $CONFIG_REPO/techniques/ncf_techniques && ln -nrs $CONFIG_REPO/techniques/$C_CATEGORY/$C_BASE && cd -
 done
-git commit -m "OpenSCAP-report plugin installation"
+
+cd $CONFIG_REPO
+git reset
+for file in $FOLDERS
+do
+  git add $file
+done
+/opt/rudder/bin/rudder-fix-repository-permissions
+git commit -m "$CATEGORY start installation"
+
+# Make extra scripts executables
+chmod +x $CONFIGURATION_PATH/rudder-synchronize
+
+# Import Techniques
+${CONFIGURATION_PATH}/rudder-synchronize import technique ${CONFIGURATION_PATH}/techniques
+git add techniques/$C_CATEGORY && git commit -m "$CATEGORY end installation"
 rudder server reload-techniques
