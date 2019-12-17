@@ -26,12 +26,12 @@ and may not behave as you expect. Check the <<Troubleshootings, troubleshooting 
 
 image::workflows/cis.png[]
 
-= Prerequisites
+== Prerequisites
 
 This plugin needs the package `rudder-api-client` and `python3-requests` to be installed on your Rudder Server.
 
 
-= Usage
+== Usage
 
 The plugin provides one rule per supported/builded benchmark to help you audit them with Rudder.
 *We recommend to not modify the rules provided by the plugin* and to apply them to your audit wanted groups of nodes. For most commons cases, skipping items on a per node basis as described below should be enough to adapt the rule set to your needs and will make eventual plugin upgrade much more easier.
@@ -104,7 +104,7 @@ previously noted `Directives Rudder ID`.
 The skipping process is more detailed in the <<Skip_directive, section below>>.
 
 [#Troubleshootings]
-= Troubleshootings
+== Troubleshootings
 
 * After install, the generation status in the Rudder UI may be in error, stating about some missing bundles, try to run a `rudder agent update` on your
 server, and force a `Policy Regeneration` in the UI.
@@ -124,7 +124,7 @@ RateLimitBurst=0
 ....
 
 [#Build]
-= Build for others benchmarks
+== Build for others benchmarks
 
 The plugin build is based on pdfs benchmark parsing. Each items parsed from the pdfs will be tested by regex matching on their name with a directive bank put in the configuration folder.
 
@@ -152,7 +152,7 @@ cis-workstation: 2
 ....
 
 
-= Extend, improve the directives
+== Extend, improve the directives
 
 * Install the plugin
 * Modify or create the directives or techniques you want to add to the plugin
