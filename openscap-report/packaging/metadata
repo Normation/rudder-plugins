@@ -5,7 +5,7 @@
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
   "content": {
-    "files.txz": "/var/rudder/configuration-repository",
-    "external-report.txz": "/var/rudder/packages/rudder-plugin-openscap-report"
+    "files.txz": "/var/rudder/packages/${plugin-id}",
+    "external-report.txz": "/var/rudder/packages/${plugin-id}"
   }
 }
