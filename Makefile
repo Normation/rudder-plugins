@@ -10,7 +10,7 @@ PUB_LIBS =
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
-PLUGINS = api-authorizations auth-backends branding change-validation create-node-api datasources helloworld node-external-reports scale-out-relay user-management vault glpi centreon notify zabbix
+PLUGINS = $(shell find -maxdepth 2 -mindepth 1 -name "build.conf" -printf '%h\n' | cut -c3- | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 
