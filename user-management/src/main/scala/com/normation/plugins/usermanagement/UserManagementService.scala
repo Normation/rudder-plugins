@@ -5,12 +5,13 @@ import java.net.URI
 import better.files
 import better.files.Dsl.SymbolicOperations
 import better.files.File
+import net.liftweb.util.Helpers.tryo
 import bootstrap.liftweb.{PasswordEncoder, UserConfigFileError, UserFile, UserFileProcessing}
 import com.normation.plugins.usermanagement.UserManagementIO.getUserFilePath
 import com.normation.rudder.Role.Custom
 import com.normation.rudder.{AuthorizationType, Rights, Role, RoleToRights}
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
-import net.liftweb.common.{Box, Failure, Full}
+import net.liftweb.common.{Box, EmptyBox, Failure, Full}
 import org.springframework.core.io.{ClassPathResource => CPResource}
 
 import scala.xml.{Elem, Node, NodeSeq}
@@ -142,54 +143,62 @@ object UserManagementService {
       case Left(err)   =>
         Failure(err.msg)
       case Right(path) =>
-        val srcXML = ConstructingParser.fromFile(File(path).toJava, preserveWS = true).document.children
-        (srcXML \\ "authentication").head match {
-          case e: Elem =>
-            val newXml = e.copy(child = e.child ++ newUser.copy(password = getHash((srcXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
-            UserManagementIO.replaceXml(srcXML, newXml, path)
-            Full(newUser)
-          case _ =>
-            Failure(s"Wrong formatting : $path")
+        tryo(ConstructingParser.fromFile(File(path).toJava, preserveWS = true)).flatMap { parsedFile =>
+          val userXML = parsedFile.document.children
+          val digest = new PasswordEncoder.DigestEncoder((userXML \\ "authentication" \ "@hash").text)
+          (userXML \\ "authentication").head match {
+            case e: Elem =>
+              val newXml = e.copy(child = e.child ++ newUser.copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
+              UserManagementIO.replaceXml(userXML, newXml, path)
+              Full(newUser)
+            case _ =>
+              Failure(s"Wrong formatting : $path")
+          }
         }
     }
   }
 
   def remove(toDelete: String): Box[File] = {
     getUserFilePath match {
-      case Left(err)   =>
+      case Left(err) =>
         Failure(err.msg)
       case Right(path) =>
-        val srcXML = ConstructingParser.fromFile(File(path).toJava, preserveWS = true).document.children
-        val toUpdate = (srcXML \\ "authentication").head
-        val newXml = new RuleTransformer(new RewriteRule {
-          override def transform(n: Node): NodeSeq = n match {
-            case user: Elem if (user \ "@name").text == toDelete => NodeSeq.Empty
-            case other => other
-          }
-        }).transform(toUpdate).head
-        UserManagementIO.replaceXml(srcXML, newXml, path)
+        tryo(ConstructingParser.fromFile(File(path).toJava, preserveWS = true)).flatMap { parsedFile =>
+          val userXML = parsedFile.document.children
+          val toUpdate = (userXML \\ "authentication").head
+          val newXml = new RuleTransformer(new RewriteRule {
+            override def transform(n: Node): NodeSeq = n match {
+              case user: Elem if (user \ "@name").text == toDelete => NodeSeq.Empty
+              case other => other
+            }
+          }).transform(toUpdate).head
+          UserManagementIO.replaceXml(userXML, newXml, path)
+        }
     }
   }
 
   def update(currentUser: String, newUser: User): Box[File] = {
     getUserFilePath match {
-      case Left(err)   =>
+      case Left(err) =>
         Failure(err.msg)
       case Right(path) =>
-        val srcXML = ConstructingParser.fromFile(File(path).toJava, preserveWS = true).document.children
-        val toUpdate = (srcXML \\ "authentication").head
-        val newXml = new RuleTransformer(new RewriteRule {
-          override def transform(n: Node): NodeSeq = n match {
-            case user: Elem if (user \ "@name").text == currentUser =>
-              newUser.copy(
-                  username = if(newUser.username.isEmpty) currentUser else newUser.username
-                , password = if(newUser.password.isEmpty) (user \ "@password").text  else getHash((srcXML \\ "authentication" \ "@hash").text).encode(newUser.password)
-                , role     = if(newUser.role.isEmpty) Set("no_rights") else newUser.role
-              ).toNode
-            case other => other
-          }
-        }).transform(toUpdate).head
-        UserManagementIO.replaceXml(srcXML, newXml, path)
+        tryo(ConstructingParser.fromFile(File(path).toJava, preserveWS = true)).flatMap{ parsedFile =>
+          val userXML = parsedFile.document.children
+          val digest = new PasswordEncoder.DigestEncoder((userXML \\ "authentication" \ "@hash").text)
+          val toUpdate = (userXML \\ "authentication").head
+          val newXml = new RuleTransformer(new RewriteRule {
+            override def transform(n: Node): NodeSeq = n match {
+              case user: Elem if (user \ "@name").text == currentUser =>
+                newUser.copy(
+                  username = if (newUser.username.isEmpty) currentUser else newUser.username
+                  , password = if (newUser.password.isEmpty) (user \ "@password").text else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
+                  , role = if (newUser.role.isEmpty) Set("no_rights") else newUser.role
+                ).toNode
+              case other => other
+            }
+          }).transform(toUpdate).head
+          UserManagementIO.replaceXml(userXML, newXml, path)
+        }
     }
   }
 }
