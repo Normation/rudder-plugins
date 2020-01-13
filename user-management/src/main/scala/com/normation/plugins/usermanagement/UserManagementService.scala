@@ -1,22 +1,20 @@
 package com.normation.plugins.usermanagement
 
-import java.net.URI
-
-import better.files
 import better.files.Dsl.SymbolicOperations
 import better.files.File
-import net.liftweb.util.Helpers.tryo
 import bootstrap.liftweb.{PasswordEncoder, UserConfigFileError, UserFile, UserFileProcessing}
 import com.normation.plugins.usermanagement.UserManagementIO.getUserFilePath
 import com.normation.rudder.Role.Custom
-import com.normation.rudder.{AuthorizationType, Rights, Role, RoleToRights}
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
-import net.liftweb.common.{Box, EmptyBox, Failure, Full}
+import com.normation.rudder.{AuthorizationType, Rights, Role, RoleToRights}
+import net.liftweb.common.{Box, Failure, Full}
+import net.liftweb.util.Helpers.tryo
 import org.springframework.core.io.{ClassPathResource => CPResource}
 
-import scala.xml.{Elem, Node, NodeSeq}
 import scala.xml.parsing.ConstructingParser
 import scala.xml.transform.{RewriteRule, RuleTransformer}
+import scala.xml.{Elem, Node, NodeSeq}
+
 
 case class User(username: String, password: String, role: Set[String]) {
   def toNode: Node = <user name={ username } password={ password } role={ role.mkString(",") } />
@@ -24,13 +22,12 @@ case class User(username: String, password: String, role: Set[String]) {
 
 object UserManagementIO {
 
-  def replaceXml(currentXml: NodeSeq, newXml: Node, path: URI): Box[File] = {
-    val file: files.File = files.File(path)
+  def replaceXml(currentXml: NodeSeq, newXml: Node, file: File): Box[File] = {
 
     if (!file.isWriteable)
-      Failure(s"$path is not writable")
+      Failure(s"${file.path} is not writable")
     else if (!file.isReadable)
-      Failure(s"$path is not readable")
+      Failure(s"${file.path} is not readable")
     else {
       val p = new RudderPrettyPrinter(300, 4)
       file.clear()
@@ -41,25 +38,25 @@ object UserManagementIO {
           file << p.format(x)
       }
       if (file.contentAsString contains newXml.text)
-        Failure(s"'$path' modification have failed")
+        Failure(s"'${file.path}' modification have failed")
       else
         Full(file)
     }
   }
 
-  def getUserFilePath: Either[UserConfigFileError, URI] = {
+  def getUserFilePath: Either[UserConfigFileError, File] = {
     val resources: Either[UserConfigFileError, UserFile] = UserFileProcessing.getUserResourceFile()
     resources match {
       case Left(err) =>
         Left(err)
       case Right(r)  =>
-        val path = {
+        val file: File = {
           if (r.name.startsWith("classpath:"))
-            new CPResource(UserFileProcessing.DEFAULT_AUTH_FILE_NAME).getURI
+            File(new CPResource(UserFileProcessing.DEFAULT_AUTH_FILE_NAME).getPath)
           else
-            new URI(r.name)
+            File(r.name)
         }
-        Right(path)
+        Right(file)
     }
   }
 }
@@ -142,17 +139,16 @@ object UserManagementService {
     getUserFilePath match {
       case Left(err)   =>
         Failure(err.msg)
-      case Right(path) =>
-        tryo(ConstructingParser.fromFile(File(path).toJava, preserveWS = true)).flatMap { parsedFile =>
+      case Right(file) =>
+        tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap { parsedFile =>
           val userXML = parsedFile.document.children
-          val digest = new PasswordEncoder.DigestEncoder((userXML \\ "authentication" \ "@hash").text)
           (userXML \\ "authentication").head match {
             case e: Elem =>
               val newXml = e.copy(child = e.child ++ newUser.copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
-              UserManagementIO.replaceXml(userXML, newXml, path)
+              UserManagementIO.replaceXml(userXML, newXml, file)
               Full(newUser)
             case _ =>
-              Failure(s"Wrong formatting : $path")
+              Failure(s"Wrong formatting : ${file.path}")
           }
         }
     }
@@ -162,8 +158,8 @@ object UserManagementService {
     getUserFilePath match {
       case Left(err) =>
         Failure(err.msg)
-      case Right(path) =>
-        tryo(ConstructingParser.fromFile(File(path).toJava, preserveWS = true)).flatMap { parsedFile =>
+      case Right(file) =>
+        tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap { parsedFile =>
           val userXML = parsedFile.document.children
           val toUpdate = (userXML \\ "authentication").head
           val newXml = new RuleTransformer(new RewriteRule {
@@ -172,7 +168,7 @@ object UserManagementService {
               case other => other
             }
           }).transform(toUpdate).head
-          UserManagementIO.replaceXml(userXML, newXml, path)
+          UserManagementIO.replaceXml(userXML, newXml, file)
         }
     }
   }
@@ -181,10 +177,9 @@ object UserManagementService {
     getUserFilePath match {
       case Left(err) =>
         Failure(err.msg)
-      case Right(path) =>
-        tryo(ConstructingParser.fromFile(File(path).toJava, preserveWS = true)).flatMap{ parsedFile =>
+      case Right(file) =>
+        tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap{ parsedFile =>
           val userXML = parsedFile.document.children
-          val digest = new PasswordEncoder.DigestEncoder((userXML \\ "authentication" \ "@hash").text)
           val toUpdate = (userXML \\ "authentication").head
           val newXml = new RuleTransformer(new RewriteRule {
             override def transform(n: Node): NodeSeq = n match {
@@ -197,7 +192,7 @@ object UserManagementService {
               case other => other
             }
           }).transform(toUpdate).head
-          UserManagementIO.replaceXml(userXML, newXml, path)
+          UserManagementIO.replaceXml(userXML, newXml, file)
         }
     }
   }
