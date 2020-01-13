@@ -2417,5 +2417,3 @@ class _IPv6Constants(object):
 
 
 IPv6Address._constants = _IPv6Constants
-
-print("hello")
