@@ -7,10 +7,9 @@ module View exposing (..)
 
 import ApiCalls exposing (deleteUser)
 import DataTypes exposing (EditMod(..), Model, Msg(..), RoleConf, User, Username, Users, UsersConf)
-import Debug exposing (log)
 import Dict exposing (keys)
 import Html exposing (Html, a, br, button, div, h3, h4, h6, i, input, option, p, select, span, text)
-import Html.Attributes exposing (class, id, placeholder, style, type_, value)
+import Html.Attributes exposing (attribute, class, disabled, hidden, id, placeholder, required, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Init exposing (defaultConfig)
 import List exposing (filter, map)
@@ -42,9 +41,9 @@ displayRightPanel model =
             a [class "close close-panel", onClick DeactivatePanel][]
            , h4 [] [text model.userFocusOn.login]
            ,
-              input [class "form-control", type_ "text", placeholder "New Username",style "aria-describedby""basic-addon1",onInput Login ] []
+              input [class "form-control", type_ "text", placeholder "New Username", onInput Login] []
               , br [] []
-              , input [class "form-control", type_ "password", placeholder "New Password", onInput Password ] []
+              , input [class "form-control", type_ "password", placeholder "New Password", onInput Password, attribute "autocomplete" "new-password" ] []
               , br [] []
               , button [class "btn btn-sm btn-danger",onClick (CallApi ( deleteUser model.userFocusOn.login))] [text "Delete "]
               , button [class "btn btn-sm btn-primary", onClick (SubmitUpdatedInfos model.userFocusOn)] [text "Submit"]
@@ -61,8 +60,11 @@ displayUsersConf model u =
             if model.addMod == On then
                 div []
                 [
-                     input [class "form-control", type_ "text", placeholder "New Username",style "aria-describedby""basic-addon1",onInput Login ] []
-                     , input [class "form-control", type_ "password", placeholder "New Password", onInput Password ] []
+
+                     input [class "form-control", type_ "text", placeholder "New Username", onInput Login, value model.login, required True] []
+                    ,input [type_ "text", disabled True, hidden True] []
+                                                         , input [type_ "password", disabled True, hidden True] []
+                     , input [class "form-control", type_ "password", placeholder "New Password", onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
                      , button [class "btn btn-sm btn-primary", onClick (SubmitNewUser (User model.login [] []) model.password)] [text "Submit"]
                 ]
             else
@@ -136,6 +138,5 @@ displaySelectRole: Model -> User -> Html Msg
 displaySelectRole model user =
     div []
     [
-        select [class "add form-control", onInput (AddRole user)] (List.map (\x ->option [value  (log "roles : "  x.id)] [text x.id]) model.rolesConf)
---        , span [class "auth add-role add"] [b [][text "+"]]
+        select [class "add form-control", onInput (AddRole user)] (List.map (\x ->option [value  (x.id)] [text x.id]) model.rolesConf)
     ]
