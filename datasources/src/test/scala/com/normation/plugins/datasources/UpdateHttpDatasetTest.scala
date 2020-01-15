@@ -79,6 +79,7 @@ import com.normation.rudder.domain.policies.PolicyModeOverrides
 import org.http4s.HttpService
 import org.http4s._
 import org.http4s.dsl.io._
+import org.http4s.implicits._
 import cats.effect._
 import cats.effect.concurrent.Ref
 import com.github.ghik.silencer.silent
@@ -92,7 +93,6 @@ import com.normation.zio._
 import org.specs2.matcher.EqualityMatcher
 import zio.test.environment.TestClock
 import zio.duration._
-//import scala.language.postfixOps
 
 object TheSpaced {
 
@@ -157,6 +157,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provide(ZioRuntime.environment).runNow
   }
 
+  // a timer
+  implicit val timer: Timer[IO] = cats.effect.IO.timer(blockingExecutionContext)
+
+
   //create a rest server for test
   object NodeDataset {
 
@@ -164,9 +168,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val counterError   = zio.Ref.make(0).runNow
     val counterSuccess = zio.Ref.make(0).runNow
     val maxPar = zio.Ref.make(0).runNow
-
-    // a timer
-    val timer = cats.effect.IO.timer(blockingExecutionContext)
 
     // a delay methods that use the scheduler
     def delayResponse(resp: IO[Response[IO]]): IO[Response[IO]] = {

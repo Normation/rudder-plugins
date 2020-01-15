@@ -39,7 +39,7 @@ package com.normation.plugins.nodeexternalreports.service
 import java.io.File
 
 import scala.collection.immutable.SortedMap
-import scala.collection.JavaConverters.asScalaSetConverter
+import scala.jdk.CollectionConverters._
 
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.services.nodes.NodeInfoService

@@ -38,12 +38,6 @@
       <version>2.5</version>
       <scope>provided</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.squeryl</groupId>
-      <artifactId>squeryl_${scala-binary-version}</artifactId>
-      <version>0.9.5-7</version>
-    </dependency>
   </dependencies>
 
   <!-- I hate maven. 100 lines for a F**** if/then/else. -->

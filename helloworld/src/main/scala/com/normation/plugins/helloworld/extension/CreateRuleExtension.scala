@@ -35,7 +35,7 @@ class CreateRuleExtension(implicit val ttag: ClassTag[RuleManagement]) extends S
 }
 
 class CreateRuleEditFormExtension(
-    dbLogService      : LogAccessInDb
+    dbLogService: LogAccessInDb
   )(implicit val ttag: ClassTag[RuleEditForm]) extends SnippetExtensionPoint[RuleEditForm] with Loggable {
 
   def compose(snippet:RuleEditForm) : Map[String, NodeSeq => NodeSeq] = Map(
@@ -98,8 +98,8 @@ class CreateRuleEditFormExtension(
 
 
   def logTabContent = {
-    ".nodeId" #> dbLogService.getLog( (DateTime.now).withYear(2000), (DateTime.now).plusDays(1) ).map { log =>
-      val date = DateFormaterService.getDisplayDate(new DateTime(log.date.getTime))
+    ".nodeId" #> dbLogService.getLog( (DateTime.now).withYear(2015), (DateTime.now).plusDays(1) ).map { log =>
+      val date = DateFormaterService.getDisplayDate(log.date)
       <tr><td>{log.id.toString}</td><td>{log.user}</td><td>{date}</td></tr>
     }
   }

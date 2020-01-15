@@ -49,7 +49,6 @@ import net.liftweb.json._
 import net.liftweb.util.ControlHelpers.tryo
 
 import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
 import com.normation.rudder.domain.nodes.NodeProperty
 import cats._
 import cats.implicits._
@@ -362,7 +361,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
             method      <- extractJsonString(obj, "requestMethod", {s => Box(HttpMethod.values.find( _.name == s))})
             checkSsl    <- extractJsonBoolean(obj, "checkSsl")
             maxParReq   <- Full(monad.point(obj \ "maxParallelReq" match {
-                             case JInt(n) if(n > BigInt(0) || n < BigInt(Int.MaxValue)) => n.intValue()
+                             case JInt(n) if(n > BigInt(0) || n < BigInt(Int.MaxValue)) => n.intValue
                              case _                                                     => DataSourceType.HTTP.defaultMaxParallelRequest // if not int or key absent => default value
                            }))
             timeout     <- extractJsonBigInt(obj, "requestTimeout", extractDuration)

@@ -219,9 +219,9 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       case Full(None)  => ("Error, no action were recorded for that change request",None) //should not happen here !
       case Full(Some(e:EventLog)) =>
         val actionName = e match {
-          case ModifyChangeRequest(_) => "Modified"
-          case AddChangeRequest(_)    => "Created"
-          case DeleteChangeRequest(_) => "Deleted"
+          case _: ModifyChangeRequest => "Modified"
+          case _: AddChangeRequest    => "Created"
+          case _: DeleteChangeRequest => "Deleted"
         }
         (s"${actionName} on ${DateFormaterService.getDisplayDate(e.creationDate)} by ${e.principal.name}",Some(e.creationDate))
     }

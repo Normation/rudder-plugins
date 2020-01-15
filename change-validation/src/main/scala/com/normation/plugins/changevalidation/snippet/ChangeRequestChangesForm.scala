@@ -706,9 +706,9 @@ class ChangeRequestChangesForm(
 
   def displayChangeRequestEvent(crEvent:ChangeRequestEventLog) = {
     val action = Text(crEvent match {
-           case AddChangeRequest(_) => "Change request created"
-           case ModifyChangeRequest(_) => "Change request details modified"
-           case DeleteChangeRequest(_) => "Change request deleted"
+           case _: AddChangeRequest    => "Change request created"
+           case _: ModifyChangeRequest => "Change request details modified"
+           case _: DeleteChangeRequest => "Change request deleted"
     })
     displayEvent(action,crEvent.principal,crEvent.creationDate,crEvent.eventDetails.reason.getOrElse(""))
   }

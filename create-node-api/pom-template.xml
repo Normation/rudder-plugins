@@ -39,17 +39,7 @@
   </build>
 
   <dependencies>
-    <dependency>
-      <groupId>org.typelevel</groupId>
-      <artifactId>cats-core_${scala-binary-version}</artifactId>
-      <version>${cats-version}</version>
-      <scope>provided</scope> <!-- provided by rudder-core -->
-    </dependency>
-    <dependency>
-      <groupId>com.softwaremill.quicklens</groupId>
-      <artifactId>quicklens_2.12</artifactId>
-      <version>1.4.11</version>
-    </dependency>
+    <!-- Add other plugin specific dependencies -->
   </dependencies>
 
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->

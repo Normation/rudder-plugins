@@ -103,24 +103,24 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     , readTimeOut      : Duration
   ) : IOResult[Option[NodeProperty]] = {
     //utility to expand both key and values of a map
-    def expandMap(expand: String => IOResult[String], map: Map[String, String]): IOResult[Map[String, String]] = {
+    def expandMap(expand: String => PureResult[String], map: Map[String, String]): IOResult[Map[String, String]] = {
       (ZIO.traverse(map.toList) { case (key, value) =>
-          for {
-            newKey   <- expand(key)
-            newValue <- expand(value)
-          } yield {
-            (newKey, newValue)
-          }
-        }).map( _.toMap )
+        (for {
+          newKey   <- expand(key)
+          newValue <- expand(value)
+        } yield {
+          (newKey, newValue)
+        }).toIO
+      }).map( _.toMap )
     }
 
     //actual logic
 
     for {
-      parameters <- ZIO.traverse(parameters)(compiler.compileParameters).chainError("Error when transforming Rudder Parameter for variable interpolation")
+      parameters <- ZIO.traverse(parameters)(compiler.compileParameters(_).toIO).chainError("Error when transforming Rudder Parameter for variable interpolation")
       expand     =  compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap) _
-      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
-      path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
+      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}").toIO
+      path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}").toIO
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
       time_0     <- UIO.effectTotal(System.currentTimeMillis)
@@ -210,11 +210,11 @@ object QueryHttp {
  */
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
-  def compileParameters(parameter: Parameter): IOResult[(ParameterName, InterpolationContext => IOResult[String])] = {
+  def compileParameters(parameter: Parameter): PureResult[(ParameterName, InterpolationContext => PureResult[String])] = {
     compiler.compile(parameter.value).map(v => (parameter.name, v))
   }
 
-  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[ParameterName, InterpolationContext => IOResult[String]])(input: String): IOResult[String] = {
+  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[ParameterName, InterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
 
     //build interpolation context from node:
     val context = InterpolationContext(node, policyServer, globalPolicyMode, TreeMap[String, Variable](), parameters, 5)
@@ -302,7 +302,7 @@ object JsonSelect {
     //   lead to a mess of quoted strings
     // - just parsing as JSONAware fails on string, int, etc.
 
-    import scala.collection.JavaConverters.asScalaBufferConverter
+    import scala.jdk.CollectionConverters._
 
     for {
       jsonValue <- IOResult.effectM(try {

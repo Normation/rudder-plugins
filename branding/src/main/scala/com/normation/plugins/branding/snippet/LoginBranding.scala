@@ -53,8 +53,8 @@ import scala.xml.NodeSeq
 class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login]) extends PluginExtensionPoint[Login] with Loggable {
 
   def pluginCompose(snippet:Login) : Map[String, NodeSeq => NodeSeq] = Map(
-    "display" -> display _
-  ).mapValues(guard _)
+    "display" -> guard(display(_))
+  )
 
 
   private [this] val confRepo = BrandingPluginConf.brandingConfService

@@ -265,7 +265,7 @@ class HttpQueryDataSourceService(
       mode          <- globalPolicyMode()
       allNodes      <- nodeInfo.getAll().toIO
       node          <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
-      policyServers =  allNodes.filterKeys( _ == node.policyServerId)
+      policyServers =  allNodes.filter( _._1 == node.policyServerId)
       parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
       updated       <- buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause)
                          .timeout(datasource.requestTimeOut).provide(clock).notOptional(s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'")

@@ -166,25 +166,32 @@
         awk -F':' '{print "<dependency><groupId>"$1"</groupId><artifactId>"$2"</artifactId><scope>provided</scope></dependency>"}'
     -->
     <dependency><groupId>antlr</groupId><artifactId>antlr</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>aopalliance</groupId><artifactId>aopalliance</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ca.mrvisser</groupId><artifactId>sealerate_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>cglib</groupId><artifactId>cglib</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.chuusai</groupId><artifactId>shapeless_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-binary-version}.1</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.jayway.jsonpath</groupId><artifactId>json-path</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.jcraft</groupId><artifactId>jsch</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.jcraft</groupId><artifactId>jzlib</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.lihaoyi</groupId><artifactId>sourcecode_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-fusion</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-provisioning-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-repository</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-rest</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-templates</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation</groupId><artifactId>scala-ldap</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation</groupId><artifactId>utils</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.softwaremill.quicklens</groupId><artifactId>quicklens_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.thoughtworks.paranamer</groupId><artifactId>paranamer</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.unboundid</groupId><artifactId>unboundid-ldapsdk</artifactId><scope>provided</scope></dependency>
@@ -194,12 +201,13 @@
     <dependency><groupId>commons-fileupload</groupId><artifactId>commons-fileupload</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>commons-io</groupId><artifactId>commons-io</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>commons-lang</groupId><artifactId>commons-lang</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>io.monix</groupId><artifactId>monix-eval_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>io.monix</groupId><artifactId>monix-execution_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>io.monix</groupId><artifactId>monix-types_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>javax.activation</groupId><artifactId>activation</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>javax.mail</groupId><artifactId>mail</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>javax.servlet</groupId><artifactId>servlet-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-interop-cats_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-streams_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-test_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>javax.servlet</groupId><artifactId>javax.servlet-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>jline</groupId><artifactId>jline</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.java.dev.jna</groupId><artifactId>jna</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
@@ -209,21 +217,30 @@
     <dependency><groupId>net.liftweb</groupId><artifactId>lift-markdown_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.liftweb</groupId><artifactId>lift-util_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.liftweb</groupId><artifactId>lift-webkit_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>nu.validator.htmlparser</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.minidev</groupId><artifactId>accessors-smart</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.minidev</groupId><artifactId>json-smart</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>nu.validator</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpg-jdk15on</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-jdk15on</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk15on</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.javassist</groupId><artifactId>javassist</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.joda</groupId><artifactId>joda-convert</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.mindrot</groupId><artifactId>jbcrypt</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.portable-scala</groupId><artifactId>portable-scala-reflect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.reactivestreams</groupId><artifactId>reactive-streams</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.reflections</groupId><artifactId>reflections</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scalaj</groupId><artifactId>scalaj-http_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scodec</groupId><artifactId>scodec-bits_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.springframework.ldap</groupId><artifactId>spring-ldap-core</artifactId><scope>provided</scope></dependency>
@@ -236,6 +253,7 @@
     <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-expression</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-jcl</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
@@ -246,8 +264,6 @@
     <dependency><groupId>org.typelevel</groupId><artifactId>cats-free_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.typelevel</groupId><artifactId>cats-kernel_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.typelevel</groupId><artifactId>cats-macros_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>machinist_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>macro-compat_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>xml-apis</groupId><artifactId>xml-apis</artifactId><scope>provided</scope></dependency>
   </dependencies>

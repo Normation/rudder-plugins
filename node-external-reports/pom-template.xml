@@ -39,6 +39,10 @@
     </plugins>
   </build>
 
+  <dependencies>
+    <!-- Add other plugin specific dependencies -->
+  </dependencies>
+
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->
 
   <!-- Internal profile: FOR INTERNAL USE ONLY - active if -Dlimited is *not* specified. -->

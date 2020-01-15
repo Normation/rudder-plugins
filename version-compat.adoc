@@ -1,4 +1,4 @@
-= Summary of binary compatibility for Rudder 5.0 branch
+= Summary of binary compatibility for Rudder 6.0 branch
 
 This table shows the binary compatibility for plugins with Rudder 5.0 branch.
 
@@ -13,19 +13,20 @@ This does not mean that the plugin is not valid with a newer version, but it has
 
 |===
 |api-authorization | Rudder
-|1.3 - 1.4         | All versions
+|1.5               | <  6.0.3
+|1.6               | >= 6.0.3
 |===
 
 |===
 |auth-backend | Rudder
-|1.0 1.1      | < 5.0.2
-|1.2          | >= 5.0.2
+|1.3          | <  6.0.3
+|1.4          | >= 6.0.3
 |===
 
 |===
 |branding  | Rudder
-|1.2 - 1-3 | < 5.0.6
-|1.4       | >= 5.0.6
+|1.4       | <  6.0.3
+|1.5       | >= 6.0.3
 |===
 
 |===
@@ -35,26 +36,30 @@ This does not mean that the plugin is not valid with a newer version, but it has
 
 |===
 |change-validation | Rudder
-|1.0               | 5.0.0
-|1.1               | 5.0.1
-|1.2               | >= 5.0.2
-|1.3               | >= 5.0.6
+|1.4               | <  6.0.3
+|1.5               | >= 6.0.3
 |===
 
 |===
 |create-node-api | Rudder
-|1.0 - 1.1       | >= 5.0.6
+|1.1             | <  6.0.3
+|1.3             | >= 6.0.3
 |===
 
 |===
 |cve | Rudder
-|0.1 | >= 5.0.6
+|0.2 | >= 6.0.3
 |===
 
 |===
 |datasources | Rudder
-|1.5         | < 5.0.6
-|1.6         | >= 5.0.6
+|1.6         | <  6.0.3
+|1.7         | >= 6.0.3
+|===
+
+|===
+|dsc  | Rudder
+|1.17 | >= 6.0.3
 |===
 
 |===
@@ -64,7 +69,8 @@ This does not mean that the plugin is not valid with a newer version, but it has
 
 |===
 |node-external-reports | Rudder
-|1.6                   | All versions
+|1.6                   | <  6.0.3
+|1.7                   | >= 6.0.3
 |===
 
 |===
@@ -74,18 +80,19 @@ This does not mean that the plugin is not valid with a newer version, but it has
 
 |===
 |reporting       | Rudder
-|1.0 - 1.1 - 1.2 | >= 5.0.6
+|1.3             | >= 6.0.3
 |===
 
 |===
 |scale-out-relay | Rudder
-|1.0 - 1.1       | All versions
+|1.2             | <  6.0.3
+|1.3             | >= 6.0.3
 |===
 
 |===
 |user-management | Rudder
-|1.0 - 1.1       | < 5.0.2
-|1.2             | >= 5.0.2
+|1.5             | <  6.0.3
+|1.6             | >= 6.0.3
 |===
 
 |===
