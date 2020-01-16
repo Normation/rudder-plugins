@@ -75,7 +75,15 @@ displayUsersConf model u =
         [ div [ class "col-xs-12" ]
             [ h3 []
                 [ text "Rudder Users"
-                , span [class "add add-user", onClick ShowNewUserMenu] [i [class "fa fa-plus"][]]
+                , button [class "btn btn-box-tool btn-blue btn-sm", onClick SendReload]
+                [
+                     text "Reload file"
+                   , span [class "fa fa-refresh"][]
+                ]
+                , button [class "btn btn-sm btn-success new-icon", onClick ShowNewUserMenu]
+                [
+                   text "Add User"
+                ]
                 , newUserMenu
                 ]
 
