@@ -135,7 +135,7 @@ object UserManagementService {
     }
   }
 
-  def add(newUser: User): Box[User] = {
+  def add(newUser: User, isPreHashed: Boolean): Box[User] = {
     getUserFilePath match {
       case Left(err)   =>
         Failure(err.msg)
@@ -144,7 +144,11 @@ object UserManagementService {
           val userXML = parsedFile.document.children
           (userXML \\ "authentication").head match {
             case e: Elem =>
-              val newXml = e.copy(child = e.child ++ newUser.copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
+              val newXml =
+                if (isPreHashed)
+                  e.copy(child = e.child ++ newUser.copy(password = newUser.password).toNode)
+                else
+                  e.copy(child = e.child ++ newUser.copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
               UserManagementIO.replaceXml(userXML, newXml, file)
               Full(newUser)
             case _ =>
@@ -173,7 +177,7 @@ object UserManagementService {
     }
   }
 
-  def update(currentUser: String, newUser: User): Box[File] = {
+  def update(currentUser: String, newUser: User, isPreHashed: Boolean): Box[File] = {
     getUserFilePath match {
       case Left(err) =>
         Failure(err.msg)
@@ -184,11 +188,20 @@ object UserManagementService {
           val newXml = new RuleTransformer(new RewriteRule {
             override def transform(n: Node): NodeSeq = n match {
               case user: Elem if (user \ "@name").text == currentUser =>
-                newUser.copy(
-                  username = if (newUser.username.isEmpty) currentUser else newUser.username
-                  , password = if (newUser.password.isEmpty) (user \ "@password").text else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
-                  , role = if (newUser.role.isEmpty) Set("no_rights") else newUser.role
-                ).toNode
+                if (isPreHashed) {
+                  newUser.copy(
+                      username = if (newUser.username.isEmpty) currentUser else newUser.username
+                    , role = if (newUser.role.isEmpty) Set("no_rights") else newUser.role
+                    , password = if (newUser.password.isEmpty) (user \ "@password").text else newUser.password
+                  ).toNode
+                }
+                else {
+                  newUser.copy(
+                    username = if (newUser.username.isEmpty) currentUser else newUser.username
+                    , password = if (newUser.password.isEmpty) (user \ "@password").text else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
+                    , role = if (newUser.role.isEmpty) Set("no_rights") else newUser.role
+                  ).toNode
+                }
               case other => other
             }
           }).transform(toUpdate).head
