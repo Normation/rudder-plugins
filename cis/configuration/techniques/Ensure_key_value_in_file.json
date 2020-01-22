@@ -6,6 +6,7 @@
       "separator",
       "file"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_key_value_in_file",
     "description": "",
     "method_calls": [

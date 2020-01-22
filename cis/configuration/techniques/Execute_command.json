@@ -5,6 +5,7 @@
       "expected_match",
       "remediate"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Execute_command",
     "description": "",
     "method_calls": [

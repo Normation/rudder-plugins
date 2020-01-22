@@ -4,6 +4,7 @@
       "mount_point",
       "mount_options"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_mounting_partition_is_correct",
     "description": "",
     "method_calls": [

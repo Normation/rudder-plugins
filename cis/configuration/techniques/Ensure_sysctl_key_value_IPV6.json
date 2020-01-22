@@ -4,6 +4,7 @@
       "key",
       "expected_value"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_sysctl_key_value_IPV6",
     "description": "",
     "method_calls": [

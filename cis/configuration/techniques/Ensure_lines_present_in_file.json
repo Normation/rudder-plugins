@@ -5,6 +5,7 @@
       "file",
       "extra_condition"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_lines_present_in_file",
     "description": "",
     "method_calls": [

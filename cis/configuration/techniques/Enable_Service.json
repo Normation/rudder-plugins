@@ -3,6 +3,7 @@
     "bundle_args": [
       "service"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Enable_Service",
     "description": "",
     "method_calls": [

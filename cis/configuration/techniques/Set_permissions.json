@@ -6,6 +6,7 @@
       "mode",
       "path"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Set_permissions",
     "description": "",
     "method_calls": [

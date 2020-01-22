@@ -3,6 +3,7 @@
     "bundle_args": [
       "module"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Disable_kernel_module_loading",
     "description": "",
     "method_calls": [

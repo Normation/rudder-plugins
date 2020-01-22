@@ -4,6 +4,7 @@
       "package",
       "posthook"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_a_package_is_installed",
     "description": "",
     "method_calls": [

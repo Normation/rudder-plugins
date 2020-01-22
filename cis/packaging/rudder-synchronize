@@ -135,23 +135,15 @@ def import_technique(path):
     try:
         with open(path) as f:
             data = json.load(f)["data"]
-        # Call the technique API
-        techniquesEndpoint = RudderEndPoint("https://localhost/ncf", TOKEN, verify=False)
-        techniqueData = { "path": "/var/rudder/configuration-repository/ncf", "technique": data, "methods": [] }
-        response = techniquesEndpoint.request("PUT", "/api/techniques", None, techniqueData, return_raw=True)
-
         # Extend the technique json with GM
         gms = get_all_generic_methods()
-        for iGM in techniqueData["technique"]["method_calls"]:
-           gmData = gms[iGM["method_name"]]
-           if "documentation" in gmData:
-               gmData.pop("documentation")
-           techniqueData["methods"].append(gmData)
+        techniqueData = { "path": "/var/rudder/configuration-repository/ncf", "technique": data, "methods": [] }
+        techniqueData["methods"] = [ v for v in gms.values() ]
         techniqueData["reason"] = "Importing technique %s from rudder-synchronize"%techniqueData["technique"]["name"]
 
         # Call the ncf API
         ncfEndpoint = RudderEndPoint("https://localhost/rudder", TOKEN, verify=False)
-        technique = ncfEndpoint.request("POST", "/api/ncf", None, techniqueData, return_raw=False)
+        technique = ncfEndpoint.request("PUT", "/api/techniques", None, techniqueData, return_raw=False)
         logging.info(colors.GREEN + "Successfully imported technique %s"%techniqueData["technique"]["name"] + colors.ENDC)
 
     except RudderError as e:

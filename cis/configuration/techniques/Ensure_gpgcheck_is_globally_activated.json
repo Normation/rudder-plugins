@@ -1,6 +1,7 @@
 {
   "data": {
     "bundle_args": [],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_gpgcheck_is_globally_activated",
     "description": "",
     "method_calls": [

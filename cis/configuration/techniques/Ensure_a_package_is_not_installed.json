@@ -6,6 +6,7 @@
       "prerm",
       "check_command"
     ],
+    "category": "CIS_plugin",
     "bundle_name": "Ensure_a_package_is_not_installed",
     "description": "",
     "method_calls": [
