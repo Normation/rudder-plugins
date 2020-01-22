@@ -19,10 +19,6 @@ cat <<EOT > $CONFIG_REPO/techniques/$C_CATEGORY/category.xml
 EOT
 
 
-# Import Generic Methods
-mkdir -p ${CONFIG_REPO}/ncf/30_generic_methods
-cp -a ${CONFIGURATION_PATH}/configuration-repository/ncf/30_generic_methods/cis ${CONFIG_REPO}/ncf/30_generic_methods
-
 cd $CONFIG_REPO
 git reset
 for file in $FOLDERS
