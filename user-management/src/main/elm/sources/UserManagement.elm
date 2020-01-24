@@ -2,7 +2,7 @@ port module UserManagement exposing (processApiError, update)
 
 import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
-import DataTypes exposing (Authorization, EditMod(..), Model, Msg(..), User, Username, Users)
+import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), User, Username, Users)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, defaultConfig, init, subscriptions)
@@ -64,7 +64,7 @@ update msg model =
         PostReloadUserInfo result ->
             case result of
                 Ok _ ->
-                    ( { model | editMod = Off}
+                    ( { model | panelMode = Closed}
                     , getUsersConf model
                     )
 
@@ -80,16 +80,22 @@ update msg model =
             Toasty.update defaultConfig ToastyMsg subMsg model
 
         ActivePanelAddUser ->
-            if model.addMod == On then
-                ({model | addMod = Off}, Cmd.none)
+            if model.panelMode == AddMode then
+                ({model | panelMode = Closed}, Cmd.none)
             else
-                ({model | addMod = On, editMod = Off}, Cmd.none)
-        ActivePanelSettings username ->
-            ({model | addMod = Off, editMod = On, userFocusOn = username}, Cmd.none)
+                ({model | panelMode = AddMode}, Cmd.none)
+        ActivePanelSettings user ->
+            case model.panelMode of
+                EditMode u ->
+                    if u.login == user.login then
+                        ({model | panelMode = Closed}, Cmd.none)
+                    else
+                        ({model | panelMode = EditMode user}, Cmd.none)
+                _          ->
+                    ({model | panelMode = EditMode user}, Cmd.none)
 
         DeactivatePanel ->
-            ({model | addMod = Off, editMod = Off, userFocusOn = { login = "", authz = [], role = []}}, Cmd.none)
-
+            ({model | panelMode = Closed}, Cmd.none)
 
         ComputeRoleCoverage result ->
             case result of
@@ -129,27 +135,18 @@ update msg model =
         Notification subMsg ->
                Toasty.update defaultConfig Notification subMsg model
 
-        ChangeFocusOn userToFocus ->
-            ({model | userFocusOn = userToFocus}, Cmd.none)
         Password newPassword ->
             ({model | password = newPassword}, Cmd.none)
         Login newLogin ->
             ({model | login = newLogin}, Cmd.none)
         SubmitUpdatedInfos u ->
-            let
-                newLogin =
-                    if isEmpty u.login then
-                        model.userFocusOn.login
-                    else
-                        u.login
-            in
-            ({model | password = "", login = "", userFocusOn = {login = newLogin, authz =[], role = []}}, updateUser model u.login model.password { u | login = model.login })
+            ({model | password = "", login = ""}, updateUser model u.login model.password { u | login = model.login })
         SubmitNewUser u password ->
-            ({model | addMod = Off}, addUser model u)
+            ({model | panelMode = Closed}, addUser model u)
         PreHashedPasswd ->
-            ({model | hashedPasswd = True, clearPasswd = False}, Cmd.none)
+            ({model | hashedPasswd = True}, Cmd.none)
         ClearPasswd ->
-            ({model | clearPasswd = True, hashedPasswd = False}, Cmd.none)
+            ({model | hashedPasswd = False}, Cmd.none)
 
 
 processApiError : Error -> Model -> ( Model, Cmd Msg )

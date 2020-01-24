@@ -8,7 +8,6 @@ module DataTypes exposing (..)
 
 import Dict exposing (Dict)
 import Http exposing (Error)
-import String exposing (toUpper)
 import Toasty
 import Toasty.Defaults
 
@@ -42,17 +41,15 @@ type alias UserInfos =
     , authz: Authorization
     }
 
--- the full list of digest + list of users
-
-
 type alias UsersConf =
     { digest : String
     , users : List User
     }
 
-type EditMod
-  = On
-  | Off
+type PanelMode
+  = AddMode
+  | EditMode User
+  | Closed
 
 type alias Model =
     { contextPath : String
@@ -62,13 +59,10 @@ type alias Model =
     , rolesConf : RoleConf  -- from API
     , authorizations : Authorization
     , toasties : Toasty.Stack Toasty.Defaults.Toast
-    , editMod : EditMod
-    , addMod : EditMod
-    , userFocusOn : User
+    , panelMode : PanelMode
     , password : String
     , login : String
     , hashedPasswd : Bool
-    , clearPasswd : Bool
     }
 
 
@@ -85,7 +79,6 @@ type Msg
     | ActivePanelSettings User
     | ActivePanelAddUser
     | DeactivatePanel
-    | ChangeFocusOn User
     | Password String
     | Login String
     | AddRole User String

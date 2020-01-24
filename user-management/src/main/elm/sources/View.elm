@@ -6,7 +6,7 @@ module View exposing (..)
 
 
 import ApiCalls exposing (deleteUser)
-import DataTypes exposing (EditMod(..), Model, Msg(..), RoleConf, User, Username, Users, UsersConf)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleConf, User, Username, Users, UsersConf)
 import Dict exposing (keys)
 import Html exposing (Html, a, br, button, div, h3, h4, h6, i, input, option, p, select, span, text)
 import Html.Attributes exposing (attribute, class, disabled, hidden, id, placeholder, required, type_, value)
@@ -31,28 +31,32 @@ view model =
         [ content
         , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
         ]
+
 hashPasswordMenu : Model -> Html Msg
 hashPasswordMenu model =
     let
         hashPasswdIsActivate =
-            if (model.clearPasswd == False) && (model.hashedPasswd == True) then
+            if (model.hashedPasswd == True) then
                 "active"
             else
                 ""
         clearPasswdIsActivate =
-            if (model.clearPasswd == True) && (model.hashedPasswd == False) then
-                "active"
-            else
-                ""
+             if (model.hashedPasswd == False) then
+                 "active"
+             else
+                 ""
     in
         div [class "btn-group", attribute "role" "group"]
         [
               a [class ("btn btn-default " ++ hashPasswdIsActivate), onClick PreHashedPasswd][text "Enter pre-hashed value"]
-            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick ClearPasswd][text "Use clear text password"]
+            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick ClearPasswd][text "Password to hash"]
         ]
 
 displayRightPanelAddUser : Model -> Html Msg
 displayRightPanelAddUser model =
+   let
+       phMsg = if model.hashedPasswd then "New hashed password" else "This password will be hashed and then stored"
+   in
    div [class "panel-wrap"]
    [
        div [class "panel"]
@@ -65,7 +69,7 @@ displayRightPanelAddUser model =
                , input [type_ "text", disabled True, hidden True] []
                , hashPasswordMenu model
                , input [type_ "password", disabled True, hidden True] []
-               , input [class "form-control", type_ "password", placeholder "Password", onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
+               , input [class "form-control", type_ "password", placeholder phMsg, onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
                , button [class "btn btn-sm btn-primary", onClick (SubmitNewUser (User model.login [] []) model.password)] [text "Submit"]
            ]
        ]
@@ -73,20 +77,26 @@ displayRightPanelAddUser model =
 
 displayRightPanel : Model -> Html Msg
 displayRightPanel model =
+    let
+        user = case model.panelMode of
+            EditMode u -> u
+            _ -> User "" [] []
+        phMsg = if model.hashedPasswd then "New hashed password" else "This password will be hashed and then stored"
+    in
     div [class "panel-wrap"]
     [
         div [class "panel"]
         [
             a [class "close close-panel", onClick DeactivatePanel][]
-           , h4 [] [text model.userFocusOn.login]
+           , h4 [] [text user.login]
            ,
               input [class "form-control", type_ "text", placeholder "New Username", onInput Login] []
               , br [] []
               , hashPasswordMenu model
-              , input [class "form-control", type_ "password", placeholder "New Password", onInput Password, attribute "autocomplete" "new-password" ] []
+              , input [class "form-control", type_ "password", placeholder phMsg, onInput Password, attribute "autocomplete" "new-password" ] []
               , br [] []
-              , button [class "btn btn-sm btn-danger",onClick (CallApi ( deleteUser model.userFocusOn.login))] [text "Delete "]
-              , button [class "btn btn-sm btn-primary", onClick (SubmitUpdatedInfos model.userFocusOn)] [text "Submit"]
+              , button [class "btn btn-sm btn-danger",onClick (CallApi ( deleteUser user.login))] [text "Delete "]
+              , button [class "btn btn-sm btn-primary", onClick (SubmitUpdatedInfos user)] [text "Submit"]
 
         ]
     ]
@@ -97,7 +107,7 @@ displayUsersConf model u =
         users =
             (map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser model user)
         newUserMenu =
-            if model.addMod == On then
+            if model.panelMode == AddMode then
                 displayRightPanelAddUser model
             else
                 div [] []
@@ -134,7 +144,7 @@ displayUsersConf model u =
 displayUser : Model -> User -> Html Msg
 displayUser model user =
     let
-        panel = if model.editMod == Off then div [][] else displayRightPanel model
+        panel = if model.panelMode /= EditMode user then div [][] else displayRightPanel model
     in
         div [ class "col-xs-12 col-sm-6 col-md-3" ]
             [ div [ class "user", id "fast-transition"]
