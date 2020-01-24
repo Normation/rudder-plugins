@@ -7,25 +7,25 @@ PROXY_ENV = $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY))
 # grep 'GET=' */SOURCES/Makefile to patch everywhere
 GET=get() { $(PROXY_ENV) curl -s -L -o "$$1.part" "$$2" && { openssl dgst -sha256 "$$1.part" | grep -q "$$3" || { echo "Wrong checksum, aborting"; exit 1; }; } && mv "$$1.part" "$$1"; }; get
 
-FILES = rudder-synchronize ansible-report.json techniques ansible.sh
-SCRIPTS = postinst prerm
+RUDDER_SYNCHRONIZE_SHA256 = 137d06de4479a132643407d79a580453f475583cf532e60c7ba8c00e0d6793d4
+FILES = rudder-synchronize ansible-policies.json techniques ansible.sh
+SCRIPTS = postinst prerm remove_configuration
 
 include ../makefiles/common-plugin.mk
 
-
-target/ansible-report.json:
-	tools/ansible-report
+target/ansible-policies.json:
+	tools/ansible-policies
 
 target/ansible.sh:
 	cp tools/ansible.sh target/ansible.sh
 
 target/rudder-synchronize:
-	wget https://repository.rudder.io/tools/rudder-synchronize -O target/rudder-synchronize
+	$(GET) target/rudder-synchronize https://repository.rudder.io/tools/rudder-synchronize $(RUDDER_SYNCHRONIZE_SHA256)
 
 target/techniques:
 	cp -R configuration/* target/
 
 clean:
-	rm -f $(FULL_NAME)-*.rpkg pom.xml packaging/ansible-report.json
+	rm -f $(FULL_NAME)-*.rpkg pom.xml packaging/ansible-policies.json
 	rm -rf target
 

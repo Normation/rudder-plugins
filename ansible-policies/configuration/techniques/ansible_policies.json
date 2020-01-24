@@ -4,7 +4,8 @@
       "PathPlaybookServer",
       "PathPlaybookAgent"
     ],
-    "bundle_name": "ansible_report",
+    "category": "Ansible_Policies_plugin",
+    "bundle_name": "ansible_policies",
     "description": "This technique install and deploy an Ansible Playbook on a target node and execute it. Its result will be reported in details in a Rudder report.",
     "method_calls": [
       {
@@ -30,7 +31,7 @@
       },
       {
         "args": [
-          "/var/rudder/packages/rudder-plugin-ansible-report/ansible.sh \"${PathPlaybookAgent}\" \"${this.promiser_pid}\" \"${report_data.canonified_directive_id}\"",
+          "/var/rudder/packages/rudder-plugin-ansible-policies/ansible.sh \"${PathPlaybookAgent}\" \"${this.promiser_pid}\" \"${report_data.canonified_directive_id}\"",
           "0",
           "2"
         ],
@@ -40,7 +41,7 @@
       },
       {
         "args": [
-          "/var/rudder/tmp/ansible_report_${this.promiser_pid}_${report_data.canonified_directive_id}",
+          "/var/rudder/tmp/ansible_policies_${this.promiser_pid}_${report_data.canonified_directive_id}",
           "",
           ""
         ],
@@ -50,7 +51,7 @@
       },
       {
         "args": [
-          "/var/rudder/tmp/ansible_report_${this.promiser_pid}_${report_data.canonified_directive_id}"
+          "/var/rudder/tmp/ansible_policies_${this.promiser_pid}_${report_data.canonified_directive_id}"
         ],
         "class_context": "any",
         "component": "File absent",

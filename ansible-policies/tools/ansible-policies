@@ -34,7 +34,7 @@ def trackTechniques(basePath):
     except:
         data = {}
     data["techniques"] = getTechniques(basePath)
-    makeJsonFile("target/ansible-report.json", data)
+    makeJsonFile("target/ansible-policies.json", data)
 
 def trackConfig(basePath):
     trackTechniques(basePath)

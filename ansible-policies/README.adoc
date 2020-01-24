@@ -1,4 +1,4 @@
-# Rudder plugin: ansible_report
+# Rudder plugin: ansible_policies
 
 This project is part of Rudder - IT infrastructure Automation and Compliance.
 See: http://rudder.io for more information.
@@ -9,8 +9,8 @@ other general information.
 
 // Everything after this line goes into Rudder documentation
 // ====doc====
-[ansible_report-plugin]
-= ansible_report
+[ansible_policies-plugin]
+= ansible_policies
 
 This plugin distributes a technique to run Ansible jobs from Rudder and reports their results.
 
@@ -29,17 +29,17 @@ Basically, when assigning a directive declined from this technique to a node, it
 To install this plugin:
 
 * Run the command `rudder package install-file <path-to-the-ansible-rpkg>`
-* Modify the newly added technique `ansible-report` in the technique editor, by modifying the description.
+* Modify the newly added technique `ansible-policies` in the technique editor, by modifying the description.
 * On your server, run the following:
 
 ----
 cd /var/rudder/rudder-configuration-repository
-git add techniques/ansible_report
-git commit -m "Adding ansible_report technique from the ansible-report plugin"
+git add techniques/ansible_policies
+git commit -m "Adding ansible_policies technique from the ansible-policies plugin"
 rudder server reload-techniques
 ----
 
-You can now use the techniques under the `Ansible-report` category in your directive tree.
+You can now use the techniques under the `Ansible-policies` category in your directive tree.
 
 == Usage
 
@@ -80,7 +80,7 @@ An example of a basic playbook to check the status of services and report the ho
 
 ----
 
-At runtime, the technique will store the Ansible output in a local temporary file under `/var/rudder/tmp/ansible_report`. It will then be reported in a classic Rudder report to be available in the Rudder interface by using the generic method `File report content`.
+At runtime, the technique will store the Ansible output in a local temporary file under `/var/rudder/tmp/ansible_policies`. It will then be reported in a classic Rudder report to be available in the Rudder interface by using the generic method `File report content`.
 The execution is done through the `Command execution result` generic method to differentiate the repaired/kept cases. If the Ansible runner did make a change on the system, it will report a repaired, else, a kept report.
 
 An example of Ansible runner output

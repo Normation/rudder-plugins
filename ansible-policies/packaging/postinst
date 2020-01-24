@@ -1,7 +1,7 @@
 #!/bin/bash
-PLUGIN_FULL_NAME="rudder-plugin-ansible-report"
-PLUGIN_NAME="ansible-report"
-PRETTY_NAME="Ansible Report"
+set -x
+PLUGIN_FULL_NAME="rudder-plugin-ansible-policies"
+PRETTY_NAME="Ansible Policies"
 CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
 
 # Code below should be mostly comon between the plugins
@@ -10,7 +10,7 @@ CONFIG_REPO=/var/rudder/configuration-repository
 
 CATEGORY="$PRETTY_NAME plugin"
 C_CATEGORY=$(echo $CATEGORY | sed "s/[^a-zA-Z0-9_]/_/g")
-FOLDERS="techniques/$C_CATEGORY techniques/ncf_techniques"
+FOLDERS="techniques/$C_CATEGORY"
 
 mkdir -p $CONFIG_REPO/techniques/$C_CATEGORY
 
@@ -18,18 +18,10 @@ cat <<EOT > $CONFIG_REPO/techniques/$C_CATEGORY/category.xml
 <xml>
   <name>$CATEGORY</name>
   <description>
-    Techniques from the $PRETTY_NAME plugin
+    Techniques from the $CATEGORY
   </description>
 </xml>
 EOT
-
-
-for file in $SOURCE_DIR/*; do
-  BASE=$(echo $file | sed "s/.*\///" | sed "s/\.[^.]*$//")
-  C_BASE=$(echo $BASE | sed "s/[^a-zA-Z0-9_]/_/g")
-  mkdir -p $CONFIG_REPO/techniques/$C_CATEGORY/$C_BASE
-  cd $CONFIG_REPO/techniques/ncf_techniques && ln -rs $CONFIG_REPO/techniques/$C_CATEGORY/$C_BASE && cd -
-done
 
 # Import Generic Methods
 cd $CONFIG_REPO
@@ -42,8 +34,7 @@ git commit -m "$CATEGORY installation"
 /opt/rudder/bin/rudder-fix-repository-permissions
 
 # Make extra scripts executables
-chmod +x $CONFIGURATION_PATH/rudder-synchronize $CONFIGURATION_PATH/ansible.sh
+chmod +x $CONFIGURATION_PATH/rudder-synchronize $CONFIGURATION_PATH/ansible.sh $CONFIGURATION_PATH/remove_configuration
 
 # Import Techniques
 ${CONFIGURATION_PATH}/rudder-synchronize import technique ${CONFIGURATION_PATH}/techniques
-rudder server reload-techniques

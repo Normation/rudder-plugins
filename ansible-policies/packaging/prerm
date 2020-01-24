@@ -1,0 +1,15 @@
+#!/bin/bash
+set -x
+PLUGIN_FOLDER="/var/rudder/packages/rudder-plugin-ansible-policies"
+
+# Remove techniques
+$PLUGIN_FOLDER/remove_configuration $PLUGIN_FOLDER $PLUGIN_FOLDER/ansible-policies.json
+
+## Remove plugin category
+NAME=Ansible_Policies_plugin
+cd /var/rudder/configuration-repository/techniques
+git reset
+git rm -r $NAME
+git commit -m "Ansible-policies plugin uninstallation"
+rudder server reload-techniques
+
