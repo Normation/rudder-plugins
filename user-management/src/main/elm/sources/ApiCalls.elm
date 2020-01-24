@@ -9,7 +9,7 @@ module ApiCalls exposing (..)
 import DataTypes exposing (Authorization, Model, Msg(..), User, UserInfos)
 import Http exposing (emptyBody, expectJson, jsonBody, request, send)
 import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiRoleCoverage, decodeApiUpdateUserResult, decodeGetRoleApiResult)
-import JsonEncoder exposing (encodeAuthorization, encodeUser)
+import JsonEncoder exposing (encodeAddUser, encodeAuthorization, encodeUser)
 
 getUrl: DataTypes.Model -> String -> String
 getUrl m url =
@@ -64,15 +64,15 @@ computeRoleCoverage model authorizations =
     in
     send ComputeRoleCoverage req
 
-addUser : Model -> User -> String -> Cmd Msg
-addUser model user password =
+addUser : Model -> User -> Cmd Msg
+addUser model user =
     let
         req =
             request
                 { method          = "POST"
                 , headers         = []
                 , url             = getUrl model "/usermanagement"
-                , body            = jsonBody (encodeUser (user, password))
+                , body            = jsonBody (encodeAddUser (user, model.password, model.hashedPasswd))
                 , expect          = expectJson decodeApiAddUserResult
                 , timeout         = Nothing
                 , withCredentials = False
@@ -104,7 +104,7 @@ updateUser model toUpdate password user =
                 { method          = "POST"
                 , headers         = []
                 , url             = getUrl model ("/usermanagement/update/" ++ toUpdate)
-                , body            = jsonBody (encodeUser (user ,password))
+                , body            = jsonBody (encodeAddUser (user, password, model.hashedPasswd))
                 , expect          = expectJson decodeApiUpdateUserResult
                 , timeout         = Nothing
                 , withCredentials = False

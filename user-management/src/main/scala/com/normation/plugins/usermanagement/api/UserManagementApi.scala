@@ -119,6 +119,7 @@ class UserManagementApiImpl(
 
   override def schemas = UserManagementApi
 
+
   def extractUser(json: JValue): Box[User] = {
     for {
       username <- CompleteJson.extractJsonString(json, "username")
@@ -127,6 +128,10 @@ class UserManagementApiImpl(
     } yield {
       User(username, password, roles.toSet)
     }
+  }
+
+  def extractIsHashed(json: JValue): Box[Boolean] = {
+    CompleteJson.extractJsonBoolean(json, "isPreHashed")
   }
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
@@ -207,9 +212,11 @@ class UserManagementApiImpl(
       val value: Box[JValue]  = for {
         json           <- req.json ?~! "No JSON data sent"
         user           <- extractUser(json)
+        isPreHashed    <- extractIsHashed(json)
         checkExistence <- if (userService.authConfig.users.keySet contains user.username) Failure(s"User '${user.username}' already exists") else Full("ok")
-        added          <- UserManagementService.add(user)
+        added          <- UserManagementService.add(user, isPreHashed)
         _              <- reload()
+
       } yield {
         Serialization.serializeUser(added)
       }
@@ -244,8 +251,9 @@ class UserManagementApiImpl(
       val value: Box[JValue]  = for {
         json           <- req.json ?~! "No JSON data sent"
         user           <- extractUser(json)
+        isPreHashed       <- extractIsHashed(json)
         checkExistence <- if (!(userService.authConfig.users.keySet contains id)) Failure(s"'$id' does not exists") else Full("ok")
-        updated        <- UserManagementService.update(id, user)
+        updated        <- UserManagementService.update(id, user, isPreHashed)
         _              <- reload()
       } yield {
         Serialization.serializeUser(user)

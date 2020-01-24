@@ -3,12 +3,9 @@ port module UserManagement exposing (processApiError, update)
 import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
 import DataTypes exposing (Authorization, EditMod(..), Model, Msg(..), User, Username, Users)
-
-import Debug exposing (log)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, defaultConfig, init, subscriptions)
-
 import List exposing (filter)
 import String exposing (isEmpty)
 import Toasty
@@ -82,11 +79,16 @@ update msg model =
         ToastyMsg subMsg ->
             Toasty.update defaultConfig ToastyMsg subMsg model
 
-        ActivePanelSettings username->
-            ({model | editMod = On, userFocusOn = username}, Cmd.none)
+        ActivePanelAddUser ->
+            if model.addMod == On then
+                ({model | addMod = Off}, Cmd.none)
+            else
+                ({model | addMod = On, editMod = Off}, Cmd.none)
+        ActivePanelSettings username ->
+            ({model | addMod = Off, editMod = On, userFocusOn = username}, Cmd.none)
 
         DeactivatePanel ->
-            ({model | editMod = Off, userFocusOn = { login = "", authz = [], role = []}}, Cmd.none)
+            ({model | addMod = Off, editMod = Off, userFocusOn = { login = "", authz = [], role = []}}, Cmd.none)
 
 
         ComputeRoleCoverage result ->
@@ -142,10 +144,12 @@ update msg model =
                         u.login
             in
             ({model | password = "", login = "", userFocusOn = {login = newLogin, authz =[], role = []}}, updateUser model u.login model.password { u | login = model.login })
-        ShowNewUserMenu ->
-            ({model | addMod = On}, Cmd.none)
         SubmitNewUser u password ->
-            ({model | addMod = Off}, addUser model u password)
+            ({model | addMod = Off}, addUser model u)
+        PreHashedPasswd ->
+            ({model | hashedPasswd = True, clearPasswd = False}, Cmd.none)
+        ClearPasswd ->
+            ({model | clearPasswd = True, hashedPasswd = False}, Cmd.none)
 
 
 processApiError : Error -> Model -> ( Model, Cmd Msg )

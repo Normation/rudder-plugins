@@ -8,6 +8,7 @@ module DataTypes exposing (..)
 
 import Dict exposing (Dict)
 import Http exposing (Error)
+import String exposing (toUpper)
 import Toasty
 import Toasty.Defaults
 
@@ -16,6 +17,7 @@ type alias Users = Dict Username Authorization
 type alias Username = String
 type alias Password = String
 type alias RoleConf = List Role
+
 
 type alias Role =
     { id: String
@@ -65,6 +67,8 @@ type alias Model =
     , userFocusOn : User
     , password : String
     , login : String
+    , hashedPasswd : Bool
+    , clearPasswd : Bool
     }
 
 
@@ -79,15 +83,18 @@ type Msg
     | UpdateUser (Result Error String)
     | CallApi (Model -> Cmd Msg)
     | ActivePanelSettings User
+    | ActivePanelAddUser
     | DeactivatePanel
     | ChangeFocusOn User
     | Password String
     | Login String
     | AddRole User String
     | RemoveRole User String
-    | ShowNewUserMenu
     | SubmitUpdatedInfos User
     | SubmitNewUser User Password
+    | PreHashedPasswd
+    | ClearPasswd
+
       -- NOTIFICATIONS
     | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
     | Notification (Toasty.Msg Toasty.Defaults.Toast)

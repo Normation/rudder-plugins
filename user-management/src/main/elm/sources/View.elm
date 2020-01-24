@@ -31,6 +31,45 @@ view model =
         [ content
         , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
         ]
+hashPasswordMenu : Model -> Html Msg
+hashPasswordMenu model =
+    let
+        hashPasswdIsActivate =
+            if (model.clearPasswd == False) && (model.hashedPasswd == True) then
+                "active"
+            else
+                ""
+        clearPasswdIsActivate =
+            if (model.clearPasswd == True) && (model.hashedPasswd == False) then
+                "active"
+            else
+                ""
+    in
+        div [class "btn-group", attribute "role" "group"]
+        [
+              a [class ("btn btn-default " ++ hashPasswdIsActivate), onClick PreHashedPasswd][text "Enter pre-hashed value"]
+            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick ClearPasswd][text "Use clear text password"]
+        ]
+
+displayRightPanelAddUser : Model -> Html Msg
+displayRightPanelAddUser model =
+   div [class "panel-wrap"]
+   [
+       div [class "panel"]
+       [
+             a [class "close close-panel", onClick DeactivatePanel][]
+           , h4 [] [text ("Create user " ++ model.login)]
+           , div []
+           [
+                 input [class "form-control", type_ "text", placeholder "Username", onInput Login, value model.login, required True] []
+               , input [type_ "text", disabled True, hidden True] []
+               , hashPasswordMenu model
+               , input [type_ "password", disabled True, hidden True] []
+               , input [class "form-control", type_ "password", placeholder "Password", onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
+               , button [class "btn btn-sm btn-primary", onClick (SubmitNewUser (User model.login [] []) model.password)] [text "Submit"]
+           ]
+       ]
+   ]
 
 displayRightPanel : Model -> Html Msg
 displayRightPanel model =
@@ -43,6 +82,7 @@ displayRightPanel model =
            ,
               input [class "form-control", type_ "text", placeholder "New Username", onInput Login] []
               , br [] []
+              , hashPasswordMenu model
               , input [class "form-control", type_ "password", placeholder "New Password", onInput Password, attribute "autocomplete" "new-password" ] []
               , br [] []
               , button [class "btn btn-sm btn-danger",onClick (CallApi ( deleteUser model.userFocusOn.login))] [text "Delete "]
@@ -58,15 +98,7 @@ displayUsersConf model u =
             (map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser model user)
         newUserMenu =
             if model.addMod == On then
-                div []
-                [
-
-                     input [class "form-control", type_ "text", placeholder "New Username", onInput Login, value model.login, required True] []
-                    ,input [type_ "text", disabled True, hidden True] []
-                                                         , input [type_ "password", disabled True, hidden True] []
-                     , input [class "form-control", type_ "password", placeholder "New Password", onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
-                     , button [class "btn btn-sm btn-primary", onClick (SubmitNewUser (User model.login [] []) model.password)] [text "Submit"]
-                ]
+                displayRightPanelAddUser model
             else
                 div [] []
 
@@ -80,7 +112,7 @@ displayUsersConf model u =
                      text "Reload file"
                    , span [class "fa fa-refresh"][]
                 ]
-                , button [class "btn btn-sm btn-success new-icon", onClick ShowNewUserMenu]
+                , button [class "btn btn-sm btn-success new-icon", onClick ActivePanelAddUser]
                 [
                    text "Add User"
                 ]
