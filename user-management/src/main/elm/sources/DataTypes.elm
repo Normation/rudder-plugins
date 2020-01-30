@@ -17,7 +17,6 @@ type alias Username = String
 type alias Password = String
 type alias RoleConf = List Role
 
-
 type alias Role =
     { id: String
     , rights: List String
@@ -28,17 +27,10 @@ type alias Authorization =
     , custom: List String
     }
 
-
 type alias User =
     { login : String
     , authz : List String
     , role : List String
-    }
-
-type alias UserInfos =
-    { login : String
-    , password : String
-    , authz: Authorization
     }
 
 type alias UsersConf =
@@ -50,6 +42,12 @@ type PanelMode
   = AddMode
   | EditMode User
   | Closed
+
+type StateInput
+    = InvalidPassword
+    | InvalidUsername
+    | InvalidInputs
+    | ValidInputs
 
 type alias Model =
     { contextPath : String
@@ -63,8 +61,9 @@ type alias Model =
     , password : String
     , login : String
     , hashedPasswd : Bool
+    , isValidInput : StateInput
+    , authzToAddOnSave : List String
     }
-
 
 type Msg
     = GetUserInfo (Result Error UsersConf)
@@ -81,12 +80,11 @@ type Msg
     | DeactivatePanel
     | Password String
     | Login String
-    | AddRole User String
+    | AddRole String
     | RemoveRole User String
     | SubmitUpdatedInfos User
-    | SubmitNewUser User Password
+    | SubmitNewUser User
     | PreHashedPasswd
-    | ClearPasswd
 
       -- NOTIFICATIONS
     | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)

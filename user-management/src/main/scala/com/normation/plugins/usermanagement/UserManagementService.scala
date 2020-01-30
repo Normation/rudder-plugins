@@ -10,7 +10,6 @@ import com.normation.rudder.{AuthorizationType, Rights, Role, RoleToRights}
 import net.liftweb.common.{Box, Failure, Full}
 import net.liftweb.util.Helpers.tryo
 import org.springframework.core.io.{ClassPathResource => CPResource}
-
 import scala.xml.parsing.ConstructingParser
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 import scala.xml.{Elem, Node, NodeSeq}
