@@ -6,7 +6,7 @@ module ApiCalls exposing (..)
 -- API call to get the category tree
 
 
-import DataTypes exposing (Authorization, Model, Msg(..), User, UserInfos)
+import DataTypes exposing (Authorization, Model, Msg(..), User)
 import Http exposing (emptyBody, expectJson, jsonBody, request, send)
 import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiRoleCoverage, decodeApiUpdateUserResult, decodeGetRoleApiResult)
 import JsonEncoder exposing (encodeAddUser, encodeAuthorization, encodeUser)

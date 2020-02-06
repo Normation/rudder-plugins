@@ -6,13 +6,14 @@ module View exposing (..)
 
 
 import ApiCalls exposing (deleteUser)
-import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleConf, User, Username, Users, UsersConf)
+
+import DataTypes exposing (PanelMode(..), Model, Msg(..), RoleConf, Roles, StateInput(..), User, Username, Users, UsersConf)
 import Dict exposing (keys)
-import Html exposing (Html, a, br, button, div, h3, h4, h6, i, input, option, p, select, span, text)
-import Html.Attributes exposing (attribute, class, disabled, hidden, id, placeholder, required, type_, value)
+import Html exposing (Html, a, br, button, div, h2, h3, h4, h5, i, input, p, span, text)
+import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, required, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Init exposing (defaultConfig)
-import List exposing (filter, map)
+import List exposing (all, any, filter, map)
 import String exposing (isEmpty)
 import Toasty
 import Toasty.Defaults
@@ -49,31 +50,58 @@ hashPasswordMenu model =
         div [class "btn-group", attribute "role" "group"]
         [
               a [class ("btn btn-default " ++ hashPasswdIsActivate), onClick PreHashedPasswd][text "Enter pre-hashed value"]
-            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick ClearPasswd][text "Password to hash"]
+            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick PreHashedPasswd][text "Password to hash"]
         ]
 
 displayRightPanelAddUser : Model -> Html Msg
 displayRightPanelAddUser model =
    let
        phMsg = if model.hashedPasswd then "New hashed password" else "This password will be hashed and then stored"
+       isHidden = if model.hashedPasswd then "text" else "password"
+       emptyUsername =
+           case model.panelMode of
+               AddMode ->
+                   if (model.isValidInput == InvalidUsername || model.isValidInput == InvalidInputs) then "invalid-username" else "valid-input"
+               _       ->
+                   "valid-input"
+
+       emptyPassword =
+           case model.panelMode of
+               AddMode ->
+                   if (model.isValidInput == InvalidPassword || model.isValidInput == InvalidInputs) then "invalid-password" else "valid-input"
+               _       ->
+                   "valid-input"
    in
    div [class "panel-wrap"]
    [
        div [class "panel"]
        [
-             a [class "close close-panel", onClick DeactivatePanel][]
-           , h4 [] [text ("Create user " ++ model.login)]
+             button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
+           , div[class "card-header"][h2 [class "title-username"] [text "Create User"]]
            , div []
            [
-                 input [class "form-control", type_ "text", placeholder "Username", onInput Login, value model.login, required True] []
-               , input [type_ "text", disabled True, hidden True] []
+                 input [id emptyUsername, class "form-control username-input", type_ "text", placeholder "Username", onInput Login, required True] []
                , hashPasswordMenu model
-               , input [type_ "password", disabled True, hidden True] []
-               , input [class "form-control", type_ "password", placeholder phMsg, onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
-               , button [class "btn btn-sm btn-primary", onClick (SubmitNewUser (User model.login [] []) model.password)] [text "Submit"]
+               , input [id emptyPassword, class "form-control", type_ isHidden, placeholder phMsg, onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
+               , button [class "btn btn-sm btn-success btn-save", onClick (SubmitNewUser (User model.login [] []))] [text "Save"]
            ]
        ]
    ]
+
+getDiffRoles : Roles -> List String -> List String
+getDiffRoles total sample =
+    let
+        t =  keys total
+    in
+        (filter (\r -> (all (\r2 -> r /= r2) sample)) t)
+
+displayDropdownRoleList : List String -> Html Msg
+displayDropdownRoleList roles =
+    let
+        tokens = List.map (\r -> a [href "#", onClick (AddRole r)][text r]) roles
+    in
+    div [class "dropdown-content"] tokens
+
 
 displayRightPanel : Model -> Html Msg
 displayRightPanel model =
@@ -81,23 +109,38 @@ displayRightPanel model =
         user = case model.panelMode of
             EditMode u -> u
             _ -> User "" [] []
-        phMsg = if model.hashedPasswd then "New hashed password" else "This password will be hashed and then stored"
+        availableRoles = getDiffRoles model.roles (user.authz ++ model.authzToAddOnSave)
+        addBtn =
+            if List.isEmpty availableRoles then
+                button [id "addBtn-disabled", class "addBtn", disabled True][i [class "fa fa-plus"][]]
+            else
+                button [class "addBtn"][i [class "fa fa-plus"][]]
+        isHidden = if model.hashedPasswd then "text" else "password"
     in
     div [class "panel-wrap"]
     [
         div [class "panel"]
         [
-            a [class "close close-panel", onClick DeactivatePanel][]
-           , h4 [] [text user.login]
-           ,
-              input [class "form-control", type_ "text", placeholder "New Username", onInput Login] []
-              , br [] []
-              , hashPasswordMenu model
-              , input [class "form-control", type_ "password", placeholder phMsg, onInput Password, attribute "autocomplete" "new-password" ] []
-              , br [] []
-              , button [class "btn btn-sm btn-danger",onClick (CallApi ( deleteUser user.login))] [text "Delete "]
-              , button [class "btn btn-sm btn-primary", onClick (SubmitUpdatedInfos user)] [text "Submit"]
-
+           div[class "panel-header"]
+           [
+                h2 [class "title-username"] [text user.login]
+              , button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
+           ]
+           , input [class "form-control username-input", type_ "text", placeholder "New Username", onInput Login] []
+           , hashPasswordMenu model
+           , input [class "form-control", type_ isHidden, placeholder "New Password", onInput Password, attribute "autocomplete" "new-password", value model.password ] []
+           , h4 [class "role-title"][text "Roles"]
+           , div [class "role-management-wrapper"]
+           [
+                  div [id "input-role"][(displayAddAuth model user)]
+                , div [class "dropdown"]
+                [
+                      addBtn
+                    , (displayDropdownRoleList availableRoles)
+                ]
+           ]
+           , button [class "btn btn-sm btn-danger btn-delete", onClick (CallApi ( deleteUser user.login))] [text "Delete"]
+           , button [class "btn btn-sm btn-success btn-save", onClick (SubmitUpdatedInfos {user | role = user.role ++ model.authzToAddOnSave})] [text "Save"]
         ]
     ]
 
@@ -105,88 +148,99 @@ displayUsersConf : Model -> Users -> Html Msg
 displayUsersConf model u =
     let
         users =
-            (map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser model user)
+            (map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser user)
         newUserMenu =
             if model.panelMode == AddMode then
                 displayRightPanelAddUser model
             else
                 div [] []
-
+        panel =
+            case model.panelMode of
+                EditMode user -> displayRightPanel model
+                _             -> div [][]
     in
     div [ class "row" ]
-        [ div [ class "col-xs-12" ]
-            [ h3 []
-                [ text "Rudder Users"
-                , button [class "btn btn-box-tool btn-blue btn-sm", onClick SendReload]
+        [
+            div [class "header-plugin"]
+            [
+                  button [class "btn btn-sm btn-success new-icon btn-add", onClick ActivePanelAddUser][text "Create"]
+                , button [class "btn btn-box-tool btn-blue btn-sm btn-reload", onClick SendReload]
                 [
-                     text "Reload file"
-                   , span [class "fa fa-refresh"][]
-                ]
-                , button [class "btn btn-sm btn-success new-icon", onClick ActivePanelAddUser]
-                [
-                   text "Add User"
+                      text "Reload"
+                    , span [id "reloadBtn", class "fa fa-refresh"][]
                 ]
                 , newUserMenu
-                ]
-
-            ]
-        , div [ class "col-xs-12" ]
-            [ p [ class "callout-fade callout-info" ]
-                [ div [ class "marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
-                , text ("Password encoder: " ++ model.digest)
-                ]
-            ]
-        , div [ class "col-xs-12 user-list" ]
-            [ div [ class "row " ] users ]
-        ]
-
-
-displayUser : Model -> User -> Html Msg
-displayUser model user =
-    let
-        panel = if model.panelMode /= EditMode user then div [][] else displayRightPanel model
-    in
-        div [ class "col-xs-12 col-sm-6 col-md-3" ]
-            [ div [ class "user", id "fast-transition"]
-                [ div [ class "row" ]
-                    [ h4 [ class "col-xs-12", onClick (ActivePanelSettings user) ]
-                        [ span [ class "fa fa-user user-icon" ] []
-                        , text user.login
-                        ]
-                    ]
-                , div []
-                    [ h6 [] [ span [] [ text "ROLES" ] ]
-                    , div [ class "list-auths" ] (displayAuth model user )
-
-                    ]
-                ]
                 , panel
             ]
+            , div [ class "col-xs-4" ]
+            [
+                p [ class "callout-fade callout-info" ]
+                [
+                      div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+                    , text ("Password encoder: " ++ model.digest)
+                ]
+            ]
+            , div [ class "col-xs-12 user-list" ][ div [ class "row " ] users ]
+        ]
 
-
-displayAuth : Model -> User -> List (Html Msg)
-displayAuth model user  =
+displayUser : User -> Html Msg
+displayUser user =
     let
-        test =
+        starAdmin = if (any (\a -> a == "administrator") user.authz ) then  i [class "fa fa-star admin-star"][] else div[][]
+    in
+    div [class "user-card-wrapper", onClick (ActivePanelSettings user)]
+    [
+        div [class "user-card"]
+        [
+            div [class "user-card-inner"]
+            [
+                  starAdmin
+                , h3 [id "name"][text user.login]
+            ]
+            , displayAuth  user
+        ]
+    ]
+
+displayAddAuth : Model -> User -> Html Msg
+displayAddAuth model user  =
+    let
+        newAddedRole =
+         List.map (
+             \x ->
+                 span [ class "auth-added" ][ text x ]
+         ) (model.authzToAddOnSave)
+
+        userRoles =
             List.map (
                 \x ->
-                    let
-                        updatedUser = {user | role = filter (\r -> r == x) user.role, authz = filter (\r -> r == x) user.authz}
-                    in
                     span [ class "auth" ]
                     [
                           text x
-                        , a [ class "close remove-role", onClick (RemoveRole user x)] []
+                        , div [id "remove-role",class "fa fa-times", onClick (RemoveRole user x)] []
                     ]
+
             ) (user.role ++ user.authz)
-        selection = displaySelectRole model user
+        roles = userRoles ++ newAddedRole
     in
-        test ++ [selection]
+    if (List.isEmpty roles) then
+        span[class "list-auths"][]
+    else
+        span[class "list-auths"](userRoles ++ newAddedRole)
 
-
-displaySelectRole: Model -> User -> Html Msg
-displaySelectRole model user =
-    div []
-    [
-        select [class "add form-control", onInput (AddRole user)] (List.map (\x ->option [value  (x.id)] [text x.id]) model.rolesConf)
-    ]
+displayAuth : User -> Html Msg
+displayAuth user  =
+    let
+        userRoles =
+            List.map (
+                \x ->
+                    span [ class "auth" ][text x]
+            ) (user.role ++ user.authz)
+    in
+    if (List.isEmpty userRoles) then
+        span[class "list-auths-empty"]
+        [
+            i[class "fa fa-lock fa-4x"][]
+            , p [][text "No rights found"]
+        ]
+    else
+        span[class "list-auths"](userRoles)

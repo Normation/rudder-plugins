@@ -5,7 +5,7 @@ module Init exposing (..)
 ------------------------------
 
 import ApiCalls exposing (getUsersConf)
-import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..))
+import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), StateInput(..))
 import Dict exposing (fromList)
 import Html.Attributes exposing (style)
 import Http
@@ -27,7 +27,7 @@ authorizations =
 init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
-        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] authorizations Toasty.initialState Closed "" "" True
+        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] authorizations Toasty.initialState Closed "" "" True ValidInputs []
     in
     ( initModel
     , getUsersConf initModel
@@ -80,6 +80,7 @@ defaultConfig =
             , style "list-style-type" "none"
             , style "padding" "0"
             , style "margin" "0"
+            , style "z-index" "9999"
             ]
 
 
