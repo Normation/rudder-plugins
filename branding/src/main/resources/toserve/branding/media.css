@@ -338,7 +338,7 @@ ui-dropdown-panel{
 }
 
 /* CSS EFFECTS */
-#headerBar{
-    transition-property: background-color, color;
-    transition-duration:.6s;
+#headerBar > .background{
+  transition-duration:.6s;
+  transition-property: color, background-color;
 }

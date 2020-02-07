@@ -1,6 +1,6 @@
 <html>
 <body data-lift-content-id="branding-main">
-  <div class="tw-bs" id="branding-main" data-lift="surround?with=common-layout;at=content">
+  <div class="row" id="branding-main" data-lift="surround?with=common-layout;at=content">
    <head_merge>
 
    <title>Plugin Branding</title>
@@ -17,8 +17,8 @@
      var app  = Elm.Branding.init({ node : main, flags: flags});
      app.ports.applyCss.subscribe(function(settings) {
        var [bgColor, txtColor, txt] = settings;
-       $('#headerBar').css('background-color', bgColor).css('color', txtColor);
-       $('#headerBar > span').text(txt);
+       $('#headerBar > .background').css('background-color', bgColor).css('color', txtColor);
+       $('#headerBar > .background > span').text(txt);
      });
    </script>
   </div>
