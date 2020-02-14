@@ -63,6 +63,7 @@ object Serialisation {
         case PasswordEncoder.SHA1      => "SHA-1"
         case PasswordEncoder.SHA256    => "SHA-256"
         case PasswordEncoder.SHA512    => "SHA-512"
+        case PasswordEncoder.BCRYPT    => "BCRYPT"
         case _                         => "plain text"
       }
 
