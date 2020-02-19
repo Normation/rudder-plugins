@@ -136,7 +136,7 @@ form{
 	margin-top: -20px;
 }
 .preview-window > .top-menu{
-	height: 30px;
+	height: 25px;
 	background-color: #f08004;
 	position: relative;
 	width: 100%;
@@ -147,12 +147,11 @@ form{
 	margin-top: 0px;
 }
 
-.preview-window > .top-menu:after{
-	content: "";
+.preview-window > .top-menu > span{
 	position: absolute;
 	left: 0;
 	top: 0;
-	height: 30px;
+	height: 25px;
 	width: 20%;
 	background-color: #d57b1a;
 	z-index: 100;
