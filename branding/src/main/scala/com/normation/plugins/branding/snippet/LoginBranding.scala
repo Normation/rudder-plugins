@@ -68,21 +68,13 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
     val bar = data match {
       case Full(data) if (data.displayBarLogin) =>
         <div id="headerBar">
-          <span>{if (data.displayLabel) data.labelText}</span>
+          <div class="background">
+            <span>{if (data.displayLabel) data.labelText}</span>
+          </div>
           <style>
-          #login-page form p.legend {{margin-bottom: 0px; }}
-          #headerBar {{
-            float: left;
-            height: 30px;
-            padding-top:5px;
-            font-size:20px;
-            background-color: {data.barColor.toRgba};
-            color: {data.labelColor.toRgba};
-            font-weight: 700;
-            width:100%;
-            text-align:center;
-            margin-bottom: 30px;
-          }}
+            #login-page form p.legend {{margin-bottom: 0px; }}
+            #headerBar {{background-color: #fff; float: left;height: 30px;width:100%;margin-bottom: 30px; position: relative;}}
+            #headerBar > .background {{background-color: {data.barColor.toRgba}; color: {data.labelColor.toRgba}; font-size:20px; text-align:center; font-weight: 700; position: absolute; ;top: 0;bottom: 0;left: 0;right: 0;}}
           </style>
         </div>
       case _ => NodeSeq.Empty

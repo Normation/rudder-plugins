@@ -64,11 +64,14 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
     val bar = data match {
       case Full(data) if (data.displayBar) =>
       <div id="headerBar">
-        <span>{if (data.displayLabel) data.labelText}</span>
+        <div class="background">
+          <span>{if (data.displayLabel) data.labelText}</span>
+        </div>
         <style>
           .main-header {{top:30px }}
           .content-wrapper, .main-sidebar {{padding-top:80px}}
-          #headerBar {{height: 30px; padding-top:5px; font-size:20px; position: fixed; z-index:1050;background-color: {data.barColor.toRgba}; color: {data.labelColor.toRgba }; font-weight: 700; width:100%; text-align:center;}}
+          #headerBar {{height: 30px; position: fixed; z-index:1050; background-color: #fff; width:100%;}}
+          #headerBar > .background {{background-color: {data.barColor.toRgba}; color: {data.labelColor.toRgba }; font-size:20px; font-weight: 700; text-align:center; position: absolute;top: 0;bottom: 0;left: 0;right: 0;}}
         </style>
       </div>
       case _ => NodeSeq.Empty
