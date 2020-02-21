@@ -5,7 +5,7 @@ PROXY_ENV = $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY))
 # grep 'GET=' */SOURCES/Makefile to patch everywhere
 GET=get() { $(PROXY_ENV) curl -s -L -o "$$1.part" "$$2" && { openssl dgst -sha256 "$$1.part" | grep -q "$$3" || { echo "Wrong checksum, aborting"; exit 1; }; } && mv "$$1.part" "$$1"; }; get
 
-RUDDER_SYNCHRONIZE_SHA256 = ccdc4f55af90a96c50caac639b19e2a1717cded9e0fbdd3fa7ff1c2d0208e64d
+RUDDER_SYNCHRONIZE_SHA256 = 137d06de4479a132643407d79a580453f475583cf532e60c7ba8c00e0d6793d4
 FILES = remove-configuration rudder-synchronize openscap-policies.json techniques
 SCRIPTS = postinst prerm
 OTHER_ARCHIVES = target/external-report.txz
