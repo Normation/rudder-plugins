@@ -12,13 +12,12 @@
    </head_merge>
    <main></main>
    <script>
-     var main = document.querySelector("main");
-     var flags = { contextPath : contextPath };
-     var app  = Elm.Branding.init({ node : main, flags: flags});
+     var main         = document.querySelector("main");
+     var flags        = { contextPath : contextPath };
+     var app          = Elm.Branding.init({ node : main, flags: flags});
      app.ports.applyCss.subscribe(function(settings) {
-       var [bgColor, txtColor, txt] = settings;
-       $('#headerBar > .background').css('background-color', bgColor).css('color', txtColor);
-       $('#headerBar > .background > span').text(txt);
+       $('#headerBar > .background').css('background-color', settings.bgColor).css('color', settings.txtColor);
+       $('#headerBar > .background > span').text(settings.labelTxt);
      });
    </script>
   </div>

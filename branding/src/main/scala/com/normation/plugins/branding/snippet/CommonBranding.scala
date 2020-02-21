@@ -62,21 +62,84 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
   def display(xml:NodeSeq) = {
     val data = confRepo.getConf
     val bar = data match {
-      case Full(data) if (data.displayBar) =>
+      case Full(d) if (d.displayBar) =>
       <div id="headerBar">
         <div class="background">
-          <span>{if (data.displayLabel) data.labelText}</span>
+          <span>{if (d.displayLabel) d.labelText}</span>
         </div>
         <style>
           .main-header {{top:30px }}
           .content-wrapper, .main-sidebar {{padding-top:80px}}
           #headerBar {{height: 30px; position: fixed; z-index:1050; background-color: #fff; width:100%;}}
-          #headerBar > .background {{background-color: {data.barColor.toRgba}; color: {data.labelColor.toRgba }; font-size:20px; font-weight: 700; text-align:center; position: absolute;top: 0;bottom: 0;left: 0;right: 0;}}
+          #headerBar > .background {{background-color: {d.barColor.toRgba}; color: {d.labelColor.toRgba }; font-size:20px; font-weight: 700; text-align:center; position: absolute;top: 0;bottom: 0;left: 0;right: 0;}}
         </style>
       </div>
       case _ => NodeSeq.Empty
     }
-    ("* -*" #> bar).apply(xml)
+    var (customWideLogo, customSmallLogo, rudderLogo) = data match {
+      case Full(d) =>
+        ( d.wideLogo.commonWideLogo
+        , d.smallLogo.commonSmallLogo
+        , <a target="_blank" href="https://www.rudder.io/" class="rudder-branding-footer">
+            {if(d.wideLogo.enable  && d.wideLogo.data.isDefined ) <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-nologo.svg" class="rudder-branding-logo-lg"/> else NodeSeq.Empty}
+            {if(d.smallLogo.enable && d.smallLogo.data.isDefined) <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg"     class="rudder-branding-logo-sm"/> else NodeSeq.Empty}
+          </a>
+        )
+      case _       =>
+        ( <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-nologo.svg" class="rudder-branding-logo-lg"/>
+        , <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg"     class="rudder-branding-logo-sm"/>
+        , NodeSeq.Empty
+        )
+    }
+    var style =
+      <style>
+        .custom-branding-logo {{
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        flex: 1;
+        }}
+        .sidebar-menu > li.treeview.footer{{
+        margin-top: 0;
+        }}
+        .sidebar-menu > li.plugin-info{{
+        display: block !important;
+        margin-top: auto;
+        }}
+        .sidebar-menu>li.plugin-info > a{{
+        border: none !important;
+        padding: 8px;
+        }}
+        a.rudder-branding-footer{{
+        opacity: .6;
+        transition-duration: .2s;
+        }}
+        a.rudder-branding-footer:hover{{
+        opacity: 1;
+        }}
+        .sidebar-collapse a.rudder-branding-footer .rudder-branding-logo-lg,
+        a.rudder-branding-footer .rudder-branding-logo-sm{{
+        display: none;
+        }}
+        a.rudder-branding-footer .rudder-branding-logo-lg,
+        .sidebar-collapse a.rudder-branding-footer .rudder-branding-logo-sm{{
+        display: block;
+        width: 100%;
+        }}
+        .sidebar-collapse a.rudder-branding-footer .rudder-branding-logo-sm{{
+        max-width: 35px;
+        }}
+      </style>
+    var commonBrandingCss : NodeSeq = data match {
+      case Full(d) => (d.wideLogo.enable, d.wideLogo.data, d.smallLogo.enable, d.smallLogo.data) match {
+        case (true, Some(wideLogoData), _, _)  => style
+        case (_, _, true, Some(smallLogoData)) => style
+        case _ => NodeSeq.Empty
+      }
+      case _       => NodeSeq.Empty
+    }
+
+    ( ".logo-lg *" #> customWideLogo &  ".logo-mini *" #> customSmallLogo & ".plugin-info -*" #> rudderLogo & ".plugin-info -*" #> commonBrandingCss).apply( ("* -*" #> bar & ".treeview-footer -*" #> rudderLogo).apply(xml) )
   }
 
 }

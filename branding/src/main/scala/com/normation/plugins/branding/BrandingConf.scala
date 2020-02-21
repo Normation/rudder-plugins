@@ -49,12 +49,9 @@ final case class BrandingConf (
   , displayLabel     : Boolean
   , labelText        : String
   , labelColor       : JsonColor
-  , enableLogo       : Boolean
-  , displayFavIcon   : Boolean
-  , displaySmallLogo : Boolean
-  , displayBigLogo   : Boolean
+  , wideLogo         : Logo
+  , smallLogo        : Logo
   , displayBarLogin  : Boolean
-  , displayLoginLogo : Boolean
   , displayMotd      : Boolean
   , motd             : String
 )
@@ -67,7 +64,44 @@ final case class JsonColor (
 ) {
   def toRgba= s"rgba(${red*100}%, ${green*100}%, ${blue*100}%, ${alpha})"
 }
+final case class Logo
+  ( enable : Boolean
+  , name   : Option[String]
+  , data   : Option[String]
+  ){
+  def loginLogo = (enable, data) match{
+    case (true , Some(d)) => (<div class="custom-branding-logo" style={"background-image: url("++ d ++");"}></div><div class="rudder-branding-logo"></div>)
+    case (_    , _      ) =>  <img src="/images/login/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"/>
+  }
 
+  def commonWideLogo = (enable, data) match{
+    case (true , Some(d)) =>
+      <span class="custom-branding-logo" style={"background-image: url("++ d ++");"}>
+        <style>
+          .logo-lg{{display: flex !important; height: 50px; padding: 5px;}}
+          .sidebar-collapse .logo-lg{{display: none !important;}}
+        </style>
+      </span>
+    case (_    , _      ) => <img src="/images/logo-rudder-nologo.svg" data-lift="with-cached-resource" alt="Rudder"/>
+  }
+  def commonSmallLogo = (enable, data) match{
+    case (true , Some(d)) =>
+      <span class="custom-branding-logo" style={"background-image: url("++ d ++");"}>
+        <style>
+          /* LOGO SM */
+          .sidebar-collapse .treeview.footer{{
+            display: none !important;
+          }}
+          @media (min-width: 768px){{
+            .sidebar-mini.sidebar-collapse .main-header .logo>.logo-mini {{
+              display: flex; height: 50px; padding: 5px;
+            }}
+          }}
+        </style>
+      </span>
+    case (_    , _      ) => <img src="/images/logo-rudder-sm.svg" data-lift="with-cached-resource" alt="Rudder"/>
+  }
+}
 
 object BrandingConf {
   implicit val formats = Serialization.formats(NoTypeHints)

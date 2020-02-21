@@ -54,11 +54,16 @@ class BrandingConfService extends Loggable {
       , true
       , "Production"
       , JsonColor(255,255,255,1)
-      , true
-      , true
-      , true
-      , true
-      , true
+      , Logo
+        ( true
+        , None
+        , None
+        )
+      , Logo
+        ( true
+          , None
+          , None
+        )
       , true
       , true
       , "Welcome, please sign in:"

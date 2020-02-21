@@ -5,6 +5,8 @@ import Http exposing (Error)
 import Toasty
 import Toasty.Defaults
 import ColorPicker
+import File exposing (File)
+import File.Select as Select
 
 type alias Rgba =
   { red   : Float
@@ -12,61 +14,67 @@ type alias Rgba =
   , blue  : Float
   , alpha : Float
   }
+
 type alias Model =
-    { contextPath : String
-    , bgColorPicker : ColorPicker.State
-    , labelColorPicker : ColorPicker.State
-    , settings : Settings
-    , fileData : FileData
-    , toasties : Toasty.Stack Toasty.Defaults.Toast
-    }
+  { contextPath      : String
+  , bgColorPicker    : ColorPicker.State
+  , labelColorPicker : ColorPicker.State
+  , settings         : Settings
+  , toasties         : Toasty.Stack Toasty.Defaults.Toast
+  , hover            : Bool
+  }
 
-
-type alias FileData =
-    { faviconFileData : String
-    , wideLogoFileData : String
-    , squareLogoFileData : String
-    , loginLogoFileData : String
-    }
-
+type alias Logo =
+  { enable  : Bool
+  , name    : Maybe String
+  , data    : Maybe String
+  }
 
 type alias Settings =
     --GENERAL
-    { displayBar : Bool
-    , displayLabel : Bool
-    , labelTxt : String
-    , bgColorValue : Color
+    { displayBar      : Bool
+    , displayLabel    : Bool
+    , labelTxt        : String
+    , bgColorValue    : Color
     , labelColorValue : Color
 
     --LOGOS
-    , useCustomLogos : Bool
-    , useFavicon : Bool
-    , useWideLogo : Bool
-    , useSquareLogo : Bool
-
+    , wideLogo        : Logo
+    , smallLogo       : Logo
     --LOGIN
     , displayBarLogin : Bool
-    , useLoginLogo : Bool
-    , displayMotd : Bool
-    , motd : String
+    , displayMotd     : Bool
+    , motd            : String
     }
 
-
+type alias CssObj =
+  { bgColor           : String
+  , txtColor          : String
+  , labelTxt          : String
+  --, wideLogoEnable    : Bool
+  --, wideLogoData      : String
+  --, smallLogoEnable   : Bool
+  --, smallLogoData     : String
+  }
 
 --- UPDATE ---
 
-
-type Msg
-    = -- CUSTOM BAR
-      ToggleCustomBar
+type Msg =
+    -- LOGOS
+    ToggleLogo String
+    | UploadFile String
+    | RemoveFile String
+    | GotFile String File
+    | GotPreviewWideLogo String
+    | GotPreviewSmallLogo String
+    -- CUSTOM BAR
+    | ToggleCustomBar
     | ToggleLabel
     | EditLabelText String
       -- LOGIN PAGE
     | ToggleCustomBarLogin
     | ToggleMotd
     | EditMotd String
-    | ToggleLoginLogo
-   -- | LoginLogoFileInput FileInput.Msg
     | BgColorPicker ColorPicker.Msg
     | TxtColorPicker ColorPicker.Msg
       -- SAVE
@@ -75,7 +83,3 @@ type Msg
     | SendSave
       -- NOTIFICATIONS
     | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
-
-
-
--- TEST

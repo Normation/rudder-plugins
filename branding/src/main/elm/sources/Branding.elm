@@ -14,61 +14,31 @@ import Toasty.Defaults
 import ColorPicker
 import View exposing (..)
 import Browser
-
-
+import File exposing (File)
+import File.Select as Select
+import Task
 
 --- PORTS ---
-
-
-port applyCss : ( String, String, String ) -> Cmd msg
-
+port applyCss : ( CssObj ) -> Cmd msg
 
 
 --- MODEL ---
-
-
 defaultSettings : Settings
 defaultSettings =
-    let
-        bgColor =
-            Color.red
-
-        txtColor =
-            Color.white
-    in
-    Settings True True "Production" bgColor txtColor True True True True True True True "Welcome, please sign in:"
+  let
+    bgColor  = Color.red
+    txtColor = Color.white
+  in
+    Settings True True "Production" bgColor txtColor (Logo True Nothing Nothing) (Logo True Nothing Nothing) True True "Welcome, please sign in:"
 
 
 initSettings : { contextPath : String } -> ( Model, Cmd Msg )
 initSettings initValues =
-    let {-
-        favFileInit =
-            FileInput.init ()
-
-        favFileInput =
-            { favFileInit | accept = "image/*" }
-
-        wideFileInput =
-            FileInput.init ()
-
-        squareFileInput =
-            FileInput.init ()
-
-        loginFileInput =
-            FileInput.init ()
-        -}
-        toasties =
-            Toasty.initialState
-
-        initData =
-            FileData "" "" "" ""
-
-        model =
-            Model initValues.contextPath ColorPicker.empty ColorPicker.empty defaultSettings initData toasties
-    in
-    ( model
-    , ApiCall.getSettings model
-    )
+  let
+    toasties = Toasty.initialState
+    model    = Model initValues.contextPath ColorPicker.empty ColorPicker.empty defaultSettings toasties False
+  in
+    ( model, ApiCall.getSettings model)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -200,28 +170,11 @@ update msg model =
             in
             ( newModel, Cmd.none )
 
-        ToggleLoginLogo ->
-            let
-                settings =
-                    model.settings
-
-                activate =
-                    not settings.useLoginLogo
-
-                newSettings =
-                    { settings | useLoginLogo = activate }
-
-                newModel =
-                    { model | settings = newSettings }
-            in
-            ( newModel, Cmd.none )
-
         {--Api Calls message --}
         GetSettings result ->
             case result of
                 Ok settings ->
                     let
-
                         newModel =
                             { model
                                 | settings = settings
@@ -237,16 +190,22 @@ update msg model =
             case result of
                 Ok newSettings ->
                     let
-                        settings = model.settings
+                        settings        = model.settings
+                        bgColor         = Color.toCssString settings.bgColorValue
+                        txtColor        = Color.toCssString settings.labelColorValue
+                        labelTxt        = settings.labelTxt
+                        wideLogoData    = case settings.wideLogo.data of
+                          Just d  -> d
+                          Nothing -> ""
+                        wideLogoEnable  = settings.wideLogo.enable
+                        smallLogoData   = case settings.smallLogo.data of
+                          Just d  -> d
+                          Nothing -> ""
+                        smallLogoEnable = settings.smallLogo.enable
+                        cssObj = CssObj bgColor txtColor labelTxt --wideLogoEnable wideLogoData smallLogoEnable smallLogoData
 
-                        bgColor  = Color.toCssString settings.bgColorValue
-
-                        txtColor = Color.toCssString settings.labelColorValue
-
-                        labelTxt =
-                            settings.labelTxt
                     in
-                    ( model, applyCss ( bgColor, txtColor, labelTxt ) )
+                    ( model, applyCss ( cssObj ) )
                         |> createSuccessNotification "Your changes have been saved."
 
                 Err err ->
@@ -259,29 +218,87 @@ update msg model =
         ToastyMsg subMsg ->
             Toasty.update defaultConfig ToastyMsg subMsg model
 
+        {-- LOGO UPLOAD & PREVIEW --}
+        ToggleLogo logoType->
+          let
+            settings    = model.settings
+            logo        = case logoType of
+              "small" -> settings.smallLogo
+              _       -> settings.wideLogo
+            activate    = not logo.enable
+            newLogo     = { logo     | enable     = activate    }
+            newSettings = case logoType of
+              "small" ->  { settings | smallLogo  = newLogo     }
+              _       ->  { settings | wideLogo   = newLogo     }
+            newModel    = { model    | settings   = newSettings }
+          in
+            ( newModel, Cmd.none )
+        UploadFile logoType->
+            ( model
+            , Select.file [ "image/*" ] (GotFile logoType)
+            )
+        RemoveFile logoType ->
+          let
+            settings    = model.settings
+            logo        = case logoType of
+              "small" -> settings.smallLogo
+              _       -> settings.wideLogo
+            newLogo     = { logo     | enable     = False, name = Nothing, data = Nothing }
+            newSettings = case logoType of
+              "small" ->  { settings | smallLogo  = newLogo     }
+              _       ->  { settings | wideLogo   = newLogo     }
+            newModel    = { model    | settings   = newSettings }
+          in
+            ( newModel, Cmd.none )
+        GotFile logoType file->
+          let
+            settings    = model.settings
+            logo        = case logoType of
+              "small" -> settings.smallLogo
+              _       -> settings.wideLogo
+            newLogo     = { logo     | enable     = True, name = Just (File.name file) }
+            (newSettings, actionMsg) = case logoType of
+              "small" ->  ({ settings | smallLogo  = newLogo    }, Task.perform GotPreviewSmallLogo (File.toUrl file))
+              _       ->  ({ settings | wideLogo   = newLogo    }, Task.perform GotPreviewWideLogo  (File.toUrl file))
+            newModel    = { model    | settings   = newSettings, hover = False }
+          in
+            ( newModel
+            , actionMsg
+            )
 
+        GotPreviewWideLogo url->
+          let
+            settings    = model.settings
+            logo        = settings.wideLogo
+            newLogo     = { logo     | enable   = logo.enable, data = Just url}
+            newSettings = { settings | wideLogo   = newLogo     }
+            newModel    = { model    | settings = newSettings   }
+          in
+            (newModel, Cmd.none)
+
+        GotPreviewSmallLogo url->
+          let
+            settings    = model.settings
+            logo        = settings.smallLogo
+            newLogo     = { logo     | enable   = logo.enable, data = Just url}
+            newSettings = { settings | smallLogo  = newLogo     }
+            newModel    = { model    | settings = newSettings   }
+          in
+            (newModel, Cmd.none)
 onKeyDown : (Int -> msg) -> Html.Attribute msg
 onKeyDown tagger =
-    on "keydown" (Decode.map tagger keyCode)
-
+  on "keydown" (Decode.map tagger keyCode)
 
 
 --- MAIN ---
-
-
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
-  {-
-    Sub.batch
-        [ Sub.map BgColorPicker (ColorPicker.subscriptions model.bgColorPicker)
-        , Sub.map TxtColorPicker (ColorPicker.subscriptions model.labelColorPicker)
-        ]
-  -}
+
 main =
-    Browser.element
-        { init = initSettings
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
+  Browser.element
+    { init = initSettings
+    , view = view
+    , update = update
+    , subscriptions = subscriptions
+    }
