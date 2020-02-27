@@ -5,7 +5,8 @@
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
   "depends": {
-    "binary": [ "python-requests" ]
+    "apt": [ "python-requests" ],
+    "rpm": [ "python-requests" ]
   },
   "content": {
     "files.txz": "/opt/rudder/"
