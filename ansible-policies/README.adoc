@@ -24,23 +24,6 @@ Basically, when assigning a directive declined from this technique to a node, it
 * Execute this playbook from the target node
 * Report back the execution to the Rudder Server
 
-== Installation
-
-To install this plugin:
-
-* Run the command `rudder package install-file <path-to-the-ansible-rpkg>`
-* Modify the newly added technique `ansible-policies` in the technique editor, by modifying the description.
-* On your server, run the following:
-
-----
-cd /var/rudder/rudder-configuration-repository
-git add techniques/ansible_policies
-git commit -m "Adding ansible_policies technique from the ansible-policies plugin"
-rudder server reload-techniques
-----
-
-You can now use the techniques under the `Ansible-policies` category in your directive tree.
-
 == Usage
 
 Make sure that the target node has SSH access to every Ansible targetted hosts.
