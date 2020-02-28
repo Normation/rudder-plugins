@@ -19,7 +19,8 @@
           "max_length": 16384
         },
         "id": "0bad6c1e-59c9-44ca-a935-210af4188643",
-        "name": "profile"
+        "name": "profile",
+        "type": "string"
       },
       {
         "constraints": {
@@ -28,7 +29,8 @@
           "max_length": 16384
         },
         "id": "182dffe7-4310-4e01-bdd0-3f7db8272e2f",
-        "name": "scap_file"
+        "name": "scap_file",
+        "type": "string"
       }
     ],
     "method_calls": [
@@ -52,18 +54,62 @@
       },
       {
         "args": [
-          "openscap-scanner",
-          "",
-          "",
-          ""
+          "openscap",
+          "packages",
+          "ssg-base,ssg-debderived,ssg-debian,ssg-nondebian,ssg-applications",
+          ","
         ],
-        "class_context": "any",
-        "method_name": "package_present",
-        "component": "Package present"
+        "class_context": "debian_10",
+        "method_name": "variable_iterator",
+        "component": "OpenSCAP packages"
       },
       {
         "args": [
-          "scap-security-guide",
+          "openscap",
+          "packages",
+          "libopenscap8",
+          ","
+        ],
+        "class_context": "debian_9",
+        "method_name": "variable_iterator",
+        "component": "OpenSCAP packages"
+      },
+      {
+        "args": [
+          "openscap",
+          "packages",
+          "ssg-base,ssg-debderived,ssg-debian,ssg-nondebian,ssg-applications",
+          ","
+        ],
+        "class_context": "ubuntu_18",
+        "method_name": "variable_iterator",
+        "component": "OpenSCAP packages"
+      },
+      {
+        "args": [
+          "openscap",
+          "packages",
+          "scap-security-guide,openscap-scanner",
+          ","
+        ],
+        "class_context": "redhat",
+        "method_name": "variable_iterator",
+        "component": "OpenSCAP packages"
+      },
+      {
+        "args": [
+          "openscap",
+          "packages",
+          "openscap",
+          ","
+        ],
+        "class_context": "SUSE.(!sles_10)",
+        "method_name": "variable_iterator",
+        "component": "OpenSCAP packages"
+      },
+      {
+        "args": [
+          "${openscap.packages}",
           "",
           "",
           ""
