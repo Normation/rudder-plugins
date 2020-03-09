@@ -1,7 +1,6 @@
 #!/bin/bash
 set -x
 PLUGIN_FULL_NAME="rudder-plugin-openscap-policies"
-PLUGIN_NAME="openscap-policies"
 PRETTY_NAME="OpenSCAP Policies"
 CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
 
@@ -19,23 +18,23 @@ cat <<EOT > $CONFIG_REPO/techniques/$C_CATEGORY/category.xml
 <xml>
   <name>$CATEGORY</name>
   <description>
-    Techniques from the $PRETTY_NAME plugin
+    Techniques from the $CATEGORY
   </description>
 </xml>
 EOT
 
-
+# Import Generic Methods
 cd $CONFIG_REPO
 git reset
 for file in $FOLDERS
 do
   git add $file
 done
+git commit -m "$CATEGORY installation"
 /opt/rudder/bin/rudder-fix-repository-permissions
-git commit -m "$CATEGORY start installation"
 
 # Make extra scripts executables
-chmod +x $CONFIGURATION_PATH/rudder-synchronize
+chmod +x $CONFIGURATION_PATH/rudder_synchronize.py $CONFIGURATION_PATH/remove_configuration
 
 # Import Techniques
-${CONFIGURATION_PATH}/rudder-synchronize import technique ${CONFIGURATION_PATH}/techniques
+${CONFIGURATION_PATH}/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques

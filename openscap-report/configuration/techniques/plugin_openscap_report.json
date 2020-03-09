@@ -7,9 +7,9 @@
       "scap_file"
     ],
     "category": "OpenSCAP_Policies_plugin",
-    "bundle_name": "plugin_openscap_report",
+    "bundle_name": "plugin_openscap_policies",
     "description": "This technique will trigger an openscap audit every hour on the agent.",
-    "name": "plugin_openscap_report",
+    "name": "plugin_openscap_policies",
     "version": "1.0",
     "parameter": [
       {
@@ -132,7 +132,7 @@
         "args": [
           "root",
           "report.html",
-          "/var/rudder/tmp/openscap_report.html",
+          "/var/rudder/tmp/openscap_policies.html",
           "1d"
         ],
         "class_context": "any",

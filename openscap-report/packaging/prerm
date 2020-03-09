@@ -1,29 +1,17 @@
 #!/bin/bash
 set -x
-PLUGIN_FULL_NAME="rudder-plugin-openscap-policies"
-PLUGIN_NAME="openscap-policies"
-PRETTY_NAME="OpenSCAP Policies"
-CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
-CATEGORY="$PRETTY_NAME plugin"
-C_CATEGORY=$(echo $CATEGORY | sed "s/[^a-zA-Z0-9_]/_/g")
+PLUGIN_FOLDER="/var/rudder/packages/rudder-plugin-openscap-policies"
 
-git reset
-# Remove technique
-$CONFIGURATION_PATH/remove-configuration
-
-# Remove techniques symlink and ncf ones
-cd /var/rudder/configuration-repository
-
-TECHNIQUES=$(jq -r '.techniques[]' $CONFIGURATION_PATH/$PLUGIN_NAME.json | sed "s%^%$CONFIGURATION_PATH/techniques/%" | xargs jq -r '.data.bundle_name')
-for file in $TECHNIQUES; do
-  git rm -rf --ignore-unmatch techniques/ncf_techniques/$file
-  git rm -rf --ignore-unmatch ncf/50_techniques/$file
-done;
-
-# Remove category
-cd /var/rudder/configuration-repository/techniques
-git rm -rf $C_CATEGORY
-git commit -m "OpenSCAP-report plugin uninstallation"
-
+# Remove techniques
+$PLUGIN_FOLDER/remove_configuration configuration $PLUGIN_FOLDER $PLUGIN_FOLDER/openscap-policies.json
 rudder server reload-techniques
 
+## Remove plugin categories
+NAME=OpenSCAP_Policies_plugin
+cd /var/rudder/configuration-repository
+git reset
+$PLUGIN_FOLDER/remove_configuration categories $PLUGIN_FOLDER $PLUGIN_FOLDER/openscap-policies.json
+git commit -m "Removing $NAME plugin catgories"
+# We need to restore archive when deleting a category, otherwise the active tree is not synchronized correctly
+curl -k -X POST -H "X-API-Token: $(cat /var/rudder/run/api-token)" https://localhost/rudder/api/latest/system/archives/directives/restore/latestCommit
+rudder server reload-techniques
