@@ -42,6 +42,8 @@ import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.scaleoutrelay.ScalaOutRelayPluginDef
 import com.normation.plugins.scaleoutrelay.CheckRudderPluginEnableImpl
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayAgentSpecificGeneration
+import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
+import com.normation.plugins.scaleoutrelay.api.ScaleOutRelayApiImpl
 
 /*
  * Actual configuration of the plugin logic
@@ -53,7 +55,19 @@ object ScalaOutRelayConf extends RudderPluginModule {
 
   lazy val pluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
 
-  // add policy generation for AIX nodes
+  lazy val api = new ScaleOutRelayApiImpl(RudderConfig.restExtractorService, scaleOutRelayService)
+
+  lazy val scaleOutRelayService = new ScaleOutRelayService(
+      RudderConfig.nodeInfoService
+    , RudderConfig.woNodeGroupRepository
+    , RudderConfig.woNodeRepository
+    , RudderConfig.woDirectiveRepository
+    , RudderConfig.woRuleRepository
+    , RudderConfig.stringUuidGenerator
+    , RudderConfig.policyServerManagementService
+  )
+
+  // add policy generation for relay
   RudderConfig.agentRegister.addAgentLogic(new ScaleOutRelayAgentSpecificGeneration(pluginStatusService))
 
 }
