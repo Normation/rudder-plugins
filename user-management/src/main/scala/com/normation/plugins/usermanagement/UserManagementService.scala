@@ -67,6 +67,7 @@ object UserManagementService {
       case "sha256" | "sha-256" => PasswordEncoder.SHA256
       case "sha512" | "sha-512" => PasswordEncoder.SHA512
       case "md5"                => PasswordEncoder.MD5
+      case "bcrypt"             => PasswordEncoder.BCRYPT
       case _                    => PasswordEncoder.PlainText
     }
   }
