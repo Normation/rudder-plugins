@@ -26,7 +26,7 @@ def parsePDF(path):
     command  = ["/usr/bin/pdftotext",  path, "-"]
     output = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True).stdout
     r = re.compile(r"""(?P<id>(?:\d+\.)+\d+)\s+(?P<name>(?:([\S ]{5,})\n?([\S ])?))\(Scored\)\s*
-Profile\s+Applicability:\s+(?:\d+ \| P a g e\s+)?(?:\W+Level\s+(?P<server>1|2)[\s-]+Server)?(?:\s+\W+Level\s+(?P<workstation>1|2)[\s-]+Workstation)?\s+(?P<description>Description:[\S \n]+?)(?=Audit|Remediation)""")
+Profile\s+Applicability:\s+(?:\d+ \| P a g e\s+)?(?:\W+Level\s+(?P<server>1|2)[\s-]+Server)?(?:\s+\W+Level\s+(?P<workstation>1|2)[\s-]+Workstation)?\s+(?P<description>Description:[\S \n]+?)(?=.?Audit|.?Remediation)""")
     items = [m.groupdict() for m in r.finditer(output)]
     for iItem in items:
         for k,v in iItem.items():
@@ -226,6 +226,10 @@ targets = [
               { "basePath": "configuration",
                 "pdfPath": "pdfs/cis_redhat7.pdf",
                 "osName": "redhat7"
+              },
+              { "basePath": "configuration",
+                "pdfPath": "pdfs/cis_ubuntu18.pdf",
+                "osName": "ubuntu18"
               }
           ]
 
