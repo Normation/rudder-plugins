@@ -1,0 +1,31 @@
+{
+  "displayName": "CIS - Disable Automounting",
+  "enabled": true,
+  "id": "0b380c31-f000-4d4e-b18c-8b0f91f7c61b",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "autofs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

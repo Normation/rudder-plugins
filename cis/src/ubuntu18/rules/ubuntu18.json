@@ -1,0 +1,22 @@
+{
+  "directives": [],
+  "displayName": "CIS - ubuntu18 sample rule",
+  "enabled": true,
+  "id": "5a8d6430-2015-4de4-90d8-5ac3221ba8d3",
+  "longDescription": "",
+  "shortDescription": "",
+  "system": false,
+  "tags": [],
+  "targets": [
+    {
+      "exlude": {
+        "or": []
+      },
+      "include": {
+        "or": [
+          "policyServer:root"
+        ]
+      }
+    }
+  ]
+}

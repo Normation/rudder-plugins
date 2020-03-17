@@ -1,0 +1,22 @@
+{
+  "directives": [],
+  "displayName": "CIS - debian9 sample rule",
+  "enabled": true,
+  "id": "62fa7768-1fcd-4951-aee3-4707a1db10e8",
+  "longDescription": "",
+  "shortDescription": "",
+  "system": false,
+  "tags": [],
+  "targets": [
+    {
+      "exlude": {
+        "or": []
+      },
+      "include": {
+        "or": [
+          "policyServer:root"
+        ]
+      }
+    }
+  ]
+}

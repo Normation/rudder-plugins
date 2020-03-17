@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure Reverse Path Filtering is enabled (net.ipv4.conf.all.rp_filter)",
+  "enabled": true,
+  "id": "96b6a7e0-37e3-4bb6-b828-99e150ffd034",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.conf.all.rp_filter"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
+  "techniqueVersion": "1.0"
+}

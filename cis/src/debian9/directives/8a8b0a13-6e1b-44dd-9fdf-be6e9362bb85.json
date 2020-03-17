@@ -1,0 +1,43 @@
+{
+  "displayName": "CIS - Ensure kernel module loading and unloading is collected (32_bit)",
+  "enabled": true,
+  "id": "8a8b0a13-6e1b-44dd-9fdf-be6e9362bb85",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "32_bit"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "-w /sbin/insmod -p x -k modules\r\n-w /sbin/rmmod -p x -k modules\r\n-w /sbin/modprobe -p x -k modules\r\n-a always,exit arch=b32 -S init_module -S delete_module -k modules"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/audit/audit.rules"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}

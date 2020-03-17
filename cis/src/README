@@ -1,0 +1,42 @@
+Here we build the configurations files which will be used by the target CIS
+plugin.
+
+The idea is to split the generation for each OS. Which mean that:
+
+* Each OS will contains dedicated Rules/Directives
+* Techniques/Generic methods will stay in common
+* This build must take care of the naming and tagging of each object
+
+
+To add a new OS:
+
+* Create appropriate folder here, with the tree:
++
+----
+ubuntu18
+├── directives
+│   ├── 0146f6f9-040f-4c3d-9001-0f2bc165b6c1.json  # Directives used
+│   ├── 0149c383-7e2d-4dc8-b056-c13bce96593c.json
+│   ├── ...
+└── rules
+    └── ubuntu18.json                              # Rule file
+----
+* GM and Techniques are commons and must go under the `./configuration` folder
+* Add pdfs download to the Makefile
+* Add target to Makefile
+* In order to avoid id conflict, remove all id from your directives with:
++
+----
+# Modify the script to setup correct path to change
+./tools/resetId
+----
+* Check that there is no conflict id with:
++
+----
+find . -type f -printf '%f\n' | sort | uniq -c
+----
+* To help detect breaking change, try to make/update the <os_folder>/item_list file
++----
+./tools/parsePDF pdfs/<pdf to test> > item_list.new
+# And compare the new list to the old one
+----

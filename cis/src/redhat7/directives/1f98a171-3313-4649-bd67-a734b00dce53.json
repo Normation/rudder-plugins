@@ -1,0 +1,16 @@
+{
+  "displayName": "CIS - Ensure gpgcheck is globally activated",
+  "enabled": true,
+  "id": "1f98a171-3313-4649-bd67-a734b00dce53",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections"
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_gpgcheck_is_globally_activated",
+  "techniqueVersion": "1.0"
+}

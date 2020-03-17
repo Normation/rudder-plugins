@@ -1,0 +1,31 @@
+{
+  "displayName": "CIS - Ensure LDAP server is not enabled",
+  "enabled": true,
+  "id": "95624125-e5bf-467a-8048-9a3f7e3acbc4",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "slapd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

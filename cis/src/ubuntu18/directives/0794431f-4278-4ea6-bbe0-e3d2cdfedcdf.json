@@ -1,0 +1,31 @@
+{
+  "displayName": "CIS - Ensure DHCP Server is not enabled",
+  "enabled": true,
+  "id": "0794431f-4278-4ea6-bbe0-e3d2cdfedcdf",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "dhcpd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

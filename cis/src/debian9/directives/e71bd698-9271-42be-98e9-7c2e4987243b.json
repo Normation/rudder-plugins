@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure separate partition exists for /var/log",
+  "enabled": true,
+  "id": "e71bd698-9271-42be-98e9-7c2e4987243b",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "11B7074D-62D8-4437-B5D5-17041BD79AC2",
+                  "value": "/var/log"
+                }
+              },
+              {
+                "var": {
+                  "name": "488F7662-A59B-4BD1-825D-7A3800FB6208",
+                  "value": "rw,relatime,data=ordered"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_mounting_partition_is_correct",
+  "techniqueVersion": "1.0"
+}

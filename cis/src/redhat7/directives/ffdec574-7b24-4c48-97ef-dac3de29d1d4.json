@@ -1,0 +1,31 @@
+{
+  "displayName": "CIS - Ensure talk server is not enabled",
+  "enabled": true,
+  "id": "ffdec574-7b24-4c48-97ef-dac3de29d1d4",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "ntalk"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure broadcast ICMP requests are ignored",
+  "enabled": true,
+  "id": "86cd6743-bd82-46d9-b907-bb2dcd55f5b8",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.icmp_echo_ignore_broadcasts"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
+  "techniqueVersion": "1.0"
+}

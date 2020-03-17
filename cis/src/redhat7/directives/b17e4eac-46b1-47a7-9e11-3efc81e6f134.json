@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure suspicious packets are logged (net.ipv4.conf.default.log_martians)",
+  "enabled": true,
+  "id": "b17e4eac-46b1-47a7-9e11-3efc81e6f134",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.conf.default.log_martians"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
+  "techniqueVersion": "1.0"
+}

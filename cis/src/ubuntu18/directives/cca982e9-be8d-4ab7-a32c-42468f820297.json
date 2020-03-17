@@ -1,0 +1,31 @@
+{
+  "displayName": "CIS - Ensure CUPS is not enabled",
+  "enabled": true,
+  "id": "cca982e9-be8d-4ab7-a32c-42468f820297",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "cups"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Disable_Service",
+  "techniqueVersion": "1.0"
+}
