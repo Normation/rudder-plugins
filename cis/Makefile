@@ -6,6 +6,7 @@
 
 REDHAT7_SHA256 = a9bbd16f5080d6993f31824f21276224640162eae12919fafe1491bec8262290
 DEBIAN9_SHA256 = e3b2993054fdf0b64b27d33b29099c997e41a4766a42fdd460fe796d9d8b410c
+UBUNTU18_SHA256 = c640dd4449ba2afa85056a00a7b8870ee8cf6978b39ec1e2072584f39507e36e
 
 # Usage: $(GET) <destination_file> <url> <hash>
 PROXY_ENV = $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY))
@@ -23,9 +24,10 @@ include ../makefiles/common-plugin.mk
 configuration: target/configuration.txz
 
 pdfs:
-	mkdir pdfs
+	mkdir -p pdfs
 	$(GET) pdfs/cis_debian9.pdf https://publisher.normation.com/build-dependencies/cis/cis_debian9.pdf $(DEBIAN9_SHA256)
 	$(GET) pdfs/cis_redhat7.pdf https://publisher.normation.com/build-dependencies/cis/cis_redhat7.pdf $(REDHAT7_SHA256)
+	$(GET) pdfs/cis_ubuntu18.pdf https://publisher.normation.com/build-dependencies/cis/cis_ubuntu18.pdf $(UBUNTU18_SHA256)
 
 
 target/configuration.txz: packaging/cis.json
