@@ -99,6 +99,14 @@
       <version>${http4s-version}</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- zio tests -->
+    <dependency>
+      <groupId>dev.zio</groupId>
+      <artifactId>zio-test_${scala-binary-version}</artifactId>
+      <version>${dev-zio-version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <!-- I hate maven. 100 lines for a F**** if/then/else. -->
