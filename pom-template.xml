@@ -201,10 +201,10 @@
     <dependency><groupId>commons-fileupload</groupId><artifactId>commons-fileupload</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>commons-io</groupId><artifactId>commons-io</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>commons-lang</groupId><artifactId>commons-lang</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect-thirdparty-boopickle-shaded_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-interop-cats_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-streams_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-test_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>javax.servlet</groupId><artifactId>javax.servlet-api</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>jline</groupId><artifactId>jline</artifactId><scope>provided</scope></dependency>
@@ -230,9 +230,10 @@
     <dependency><groupId>org.mindrot</groupId><artifactId>jbcrypt</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.portable-scala</groupId><artifactId>portable-scala-reflect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.reflections</groupId><artifactId>reflections</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-collection-compat_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parallel-collections_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope></dependency>

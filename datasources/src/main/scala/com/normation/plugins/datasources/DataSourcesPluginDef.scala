@@ -61,7 +61,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
 
   def init = {
     // initialize datasources to start schedule
-    ZioRuntime.unsafeRun(DatasourcesConf.dataSourceRepository.initialize().fork)
+    ZioRuntime.unsafeRun(DatasourcesConf.dataSourceRepository.initialize().forkDaemon)
   }
 
   def oneTimeInit : Unit = {}
