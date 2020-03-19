@@ -1,0 +1,22 @@
+{
+  "directives": [],
+  "displayName": "CIS - redhat7 sample rule",
+  "enabled": true,
+  "id": "895d4c43-8589-4780-83a1-23dba41bee20",
+  "longDescription": "",
+  "shortDescription": "",
+  "system": false,
+  "tags": [],
+  "targets": [
+    {
+      "exlude": {
+        "or": []
+      },
+      "include": {
+        "or": [
+          "policyServer:root"
+        ]
+      }
+    }
+  ]
+}

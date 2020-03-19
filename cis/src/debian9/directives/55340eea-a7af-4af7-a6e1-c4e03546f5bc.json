@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure secure ICMP redirects are not accepted (net.ipv4.conf.default.secure_redirects)",
+  "enabled": true,
+  "id": "55340eea-a7af-4af7-a6e1-c4e03546f5bc",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.conf.default.secure_redirects"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "0"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
+  "techniqueVersion": "1.0"
+}

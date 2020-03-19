@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure TCP Wrappers is installed",
+  "enabled": true,
+  "id": "34e7e1ef-3032-424f-9aca-5ca77d65d65e",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "tcp_wrappers"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

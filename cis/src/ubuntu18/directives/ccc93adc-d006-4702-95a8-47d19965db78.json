@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure AIDE is installed",
+  "enabled": true,
+  "id": "ccc93adc-d006-4702-95a8-47d19965db78",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "aide"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

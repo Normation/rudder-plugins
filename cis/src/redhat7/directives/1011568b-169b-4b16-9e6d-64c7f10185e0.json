@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure bogus ICMP responses are ignored",
+  "enabled": true,
+  "id": "1011568b-169b-4b16-9e6d-64c7f10185e0",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "net.ipv4.icmp_ignore_bogus_error_responses"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_sysctl_key_value_IPV4",
+  "techniqueVersion": "1.0"
+}

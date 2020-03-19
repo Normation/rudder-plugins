@@ -1,0 +1,49 @@
+{
+  "displayName": "CIS - Ensure prelink is disabled",
+  "enabled": true,
+  "id": "77cd5454-9995-463b-bc3a-328d64e4d28d",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "529B1F1A-0DB6-4244-B84A-7ABF0216DA39",
+                  "value": "rpm -q prelink"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "prelink"
+                }
+              },
+              {
+                "var": {
+                  "name": "F2DA3DFF-0634-48B0-8A8E-8C27393388CB",
+                  "value": "prelink -ua"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "Ensure_a_package_is_not_installed",
+  "techniqueVersion": "1.0"
+}
