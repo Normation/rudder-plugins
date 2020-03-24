@@ -67,7 +67,8 @@ bundle agent vault_get_token()
   classes:
     pass2::
       # We need this to determinate whether an auth error is due to bad credentials or the Vault server being unreachable
-      "vault_reachable" expression => returnszero("/usr/bin/curl -s ${vault.server_addr}", "noshell");
+      "vault_reachable" expression => returnszero("/usr/bin/curl -s ${vault.server_addr}", "noshell"),
+                             scope => "namespace";
 
       # What auth mode are we using
       "mode_userpass" expression => strcmp("${vault.auth_mode}", "userpass");
