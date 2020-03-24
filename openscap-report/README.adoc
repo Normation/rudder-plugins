@@ -52,6 +52,6 @@ The technique will take care of the openSCAP agent installation and will by defa
 == Rudder Webapp integration
 
 With the Rudder plugin `Node external reports` which allows to add external, static documents and reports in a new tab in the `node details` webpage, this plugin will display the reports directly in the web interface.
-A compatible configuration file is distributed with the `OpenSCAP-report` plugin, you can find it in `/var/rudder/packages/rudder-plugin-openscap-report/node-external-reports.properties`
+A compatible configuration file is distributed with the `OpenSCAP-report` plugin, you can find it in `/var/rudder/packages/rudder-plugin-openscap-policies/node-external-reports.properties`
 
 The complete documentation of the `Node-external-reports` plugin is available https://docs.rudder.io/reference/5.0/plugins/node-external-reports.html#_documents_naming_convention[here].
