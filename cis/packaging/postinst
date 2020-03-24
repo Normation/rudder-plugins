@@ -1,11 +1,10 @@
 #!/bin/bash
-CONFIGURATION_PATH=/var/rudder/packages/rudder-plugin-cis
-
-SOURCE_DIR=${CONFIGURATION_PATH}/techniques
 CONFIG_REPO=/var/rudder/configuration-repository
-CATEGORY="CIS plugin"
+CATEGORY="{category}"
 C_CATEGORY=$(echo $CATEGORY | sed "s/[^a-zA-Z0-9_]/_/g")
 FOLDERS="ncf/30_generic_methods/cis techniques/${C_CATEGORY}"
+CONFIGURATION_PATH="/var/rudder/packages/rudder-plugin-{plugin-id}"
+SOURCE_DIR="${CONFIGURATION_PATH}/techniques"
 
 mkdir -p $CONFIG_REPO/techniques/$C_CATEGORY
 
@@ -32,10 +31,10 @@ git commit -m "CIS plugin installation"
 
 
 # Import Techniques
-${CONFIGURATION_PATH}/rudder-synchronize import technique ${CONFIGURATION_PATH}/techniques
+${CONFIGURATION_PATH}/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques
 
 # Import Directives
-${CONFIGURATION_PATH}/rudder-synchronize import directive ${CONFIGURATION_PATH}/directives
+${CONFIGURATION_PATH}/rudder_synchronize.py import directive ${CONFIGURATION_PATH}/directives
 
 # Import Rules
-${CONFIGURATION_PATH}/rudder-synchronize import rule ${CONFIGURATION_PATH}/rules
+${CONFIGURATION_PATH}/rudder_synchronize.py import rule ${CONFIGURATION_PATH}/rules

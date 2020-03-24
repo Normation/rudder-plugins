@@ -6,6 +6,6 @@
   "build-commit": "${commit-id}",
   "content": {
     "files.txz": "/var/rudder/",
-    "configuration.txz": "/var/rudder/packages/rudder-plugin-cis/"
+    "configuration.txz": "/var/rudder/packages/${plugin-id}/"
   }
 }
