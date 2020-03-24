@@ -1,0 +1,85 @@
+{
+  "data": {
+    "bundle_args": [
+      "check_command",
+      "expected_match",
+      "remediate"
+    ],
+    "bundle_name": "CIS_ubuntu18___Execute_command",
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.canonified_directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "cis",
+          "command_check_${report_data.canonified_directive_id}",
+          "${check_command}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "variable_string_from_command",
+        "method_name": "variable_string_from_command"
+      },
+      {
+        "args": [
+          "check_command_${report_data.canonified_directive_id}",
+          "cis.command_check_${report_data.canonified_directive_id}",
+          "${expected_match}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "condition_from_variable_match",
+        "method_name": "condition_from_variable_match"
+      },
+      {
+        "args": [
+          "${remediate}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
+        "component": "command_execution",
+        "method_name": "command_execution"
+      }
+    ],
+    "name": "CIS ubuntu18 - Execute command",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "check_command"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
+        "name": "expected_match"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
+        "name": "remediate"
+      }
+    ],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": "1"
+}

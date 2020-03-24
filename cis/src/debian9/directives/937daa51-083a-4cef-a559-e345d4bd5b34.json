@@ -32,6 +32,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_a_package_is_installed",
+  "techniqueName": "CIS_debian9___Ensure_a_package_is_installed",
   "techniqueVersion": "1.0"
 }

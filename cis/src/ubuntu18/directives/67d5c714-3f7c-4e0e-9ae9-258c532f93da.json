@@ -44,6 +44,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Set_permissions",
+  "techniqueName": "CIS_ubuntu18___Set_permissions",
   "techniqueVersion": "1.0"
 }

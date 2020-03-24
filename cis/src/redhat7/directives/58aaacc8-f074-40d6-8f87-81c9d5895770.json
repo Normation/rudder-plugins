@@ -38,6 +38,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Execute_command",
+  "techniqueName": "CIS_redhat7___Execute_command",
   "techniqueVersion": "1.0"
 }

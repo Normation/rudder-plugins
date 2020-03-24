@@ -19,12 +19,15 @@ def clean(basePath):
             if file.endswith('.json'):
                with open(os.path.join(root, file)) as f:
                    data = json.load(f)
-               data["tags"] = []
-               data["longDescription"] = ""
-               data["shortDescription"] = ""
-               data.pop("description", None)
+               if "tags" in data:
+                   data["tags"] = []
+               if "longDescription" in data:
+                   data["longDescription"] = ""
+               if "shortDescription" in data:
+                   data["shortDescription"] = ""
                if "directives" in data:
                    data["directives"] = []
+               data.pop("description", None)
                makeJsonFile(os.path.join(root, file), data)
 
 clean("ubuntu18")
