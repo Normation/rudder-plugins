@@ -87,7 +87,7 @@ class DataSourceScheduler(
       case Scheduled(d)  =>
         if(datasource.enabled) {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes") *>
-          Schedule.spaced(d).succeed
+          ZSchedule.spaced(d).succeed
         } else {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
           Schedule.never.succeed
@@ -126,7 +126,7 @@ class DataSourceScheduler(
    */
   def startWithDelay(delay: Duration): IOResult[Unit] = {
     // don't forget to fork is you don't want to block for "delay"!
-    restartScheduleTask().delay(delay).provide(clock).forkDaemon.unit
+    restartScheduleTask().delay(delay).provide(clock).fork.unit
   }
 
   /*
@@ -141,7 +141,7 @@ class DataSourceScheduler(
       if(pluginStatus.isEnabled) {
         for {
           _     <- DataSourceLoggerPure.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
-          fiber <- source.forkDaemon
+          fiber <- source.fork
           _     <- scheduledTask.set(Some(fiber))
         } yield ()
       } else {

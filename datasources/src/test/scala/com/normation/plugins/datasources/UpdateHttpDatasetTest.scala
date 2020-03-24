@@ -91,56 +91,53 @@ import zio.{IO => _, _}
 import com.normation.errors._
 import com.normation.zio._
 import org.specs2.matcher.EqualityMatcher
-import zio.test.environment._
+import zio.test.environment.TestClock
 import zio.duration._
 
 object TheSpaced {
 
-  val makeTestClock = TestClock.default.build
+  val makeTestClock = ZManaged.make(TestClock.make(TestClock.DefaultData))(_ => UIO.unit)
 
-  val prog = makeTestClock.use(testClock =>
-    for {
-      queue <- Queue.unbounded[Unit]
-      tc = testClock.get[TestClock.Service]
-      f <- (UIO(println("Hello!")) *> queue.offer(())).repeat(Schedule.fixed(5.minutes)).provide(testClock).forkDaemon
-      _ <- UIO(println("set to 0 min")) *> tc.adjust(0.nano) *> queue.take
-      _ <- UIO(println("set to 1 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 2 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 3 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 4 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 5 min")) *> tc.adjust(1.minute) *> queue.take
-      _ <- UIO(println("set to 6 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 7 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 8 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 9 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 10 min")) *> tc.adjust(1.minute) *> queue.take
-      _ <- UIO(println("set to 11 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 25 min")) *> tc.adjust(10.minute)
-      _ <- f.join
-    } yield ()
-  ).provideLayer(testEnvironment)
+  val prog = makeTestClock.use(testClock => for {
+    queue <- Queue.unbounded[Unit]
+    f <- (UIO(println("Hello!")) *> queue.offer(())).repeat(ZSchedule.fixed(5.minutes)).provide(testClock).fork
+    _ <- UIO(println("set to 0 min")) *> testClock.clock.adjust(0.nano) *> queue.take
+    _ <- UIO(println("set to 1 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 2 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 3 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 4 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 5 min")) *> testClock.clock.adjust(1.minute) *> queue.take
+    _ <- UIO(println("set to 6 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 7 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 8 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 9 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 10 min")) *> testClock.clock.adjust(1.minute) *> queue.take
+    _ <- UIO(println("set to 11 min")) *> testClock.clock.adjust(1.minute)
+    _ <- UIO(println("set to 25 min")) *> testClock.clock.adjust(10.minute)
+    _ <- f.join
+  } yield ())
 
   val prog2 = makeTestClock.use(testClock => for {
     q <- Queue.unbounded[Unit]
-    _ <- (q.offer(()).delay(60.minutes)).forever.provide(testClock).forkDaemon
+    _ <- (q.offer(()).delay(60.minutes)).forever.provide(testClock).fork
     a <- q.poll.map(_.isEmpty)
-    _ <- testClock.get[TestClock.Service].adjust(60.minutes)
+    _ <- testClock.clock.adjust(60.minutes)
     x <- q.poll.map(_.nonEmpty)
     b <- q.take.as(true)
     c <- q.poll.map(_.isEmpty)
-    _ <- testClock.get[TestClock.Service].adjust(60.minutes)
+    _ <- testClock.clock.adjust(60.minutes)
     d <- q.take.as(true)
     e <- q.poll.map(_.isEmpty)
-  } yield a && b && c && d && e && x).provideLayer(testEnvironment)
+  } yield a && b && c && d && e && x)
 
   def main(args: Array[String]): Unit = {
-    println(ZioRuntime.unsafeRun(prog))
+    println(ZioRuntime.unsafeRun(prog2))
   }
 }
 
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll  {
-  val makeTestClock = TestClock.default.build
+  val makeTestClock = ZManaged.make(TestClock.make(TestClock.DefaultData))(_ => UIO.unit)
 
   implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
   implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
@@ -156,8 +153,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     compactRender(parse(json))
   }
 
-  implicit class RunNowTimeout[A](effect: ZIO[Live, RudderError, A]) {
-    def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provideLayer(testEnvironment).runNow
+  implicit class RunNowTimeout[A](effect: IOResult[A]) {
+    def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provide(ZioRuntime.environment).runNow
   }
 
   // a timer
@@ -495,7 +492,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           total_0 =  ce_0 + cs_0
           _       <- dss.restartScheduleTask()
                      //then, event after days, nothing is done
-          _       <- testClock.get[TestClock.Service].adjust(1 day)
+          _       <- testClock.clock.adjust(1 day)
           ce_1d   <- NodeDataset.counterError.get
           cs_1d   <- NodeDataset.counterSuccess.get
         } yield {
@@ -531,14 +528,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           total_0 =  ce_0 + cs_0
           _       <- dss.restartScheduleTask()
                      //then, event after days, nothing is done
-          _       <- testClock.get[TestClock.Service].adjust(1 day)
+          _       <- testClock.clock.adjust(1 day)
           _       <- queue.failIfNonEmpty
           ce_1    <- NodeDataset.counterError.get
           cs_1    <- NodeDataset.counterSuccess.get
           total_1 =  ce_1 + cs_1
           //but asking for a direct update do the queries immediatly - task need at least 1ms to notice it should run
           _       <- dss.doActionAndSchedule(action(UpdateCause(ModificationId("plop"), RudderEventActor, None)))
-          _       <- testClock.get[TestClock.Service].adjust(1 millis)
+          _       <- testClock.clock.adjust(1 millis)
           _       <- queue.failIfNonEmpty
           ce_2    <- NodeDataset.counterError.get
           cs_2    <- NodeDataset.counterSuccess.get
@@ -577,31 +574,31 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           _        <- dss.restartScheduleTask()
           //then just after, we have the first exec - it still need at least a ms to tick
           //still nothing here
-          _        <- testClock.get[TestClock.Service].setTime(1 millis)
+          _        <- testClock.clock.setTime(1 millis)
           //here we have results
           _        <- queue.take
           ce_0s    <- NodeDataset.counterError.get
           cs_0s    <- NodeDataset.counterSuccess.get
           total_0s =  ce_0s + cs_0s
           //then nothing happens before 5 minutes
-          _        <- testClock.get[TestClock.Service].setTime(1 second)
+          _        <- testClock.clock.setTime(1 second)
           _        <- queue.failIfNonEmpty
           ce_1s    <- NodeDataset.counterError.get
           cs_1s    <- NodeDataset.counterSuccess.get
           total_1s =  ce_1s + cs_1s
-          _        <- testClock.get[TestClock.Service].setTime(4 minutes)
+          _        <- testClock.clock.setTime(4 minutes)
           _        <- queue.failIfNonEmpty
           ce_4m    <- NodeDataset.counterError.get
           cs_4m    <- NodeDataset.counterSuccess.get
           total_4m =  ce_4m + cs_4m
           //then all the nodes gets their info
-          _        <- testClock.get[TestClock.Service].setTime(5 minutes)
+          _        <- testClock.clock.setTime(5 minutes)
           _        <- queue.take
           ce_5m    <- NodeDataset.counterError.get
           cs_5m    <- NodeDataset.counterSuccess.get
           total_5m =  ce_5m + cs_5m
           //then nothing happen anymore
-          _        <- testClock.get[TestClock.Service].setTime(8 minutes)
+          _        <- testClock.clock.setTime(8 minutes)
           _        <- queue.failIfNonEmpty
           ce_8m    <- NodeDataset.counterError.get
           cs_8m    <- NodeDataset.counterSuccess.get

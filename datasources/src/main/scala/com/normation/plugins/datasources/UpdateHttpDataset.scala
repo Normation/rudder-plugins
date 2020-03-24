@@ -104,7 +104,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
   ) : IOResult[Option[NodeProperty]] = {
     //utility to expand both key and values of a map
     def expandMap(expand: String => PureResult[String], map: Map[String, String]): IOResult[Map[String, String]] = {
-      (ZIO.foreach(map.toList) { case (key, value) =>
+      (ZIO.traverse(map.toList) { case (key, value) =>
         (for {
           newKey   <- expand(key)
           newValue <- expand(value)
@@ -117,7 +117,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     //actual logic
 
     for {
-      parameters <- ZIO.foreach(parameters)(compiler.compileParameters(_).toIO).chainError("Error when transforming Rudder Parameter for variable interpolation")
+      parameters <- ZIO.traverse(parameters)(compiler.compileParameters(_).toIO).chainError("Error when transforming Rudder Parameter for variable interpolation")
       expand     =  compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap) _
       url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}").toIO
       path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}").toIO

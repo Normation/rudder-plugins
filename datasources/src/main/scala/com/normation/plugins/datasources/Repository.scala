@@ -51,6 +51,7 @@ import com.normation.utils.StringUuidGenerator
 import doobie._
 import doobie.implicits._
 import org.joda.time.DateTime
+
 import zio.duration._
 import com.normation.plugins.PluginStatus
 import com.normation.errors._
@@ -59,7 +60,6 @@ import zio._
 import zio.clock.Clock
 import zio.syntax._
 import com.github.ghik.silencer.silent
-import zio.console.Console
 import zio.interop.catz._
 
 
@@ -132,7 +132,7 @@ trait NoopDataSourceCallbacks extends DataSourceUpdateCallbacks {
 }
 
 class MemoryDataSourceRepository extends DataSourceRepository {
-  def print(s: String) = ZIO.accessM[Console](_.get.putStrLn(s)).provide(ZioRuntime.environment)
+  val print = ZioRuntime.environment.console.putStrLn _
 
   private[this] val sourcesRef = zio.Ref.make(Map[DataSourceId, DataSource]()).runNow
 
@@ -201,7 +201,7 @@ class DataSourceRepoImpl(
   // Initialize data sources scheduler, with all sources present in backend
   def initialize(): IOResult[Unit] = {
     getAll.flatMap(sources =>
-        ZIO.foreach(sources) { case (_, source) =>
+        ZIO.traverse(sources) { case (_, source) =>
           updateDataSourceScheduler(clock, source, Some(source.runParam.schedule.duration))
         }.unit
     ).chainError("Error when initializing datasources")
@@ -209,7 +209,7 @@ class DataSourceRepoImpl(
 
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
-    datasources.all.flatMap(m => ZIO.foreach(m.toIterable) { case (_, dss) =>
+    datasources.all.flatMap(m => ZIO.traverse(m.toIterable) { case (_, dss) =>
       if(condition(dss.datasource)) {
         action(dss)
       } else {
@@ -371,7 +371,7 @@ class DataSourceRepoImpl(
       }
     }.toList.sortBy( _._1.toMillis ).zipWithIndex)
 
-    toStart.map(l => ZIO.foreach(l) { case ((period, dss), i) =>
+    toStart.map(l => ZIO.traverse(l) { case ((period, dss), i) =>
       dss.startWithDelay((i+1).minutes)
     }): @silent //suppress "a type was inferred to be `Any`"
   }
