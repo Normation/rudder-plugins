@@ -63,7 +63,7 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
 
     pass3.variable_defined::
       "success" usebundle => _classes_success("${old_class_prefix}");
-      "repair" usebundle => _classes_repaired("${class_prefix}");
+      "success" usebundle => _classes_success("${class_prefix}");
       "report" usebundle => _log("Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
 
     pass3.!variable_defined.!vault_reachable::
