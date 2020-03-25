@@ -1,0 +1,67 @@
+{
+  "data": {
+    "bundle_args": [
+      "lines",
+      "file",
+      "extra_condition"
+    ],
+    "bundle_name": "CIS_ubuntu18___Ensure_lines_present_in_file",
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.canonified_directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${file}",
+          "${lines}",
+          "false"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.${extra_condition})",
+        "component": "File content",
+        "method_name": "file_content"
+      }
+    ],
+    "name": "CIS ubuntu18 - Ensure lines present in file",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "lines"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "9e79f7f8-3ca6-4376-a510-11e00e134c91",
+        "name": "file"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "1cf9a017-7fd9-49b8-bdaa-0c22365fa988",
+        "name": "extra_condition"
+      }
+    ],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": "1"
+}

@@ -26,6 +26,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Enable_Service",
+  "techniqueName": "CIS_redhat7___Enable_Service",
   "techniqueVersion": "1.0"
 }

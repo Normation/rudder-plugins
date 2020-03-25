@@ -32,6 +32,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_mounting_partition_is_correct",
+  "techniqueName": "CIS_redhat7___Ensure_mounting_partition_is_correct",
   "techniqueVersion": "1.0"
 }

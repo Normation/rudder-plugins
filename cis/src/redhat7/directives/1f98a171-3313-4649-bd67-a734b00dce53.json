@@ -11,6 +11,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_gpgcheck_is_globally_activated",
+  "techniqueName": "CIS_redhat7___Ensure_gpgcheck_is_globally_activated",
   "techniqueVersion": "1.0"
 }

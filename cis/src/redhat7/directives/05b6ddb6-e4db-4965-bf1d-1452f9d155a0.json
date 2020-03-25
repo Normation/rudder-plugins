@@ -44,6 +44,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_a_package_is_not_installed",
+  "techniqueName": "CIS_redhat7___Ensure_a_package_is_not_installed",
   "techniqueVersion": "1.0"
 }

@@ -24,24 +24,23 @@ target/configuration/ncf:
 	mkdir -p $(DESTDIR)/configuration
 	cp -r ncf $(DESTDIR)/configuration/
 
-target/configuration/techniques:
-	mkdir -p $(DESTDIR)/configuration
-	cp -r techniques $(DESTDIR)/configuration/
-
-ubuntu18: pdfs target/configuration/ncf target/configuration/techniques
+ubuntu18: pdfs target/configuration/ncf
 	mkdir -p $(DESTDIR)
 	./tools/cisTag.py ubuntu18
 	./tools/makeRule.py ubuntu18/ pdfs/cis_ubuntu18.pdf ubuntu18
+	cp -ar ubuntu18/techniques target/configuration
 
-debian9: pdfs target/configuration/ncf target/configuration/techniques
+debian9: pdfs target/configuration/ncf
 	mkdir -p $(DESTDIR)
 	./tools/cisTag.py debian9
 	./tools/makeRule.py debian9/ pdfs/cis_debian9.pdf debian9
+	cp -ar debian9/techniques target/configuration
 
-redhat7: pdfs target/configuration/ncf target/configuration/techniques
+redhat7: pdfs target/configuration/ncf
 	mkdir -p $(DESTDIR)
 	./tools/cisTag.py redhat7
 	./tools/makeRule.py redhat7/ pdfs/cis_redhat7.pdf redhat7
+	cp -ar redhat7/techniques target/configuration
 
 clean:
 	./tools/clean.py

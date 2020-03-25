@@ -1,0 +1,54 @@
+{
+  "data": {
+    "bundle_args": [
+      "module"
+    ],
+    "bundle_name": "CIS_ubuntu18___Disable_kernel_module_loading",
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.canonified_directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${module}",
+          "install ${module} /bin/false"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "kernel_module_configuration",
+        "method_name": "kernel_module_configuration"
+      },
+      {
+        "args": [
+          "${module}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "kernel_module_not_loaded",
+        "method_name": "kernel_module_not_loaded"
+      }
+    ],
+    "name": "CIS ubuntu18 - Disable kernel module loading",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
+        "name": "module"
+      }
+    ],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": "1"
+}
