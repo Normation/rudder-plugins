@@ -48,7 +48,7 @@ target/packaging/rudder_synchronize.py:
 target/configuration-repository:
 	cd src && make $(OS) && cd -
 	cp -ar $(CONFIG_SOURCE)/rules $(CONFIG_SOURCE)/directives $(CONFIG_SOURCE)/techniques target/
-	src/tools/trackConfig "target" "target/packaging/trackFile.json"
+	src/tools/trackConfig.py "target" "target/packaging/trackFile.json"
 	mkdir -p target/configuration-repository
 	cp -ar $(CONFIG_SOURCE)/ncf target/configuration-repository/
 

@@ -26,6 +26,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Disable_kernel_module_loading",
+  "techniqueName": "CIS_ubuntu18___Disable_kernel_module_loading",
   "techniqueVersion": "1.0"
 }

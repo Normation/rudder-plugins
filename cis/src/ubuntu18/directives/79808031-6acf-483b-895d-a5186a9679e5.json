@@ -38,6 +38,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_lines_present_in_file",
+  "techniqueName": "CIS_ubuntu18___Ensure_lines_present_in_file",
   "techniqueVersion": "1.0"
 }

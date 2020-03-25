@@ -32,6 +32,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_sysctl_key_value_IPV4",
+  "techniqueName": "CIS_ubuntu18___Ensure_sysctl_key_value_IPV4",
   "techniqueVersion": "1.0"
 }

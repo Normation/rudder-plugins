@@ -42,14 +42,13 @@ def is_rule(data):
 
 def getTechniques(basePath):
     techniques = []
-    print(basePath)
     for root, dirs, files in os.walk(basePath):
         for file in files:
             if file.endswith('.json'):
-               with open(os.path.join(root, file)) as f:
-                   data = json.load(f)
-               if is_technique(data) == True:
-                   techniques.append(file)
+                with open(os.path.join(root, file)) as f:
+                    data = json.load(f)
+                if is_technique(data) == True:
+                    techniques.append(file)
     return techniques
 
 def getDirectives(basePath):

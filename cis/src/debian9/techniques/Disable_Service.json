@@ -1,0 +1,53 @@
+{
+  "data": {
+    "bundle_args": [
+      "service"
+    ],
+    "bundle_name": "CIS_debian9___Disable_Service",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.canonified_directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "${service}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "service_disabled",
+        "method_name": "service_disabled"
+      },
+      {
+        "args": [
+          "${service}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "service_stopped",
+        "method_name": "service_stopped"
+      }
+    ],
+    "name": "CIS debian9 - Disable Service",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "981a5b9d-b062-4011-8dff-df1810cb2fe6",
+        "name": "service"
+      }
+    ],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": "1"
+}

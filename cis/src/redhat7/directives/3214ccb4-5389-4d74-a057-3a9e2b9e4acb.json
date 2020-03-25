@@ -26,6 +26,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Disable_Service",
+  "techniqueName": "CIS_redhat7___Disable_Service",
   "techniqueVersion": "1.0"
 }

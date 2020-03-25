@@ -44,6 +44,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_key_value_in_file",
+  "techniqueName": "CIS_redhat7___Ensure_key_value_in_file",
   "techniqueVersion": "1.0"
 }

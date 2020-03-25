@@ -1,0 +1,105 @@
+{
+  "data": {
+    "bundle_args": [
+      "package",
+      "posthook",
+      "prerm",
+      "check_command"
+    ],
+    "bundle_name": "CIS_debian9___Ensure_a_package_is_not_installed",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.canonified_directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "cis_check_command_${report_data.canonified_directive_id}",
+          "${check_command}",
+          "0",
+          "999"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "Condition from command",
+        "method_name": "condition_from_command"
+      },
+      {
+        "args": [
+          "${prerm}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.cis_check_command_${report_data.canonified_directive_id}_false)",
+        "component": "command_execution",
+        "method_name": "command_execution"
+      },
+      {
+        "args": [
+          "${package}",
+          "any",
+          "default",
+          "default"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "package_absent",
+        "method_name": "package_absent"
+      },
+      {
+        "args": [
+          "${posthook}"
+        ],
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.package_absent_${package}_repaired)",
+        "component": "command_execution",
+        "method_name": "command_execution"
+      }
+    ],
+    "name": "CIS debian9 - Ensure a package is not installed",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
+        "name": "package"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
+        "name": "posthook"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "f2da3dff-0634-48b0-8a8e-8c27393388cb",
+        "name": "prerm"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "529b1f1a-0db6-4244-b84a-7abf0216da39",
+        "name": "check_command"
+      }
+    ],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": "1"
+}

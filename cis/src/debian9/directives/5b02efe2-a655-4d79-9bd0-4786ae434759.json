@@ -32,6 +32,6 @@
   "policyMode": "audit",
   "shortDescription": "",
   "tags": [],
-  "techniqueName": "Ensure_sysctl_key_value_IPV6",
+  "techniqueName": "CIS_debian9___Ensure_sysctl_key_value_IPV6",
   "techniqueVersion": "1.0"
 }
