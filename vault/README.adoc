@@ -53,17 +53,18 @@ Auth modes can be: token, userpass.
 === Example of usage :
 * Seret definition via Vault Web Interface:
 
-You have to start by creating the secret for the database server login informations by clicking on the already defined secret engine for key value storage which is /secret:
+You have to start by creating the secret for the database server login informations by 
+clicking on the already defined secret engine for key value storage which is /secret: +
 image::workflows/CreateSecret1.jpg
 
-Then clicking on creating secret: 
+Then clicking on creating secret: + 
 image::workflows/CreateSecret2.jpg
 
 Now you have to set the parameters for your secret, which are basically the path (in other word the name of the secret), 
-the number of versions and most importantly the key values parameters: 
+the number of versions and most importantly the key values parameters: + 
 image::workflows/CreateSecret3.jpg
 
-* Secret fetching via Rudder Server technic editor 
-Finally you need to define the generic method on the rudder technic editor, the most important parameter is the path to the secret which.. 
+* Secret fetching via Rudder Server technic editor: 
+Finally you need to define the generic method on the rudder technic editor, the most important parameter is the path to the secret which.. + 
 image::workflows/CreateMethod.jpg
 
