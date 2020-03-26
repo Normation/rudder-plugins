@@ -7,7 +7,7 @@ See repository main README for information about licensing, contribution, and ot
 // Everything after this line goes into Rudder documentation
 // ====doc====
 [vault-plugin]
-== Vault
+= Vault
 
 Vault is a centralized custom solution by Hashicrop, to manage secret that provides : 
 
@@ -23,7 +23,7 @@ For security purpose, the Rudder server itself does not need to have access to t
 
 == Installation
 
-* You've supposed to already have your Vault server installed and configured, also configured with secrets that can be any of the following types : SSL certificates and keys for your organization's domain, credentials to connect to a corporate database server.
+* You're supposed to already have your Vault server installed and configured, also configured with secrets that can be any of the following types: SSL certificates and keys for your organization's domain, credentials to connect to a corporate database server.
 
 * You must download and install the plugin from the repository with the rudder-pkg tool on your Server Rudder. 
 
@@ -38,9 +38,15 @@ rudder package install rudder-plugin-vault
 ....
 
 
-* Edit the configuration file in /var/rudder/plugin-resources/vault.json on each agent. This config file must contain the address of your Vault server, credentials to access it based on the auth mode you want to use. A sample config is in share/plugins/vault/sample_vault.json.
+* Edit the configuration file in `/var/rudder/plugin-resources/vault.json` on each agent.
+This config file must contain the address of your Vault server, credentials to access it based on the auth mode you want to use. 
+A sample config is in `share/plugins/vault/sample_vault.json`.
 
 == Usage
 
-Use the Variable from vault generic method in Rudder to fetch secrets. Make sure the agents the generic method is being used on have a proper vault.json configuration. A sample config is provided at /opt/rudder/share/plugins/vault/sample_vault.json. This file needs your Vault server address, the configuration for at least one auth mode, and the name of the auth mode to be used. Auth modes can be token, userpass.
+Use the Variable from vault generic method in Rudder to fetch secrets. 
+Make sure the agents the generic method is being used on have a proper `vault.json` configuration. 
+A sample config is provided at `/opt/rudder/share/plugins/vault/sample_vault.json`. 
+This file needs your Vault server address, the configuration for at least one auth mode, and the name of the auth mode to be used. 
+Auth modes can be: token, userpass.
 
