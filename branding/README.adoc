@@ -9,7 +9,7 @@ other general information.
 // Everything after this line goes into Rudder documentation
 // ====doc====
 [branding]
-= Branding Plugin
+= Branding
 
 This plugin allows to customize some part of Rudder UI to facilitate its integration with
 your other applications or internal branding but also to clearly differentiate among

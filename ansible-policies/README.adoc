@@ -10,7 +10,7 @@ other general information.
 // Everything after this line goes into Rudder documentation
 // ====doc====
 [ansible_policies-plugin]
-= ansible_policies
+= Ansible policies
 
 This plugin distributes a technique to run Ansible jobs from Rudder and reports their results.
 

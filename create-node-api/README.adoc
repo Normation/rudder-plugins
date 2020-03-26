@@ -9,7 +9,7 @@ other general information.
 // Everything after this line goes into Rudder documentation
 // ====doc====
 [create-node-api]
-= Create Node API
+= Create node
 
 This node allows to create nodes via API.
 
