@@ -35,7 +35,7 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.$plugin_pkg$
+package com.normation.plugins.openscappolicies
 
 import bootstrap.liftweb.Boot
 import com.normation.plugins._
@@ -47,9 +47,9 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 
-class $plugin_class$PluginDef(override val status: PluginStatus) extends DefaultPluginDef {
+class OpenscapPoliciesPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
-  override val basePackage = "com.normation.plugins.$plugin_pkg$"
+  override val basePackage = "com.normation.plugins.openscappolicies"
 
   def init = {}
 
@@ -58,17 +58,17 @@ class $plugin_class$PluginDef(override val status: PluginStatus) extends Default
   val configFiles = Seq()
 
   override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val $plugin_class$Menu = (
-      Menu("$plugin_class$", <span>$name$</span>) /
-        "secure" / "administration" / "$plugin_class$Management"
+    val OpenscapPoliciesMenu = (
+      Menu("OpenscapPolicies", <span>OpenSCAP Policies</span>) /
+        "secure" / "administration" / "OpenscapPoliciesManagement"
         >> LocGroup("administrationGroup")
         >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "$plugin_class$Management" :: Nil ) openOr <div>Template not found</div>)
+        >> Template(() => ClasspathTemplates("template" :: "OpenscapPoliciesManagement" :: Nil ) openOr <div>Template not found</div>)
     )
 
     menus.map {
       case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ $plugin_class$Menu:_* )
+        Menu(l , m.kids.toSeq :+ OpenscapPoliciesMenu:_* )
       case m => m
     }
   }

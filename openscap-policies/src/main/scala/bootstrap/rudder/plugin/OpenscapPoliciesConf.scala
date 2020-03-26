@@ -35,42 +35,25 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.$plugin_pkg$
+package bootstrap.rudder.plugin
 
-import bootstrap.liftweb.Boot
-import com.normation.plugins._
-import com.normation.rudder.AuthorizationType.Administration
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
+import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.openscappolicies.OpenscapPoliciesPluginDef
+import com.normation.plugins.openscappolicies.CheckRudderPluginEnableImpl
+import net.liftweb.common.Loggable
+import com.normation.plugins.RudderPluginModule
 
-class $plugin_class$PluginDef(override val status: PluginStatus) extends DefaultPluginDef {
+/*
+ * Actual configuration of the plugin logic
+ */
+object OpenscapPoliciesConf extends RudderPluginModule {
 
-  override val basePackage = "com.normation.plugins.$plugin_pkg$"
+  // by build convention, we have only one of that on the classpath
+  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
-  def init = {}
+  lazy val pluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
-  def oneTimeInit : Unit = {}
-
-  val configFiles = Seq()
-
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val $plugin_class$Menu = (
-      Menu("$plugin_class$", <span>$name$</span>) /
-        "secure" / "administration" / "$plugin_class$Management"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "$plugin_class$Management" :: Nil ) openOr <div>Template not found</div>)
-    )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ $plugin_class$Menu:_* )
-      case m => m
-    }
-  }
+  // other service instanciation / initialization
 
 }
+

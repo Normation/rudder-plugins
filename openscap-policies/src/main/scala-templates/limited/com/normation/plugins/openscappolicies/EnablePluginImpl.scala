@@ -35,42 +35,25 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.$plugin_pkg$
+package com.normation.plugins.openscappolicies
 
-import bootstrap.liftweb.Boot
-import com.normation.plugins._
-import com.normation.rudder.AuthorizationType.Administration
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
+import com.normation.plugins.LicensedPluginCheck
+import com.normation.rudder.services.nodes.NodeInfoService
 
-class $plugin_class$PluginDef(override val status: PluginStatus) extends DefaultPluginDef {
+/*
+ * This template file will processed at build time to choose
+ * the correct immplementation to use for the interface.
+ * The default implementation is to always enable status.
+ *
+ * The class will be loaded by ServiceLoader, it needs an empty constructor.
+ */
+final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends LicensedPluginCheck {
+  // here are processed variables
+  def pluginResourcePublickey = "${plugin-resource-publickey}"
+  def pluginResourceLicense   = "${plugin-resource-license}"
+  def pluginDeclaredVersion   = "${plugin-declared-version}"
+  def pluginId                = "${plugin-fullname}"
 
-  override val basePackage = "com.normation.plugins.$plugin_pkg$"
-
-  def init = {}
-
-  def oneTimeInit : Unit = {}
-
-  val configFiles = Seq()
-
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val $plugin_class$Menu = (
-      Menu("$plugin_class$", <span>$name$</span>) /
-        "secure" / "administration" / "$plugin_class$Management"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "$plugin_class$Management" :: Nil ) openOr <div>Template not found</div>)
-    )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ $plugin_class$Menu:_* )
-      case m => m
-    }
-  }
-
+  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes
 }
+

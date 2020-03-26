@@ -10,7 +10,7 @@ FILES = remove_configuration rudder_synchronize.py openscap-policies.json techni
 SCRIPTS = postinst prerm
 OTHER_ARCHIVES = target/external-report.txz
 
-include ../makefiles/common-plugin.mk
+include ../makefiles/common-scala-plugin.mk
 
 target/techniques:
 	cp -r configuration/techniques target/techniques
