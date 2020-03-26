@@ -37,7 +37,7 @@ You can log information about ACL (behavior and errors) by adding the following 
 
 [[api-authorizations]]
 
-= API Authorizations
+= API authorizations
 
 == User personnal API Token
 
