@@ -69,7 +69,8 @@ image::docs/images/workflows/CreateSecret3.jpg[]
 
 * Secret fetching via Rudder Server technic editor:
  
-Finally you need to define the generic method on the rudder technic editor, the most important parameter is the path to the secret which..  
+Finally you need to define the generic method on the rudder technic editor, the most important parameter is the path to the secret which needs to include `/data`
+so it can retrieve the key and value that are defined under the secret name.
 
 image::docs/images/workflows/CreateMethod.jpg[]
 
