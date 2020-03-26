@@ -31,7 +31,7 @@ For security purpose, the Rudder server itself does not need to have access to t
 rudder package install-file <path to the rpkg>
 ....
 
-Or if you have an active subscription :
+Or if you have an active subscription : 
 
 ....
 rudder package install rudder-plugin-vault
@@ -44,7 +44,7 @@ A sample config is in `share/plugins/vault/sample_vault.json`.
 
 == Usage
 
-Use the Variable from vault generic method in Rudder to fetch secrets. 
+Use the *Variable from Vault* generic method in Rudder to fetch secrets. 
 Make sure the agents the generic method is being used on have a proper `vault.json` configuration. 
 A sample config is provided at `/opt/rudder/share/plugins/vault/sample_vault.json`. 
 This file needs your Vault server address, the configuration for at least one auth mode, and the name of the auth mode to be used. 
