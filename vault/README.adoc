@@ -51,7 +51,7 @@ This file needs your Vault server address, the configuration for at least one au
 Auth modes can be: token, userpass.
 
 === Example of usage :
-* Seret definition via Vault Web Interface:
+* Secret definition via Vault Web Interface:
 
 You have to start by creating the secret for the database server login informations by 
 clicking on the already defined secret engine for key value storage which is /secret:  
