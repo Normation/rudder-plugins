@@ -7,7 +7,7 @@ PROXY_ENV = $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY))
 # grep 'GET=' */SOURCES/Makefile to patch everywhere
 GET=get() { $(PROXY_ENV) curl -s -L -o "$$1.part" "$$2" && { openssl dgst -sha256 "$$1.part" | grep -q "$$3" || { echo "Wrong checksum, aborting"; exit 1; }; } && mv "$$1.part" "$$1"; }; get
 
-RUDDER_SYNCHRONIZE_SHA256 = 137d06de4479a132643407d79a580453f475583cf532e60c7ba8c00e0d6793d4
+RUDDER_SYNCHRONIZE_SHA256 = e0ba357886ac4b5c6a5856db191371922685a981af0c06596bd4adb8bcbefda1 
 FILES = rudder-synchronize ansible-policies.json techniques ansible.sh
 SCRIPTS = postinst prerm remove_configuration
 
