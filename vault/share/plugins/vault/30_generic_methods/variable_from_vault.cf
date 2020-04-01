@@ -27,7 +27,7 @@
 #
 # @parameter variable_prefix The prefix of the variable name
 # @parameter variable_name   The variable to define, the full name will be variable_prefix.variable_name
-# @parameter path            The path of the secret
+# @parameter path            Vault secret path
 #
 # @class_prefix variable_from_vault
 # @class_parameter path
