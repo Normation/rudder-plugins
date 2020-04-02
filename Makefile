@@ -10,7 +10,7 @@ PUB_LIBS =
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
-PLUGINS = $(shell find -maxdepth 2 -mindepth 1 -name "build.conf" -printf '%h\n' | cut -c3- | xargs echo)
+PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 
