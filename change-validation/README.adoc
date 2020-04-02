@@ -24,7 +24,7 @@ The goal is to improve safety and knowledge sharing in the team that is using Ru
 To enable it, you only have to tick "Enable Change Requests" in the Administration - Settings tab of the web interface. (This feature
 is optional and can be disabled at any time without any problem, besides risking the invalidation of yet-unapproved changes)
 
-image::workflows/Enabling.png[]
+image::docs/images/Enabling.png[]
 
 
 == Rudder compatibility and breaking changes
@@ -76,7 +76,7 @@ Cancelled::
 
 Here is a diagram about all those states and transitions:
 
-image::workflows/States.png[]
+image::docs/images/States.png[]
 
 == Change request management page
 
@@ -84,13 +84,13 @@ All Change requests can be seen on the /secure/plugins/changes/changeRequests pa
 There is a table containing all requests, you can access to each of them by clicking on their id.
 You can filter change requests by status and only display what you need.
 
-image::workflows/Management.png[]
+image::docs/images/Management.png[]
 
 === Change request detail page
 
 Each Change request is reachable on the /secure/plugins/changes/changeRequest/id.
 
-image::workflows/Details.png[]
+image::docs/images/Details.png[]
 
 The page is divided into two sections:
 
@@ -98,18 +98,18 @@ Change request information::
 
 display common information (title, description, status, id) and a form to edit them.
 
-image::workflows/Informations.png[]
+image::docs/images/Informations.png[]
 
 Change request content::
 
 In this section, there is two tabs:
 - History about that change request
 
-image:workflows/History.png[]
+image:docs/images/History.png[]
 
 - Display the change proposed
 
-image:workflows/Rule_Update_Diff.png[]
+image:docs/images/Rule_Update_Diff.png[]
 
 
 == How to create a Change request ?
@@ -119,13 +119,13 @@ You will have a popup to enter the name of your change request and a change mess
 
 The change message will be used as description for you Change Request, so we advise to fill it anyway to keep an explanation ab out your change.
 
-image::workflows/Popup.png[]
+image::docs/images/Popup.png[]
 
 Change request are not available for Rule/Directive/Groups creation, they are only active if the Rule/Directive/Groups existed before:
 
 Here is a small table about all possibilities:
 
-image::workflows/Table.png[]
+image::docs/images/Table.png[]
 
 == How to validate a Change request ?
 
@@ -153,7 +153,7 @@ The *administrator* Role gives you both the deployer and valdiator role.
 
 There is also the possibility to access Change requests in Read only mode by using the role 'validator_read' or 'deployer_read'.
 
-image::workflows/Validation.png[]
+image::docs/images/Validation.png[]
 
 === Self Validations
 
@@ -170,7 +170,7 @@ Those two behaviours can be changed in the property file */opt/rudder/etc/rudder
 
 When the initial state of a Change request has changed (i.e.: you want to modify a Directive, but someone else change about that Directive has been accepted before yours), your change can't be validated anymore.
 
-image::workflows/Conflict.png[]
+image::docs/images/Conflict.png[]
 
 For now, we decided to reduce to the possibility of an error or inconsistency when there are concurrent changes.
 In a future version of Rudder, there will be a system to handle those conflicts, and make sure actual changes are not overwritten.
@@ -185,14 +185,14 @@ This notification is displayed only if the validator/deployer role is active on 
 It shows you how many Change requests are waiting to be reviewed/deployed.
 Clicking on it will lead you to the Change request management page, with a filter already applied.
 
-image::workflows/Notification.png[]
+image::docs/images/Notification.png[]
 
 === Change already proposed on Rule/Directive/Group
 
 When there is a change about the Rule/Directive/Group already proposed but not deployed/cancelled, you will be notified that there are some pending Change requests about that element.
 You will be provided a Link to those change requests, so you can check if the change is already proposed.
 
-image::workflows/Warning.png[]
+image::docs/images/Warning.png[]
 
 == Validated User
 
