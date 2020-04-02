@@ -60,7 +60,7 @@ def getDirectives(basePath):
                with open(os.path.join(root, file)) as f:
                    data = json.load(f)
                if is_directive(data) == True:
-                   directives.append(file)
+                   directives.append(data["id"])
     return directives
 
 def getRules(basePath):
@@ -72,7 +72,7 @@ def getRules(basePath):
                with open(os.path.join(root, file)) as f:
                    data = json.load(f)
                if is_rule(data) == True:
-                   rules.append(file)
+                   rules.append(data["id"])
     return rules
 
 def trackTechniques(basePath, dst):

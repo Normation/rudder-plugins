@@ -1,0 +1,170 @@
+#!/usr/bin/python3
+
+"""
+Rudder synchronize
+
+Policy plugin classic prerm control file
+Usage:
+    prerm configuration <CONFIGURATION_FOLDER> <TRACK_FILE>
+    prerm categories <CATEGORY>
+
+
+CONFIGURATION_FOLDER: path to the folder containing the json imported to Rudder
+TRACK_FILE: path to the file used to track all the imported techniques/directives/rules/methods
+
+Usually the track_file is a json containing one key for each element like:
+
+{
+  "directives": [
+    "452bcaec-faa4-4df2-bb11-7e60adb79075",
+    "1affb4e0-606a-4255-bbac-75b6f68118e1",
+  ],
+  "rules": [
+    "83df7ba2-dee9-46c8-827d-47dacc72928d",
+    "6dbe508d-1b85-412c-85ad-e8fb7c6ef9e8"
+  ],
+  "techniques": [
+    "Ensure_gpgcheck_is_globally_activated.json",
+  ]
+}
+
+Commands
+    prerm configuration :  Remove all imported objects tracked under TRACK_FILE
+                           and defined from the export folder CONFIGURATION_FOLDER
+
+    prerm categories    :  Remove all tracked categories under TRACK_FILE if
+                           they are empty
+
+"""
+import json, logging, traceback
+import re
+import os, sys
+import requests
+# Hack to import rudder lib, remove, some day ...
+sys.path.insert(0, "/opt/rudder/share/python")
+import rudder_synchronize as rudder_synchro
+import subprocess
+import docopt
+
+def canonify(string):
+  string = string.encode("utf-8").decode("iso-8859-1")
+  regex = re.compile("[^a-zA-Z0-9_]")
+  return regex.sub("_", string)
+
+def removeRules(rules):
+    answer = None
+    for iRule in rules:
+        try:
+            if iRule in RULES:
+                (answer, remove) = rudder_synchro.queryYesNo("Do you want to remove Rule %s? [y/n/Y/N]"%iRule, answer)
+                if remove:
+                    rudder_synchro.remove_rule(iRule)
+                    print(rudder_synchro.colors.GREEN + "Successfully removed rule %s"%iRule + rudder_synchro.colors.ENDC)
+                else:
+                    print(rudder_synchro.colors.GREEN + "Keeping rule %s"%iRule + rudder_synchro.colors.ENDC)
+            else:
+                print(rudder_synchro.colors.GREEN + "Could not find rule %s"%iRule + rudder_synchro.colors.ENDC)
+        except rudder_synchro.RudderError as e:
+            print(rudder_synchro.colors.RED + e.message + rudder_synchro.colors.ENDC)
+
+def removeDirectives(directives):
+    answer = None
+    for iDirective in directives:
+        try:
+            if iDirective in DIRECTIVES:
+                (answer, remove) = rudder_synchro.queryYesNo("Do you want to remove directive %s? [y/n/Y/N]"%iDirective, answer)
+                if remove:
+                    rudder_synchro.remove_directive(iDirective)
+                    print(rudder_synchro.colors.GREEN + "Successfully removed directive %s"%iDirective + rudder_synchro.colors.ENDC)
+                else:
+                    print(rudder_synchro.colors.GREEN + "Keeping directive %s"%iDirective + rudder_synchro.colors.ENDC)
+            else:
+                print(rudder_synchro.colors.GREEN + "Could not find directive %s"%iDirective + rudder_synchro.colors.ENDC)
+        except rudder_synchro.RudderError as e:
+            print(rudder_synchro.colors.RED + e.message + rudder_synchro.colors.ENDC)
+
+def removeTechniques(techniques):
+    answer = None
+    for iTechnique in techniques:
+        try:
+            with open(CONFIGURATION_FOLDER + "/techniques/" + iTechnique) as f:
+                data = json.load(f)["data"]
+            techniqueName = data["name"]
+            if canonify(techniqueName) in TECHNIQUES:
+                (answer, remove) = rudder_synchro.queryYesNo("Do you want to remove Technique %s? [y/n/Y/N]"%techniqueName, answer)
+                if remove:
+                    rudder_synchro.remove_technique(canonify(techniqueName))
+                else:
+                    print(rudder_synchro.colors.GREEN + "Keeping technique %s"%iTechnique + rudder_synchro.colors.ENDC)
+            else:
+                print(rudder_synchro.colors.GREEN + "Could not find technique %s"%techniqueName + rudder_synchro.colors.ENDC)
+        except rudder_synchro.RudderError as e:
+            print(rudder_synchro.colors.RED + e.message + rudder_synchro.colors.ENDC)
+
+def categoryIsEmpty(category):
+    CONFIGURATION_REPO = "/var/rudder/configuration-repository"
+    DIRECTIVE_FOLDER = CONFIGURATION_REPO + "/directives/" + category
+    files = []
+    # Expected files found in an empty category
+    emptyCategory = [DIRECTIVE_FOLDER + "/category.xml", DIRECTIVE_FOLDER + "/" + canonify(category) + "/activeTechniqueSettings.xml"]
+    for r, d, f in os.walk(DIRECTIVE_FOLDER):
+         for x in f:
+             currentPath = os.path.join(r, x)
+             if os.path.isfile(currentPath):
+                 files.append(os.path.join(r, currentPath))
+    return files.sort() == emptyCategory.sort()
+
+def removeCategory(category):
+    CONFIGURATION_REPO = "/var/rudder/configuration-repository"
+    DIRECTIVE_FOLDER = CONFIGURATION_REPO + "/directives/" + category
+    TECHNIQUE_FOLDER = CONFIGURATION_REPO + "/techniques/" + category
+    if category != "":
+        #shutil.rmtree(DIRECTIVE_FOLDER, ignore_errors=True)
+        #shutil.rmtree(TECHNIQUES_FOLDER, ignore_errors=True)
+        command = "git rm -r %s %s"%(TECHNIQUE_FOLDER, DIRECTIVE_FOLDER)
+        completedProc = subprocess.run(command.split(" "), cwd=CONFIGURATION_REPO)
+        if completedProc.returncode != 0:
+            print(rudder_synchro.colors.RED + "An error occured while removing directive category %s"%category + rudder_synchro.colors.ENDC)
+            print(rudder_synchro.colors.RED + "Executed command was: %s"%command + rudder_synchro.colors.ENDC)
+
+def disableCategories(categories):
+    answer = None
+    CONFIGURATION_REPO = "/var/rudder/configuration-repository"
+    for iCategory in categories:
+        iCategory = canonify(iCategory)
+        DIRECTIVE_FOLDER = CONFIGURATION_REPO + "/directives/" + iCategory
+        try:
+            if categoryIsEmpty(iCategory):
+                (answer, remove) = rudder_synchro.queryYesNo("Do you want to remove the directive Category %s? [y/n/Y/N]"%iCategory, answer)
+                if remove:
+                    removeCategory(iCategory)
+                else:
+                    print(rudder_synchro.colors.GREEN + "The directive category %s will be kept since you asked for it"%iCategory + rudder_synchro.colors.ENDC)
+            else:
+                print(rudder_synchro.colors.RED + "The directive category %s will be kept since it is not empty"%iCategory + rudder_synchro.colors.ENDC)
+        except rudder_synchro.RudderError as e:
+            print(rudder_synchro.colors.RED + e.message + rudder_synchro.colors.ENDC)
+
+RULES = [iRule["id"] for iRule in rudder_synchro.endpoint.list_rules()["rules"]]
+DIRECTIVES = [iDirective["id"] for iDirective in rudder_synchro.endpoint.list_directives()["directives"]]
+TECHNIQUES = [iTechnique["name"] for iTechnique in rudder_synchro.endpoint.list_techniques()["techniques"]]
+
+if __name__ == "__main__":
+  args = docopt.docopt(__doc__)
+  TRACK_FILE_PATH = args['<TRACK_FILE>']
+  CONFIGURATION_FOLDER = args['<CONFIGURATION_FOLDER>']
+
+  if args['configuration']:
+      try:
+          with open(TRACK_FILE_PATH) as f:
+              data = json.load(f)
+      except Exception as e:
+          print("Could not open %s"%TRACK_FILE_PATH)
+          print(e)
+          exit(1)
+      removeRules(data["rules"])
+      removeDirectives(data["directives"])
+      removeTechniques(data["techniques"])
+  elif args['categories']:
+      disableCategories([args["<CATEGORY>"]])
+
