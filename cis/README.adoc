@@ -24,7 +24,7 @@ and may not behave as you expect. Check the <<Troubleshootings, troubleshooting 
 
 *You can still try to make it works for other benchmarks, see <<Build, below>>*.
 
-image::workflows/cis.png[]
+image::docs/images/cis.png[]
 
 == Prerequisites
 
@@ -168,7 +168,7 @@ repo under the `configuration` directory.
 [#Skip_directive]
 Each added Technique should be as generic as possible to limit their number. Each one of them must start with a condition from `variable existence defined` as follows:
 
-image::workflows/condition_from_variable_existence.png[]
+image::docs/images/condition_from_variable_existence.png[]
 
 Each generic methods used in the Technique should then be guarded by the condition:
 
