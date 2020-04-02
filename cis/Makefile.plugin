@@ -20,7 +20,7 @@ GET=get() { $(PROXY_ENV) curl -s -L -o "$$1.part" "$$2" && { openssl dgst -sha25
 all: $(FULL_NAME)-$(VERSION).rpkg
 
 FILES = configuration-repository
-SCRIPTS = postinst prerm trackFile.json rudder_synchronize.py
+SCRIPTS = postinst prerm trackFile.json rudder_synchronize.py remove_configuration
 RUDDER_SYNCHRONIZE_SHA256 = e0ba357886ac4b5c6a5856db191371922685a981af0c06596bd4adb8bcbefda1
 
 CONFIG_SOURCE = src/target/configuration
@@ -43,7 +43,6 @@ target/packaging/rudder_synchronize.py:
 	sed -i -e "s/{category\}/CIS\ $(OS)/g" target/packaging/*
 	$(GET) target/packaging/rudder_synchronize.py https://repository.rudder.io/tools/rudder-synchronize $(RUDDER_SYNCHRONIZE_SHA256)
 	chmod +x target/packaging/rudder_synchronize.py
-
 
 target/configuration-repository:
 	cd src && make $(OS) && cd -
