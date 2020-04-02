@@ -131,11 +131,11 @@
       {
         "args": [
           "root",
-          "report.html",
-          "/var/rudder/tmp/openscap_policies.html",
+          "openscap_report.html",
+          "/var/rudder/tmp/openscap_report.html",
           "1d"
         ],
-        "class_context": "any",
+        "class_context": "any.(schedule_simple_openscap_repaired)",
         "method_name": "sharedfile_to_node",
         "component": "send report to server"
       }
