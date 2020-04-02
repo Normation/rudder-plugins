@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+
+import json
+import re
+import os, sys
+import subprocess
+import uuid
+
+def makeJsonFile(filename, content):
+  os.makedirs(os.path.dirname(filename), exist_ok=True)
+  with open(filename, "w") as fd:
+    fd.write(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))
+
+def is_technique(data):
+    if "type" in data and "version" in data and "data" in data:
+        return True
+    return False
+
+def getTechniques(basePath):
+    techniques = []
+    for root, dirs, files in os.walk(basePath + "/techniques"):
+        for file in files:
+            if file.endswith('.json'):
+               with open(os.path.join(root, file)) as f:
+                   data = json.load(f)
+               if is_technique(data) == True:
+                   techniques.append(file)
+    return techniques
+
+def trackTechniques(basePath):
+    try:
+        with open("target/openscap-policies.json") as f:
+            data = json.load(f)
+    except:
+        data = {}
+    data["techniques"] = getTechniques(basePath)
+    makeJsonFile("target/openscap-policies.json", data)
+
+def trackRules(basePath):
+    try:
+        with open("target/openscap-policies.json") as f:
+            data = json.load(f)
+    except:
+        data = {}
+    data["rules"] = []
+    makeJsonFile("target/openscap-policies.json", data)
+
+def trackDirectives(basePath):
+    try:
+        with open("target/openscap-policies.json") as f:
+            data = json.load(f)
+    except:
+        data = {}
+    data["directives"] = []
+    makeJsonFile("target/openscap-policies.json", data)
+
+def trackConfig(basePath):
+    trackTechniques(basePath)
+    trackDirectives(basePath)
+    trackRules(basePath)
+
+trackConfig("configuration")

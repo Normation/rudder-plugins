@@ -1,0 +1,59 @@
+# Rudder plugin: OpenSCAP-policies
+
+This project is part of Rudder - IT infrastructure Automation and Compliance.
+See: http://rudder.io for more information.
+See repository main README for information about licensing, contribution, and other general information.
+
+
+// Everything after this line goes into Rudder documentation
+// ====doc====
+[OpenSCAP-plugin]
+= OpenSCAP
+
+OpenSCAP is an ecosystem that provides several tools to assist admnistrators and auditors with assessment, measurement, and enforcement of security baselines. It allows the use of different profiles aligned with different standards such as PCI-DSS.
+
+The plugin aims to upload automatically the openSCAP auditing results to the Rudder Server, and, if you have the `external-reports-plugin`, to integrate these reports directly in the Rudder node webpage.
+
+== Installation
+
+As most of the Rudder plugins, you must install the plugin with the rudder-pkg tool on your Server Rudder.
+
+....
+/opt/rudder/bin/rudder-pkg install-file <path to the rpkg>
+....
+
+This will add one Rudder technique to your Rudder Server, two API enpoints and a new tab on Node Details.
+
+
+=== Usage
+
+In order to use the technique provided and get reports from your nodes, you will need to decline it in different directives following your requirements.
+
+The technique comes with two parameters:
+
+* `profile` which is the profile name you want to audit
+* `scap_file` which is the absolute path (on the node) of the SCAP content from which you will base the audit on
+
+SCAP content refers to document in the XCCDF, OVAL and Source DataStream formats. These documents can be presented in different forms and by different organizations to meet their security automation and technical implementation needs. You can find more informations on the https://github.com/ComplianceAsCode/content[ComplianceAsCode]  GitHub project.
+
+By default, available `scap_files` are located on `/usr/share/xml/scap/ssg/content/` after install of the openSCAP agent on the nodes. Given profiles for specific scap_files can be obtain with the command:
+
+----
+oscap info <scap_file>
+----
+
+The technique will take care of the openSCAP agent installation and will by default, trigger an audit every hour on your nodes. The reporting file will then be uploaded on your Rudder Server under the folder:
+
+----
+/var/rudder/shared-files/root/files/<node-id>/openscap_report.html
+----
+
+
+== Rudder Webapp integration
+
+A new tab in Node Details called OpenScap is added by this plugin. If the node already sent its OpenScap report, it is
+available, in an iframe in this tab, in a sanitized version (no scripts)
+
+Two news API endpoints are also available:
+*  /latest/openscap/report/{nodeId}    : the OpenScap report
+*  /latest/openscap/sanitized/{nodeId} : the OpenScap report as displayed in the web interface (sanitized)

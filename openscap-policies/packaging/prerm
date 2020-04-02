@@ -1,0 +1,17 @@
+#!/bin/bash
+set -x
+PLUGIN_FOLDER="/var/rudder/packages/rudder-plugin-openscap-policies"
+
+# Remove techniques
+$PLUGIN_FOLDER/remove_configuration configuration $PLUGIN_FOLDER $PLUGIN_FOLDER/openscap-policies.json
+rudder server reload-techniques
+
+## Remove plugin categories
+NAME=OpenSCAP_Policies_plugin
+cd /var/rudder/configuration-repository
+git reset
+$PLUGIN_FOLDER/remove_configuration categories $PLUGIN_FOLDER $PLUGIN_FOLDER/openscap-policies.json
+git commit -m "Removing $NAME plugin catgories"
+# We need to restore archive when deleting a category, otherwise the active tree is not synchronized correctly
+curl -k -X POST -H "X-API-Token: $(cat /var/rudder/run/api-token)" https://localhost/rudder/api/latest/system/archives/directives/restore/latestCommit
+rudder server reload-techniques
