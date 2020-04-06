@@ -1,5 +1,5 @@
 #####################################################################################
-# Copyright 2018 Normation SAS
+# Copyright 2020 Normation SAS
 #####################################################################################
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,8 @@
 # Fetches the configuration to be used for this run.
 # The config is located at "config_path". It is a JSON file containing two fields : a server_addr and an auth dictionary :
 #{
-#   "server_addr": "YOUR_CONSUL_SERVER"
+#   "server_addr": "YOUR_CONSUL_SERVER",
+#   "token": "PasteYourTokenHere"
 #}
 #
 # The auth field can contain one field for each auth mode, with the latter as key name. It needs a "mode" field to determine which one to use.

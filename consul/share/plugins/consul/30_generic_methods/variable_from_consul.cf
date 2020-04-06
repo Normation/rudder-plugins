@@ -1,5 +1,5 @@
 #####################################################################################
-# Copyright 2018 Normation SAS
+# Copyright 2020 Normation SAS
 #####################################################################################
 #
 # This program is free software: you can redistribute it and/or modify
@@ -41,7 +41,8 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
 
     pass1::
-      "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s -H "X-Consul-Token: ${consul.config[token]}" http://${consul.config[server_addr]}/v1/kv/${pa$
+            "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s -H "X-Consul-Token: ${consul.config[token]}" http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
+
 
   classes:
       "pass2" expression => "pass1";
