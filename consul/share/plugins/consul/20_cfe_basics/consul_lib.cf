@@ -31,5 +31,12 @@ bundle agent consul_fetch_config()
   vars:
       "config_path" string => "/var/rudder/plugin-resources/consul.json";
       "consul.config" data => readjson("${config_path}");
+
+      "consul.auth" string => "-H 'X-Consul-Token: ${consul.config[token]}'",
+        ifvarclass => isvariable("consul.config[token]");
+
+      "consul.auth" string => "",
+        ifvarclass => not(isvariable("consul.config[token]"));
+
 }
 
