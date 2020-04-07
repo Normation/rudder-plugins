@@ -39,26 +39,30 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
       "class_prefix" string => canonify(join("_", "promisers"));
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
+    
+   pass1::
+      "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s -H "X-Consul-Token: ${consul.config[token]}" http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
 
-    pass1::
-            "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s -H "X-Consul-Token: ${consul.config[token]}" http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
+   pass2:: 
+      "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
 
-
-  classes:
+  
+   classes:
+      "pass3" expression => "pass2";
       "pass2" expression => "pass1";
       "pass1";
 
-    pass2::
+    pass3::
       "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");  
       "config_defined" expression => isvariable("consul.config");
 
   methods:
-    pass2.variable_defined::
+    pass3.variable_defined::
       "success" usebundle => _classes_success("${old_class_prefix}");
       "success" usebundle => _classes_success("${class_prefix}");
       "report" usebundle => _log("Variable definition from the ${path} secret path in consul", "${old_class_prefix}", "${class_prefix}", @{args});
 
-    pass2.!variable_defined.!consul_reachable::
+    pass3.!variable_defined.!consul_reachable::
       "failure" usebundle => _classes_failure("${old_class_prefix}");
       "failure" usebundle => _classes_failure("${class_prefix}");
       "report" usebundle => _log("Consul server unreachable. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args}),
@@ -66,7 +70,7 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "report" usebundle => _log("Undefined configuration. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args}),
         ifvarclass => "!config_defined";
 
-    pass2.!variable_defined.consul_reachable::
+    pass3.!variable_defined.consul_reachable::
       "failure" usebundle => _classes_failure("${old_class_prefix}");
       "failure" usebundle => _classes_failure("${class_prefix}");
       "report" usebundle => _log("Consul server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args});
