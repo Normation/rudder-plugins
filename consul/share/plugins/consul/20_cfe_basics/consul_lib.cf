@@ -20,7 +20,7 @@
 # The config is located at "config_path". It is a JSON file containing two fields : a server_addr and an auth dictionary :
 #{
 #   "server_addr": "YOUR_CONSUL_SERVER",
-#   "token": "PasteYourTokenHere"
+#   "token": "PasteYourTokenHere" [OPTIONAL]
 #}
 #
 # The auth field can contain one field for each auth mode, with the latter as key name. It needs a "mode" field to determine which one to use.
@@ -31,5 +31,12 @@ bundle agent consul_fetch_config()
   vars:
       "config_path" string => "/var/rudder/plugin-resources/consul.json";
       "consul.config" data => readjson("${config_path}");
+
+      "consul.auth" string => "-H 'X-Consul-Token: ${consul.config[token]}'",
+        ifvarclass => isvariable("consul.config[token]");
+
+      "consul.auth" string => "",
+        ifvarclass => not(isvariable("consul.config[token]"));
+
 }
 

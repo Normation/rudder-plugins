@@ -39,19 +39,18 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
       "class_prefix" string => canonify(join("_", "promisers"));
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
-
+    
     pass1::
-            "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s -H "X-Consul-Token: ${consul.config[token]}" http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
-
+      "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s ${consul.auth} http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
 
   classes:
       "pass2" expression => "pass1";
       "pass1";
 
     pass2::
-      "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");  
+      "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");
       "config_defined" expression => isvariable("consul.config");
-
+    
   methods:
     pass2.variable_defined::
       "success" usebundle => _classes_success("${old_class_prefix}");
@@ -72,4 +71,5 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "report" usebundle => _log("Consul server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args});
 	
 }
+
 
