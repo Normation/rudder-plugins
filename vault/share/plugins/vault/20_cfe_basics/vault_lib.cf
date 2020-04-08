@@ -29,6 +29,7 @@
 #       "password": "PASSWD"
 #     }
 #   }
+#   "verify_certificate": [True/False]
 # }
 #
 # The auth field can contain one field for each auth mode, with the latter as key name. It needs a "mode" field to determine which one to use.
@@ -38,6 +39,16 @@ bundle agent vault_fetch_config()
   vars:
       "config_path" string => "/var/rudder/plugin-resources/vault.json";
       "vault.config" data => readjson("${config_path}");
+ 
+      "vault.cert" string => "--insecure",
+      ifvarclass => strcmp("vault.config[verify_certificate]", "true"),
+      and => isvariable(vault.config[verify_certificate]);
+
+
+      "vault.cert" string => "",
+      ifvarclass => strcmp(vault.config[verify_certificate], "false"),
+      and => isvariable(vault.config[verify_certificate]);
+      
 }
 
 bundle agent vault_get_token()
