@@ -40,11 +40,8 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "class_prefix" string => canonify(join("_", "promisers"));
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
     
-  pass1::
+    pass1::
       "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/curl -s ${consul.auth} http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
-
-  reports:
-    "${consul.auth}";
 
   classes:
       "pass2" expression => "pass1";
