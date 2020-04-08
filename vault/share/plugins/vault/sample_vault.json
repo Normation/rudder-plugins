@@ -6,8 +6,8 @@
     "userpass":
     {
       "user": "USER",
-      "password": "PASSWD",
+      "password": "PASSWD"
     }
-  }
+  },
   "verify_certificate": true
 }
