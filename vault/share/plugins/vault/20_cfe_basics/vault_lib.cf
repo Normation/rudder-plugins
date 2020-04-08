@@ -46,8 +46,8 @@ bundle agent vault_fetch_config()
        "vault.cert" string => "";
 
   classes:
-     "insecure" => strcmp("${vault.config[verify_certificate]}", "false");
-     "pass1";
+      "insecure" => strcmp("${vault.config[verify_certificate]}", "false");
+      "pass1";
       
 }
 
