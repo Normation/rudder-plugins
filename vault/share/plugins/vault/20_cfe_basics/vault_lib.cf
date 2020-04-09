@@ -40,15 +40,14 @@ bundle agent vault_fetch_config()
       "config_path" string => "/var/rudder/plugin-resources/vault.json";
       "vault.config" data => readjson("${config_path}");
 
-     pass1.insecure::
-       "vault.cert" string => "--insecure";
- 
-     pass1.!insecure::
-       "vault.cert" string => "";
+      "vault.auth" string => "--insecure",
+        ifvarclass => strcmp("${vault.config[verify_certificate]}","true");
 
-  classes:
-      "insecure" expression => strcmp("${vault.config[verify_certificate]}", "false");
-      "pass1";
+      "vault.auth" string => "",
+        ifvarclass => strcmp("${vault.config[verify_certificate]}","false");
+
+      "vault.auth" string => "",
+        ifvarclass => not(isvariable("vault.config[verify_certificate]"));
       
 }
 
