@@ -41,7 +41,7 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
 
     pass2::
-      "vault_apicall_ouput" string => execresult('/usr/bin/curl ${vault.auth} -s -H "X-Vault-Token: ${vault.auth_token}" ${vault.server_addr}/v1/${path}', "noshell");
+      "vault_apicall_ouput" string => execresult('/usr/bin/curl ${vault.cert} -s -H "X-Vault-Token: ${vault.auth_token}" ${vault.server_addr}/v1/${path}', "noshell");
 
       "vault_test" data => parsejson("${vault_apicall_ouput}");
 
