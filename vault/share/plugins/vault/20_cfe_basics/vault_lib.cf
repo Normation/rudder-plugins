@@ -41,10 +41,10 @@ bundle agent vault_fetch_config()
       "vault.config" data => readjson("${config_path}");
 
       "vault.cert" string => "--insecure",
-        ifvarclass => strcmp("${vault.config[verify_certificate]}","true");
+        ifvarclass => strcmp("${vault.config[verify_certificate]}","false");
 
       "vault.cert" string => "",
-        ifvarclass => strcmp("${vault.config[verify_certificate]}","false");
+        ifvarclass => strcmp("${vault.config[verify_certificate]}","true");
 
       "vault.cert" string => "",
         ifvarclass => not(isvariable("vault.config[verify_certificate]"));
