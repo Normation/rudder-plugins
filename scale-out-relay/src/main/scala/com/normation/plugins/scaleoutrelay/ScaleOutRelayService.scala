@@ -1,12 +1,12 @@
 package com.normation.plugins.scaleoutrelay
 
+import com.normation.NamedZioLogger
 import com.normation.cfclerk.domain.TechniqueVersion
 import com.normation.errors.IOResult
 import com.normation.errors._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.logger.PluginLogger
 import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupCategoryId
 import com.normation.rudder.domain.nodes.NodeGroupId
@@ -38,120 +38,92 @@ class ScaleOutRelayService(
   val SYSTEM_GROUPS = "SystemGroups"
   val DISTRIBUTE_POLICY = "distributePolicy"
   val COMMON = "common"
+  val logger = NamedZioLogger("plugin.scaleoutrelay")
 
-  def promoteNodeToRelay(uuid: NodeId, actor: EventActor, reason:Option[String]): ZIO[Any, RudderError, NodeInfo] = {
+  def promoteNodeToRelay(uuid: NodeId, actor: EventActor, reason:Option[String]) = {
     val modId = ModificationId(uuidGen.newUuid)
     for {
       nodeInfos   <- getNodeToPromote(uuid)
       updatedNode =  NodeToPolicyServer(nodeInfos)
       _           <- woLDAPNodeRepository.deleteNode(nodeInfos.node, modId, actor, reason).chainError(s"Remove ${nodeInfos.node.id.value} to update it to policy server failed")
-      newRelay    <- createRelayFromNode(updatedNode, modId, actor, reason).chainError(s"Promote ${nodeInfos.node.id} to relay failed")
+      newRelay    <- createRelayFromNode(updatedNode, modId, actor, reason)
     } yield {
       newRelay
     }
   }
 
-  private[scaleoutrelay] def createRelayFromNode(nodeInf: NodeInfo, modId: ModificationId, actor: EventActor, reason:Option[String])= {
-    for {
+  private[scaleoutrelay] def createRelayFromNode(nodeInf: NodeInfo, modId: ModificationId, actor: EventActor, reason:Option[String]): ZIO[Any, ZIO[Any, Accumulated[RudderError], List[Any]], NodeInfo] = {
+    val directDistribPolicy = createDirectiveDistributePolicy(nodeInf.node.id)
+    val ruleTarget = createPolicyServer(nodeInf.node.id)
+    val nodeGroup = createNodeGroup(nodeInf.node.id)
+    val ruleDistribPolicy = createRuleDistributePolicy(nodeInf.node.id)
+    val ruleSetup = createRuleSetup(nodeInf.node.id)
+
+    val categoryId = NodeGroupCategoryId(SYSTEM_GROUPS)
+    val activeTechniqueId = ActiveTechniqueId(DISTRIBUTE_POLICY)
+    val activeTechniqueIdCommon = ActiveTechniqueId(COMMON)
+
+    val promote = for {
       commonDirective <- createCommonDirective(nodeInf).toIO
 
-      directDistribPolicy = createDirectiveDistributePolicy(nodeInf.node.id)
-      ruleTarget = createPolicyServer(nodeInf.node.id)
-      nodeGroup = createNodeGroup(nodeInf.node.id)
-      ruleDistribPolicy = createRuleDistributePolicy(nodeInf.node.id)
-      ruleSetup = createRuleSetup(nodeInf.node.id)
-
-      categoryId = NodeGroupCategoryId(SYSTEM_GROUPS)
-      activeTechniqueId = ActiveTechniqueId(DISTRIBUTE_POLICY)
-      activeTechniqueIdCommon = ActiveTechniqueId(COMMON)
-
-      _ <- woLDAPNodeRepository.createNode(nodeInf.node, modId, actor, reason).catchAll { err =>
-             val e = Chained(s"Trying to restore initial node configuration", err)
-             PluginLogger.error(e)
-             val old = PolicyServerToNode(nodeInf)
-             woLDAPNodeRepository.createNode(old.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : restaure ${nodeInf.node} configuration failed")
-           }
-      _ <- woLDAPNodeGroupRepository.createPolicyServerTarget(ruleTarget, modId, actor, reason).catchAll{ err =>
-            val e = Chained(s"Trying to remove residual object : policy server rule ${ruleTarget}", err)
-            PluginLogger.error(e)
-            for {
-              _ <- woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed")
-              _ <- woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-            } yield ()
-           }
-      _ <- woLDAPNodeGroupRepository.create(nodeGroup, categoryId, modId, actor, reason).catchAll { err =>
-           val e = Chained(s"Trying to remove residual object : node group ${nodeGroup.id.value}", err)
-           PluginLogger.error(e)
-           for {
-              _ <- woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed")
-              _ <- woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-              _ <- woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed node group ${nodeGroup.id.value} failed")
-           } yield ()
-      }
-      _ <- woDirectiveRepository.saveSystemDirective(activeTechniqueId, directDistribPolicy, modId, actor, reason).catchAll { err =>
-        val e = Chained(s"Trying to remove residual object : system directive ${activeTechniqueId.value}", err)
-        PluginLogger.error(e)
-        for {
-          _ <- woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed")
-          _ <- woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-          _ <- woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed node group ${nodeGroup.id.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueId.value} failed")
-        } yield ()
-      }
-      _ <- woDirectiveRepository.saveSystemDirective(activeTechniqueIdCommon, commonDirective, modId, actor, reason).catchAll { err =>
-        val e = Chained(s"Trying to remove residual object : system directive ${activeTechniqueIdCommon.value}", err)
-        PluginLogger.error(e)
-        for {
-          _ <- woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed")
-          _ <- woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-          _ <- woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed node group ${nodeGroup.id.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueId.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueIdCommon, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueIdCommon.value} failed")
-        } yield ()
-      }
-      _ <- woRuleRepository.create(ruleSetup, modId, actor, reason).catchAll { err =>
-        val e = Chained(s"Trying to remove residual object : rule ${ruleSetup.id.value}", err)
-        PluginLogger.error(e)
-        for {
-          _ <- woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed")
-          _ <- woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-          _ <- woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed node group ${nodeGroup.id.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueId.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueIdCommon, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueIdCommon.value} failed")
-          _ <- woRuleRepository.delete(ruleSetup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed rule  ${ruleSetup.id.value} failed")
-        } yield ()
-      }
-      _ <- woRuleRepository.create(ruleDistribPolicy, modId, actor, reason).catchAll { err =>
-        val e = Chained(s"Trying to remove residual object : rule ${ruleDistribPolicy.id.value}", err)
-        PluginLogger.error(e)
-        for {
-          _ <- woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, reason).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed")
-          _ <- woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-          _ <- woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed node group ${nodeGroup.id.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueId.value} failed")
-          _ <- woDirectiveRepository.deleteActiveTechnique(activeTechniqueIdCommon, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueIdCommon.value} failed")
-          _ <- woRuleRepository.delete(ruleSetup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed rule  ${ruleSetup.id.value} failed")
-          _ <- woRuleRepository.delete(ruleDistribPolicy.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed rule  ${ruleDistribPolicy.id.value} failed")
-        } yield ()
-      }
+      _ <- woLDAPNodeRepository.createNode(nodeInf.node, modId, actor, reason)
+      _ <- woLDAPNodeGroupRepository.createPolicyServerTarget(ruleTarget, modId, actor, reason)
+      _ <- woLDAPNodeGroupRepository.create(nodeGroup, categoryId, modId, actor, reason)
+      _ <- woDirectiveRepository.saveSystemDirective(activeTechniqueId, directDistribPolicy, modId, actor, reason)
+      _ <- woDirectiveRepository.saveSystemDirective(activeTechniqueIdCommon, commonDirective, modId, actor, reason)
+      _ <- woRuleRepository.create(ruleSetup, modId, actor, reason)
+      _ <- woRuleRepository.create(ruleDistribPolicy, modId, actor, reason)
     } yield {
       nodeInf
     }
+
+    promote.mapError {
+      err =>
+        logger.error(err.fullMsg) *>  rollbackPromote(ruleTarget, ruleSetup, ruleDistribPolicy, nodeInf, nodeGroup, activeTechniqueId, activeTechniqueIdCommon, modId, actor)
+    }
   }
 
-//  private[scaleoutrelay] def rollbackFromLevel(level : Int, err : RudderError,ruleTarget:  PolicyServerTarget,ruleSetup : Rule,ruleDistribPolicy: Rule,nodeInf: NodeInfo, nodeGroup: NodeGroup, activeTechniqueId: ActiveTechniqueId, activeTechniqueIdCommon: ActiveTechniqueId,modId: ModificationId, actor: EventActor,) = {
-//    val e = Chained(s"Error when promoting '${nodeInf.node.id.value}' to relay, trying to restore initial node configuration", err)
-//    PluginLogger.error(e)
-//    for {
-//      _ <- if(level >= 1) woLDAPNodeRepository.deleteNode(nodeInf.node, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed ${nodeInf.node} failed"))
-//      _ <- if(level >= 2) woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget).chainError(s"Rollback promote to relay failed : removed rule target ${ruleTarget.target} failed")
-//      _ <- if(level >= 3) woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed node group ${nodeGroup.id.value} failed")
-//      _ <- if(level >= 4) woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueId.value} failed")
-//      _ <- if(level >= 5) woDirectiveRepository.deleteActiveTechnique(activeTechniqueIdCommon, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed active technique ${activeTechniqueIdCommon.value} failed")
-//      _ <- if(level >= 6) woRuleRepository.delete(ruleSetup.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed rule  ${ruleSetup.id.value} failed")
-//      _ <- if(level >= 7) woRuleRepository.delete(ruleDistribPolicy.id, modId, actor, Some("Promote node to relay rollback")).chainError(s"Rollback promote to relay failed : removed rule  ${ruleDistribPolicy.id.value} failed")
-//    } yield ()
-//  }
+  private[scaleoutrelay] def rollbackPromote(
+      ruleTarget              : PolicyServerTarget
+    , ruleSetup               : Rule
+    , ruleDistribPolicy       : Rule
+    , newInfo                 : NodeInfo
+    , nodeGroup               : NodeGroup
+    , activeTechniqueId       : ActiveTechniqueId
+    , activeTechniqueIdCommon : ActiveTechniqueId
+    , modId                   : ModificationId
+    , actor                   : EventActor
+  ): ZIO[Any, Accumulated[RudderError], List[Any]] = {
+
+    val old = PolicyServerToNode(newInfo)
+    val reason = Some("Promote node to relay rollback")
+
+    val z = woLDAPNodeRepository.deleteNode(newInfo.node, modId, actor, reason)
+
+    val a = woLDAPNodeRepository.createNode(old.node, modId, actor, reason)
+             .chainError(s"Rollback promote to relay failed : restore ${newInfo.node} configuration failed")
+    val b  = woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget)
+             .chainError(s"Rollback promote to relay failed : removing ${newInfo.node} configuration failed")
+    val c = woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, reason)
+             .chainError(s"Rollback promote to relay failed : removing node group ${nodeGroup.id.value} failed")
+    val d = woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, reason)
+             .chainError(s"Rollback promote to relay failed : removing active technique ${activeTechniqueId.value} failed")
+    val e = woDirectiveRepository.deleteActiveTechnique(activeTechniqueIdCommon, modId, actor, reason)
+             .chainError(s"Rollback promote to relay failed : removing active technique ${activeTechniqueIdCommon.value} failed")
+
+    // Rules deletion return an error if there is no such ID
+    val f = woRuleRepository.delete(ruleSetup.id, modId, actor, reason).catchAll {
+      err =>
+        logger.info(s"Trying to remove residual object Rule ${ruleSetup.id} : ${err.fullMsg}")
+    }
+    val g = woRuleRepository.delete(ruleDistribPolicy.id, modId, actor, reason).catchAll {
+      err =>
+        logger.info(s"Trying to remove residual object Rule ${ruleDistribPolicy.id} : ${err.fullMsg}")
+    }
+    //type : ZIO[Any, Accumulated[RudderError], List[Any]]
+    List(z,a,b,c,d,e,f,g).accumulate(x => x)
+
+  }
 
   private[scaleoutrelay] def getNodeToPromote(uuid: NodeId): IOResult[NodeInfo] = {
     nodeInfosService.getNodeInfo(uuid).toIO.notOptional(s"Node with UUID ${uuid.value} is missing and can not be upgraded to relay")
