@@ -28,7 +28,8 @@
 #       "user": "USER",
 #       "password": "PASSWD"
 #     }
-#   }
+#   },
+#   "verify_certificate": true
 # }
 #
 # The auth field can contain one field for each auth mode, with the latter as key name. It needs a "mode" field to determine which one to use.
@@ -38,6 +39,16 @@ bundle agent vault_fetch_config()
   vars:
       "config_path" string => "/var/rudder/plugin-resources/vault.json";
       "vault.config" data => readjson("${config_path}");
+
+      "vault.cert" string => "--insecure",
+        ifvarclass => strcmp("${vault.config[verify_certificate]}","false");
+
+      "vault.cert" string => "",
+        ifvarclass => strcmp("${vault.config[verify_certificate]}","true");
+
+      "vault.cert" string => "",
+        ifvarclass => not(isvariable("vault.config[verify_certificate]"));
+      
 }
 
 bundle agent vault_get_token()
@@ -51,12 +62,12 @@ bundle agent vault_get_token()
       "vault.auth_token" string => "${vault.config[auth][token]}"; 
     
     pass2.mode_userpass.vault_reachable::
-      "vault_apicall_output" string => execresult("/usr/bin/curl -s --request POST --data '{\"password\": \"${vault.config[auth][userpass][password]}\"}' ${vault.server_addr}/v1/auth/userpass/login/${vault.config[auth][userpass][user]}", "noshell");
+      "vault_apicall_output" string => execresult("/usr/bin/curl ${vault.cert}  -s --request POST --data '{\"password\": \"${vault.config[auth][userpass][password]}\"}' ${vault.server_addr}/v1/auth/userpass/login/${vault.config[auth][userpass][user]}", "noshell");
     
       "data_output" data => "${vault_apicall_output}";
 
     pass2.mode_tls.vault_reachable::
-      "vault_apicall_output" string => execresult("/usr/bin/curl -s --request POST --cacert ${vault.config[auth][tls][ca]} --cert ${vault.config[auth][tls][cert]} --key ${vault.config[auth][tls][key]}", "noshell");
+      "vault_apicall_output" string => execresult("/usr/bin/curl ${vault.cert} -s --request POST --cacert ${vault.config[auth][tls][ca]} --cert ${vault.config[auth][tls][cert]} --key ${vault.config[auth][tls][key]}", "noshell");
 
       "data_output" data => "${vault_apicall_output}";
 
@@ -67,7 +78,7 @@ bundle agent vault_get_token()
   classes:
     pass2::
       # We need this to determinate whether an auth error is due to bad credentials or the Vault server being unreachable
-      "vault_reachable" expression => returnszero("/usr/bin/curl -s ${vault.server_addr}", "noshell"),
+      "vault_reachable" expression => returnszero("/usr/bin/curl ${vault.cert} -s ${vault.server_addr}", "noshell"),
                              scope => "namespace";
 
       # What auth mode are we using
