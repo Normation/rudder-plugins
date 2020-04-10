@@ -45,7 +45,7 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
 
       "vault_test" data => parsejson("${vault_apicall_ouput}");
 
-      "${variable_prefix}.${variable_name}" data => mergedata("vault_test[data]");
+      "${variable_prefix}.${variable_name}" data => mergedata("vault_test[data][data]");
 
   classes:
       "pass3" expression => "pass2";
