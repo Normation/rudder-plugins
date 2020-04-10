@@ -50,6 +50,9 @@ import java.io.File
 
 import bootstrap.liftweb.RudderProperties.configResource
 import bootstrap.rudder.plugin.OpenscapPoliciesConf.POLICY_SANITIZATION_FILE
+import com.normation.plugins.openscappolicies.repository.DirectiveRepository
+import com.normation.rudder.domain.policies.Directive
+import com.normation.rudder.repository.ldap.ScalaLock
 import com.typesafe.config.{Config, ConfigFactory}
 
 
@@ -92,8 +95,12 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   lazy val pluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
+  private[this] lazy val uptLibReadWriteMutex = ScalaLock.java2ScalaRWLock("directive-plugin-lock", new java.util.concurrent.locks.ReentrantReadWriteLock(true))
+
+  lazy val directiveRepository = new DirectiveRepository(RudderConfig.rudderDit, RudderConfig.readOnlyLDAP, RudderConfig.entityMapper, RudderConfig.directiveReadWriteMutex)
+
   lazy val reportSanitizer = new ReportSanitizer(POLICY_SANITIZATION_FILE)
-  lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, RudderConfig.findExpectedReportRepository)
+  lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, directiveRepository, RudderConfig.findExpectedReportRepository)
 
   lazy val openScapApiImpl = new OpenScapApiImpl(RudderConfig.restExtractorService, openScapReportReader, reportSanitizer)
   // other service instanciation / initialization

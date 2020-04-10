@@ -17,7 +17,6 @@ class ReportSanitizer(policyFile: String) {
 
     for {
       report <- IOResult.effect (xml.XML.loadString(cr.getCleanHTML))
-      //nonHeadedReport = report.filterNot(_.label == "head" )
     } yield {
       report
     }

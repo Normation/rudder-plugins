@@ -18,12 +18,14 @@ http://www.w3.org/TR/html401/struct/global.html
 		<directive name="formatOutput" value="true"/>
 		<directive name="nofollowAnchors" value="true" />
 		<directive name="validateParamAsEmbed" value="true" />
-		
+
+		<directive name="preserveComments" value="true" />
+
 		<!--
 		remember, this won't work for relative URIs - AntiSamy doesn't
 		know anything about the URL or your web structure
 		-->
-		<directive name="embedStyleSheets" value="false"/> 
+		<directive name="embedStyleSheets" value="false"/>
 		<directive name="connectionTimeout" value="5000"/>
 		<directive name="maxStyleSheetImports" value="3"/>
 		

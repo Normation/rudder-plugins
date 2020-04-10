@@ -1,6 +1,5 @@
 package com.normation.plugins.openscappolicies.extension
 
-import com.normation.plugins.openscappolicies.OpenScapReport
 import com.normation.plugins.openscappolicies.services.{OpenScapReportReader, ReportSanitizer}
 import com.normation.plugins.{PluginExtensionPoint, PluginStatus}
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
@@ -10,7 +9,6 @@ import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
-import com.normation.box._
 import com.normation.inventory.domain.NodeId
 import net.liftweb.http.S
 
@@ -51,11 +49,8 @@ class OpenScapNodeDetailsExtension(
           }
       }
 
+      val tabTitle = "OpenSCAP"
 
-      //tabContent(Map("key" ->"value"))(openScapExtensionXml)
-      val tabTitle = "OpenScap"
-      val foo = S
-      println(S.contextPath)
       status.isEnabled() match {
         case false =>
           <div class="error">Plugin is disabled</div>
@@ -86,7 +81,8 @@ class OpenScapNodeDetailsExtension(
   }
 
   def frameContent(nodeId : NodeId): CssSel = {
-        "iframe [src]"      #> s"http://localhost:8080/rudder-parent/secure/api/openscap/sanitized/${nodeId.value}"
+
+        "iframe [src]"      #> s"${S.hostAndPath}/secure/api/openscap/sanitized/${nodeId.value}"
 
   }
 

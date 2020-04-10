@@ -6,9 +6,10 @@ import com.normation.rudder.services.nodes.NodeInfoService
 import net.liftweb.common._
 import net.liftweb.util.Helpers.tryo
 import better.files._
-import com.normation.cfclerk.domain.{TechniqueId, TechniqueName, TechniqueVersion}
+import com.normation.cfclerk.domain.TechniqueName
 import com.normation.rudder.repository.{FindExpectedReportRepository, RoDirectiveRepository}
 import com.normation.box._
+import com.normation.plugins.openscappolicies.repository.DirectiveRepository
 
 
 /**
@@ -16,8 +17,9 @@ import com.normation.box._
  * It is n /var/rudder/shared-files/root/NodeId/openscap.html
  */
 class OpenScapReportReader(
-    nodeInfoService: NodeInfoService
-  , directiveRepository: RoDirectiveRepository
+    nodeInfoService             : NodeInfoService
+  , directiveRepository         : RoDirectiveRepository
+  , pluginDirectiveRepository   : DirectiveRepository
   , findExpectedReportRepository: FindExpectedReportRepository) {
 
   val OPENSCAP_REPORT_FILENAME = "openscap.html"
@@ -36,7 +38,7 @@ class OpenScapReportReader(
     import zio.syntax._
     val openScapDirectives = (for {
       // get active technique
-      activeTechniques  <- directiveRepository.getActiveTechniqueByTechniqueName(TechniqueName(OPENSCAP_TECHNIQUE_ID))
+      activeTechniques  <- pluginDirectiveRepository.getActiveTechniqueByTechniqueName(TechniqueName(OPENSCAP_TECHNIQUE_ID))
       activeTechniqueId = activeTechniques.map(_.id)
       // get directive from these active techniques
       directives        <- ZIO.foreach(activeTechniqueId) { atId =>

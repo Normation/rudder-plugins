@@ -10,7 +10,6 @@
   },
   "jar-files": [ "/opt/rudder/share/plugins/${plugin-name}/${plugin-name}.jar" ],
   "content": {
-    "files.txz": "/var/rudder/packages/${plugin-id}",
-    "external-report.txz": "/var/rudder/packages/${plugin-id}"
+    "files.txz": "/var/rudder/packages/${plugin-id}"
   }
 }
