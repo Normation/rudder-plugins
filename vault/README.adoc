@@ -40,7 +40,7 @@ rudder package install rudder-plugin-vault
 
 * Edit the configuration file in `/var/rudder/plugin-resources/vault.json` on each agent.
 This config file must contain the address of your Vault server, credentials to access it based on the auth mode you want to use. 
-Auth modes can be: token, userpass.
+Auth modes can be: token, userpass or tls.
 
 To note that if you have a valid certificate in your Vault server, you need to specifiy 'true' as a value in the verify_certificate key 
 which is the case by default however if you have a self signed one, you need to simply switch the value to 'false'.
