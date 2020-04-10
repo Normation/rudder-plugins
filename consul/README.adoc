@@ -22,7 +22,7 @@ features are:
 * Provides a cluster of server nodes to ensure high availability.
 
 This plugins offers the possibility to fetch key-value either from Consul server nodes or Consul agent nodes and then use them as Rudder Variables according to 
-your needs. The Rudder server does need to access the Consul server to get key-value, only the Rudder agent will do so.
+your needs. The Rudder server does not need to access the Consul server to get key-value, only the Rudder agent will do so.
 
 == Installation
 
@@ -63,7 +63,7 @@ image::docs/images/CreateKV3.jpg[]
 
 * *Fetch key-value via Rudder Server technique editor*:
  
-Now that you have finished setting up the key-value in Consul, you need to define the generic method on the rudder technique editor by configuring a variable prefix,
+Now that you have finished setting up the key-value in Consul, you need to define the generic method on the Rudder technique editor by configuring a variable prefix,
 variable name and most importantly the path to the key-value.
 
 image::docs/images/CreateMethod1.jpg[]
