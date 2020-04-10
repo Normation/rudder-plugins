@@ -40,15 +40,17 @@ rudder package install rudder-plugin-vault
 
 * Edit the configuration file in `/var/rudder/plugin-resources/vault.json` on each agent.
 This config file must contain the address of your Vault server, credentials to access it based on the auth mode you want to use. 
+Auth modes can be: token, userpass or tls.
+
+To note that if you have a valid certificate in your Vault server, you need to specifiy 'true' as a value in the verify_certificate key 
+which is the case by default however if you have a self signed one, you need to simply switch the value to 'false'.
+  
 A sample config is in `share/plugins/vault/sample_vault.json`.
 
 == Usage
 
 Use the *Variable from Vault* generic method in Rudder to fetch secrets. 
-Make sure the agents the generic method is being used on have a proper `vault.json` configuration. 
-A sample config is provided at `/opt/rudder/share/plugins/vault/sample_vault.json`. 
-This file needs your Vault server address, the configuration for at least one auth mode, and the name of the auth mode to be used. 
-Auth modes can be: token, userpass.
+Make sure the agent have a proper `vault.json` configuration as mentioned above. 
 
 === Example of usage :
 * Secret definition via Vault Web Interface:
@@ -69,8 +71,7 @@ image::docs/images/CreateSecret3.jpg[]
 
 * Secret fetching via Rudder Server technique editor:
  
-Finally you need to define the generic method on the rudder technique editor, the most important parameter is the path to the secret which needs to include `/data`
+Finally you need to define the generic method on the Rudder technique editor, the most important parameter is the path to the secret which needs to include `/data`
 so it can retrieve the key and value that are defined under the secret name.
 
 image::docs/images/CreateMethod.jpg[]
-

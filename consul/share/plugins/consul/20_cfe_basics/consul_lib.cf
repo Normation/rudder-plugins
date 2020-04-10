@@ -38,4 +38,3 @@ bundle agent consul_fetch_config()
       "consul.auth" string => "",
         ifvarclass => not(isvariable("consul.config[token]"));
 }
-
