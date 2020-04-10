@@ -93,7 +93,7 @@ object OpenscapPoliciesConf extends RudderPluginModule {
   lazy val pluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
   lazy val reportSanitizer = new ReportSanitizer(POLICY_SANITIZATION_FILE)
-  lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService)
+  lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, RudderConfig.findExpectedReportRepository)
 
   lazy val openScapApiImpl = new OpenScapApiImpl(RudderConfig.restExtractorService, openScapReportReader, reportSanitizer)
   // other service instanciation / initialization

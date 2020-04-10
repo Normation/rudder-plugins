@@ -72,7 +72,7 @@ class OpenScapApiImpl(
         logger.info(s"Report for node ${nodeId} has been found ")
         report
       }) match {
-        case Full(report) =>
+        case Full(Some(report)) =>
           logger.trace("doing in memory response")
           InMemoryResponse(
               report.content.getBytes()
@@ -81,8 +81,16 @@ class OpenScapApiImpl(
               Nil
             , Nil
             , 200)
+        case Full(None) =>
+          logger.trace("No report found")
+          InMemoryResponse(
+              s"No OpenSCAP report found for nodeId ${nodeId}".getBytes()
+            , ("Content-Type" -> "text/txt") ::
+              Nil
+            , Nil
+            , 404)
         case eb: EmptyBox =>
-          val errorMessage = eb ?~! "Could not get the OpenScap report for node ${nodeId}"
+          val errorMessage = eb ?~! "Could not get the OpenSCAP report for node ${nodeId}"
           logger.error(errorMessage.messageChain)
           val html = <div class="error">{errorMessage.messageChain}</div>
           InMemoryResponse(
@@ -103,7 +111,8 @@ class OpenScapApiImpl(
       implicit val action = "getSanitizedOpenScapReport"
       (for {
         report        <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenScap Report for node ${nodeId}"
-        sanitizedXml  <- reportSanitizer.sanitizeReport(report).toBox ?~! "Error while sanitizing report"
+        existence     <- Box(report) ?~! s"Report not found for node ${nodeId}"
+        sanitizedXml  <- reportSanitizer.sanitizeReport(existence).toBox ?~! "Error while sanitizing report"
       } yield {
         logger.trace(s"Report for node ${nodeId} has been found and sanitized")
         sanitizedXml

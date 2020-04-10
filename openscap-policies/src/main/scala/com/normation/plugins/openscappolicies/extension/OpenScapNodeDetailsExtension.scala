@@ -29,46 +29,60 @@ class OpenScapNodeDetailsExtension(
    * - add an li in ul with id=openScapExtensionTab
    */
   def addOpenScapReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq): NodeSeq = {
-    val content = openScapReader.checkOpenScapReportExistence(snippet.nodeId) match {
-      case eb: EmptyBox =>
-        val e = eb ?~! "Can not display OpenScap report for that node"
-        (<div class="error">{e.messageChain}</div>)
-      case Full(existence) =>
-        existence match {
-          case false =>
-            <div id="openscap_reports">
-              <p>That tab gives access to OpenScap reports configured for that node</p>
-              <div class="error">No OpenScap report available for node {snippet.nodeId.value}</div>
-            </div>
-          case true =>
-            frameContent(snippet.nodeId)(openScapExtensionXml)
-        }
-    }
+    // Actually extend
+    def display(): NodeSeq = {
+      val content = openScapReader.checkOpenScapReportExistence(snippet.nodeId) match {
+        case eb: EmptyBox =>
+          val e = eb ?~! "Can not display OpenScap report for that node"
+          (<div class="error">
+            {e.messageChain}
+          </div>)
+        case Full(existence) =>
+          existence match {
+            case false =>
+              <div id="openscap_reports">
+                <p>That tab gives access to OpenScap reports configured for that node</p>
+                <div class="error">No OpenScap report available for node
+                  {snippet.nodeId.value}
+                </div>
+              </div>
+            case true =>
+              frameContent(snippet.nodeId)(openScapExtensionXml)
+          }
+      }
 
 
       //tabContent(Map("key" ->"value"))(openScapExtensionXml)
-    val tabTitle = "OpenScap"
-    val foo = S
-println(S.contextPath)
-    status.isEnabled() match {
-      case false =>
-        <div class="error">Plugin is disabled</div>
-      case true =>
-        (
-          "#NodeDetailsTabMenu *" #> { (x: NodeSeq) =>
-            x ++ (
-              <li>
-                <a href="#openscap_reports">
-                  {tabTitle}
-                </a>
-              </li>
-              <li>{content}
-              </li>
-              )
-          } &
-            "#node_logs" #> <div>test</div>
-          ) (xml)
+      val tabTitle = "OpenScap"
+      val foo = S
+      println(S.contextPath)
+      status.isEnabled() match {
+        case false =>
+          <div class="error">Plugin is disabled</div>
+        case true =>
+          (
+            "#NodeDetailsTabMenu *" #> { (x: NodeSeq) =>
+              x ++ (
+                <li>
+                  <a href="#openscap_reports">
+                    {tabTitle}
+                  </a>
+                </li>
+                  <li>
+                    {content}
+                  </li>
+                )
+            } &
+              "#node_logs" #> <div>test</div>
+            ) (xml)
+      }
     }
+
+    openScapReader.checkifOpenScapApplied(snippet.nodeId) match {
+      case Full(true) => display()
+      case _ => xml
+    }
+
   }
 
   def frameContent(nodeId : NodeId): CssSel = {
