@@ -47,7 +47,6 @@ which is the case by default however if you have a self signed one, you need to 
   
 A sample config is in `share/plugins/vault/sample_vault.json`.
 
-
 == Usage
 
 Use the *Variable from Vault* generic method in Rudder to fetch secrets. 
