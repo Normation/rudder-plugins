@@ -1,15 +1,17 @@
 package com.normation.plugins.openscappolicies.services
 
+import better.files._
+import com.normation.box._
+import com.normation.cfclerk.domain.TechniqueName
 import com.normation.inventory.domain.NodeId
-import com.normation.plugins.openscappolicies.{OpenScapReport, OpenscapPoliciesLogger}
+import com.normation.plugins.openscappolicies.repository.DirectiveRepository
+import com.normation.plugins.openscappolicies.OpenScapReport
+import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
+import com.normation.rudder.repository.FindExpectedReportRepository
+import com.normation.rudder.repository.RoDirectiveRepository
 import com.normation.rudder.services.nodes.NodeInfoService
 import net.liftweb.common._
 import net.liftweb.util.Helpers.tryo
-import better.files._
-import com.normation.cfclerk.domain.TechniqueName
-import com.normation.rudder.repository.{FindExpectedReportRepository, RoDirectiveRepository}
-import com.normation.box._
-import com.normation.plugins.openscappolicies.repository.DirectiveRepository
 
 
 /**
@@ -35,7 +37,6 @@ class OpenScapReportReader(
 
   def checkifOpenScapApplied(nodeId: NodeId): Box[Boolean] = {
     import zio._
-    import zio.syntax._
     val openScapDirectives = (for {
       // get active technique
       activeTechniques  <- pluginDirectiveRepository.getActiveTechniqueByTechniqueName(TechniqueName(OPENSCAP_TECHNIQUE_ID))

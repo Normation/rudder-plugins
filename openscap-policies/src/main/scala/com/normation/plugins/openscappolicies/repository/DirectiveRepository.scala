@@ -40,12 +40,13 @@ package com.normation.plugins.openscappolicies.repository
 import cats.implicits._
 import com.normation.cfclerk.domain.TechniqueName
 import com.normation.errors.IOResult
-import com.normation.ldap.sdk.{LDAPConnectionProvider, RoLDAPConnection}
+import com.normation.ldap.sdk.BuildFilter._
+import com.normation.ldap.sdk.LDAPConnectionProvider
+import com.normation.ldap.sdk.RoLDAPConnection
 import com.normation.rudder.domain.RudderDit
 import com.normation.rudder.domain.RudderLDAPConstants._
 import com.normation.rudder.domain.policies.ActiveTechnique
-import com.normation.rudder.repository.ldap.{LDAPEntityMapper, ScalaReadWriteLock}
-import com.normation.ldap.sdk.BuildFilter._
+import com.normation.rudder.repository.ldap.LDAPEntityMapper
 
 class DirectiveRepository(
      val rudderDit                     : RudderDit

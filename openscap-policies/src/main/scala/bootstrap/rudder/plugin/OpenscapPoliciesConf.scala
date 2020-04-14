@@ -37,23 +37,22 @@
 
 package bootstrap.rudder.plugin
 
-import bootstrap.liftweb.{ClassPathResource, FileSystemResource, RudderConfig}
-import com.normation.plugins.openscappolicies.OpenscapPoliciesPluginDef
-import com.normation.plugins.openscappolicies.CheckRudderPluginEnableImpl
-import net.liftweb.common.Loggable
-import com.normation.plugins.RudderPluginModule
-import com.normation.plugins.openscappolicies.api.OpenScapApiImpl
-import com.normation.plugins.openscappolicies.extension.OpenScapNodeDetailsExtension
-import com.normation.plugins.openscappolicies.services.{OpenScapReportReader, ReportSanitizer}
-import com.normation.rudder.domain.logger.ApplicationLogger
 import java.io.File
 
-import bootstrap.liftweb.RudderProperties.configResource
-import bootstrap.rudder.plugin.OpenscapPoliciesConf.POLICY_SANITIZATION_FILE
+import bootstrap.liftweb.ClassPathResource
+import bootstrap.liftweb.FileSystemResource
+import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.RudderPluginModule
+import com.normation.plugins.openscappolicies.CheckRudderPluginEnableImpl
+import com.normation.plugins.openscappolicies.OpenscapPoliciesPluginDef
+import com.normation.plugins.openscappolicies.api.OpenScapApiImpl
+import com.normation.plugins.openscappolicies.extension.OpenScapNodeDetailsExtension
 import com.normation.plugins.openscappolicies.repository.DirectiveRepository
-import com.normation.rudder.domain.policies.Directive
-import com.normation.rudder.repository.ldap.ScalaLock
-import com.typesafe.config.{Config, ConfigFactory}
+import com.normation.plugins.openscappolicies.services.OpenScapReportReader
+import com.normation.plugins.openscappolicies.services.ReportSanitizer
+import com.normation.rudder.domain.logger.ApplicationLogger
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 
 object OpenScapProperties {
@@ -97,7 +96,7 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   //private[this] lazy val uptLibReadWriteMutex = ScalaLock.java2ScalaRWLock("directive-plugin-lock", new java.util.concurrent.locks.ReentrantReadWriteLock(true))
 
-  lazy val directiveRepository = new DirectiveRepository(RudderConfig.rudderDit, RudderConfig.roLdap, RudderConfig.entityMapper)
+  lazy val directiveRepository = new DirectiveRepository(RudderConfig.rudderDit, RudderConfig.readOnlyLDAP, RudderConfig.entityMapper)
 
   lazy val reportSanitizer = new ReportSanitizer(POLICY_SANITIZATION_FILE)
   lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, directiveRepository, RudderConfig.findExpectedReportRepository)

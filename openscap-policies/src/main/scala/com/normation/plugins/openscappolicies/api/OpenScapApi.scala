@@ -1,21 +1,30 @@
 package com.normation.plugins.openscappolicies.api
 
-import java.io.InputStream
-
+import com.normation.box._
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
-import com.normation.plugins.openscappolicies.services.{OpenScapReportReader, ReportSanitizer}
-import com.normation.rudder.api.HttpAction.{GET, PUT}
-import com.normation.rudder.rest.EndpointSchema.syntax._
-import com.normation.rudder.rest.{ApiModuleProvider, EndpointSchema, GeneralApi, SortIndex, StartsAtVersion10, ZeroParam}
+import com.normation.plugins.openscappolicies.services.OpenScapReportReader
+import com.normation.plugins.openscappolicies.services.ReportSanitizer
+import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest._
-import com.normation.rudder.rest.lift.{DefaultParams, LiftApiModule, LiftApiModule0, LiftApiModuleProvider}
-import net.liftweb.http.{InMemoryResponse, LiftResponse, Req}
-import net.liftweb.json.{JValue, NoTypeHints}
-import net.liftweb.common.{Box, EmptyBox, Failure, Full}
+import com.normation.rudder.rest.lift.DefaultParams
+import com.normation.rudder.rest.lift.LiftApiModule
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.ApiModuleProvider
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.GeneralApi
+import com.normation.rudder.rest.SortIndex
+import com.normation.rudder.rest.StartsAtVersion10
+import net.liftweb.common.Box
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Full
+import net.liftweb.http.InMemoryResponse
+import net.liftweb.http.LiftResponse
+import net.liftweb.http.Req
+import net.liftweb.json.JValue
+import net.liftweb.json.NoTypeHints
 import sourcecode.Line
-import com.normation.box._
 
 sealed trait OpenScapApi extends EndpointSchema with GeneralApi with SortIndex
 object OpenScapApi extends ApiModuleProvider[OpenScapApi] {
@@ -65,7 +74,6 @@ class OpenScapApiImpl(
     val restExtractor = api.restExtractorService
 
     def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "getOpenScapReport"
       (for {
         report <- openScapReportReader.getOpenScapReport(NodeId(nodeId))
       } yield {
@@ -92,7 +100,6 @@ class OpenScapApiImpl(
         case eb: EmptyBox =>
           val errorMessage = eb ?~! "Could not get the OpenSCAP report for node ${nodeId}"
           logger.error(errorMessage.messageChain)
-          val html = <div class="error">{errorMessage.messageChain}</div>
           InMemoryResponse(
               errorMessage.messageChain.getBytes()
             , Nil
@@ -108,7 +115,6 @@ class OpenScapApiImpl(
     val restExtractor = api.restExtractorService
 
     def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "getSanitizedOpenScapReport"
       (for {
         report        <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenScap Report for node ${nodeId}"
         existence     <- Box(report) ?~! s"Report not found for node ${nodeId}"
