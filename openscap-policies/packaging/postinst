@@ -2,7 +2,7 @@
 set -x
 PLUGIN_FULL_NAME="rudder-plugin-openscap-policies"
 PRETTY_NAME="OpenSCAP Policies"
-CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
+CONFIGURATION_PATH=/opt/rudder/share/$PLUGIN_FULL_NAME
 
 # Code below should be mostly comon between the plugins
 SOURCE_DIR=${CONFIGURATION_PATH}/techniques

@@ -51,19 +51,19 @@ class DirectiveRepository(
      val rudderDit                     : RudderDit
    , val ldap                          : LDAPConnectionProvider[RoLDAPConnection]
    , val mapper                        : LDAPEntityMapper
-   , val userLibMutex                  : ScalaReadWriteLock //that's a scala-level mutex to have some kind of consistency with LDAP
+//   , val userLibMutex                  : ScalaReadWriteLock //that's a scala-level mutex to have some kind of consistency with LDAP
 ) {
   /**
    * Get ActiveTechnique based on a specific technique name
    */
   def getActiveTechniqueByTechniqueName(techniqueName: TechniqueName) : IOResult[Seq[ActiveTechnique]] = {
-    userLibMutex.readLock(for {
+    for {
       con                    <- ldap
       filter                 = AND(IS(OC_ACTIVE_TECHNIQUE), EQ(A_TECHNIQUE_UUID, techniqueName.value))
       allEntries             <- con.searchSub(rudderDit.ACTIVE_TECHNIQUES_LIB.dn, filter)
       activeTechniques       <- allEntries.toList.traverse(entry => mapper.entry2ActiveTechnique(entry).chainError(s"Error when transforming LDAP entry into an Active Technique. Entry: ${entry}")).toIO
     } yield {
       activeTechniques
-    })
+    }
   }
 }

@@ -95,9 +95,9 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   lazy val pluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
-  private[this] lazy val uptLibReadWriteMutex = ScalaLock.java2ScalaRWLock("directive-plugin-lock", new java.util.concurrent.locks.ReentrantReadWriteLock(true))
+  //private[this] lazy val uptLibReadWriteMutex = ScalaLock.java2ScalaRWLock("directive-plugin-lock", new java.util.concurrent.locks.ReentrantReadWriteLock(true))
 
-  lazy val directiveRepository = new DirectiveRepository(RudderConfig.rudderDit, RudderConfig.readOnlyLDAP, RudderConfig.entityMapper, RudderConfig.directiveReadWriteMutex)
+  lazy val directiveRepository = new DirectiveRepository(RudderConfig.rudderDit, RudderConfig.roLdap, RudderConfig.entityMapper)
 
   lazy val reportSanitizer = new ReportSanitizer(POLICY_SANITIZATION_FILE)
   lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, directiveRepository, RudderConfig.findExpectedReportRepository)
