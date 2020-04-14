@@ -35,18 +35,34 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.openscappolicies
+package com.normation.plugins.openscappolicies.services
 
-import com.normation.inventory.domain.NodeId
-import net.liftweb.common._
-import org.slf4j.LoggerFactory
+import com.normation.cfclerk.domain.TechniqueName
+import com.normation.errors._
+import com.normation.inventory.ldap.core.InventoryMappingResult._
+import com.normation.ldap.sdk.BuildFilter._
+import com.normation.ldap.sdk.LDAPConnectionProvider
+import com.normation.ldap.sdk.RoLDAPConnection
+import com.normation.rudder.domain.RudderDit
+import com.normation.rudder.domain.RudderLDAPConstants._
+import com.normation.rudder.domain.policies.ActiveTechniqueId
+import zio._
 
-/**
- * Applicative log of interest for Rudder ops.
- */
-object OpenscapPoliciesLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("openscap-policies")
+class GetActiveTechniqueIds(
+    rudderDit: RudderDit
+  , ldap     : LDAPConnectionProvider[RoLDAPConnection]
+) {
+  /**
+   * Get ActiveTechnique based on a specific technique name
+   */
+  def getActiveTechniqueIdByTechniqueName(techniqueName: TechniqueName) : IOResult[List[ActiveTechniqueId]] = {
+    for {
+      con        <- ldap
+      filter     = AND(IS(OC_ACTIVE_TECHNIQUE), EQ(A_TECHNIQUE_UUID, techniqueName.value))
+      allEntries <- con.searchSub(rudderDit.ACTIVE_TECHNIQUES_LIB.dn, filter, A_ACTIVE_TECHNIQUE_UUID)
+      ids        <- ZIO.foreach(allEntries) { e => e.required(A_ACTIVE_TECHNIQUE_UUID).toIO }
+    } yield {
+      ids.map(ActiveTechniqueId)
+    }
+  }
 }
-
-// other data types for you plugin
-case class OpenScapReport(nodeId: NodeId, content: String)

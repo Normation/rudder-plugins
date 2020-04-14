@@ -38,8 +38,11 @@
 package com.normation.plugins.openscappolicies
 
 import bootstrap.liftweb.Boot
+import bootstrap.rudder.plugin.OpenscapPoliciesConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType.Administration
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
@@ -55,22 +58,19 @@ class OpenscapPoliciesPluginDef(override val status: PluginStatus) extends Defau
 
   def oneTimeInit : Unit = {}
 
-  val configFiles = Seq()
-
-  override def updateSiteMap(menus:List[Menu]) : List[Menu] = {
-    val OpenscapPoliciesMenu = (
-      Menu("OpenscapPolicies", <span>OpenSCAP Policies</span>) /
-        "secure" / "administration" / "OpenscapPoliciesManagement"
-        >> LocGroup("administrationGroup")
-        >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-        >> Template(() => ClasspathTemplates("template" :: "OpenscapPoliciesManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-
-    menus.map {
-      case m@Menu(l, _* ) if(l.name == "AdministrationHome") =>
-        Menu(l , m.kids.toSeq :+ OpenscapPoliciesMenu:_* )
-      case m => m
-    }
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = {
+    Some(OpenscapPoliciesConf.openScapApiImpl)
   }
 
+  val configFiles = Seq()
+
+
+  override def pluginMenuEntry: Option[Menu] = {
+    Some(Menu("openScapPolicies", <span>OpenScap Policies</span>) /
+      "secure" / "plugins" / "OpenScapPolicies"
+      >> LocGroup("pluginsGroup")
+      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
+      >> Template(() => ClasspathTemplates("template" :: "OpenScapPoliciesManagement" :: Nil ) openOr <div>Template not found</div>)
+    )
+  }
 }
