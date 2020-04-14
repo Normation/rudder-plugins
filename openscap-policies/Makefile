@@ -6,10 +6,10 @@ PROXY_ENV = $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY))
 GET=get() { $(PROXY_ENV) curl -s -L -o "$$1.part" "$$2" && { openssl dgst -sha256 "$$1.part" | grep -q "$$3" || { echo "Wrong checksum, aborting"; exit 1; }; } && mv "$$1.part" "$$1"; }; get
 
 RUDDER_SYNCHRONIZE_SHA256 = e0ba357886ac4b5c6a5856db191371922685a981af0c06596bd4adb8bcbefda1
-FILES = remove_configuration rudder_synchronize.py openscap-policies.json techniques
+FILES = remove_configuration rudder_synchronize.py openscap-policies.json antisamy.xml openscap-policies.properties techniques
 SCRIPTS = postinst prerm
-OTHER_ARCHIVES = target/external-report.txz
 
+include ../makefiles/common-plugin.mk
 include ../makefiles/common-scala-plugin.mk
 
 target/techniques:
@@ -24,9 +24,11 @@ target/openscap-policies.json:
 target/rudder_synchronize.py:
 	$(GET) target/rudder_synchronize.py https://repository.rudder.io/tools/rudder-synchronize $(RUDDER_SYNCHRONIZE_SHA256)
 
-target/external-report.txz:
-	cp -a src/node-external-reports.properties target/
-	tar cJ -C target -f target/external-report.txz node-external-reports.properties
+target/antisamy.xml:
+	cp src/main/resources/antisamy.xml target/antisamy.xml
+
+target/openscap-policies.properties:
+	cp src/main/resources/openscap-policies.properties target/openscap-policies.properties
 
 clean:
 	rm -f $(FULL_NAME)-*.rpkg pom.xml

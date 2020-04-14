@@ -35,23 +35,35 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.openscappolicies
+package com.normation.plugins.openscappolicies.repository
 
-import java.io.FileNotFoundException
+import cats.implicits._
+import com.normation.cfclerk.domain.TechniqueName
+import com.normation.errors.IOResult
+import com.normation.ldap.sdk.{LDAPConnectionProvider, RoLDAPConnection}
+import com.normation.rudder.domain.RudderDit
+import com.normation.rudder.domain.RudderLDAPConstants._
+import com.normation.rudder.domain.policies.ActiveTechnique
+import com.normation.rudder.repository.ldap.{LDAPEntityMapper, ScalaReadWriteLock}
+import com.normation.ldap.sdk.BuildFilter._
 
-import com.normation.inventory.domain.NodeId
-import net.liftweb.common._
-import org.slf4j.LoggerFactory
-import org.xml.sax.SAXParseException
-
-import scala.xml._
-
-/**
- * Applicative log of interest for Rudder ops.
- */
-object OpenscapPoliciesLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("openscap-policies")
+class DirectiveRepository(
+     val rudderDit                     : RudderDit
+   , val ldap                          : LDAPConnectionProvider[RoLDAPConnection]
+   , val mapper                        : LDAPEntityMapper
+//   , val userLibMutex                  : ScalaReadWriteLock //that's a scala-level mutex to have some kind of consistency with LDAP
+) {
+  /**
+   * Get ActiveTechnique based on a specific technique name
+   */
+  def getActiveTechniqueByTechniqueName(techniqueName: TechniqueName) : IOResult[Seq[ActiveTechnique]] = {
+    for {
+      con                    <- ldap
+      filter                 = AND(IS(OC_ACTIVE_TECHNIQUE), EQ(A_TECHNIQUE_UUID, techniqueName.value))
+      allEntries             <- con.searchSub(rudderDit.ACTIVE_TECHNIQUES_LIB.dn, filter)
+      activeTechniques       <- allEntries.toList.traverse(entry => mapper.entry2ActiveTechnique(entry).chainError(s"Error when transforming LDAP entry into an Active Technique. Entry: ${entry}")).toIO
+    } yield {
+      activeTechniques
+    }
+  }
 }
-
-// other data types for you plugin
-case class OpenScapReport(nodeId: NodeId, content: String)

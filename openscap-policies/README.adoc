@@ -1,4 +1,4 @@
-# Rudder plugin: OpenSCAP-report
+# Rudder plugin: OpenSCAP-policies
 
 This project is part of Rudder - IT infrastructure Automation and Compliance.
 See: http://rudder.io for more information.
@@ -22,7 +22,7 @@ As most of the Rudder plugins, you must install the plugin with the rudder-pkg t
 /opt/rudder/bin/rudder-pkg install-file <path to the rpkg>
 ....
 
-This will *add one Rudder technique to your Rudder Server*.
+This will add one Rudder technique to your Rudder Server, two API enpoints and a new tab on Node Details.
 
 
 === Usage
@@ -51,7 +51,9 @@ The technique will take care of the openSCAP agent installation and will by defa
 
 == Rudder Webapp integration
 
-With the Rudder plugin `Node external reports` which allows to add external, static documents and reports in a new tab in the `node details` webpage, this plugin will display the reports directly in the web interface.
-A compatible configuration file is distributed with the `OpenSCAP-report` plugin, you can find it in `/var/rudder/packages/rudder-plugin-openscap-report/node-external-reports.properties`
+A new tab in Node Details called OpenScap is added by this plugin. If the node already sent its OpenScap report, it is
+available, in an iframe in this tab, in a sanitized version (no scripts)
 
-The complete documentation of the `Node-external-reports` plugin is available https://docs.rudder.io/reference/5.0/plugins/node-external-reports.html#_documents_naming_convention[here].
+Two news API endpoints are also available:
+*  /latest/openscap/report/{nodeId}    : the OpenScap report
+*  /latest/openscap/sanitized/{nodeId} : the OpenScap report as displayed in the web interface (sanitized)

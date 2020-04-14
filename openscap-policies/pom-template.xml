@@ -40,6 +40,11 @@
 
   <dependencies>
     <!-- Add other plugin specific dependencies -->
+    <dependency>
+      <groupId>org.owasp.antisamy</groupId>
+      <artifactId>antisamy</artifactId>
+      <version>1.5.9</version>
+    </dependency>
   </dependencies>
 
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->

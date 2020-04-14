@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf8" />
+  <!-- everything here will be ignored and replaced by common-layout -->
+</head>
+<body data-lift-content-id="plugin-main">
+  <div id="plugin-main" data-lift="surround?with=common-layout;at=content">
+    <head_merge>
+      <title>OpenSCAP Policies</title>
+    </head_merge>
+
+    <h2>OpenSCAP Policies</h2>
+    <p>
+      This plugin adds a policy to install and run OpenSCAP, and send it to the Rudder server. This report is visible
+      on the Node Details page, on the OpenSCAP tab.
+    </p>
+    <p>
+      It also add two API endpoints to get the OpenSCAP report, either as raw, or sanitized (without any JS).
+    </p>
+
+    <h3>API endpoint and format</h3>
+
+    <p>The API has two endpoints:
+      <ul>
+        <li><span style="font-family: monospace;">GET /latest/openscap/report/{nodeId}</span></p></li>
+        <li><span style="font-family: monospace;">GET /latest/openscap/sanitized/{nodeId}</span></p></li>
+      </ul>
+    <p>So for example, with curl: <span style="font-family: monospace;">curl -k -H "X-API-Token: 5YJnb4EenqDHzwx0U0eTPWWhgjTJ8mkk" -X GET 'https://your-server/rudder/api/latest/openscap/report/e2ba6527-936d-48b7-b2e8-73167ebdd783'</span></p>
+    <p>It returns, if it exists, the OpenSCAP report generated for node e2ba6527-936d-48b7-b2e8-73167ebdd783</p>
+  </div>
+</body>
+</html>
+
