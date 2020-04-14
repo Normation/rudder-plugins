@@ -88,7 +88,15 @@ object OpenScapProperties {
 object OpenscapPoliciesConf extends RudderPluginModule {
   import OpenScapProperties._
 
-  val POLICY_SANITIZATION_FILE= config.getString("sanitization.file")
+  val SANITIZATION_PROPERTY = "sanitization.file"
+  val POLICY_SANITIZATION_FILE= config.getString(SANITIZATION_PROPERTY)
+
+  // check if sanitization file exists. If it doesn't, then it will silently block the start of Rudder
+  val policy_sanitization_file = new File(POLICY_SANITIZATION_FILE)
+  if (!policy_sanitization_file.exists()) {
+    ApplicationLogger.error(s"Can not find sanitization file specified by configuration property ${SANITIZATION_PROPERTY}: ${POLICY_SANITIZATION_FILE}; abort")
+    throw new IllegalArgumentException(s"OpenSCAP sanitization file not found: ${POLICY_SANITIZATION_FILE}")
+  }
 
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 

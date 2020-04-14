@@ -9,7 +9,7 @@ RUDDER_SYNCHRONIZE_SHA256 = e0ba357886ac4b5c6a5856db191371922685a981af0c06596bd4
 FILES = remove_configuration rudder_synchronize.py openscap-policies.json antisamy.xml openscap-policies.properties techniques
 SCRIPTS = postinst prerm
 
-include ../makefiles/common-plugin.mk
+#include ../makefiles/common-plugin.mk
 include ../makefiles/common-scala-plugin.mk
 
 target/techniques:

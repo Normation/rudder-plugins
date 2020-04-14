@@ -23,8 +23,8 @@ class OpenScapReportReader(
   , pluginDirectiveRepository   : GetActiveTechniqueIds
   , findExpectedReportRepository: FindExpectedReportRepository) {
 
-  val OPENSCAP_REPORT_FILENAME = "openscap.html"
-  val OPENSCAP_REPORT_PATH = "/var/rudder/shared-files/root/"
+  val OPENSCAP_REPORT_FILENAME = "openscap_report.html"
+  val OPENSCAP_REPORT_PATH = "/var/rudder/shared-files/root/files/"
 
 
   val OPENSCAP_TECHNIQUE_ID = "plugin_openscap_policies"

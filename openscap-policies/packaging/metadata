@@ -8,8 +8,8 @@
     "apt": [ "rudder-api-client" ],
     "rpm": [ "rudder-api-client" ]
   },
-  "jar-files": [ "/opt/rudder/share/plugins/${plugin-name}/${plugin-name}.jar" ],
+  "jar-files": [ "/opt/rudder/share/plugins/${plugin-name}/${plugin-name}/${plugin-name}.jar" ],
   "content": {
-    "files.txz": "/opt/rudder/share/${plugin-id}"
+    "files.txz": "/opt/rudder/share/plugins/${plugin-name}/"
   }
 }

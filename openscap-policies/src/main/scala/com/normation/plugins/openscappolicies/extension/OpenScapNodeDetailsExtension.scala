@@ -10,7 +10,6 @@ import scala.xml.NodeSeq
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
 import com.normation.inventory.domain.NodeId
-import net.liftweb.http.S
 
 class OpenScapNodeDetailsExtension(
     val status: PluginStatus
@@ -82,7 +81,7 @@ class OpenScapNodeDetailsExtension(
 
   def frameContent(nodeId : NodeId): CssSel = {
 
-        "iframe [src]"      #> s"${S.hostAndPath}/secure/api/openscap/sanitized/${nodeId.value}"
+        "iframe [src]"      #> s"/secure/api/openscap/sanitized/${nodeId.value}"
 
   }
 
