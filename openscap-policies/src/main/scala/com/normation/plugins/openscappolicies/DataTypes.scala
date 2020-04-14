@@ -37,14 +37,9 @@
 
 package com.normation.plugins.openscappolicies
 
-import java.io.FileNotFoundException
-
 import com.normation.inventory.domain.NodeId
 import net.liftweb.common._
 import org.slf4j.LoggerFactory
-import org.xml.sax.SAXParseException
-
-import scala.xml._
 
 /**
  * Applicative log of interest for Rudder ops.
