@@ -47,7 +47,7 @@ import com.normation.plugins.openscappolicies.CheckRudderPluginEnableImpl
 import com.normation.plugins.openscappolicies.OpenscapPoliciesPluginDef
 import com.normation.plugins.openscappolicies.api.OpenScapApiImpl
 import com.normation.plugins.openscappolicies.extension.OpenScapNodeDetailsExtension
-import com.normation.plugins.openscappolicies.repository.DirectiveRepository
+import com.normation.plugins.openscappolicies.services.GetActiveTechniqueIds
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.domain.logger.ApplicationLogger
@@ -94,16 +94,12 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   lazy val pluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
-  //private[this] lazy val uptLibReadWriteMutex = ScalaLock.java2ScalaRWLock("directive-plugin-lock", new java.util.concurrent.locks.ReentrantReadWriteLock(true))
-
-  lazy val directiveRepository = new DirectiveRepository(RudderConfig.rudderDit, RudderConfig.readOnlyLDAP, RudderConfig.entityMapper)
+  lazy val getActiveTechniqueIds = new GetActiveTechniqueIds(RudderConfig.rudderDit, RudderConfig.roLDAPConnectionProvider)
 
   lazy val reportSanitizer = new ReportSanitizer(POLICY_SANITIZATION_FILE)
-  lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, directiveRepository, RudderConfig.findExpectedReportRepository)
+  lazy val openScapReportReader = new OpenScapReportReader(RudderConfig.nodeInfoService, RudderConfig.roDirectiveRepository, getActiveTechniqueIds, RudderConfig.findExpectedReportRepository)
 
   lazy val openScapApiImpl = new OpenScapApiImpl(RudderConfig.restExtractorService, openScapReportReader, reportSanitizer)
   // other service instanciation / initialization
   RudderConfig.snippetExtensionRegister.register(new OpenScapNodeDetailsExtension(pluginStatusService, openScapReportReader, reportSanitizer))
-
-
 }

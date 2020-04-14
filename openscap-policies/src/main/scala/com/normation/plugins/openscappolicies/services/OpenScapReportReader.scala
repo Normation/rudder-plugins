@@ -4,7 +4,6 @@ import better.files._
 import com.normation.box._
 import com.normation.cfclerk.domain.TechniqueName
 import com.normation.inventory.domain.NodeId
-import com.normation.plugins.openscappolicies.repository.DirectiveRepository
 import com.normation.plugins.openscappolicies.OpenScapReport
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.rudder.repository.FindExpectedReportRepository
@@ -21,7 +20,7 @@ import net.liftweb.util.Helpers.tryo
 class OpenScapReportReader(
     nodeInfoService             : NodeInfoService
   , directiveRepository         : RoDirectiveRepository
-  , pluginDirectiveRepository   : DirectiveRepository
+  , pluginDirectiveRepository   : GetActiveTechniqueIds
   , findExpectedReportRepository: FindExpectedReportRepository) {
 
   val OPENSCAP_REPORT_FILENAME = "openscap.html"
@@ -39,13 +38,11 @@ class OpenScapReportReader(
     import zio._
     val openScapDirectives = (for {
       // get active technique
-      activeTechniques  <- pluginDirectiveRepository.getActiveTechniqueByTechniqueName(TechniqueName(OPENSCAP_TECHNIQUE_ID))
-      activeTechniqueId = activeTechniques.map(_.id)
+      activeTechniqueIds <- pluginDirectiveRepository.getActiveTechniqueIdByTechniqueName(TechniqueName(OPENSCAP_TECHNIQUE_ID))
       // get directive from these active techniques
-      directives        <- ZIO.foreach(activeTechniqueId) { atId =>
+      directives         <- ZIO.foreach(activeTechniqueIds) { atId =>
                               directiveRepository.getDirectives(atId)
-                           }
-
+                            }
     } yield {
       directives.flatten
     }).toBox

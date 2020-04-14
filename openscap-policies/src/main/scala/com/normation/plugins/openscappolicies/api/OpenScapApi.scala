@@ -141,8 +141,6 @@ class OpenScapApiImpl(
             , Nil
             , 404)
       }
-
     }
   }
-
 }

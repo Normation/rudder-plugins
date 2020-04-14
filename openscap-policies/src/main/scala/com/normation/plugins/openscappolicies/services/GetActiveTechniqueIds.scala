@@ -35,36 +35,34 @@
 *************************************************************************************
 */
 
-package com.normation.plugins.openscappolicies.repository
+package com.normation.plugins.openscappolicies.services
 
-import cats.implicits._
 import com.normation.cfclerk.domain.TechniqueName
-import com.normation.errors.IOResult
+import com.normation.errors._
+import com.normation.inventory.ldap.core.InventoryMappingResult._
 import com.normation.ldap.sdk.BuildFilter._
 import com.normation.ldap.sdk.LDAPConnectionProvider
 import com.normation.ldap.sdk.RoLDAPConnection
 import com.normation.rudder.domain.RudderDit
 import com.normation.rudder.domain.RudderLDAPConstants._
-import com.normation.rudder.domain.policies.ActiveTechnique
-import com.normation.rudder.repository.ldap.LDAPEntityMapper
+import com.normation.rudder.domain.policies.ActiveTechniqueId
+import zio._
 
-class DirectiveRepository(
-     val rudderDit                     : RudderDit
-   , val ldap                          : LDAPConnectionProvider[RoLDAPConnection]
-   , val mapper                        : LDAPEntityMapper
-//   , val userLibMutex                  : ScalaReadWriteLock //that's a scala-level mutex to have some kind of consistency with LDAP
+class GetActiveTechniqueIds(
+    rudderDit: RudderDit
+  , ldap     : LDAPConnectionProvider[RoLDAPConnection]
 ) {
   /**
    * Get ActiveTechnique based on a specific technique name
    */
-  def getActiveTechniqueByTechniqueName(techniqueName: TechniqueName) : IOResult[Seq[ActiveTechnique]] = {
+  def getActiveTechniqueIdByTechniqueName(techniqueName: TechniqueName) : IOResult[List[ActiveTechniqueId]] = {
     for {
-      con                    <- ldap
-      filter                 = AND(IS(OC_ACTIVE_TECHNIQUE), EQ(A_TECHNIQUE_UUID, techniqueName.value))
-      allEntries             <- con.searchSub(rudderDit.ACTIVE_TECHNIQUES_LIB.dn, filter)
-      activeTechniques       <- allEntries.toList.traverse(entry => mapper.entry2ActiveTechnique(entry).chainError(s"Error when transforming LDAP entry into an Active Technique. Entry: ${entry}")).toIO
+      con        <- ldap
+      filter     = AND(IS(OC_ACTIVE_TECHNIQUE), EQ(A_TECHNIQUE_UUID, techniqueName.value))
+      allEntries <- con.searchSub(rudderDit.ACTIVE_TECHNIQUES_LIB.dn, filter, A_ACTIVE_TECHNIQUE_UUID)
+      ids        <- ZIO.foreach(allEntries) { e => e.required(A_ACTIVE_TECHNIQUE_UUID).toIO }
     } yield {
-      activeTechniques
+      ids.map(ActiveTechniqueId)
     }
   }
 }
