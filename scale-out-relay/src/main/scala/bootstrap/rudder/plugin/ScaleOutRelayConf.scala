@@ -65,6 +65,7 @@ object ScalaOutRelayConf extends RudderPluginModule {
     , RudderConfig.woRuleRepository
     , RudderConfig.stringUuidGenerator
     , RudderConfig.policyServerManagementService
+    , RudderConfig.eventLogRepository
   )
 
   // add policy generation for relay

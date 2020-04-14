@@ -75,7 +75,6 @@ class ScaleOutRelayApiImpl(
           val message = (eb ?~ (s"Error when trying to promote mode $nodeId")).msg
           toJsonError(None, message)("promoteToRelay",true)
       }
-
     }
   }
 }

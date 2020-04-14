@@ -1,8 +1,8 @@
 package com.normation.plugins.scaleoutrelay
 
+import com.github.ghik.silencer.silent
 import com.normation.NamedZioLogger
 import com.normation.cfclerk.domain.TechniqueVersion
-import com.normation.errors.IOResult
 import com.normation.errors._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
@@ -13,6 +13,7 @@ import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.policies._
 import com.normation.rudder.domain.queries._
+import com.normation.rudder.repository.EventLogRepository
 import com.normation.rudder.repository.WoDirectiveRepository
 import com.normation.rudder.repository.WoNodeGroupRepository
 import com.normation.rudder.repository.WoNodeRepository
@@ -23,6 +24,7 @@ import com.normation.rudder.services.servers.PolicyServerManagementService
 import com.normation.utils.StringUuidGenerator
 import com.softwaremill.quicklens._
 import zio.ZIO
+import zio.syntax._
 
 
 
@@ -34,33 +36,43 @@ class ScaleOutRelayService(
   , woRuleRepository              : WoRuleRepository
   , uuidGen                       : StringUuidGenerator
   , policyServerManagementService : PolicyServerManagementService
+  , actionLogger                  : EventLogRepository
 ) {
   val SYSTEM_GROUPS = "SystemGroups"
   val DISTRIBUTE_POLICY = "distributePolicy"
   val COMMON = "common"
   val logger = NamedZioLogger("plugin.scaleoutrelay")
 
-  def promoteNodeToRelay(uuid: NodeId, actor: EventActor, reason:Option[String]) = {
+  def promoteNodeToRelay(uuid: NodeId, actor: EventActor, reason:Option[String]): ZIO[Any, RudderError, NodeInfo] = {
     val modId = ModificationId(uuidGen.newUuid)
     for {
-      nodeInfos   <- getNodeToPromote(uuid)
-      updatedNode =  NodeToPolicyServer(nodeInfos)
-      _           <- woLDAPNodeRepository.deleteNode(nodeInfos.node, modId, actor, reason).chainError(s"Remove ${nodeInfos.node.id.value} to update it to policy server failed")
-      newRelay    <- createRelayFromNode(updatedNode, modId, actor, reason)
+      nodeInfos  <- getNodeToPromote(uuid)
+      targetedNode <-
+                    if (!nodeInfos.isPolicyServer) {
+                      val updatedNode = NodeToPolicyServer(nodeInfos)
+                      for {
+                         _        <- woLDAPNodeRepository.deleteNode(nodeInfos.node, modId, actor, reason)
+                                       .chainError(s"Remove ${nodeInfos.node.id.value} to update it to policy server failed")
+                         newRelay <- createRelayFromNode(updatedNode, modId, actor, reason)
+                      } yield {
+                        newRelay
+                      }
+                    } else {
+                      nodeInfos.succeed
+                    }
     } yield {
-      newRelay
+      targetedNode
     }
   }
 
-  private[scaleoutrelay] def createRelayFromNode(nodeInf: NodeInfo, modId: ModificationId, actor: EventActor, reason:Option[String]): ZIO[Any, ZIO[Any, Accumulated[RudderError], List[Any]], NodeInfo] = {
-    val directDistribPolicy = createDirectiveDistributePolicy(nodeInf.node.id)
-    val ruleTarget = createPolicyServer(nodeInf.node.id)
-    val nodeGroup = createNodeGroup(nodeInf.node.id)
-    val ruleDistribPolicy = createRuleDistributePolicy(nodeInf.node.id)
-    val ruleSetup = createRuleSetup(nodeInf.node.id)
-
-    val categoryId = NodeGroupCategoryId(SYSTEM_GROUPS)
-    val activeTechniqueId = ActiveTechniqueId(DISTRIBUTE_POLICY)
+  private[scaleoutrelay] def createRelayFromNode(nodeInf: NodeInfo, modId: ModificationId, actor: EventActor, reason:Option[String]) = {
+    val directDistribPolicy     = createDirectiveDistributePolicy(nodeInf.node.id)
+    val ruleTarget              = createPolicyServer(nodeInf.node.id)
+    val nodeGroup               = createNodeGroup(nodeInf.node.id)
+    val ruleDistribPolicy       = createRuleDistributePolicy(nodeInf.node.id)
+    val ruleSetup               = createRuleSetup(nodeInf.node.id)
+    val categoryId              = NodeGroupCategoryId(SYSTEM_GROUPS)
+    val activeTechniqueId       = ActiveTechniqueId(DISTRIBUTE_POLICY)
     val activeTechniqueIdCommon = ActiveTechniqueId(COMMON)
 
     val promote = for {
@@ -73,56 +85,65 @@ class ScaleOutRelayService(
       _ <- woDirectiveRepository.saveSystemDirective(activeTechniqueIdCommon, commonDirective, modId, actor, reason)
       _ <- woRuleRepository.create(ruleSetup, modId, actor, reason)
       _ <- woRuleRepository.create(ruleDistribPolicy, modId, actor, reason)
+      _ <- actionLogger.savePromoteToRelay(modId,actor,nodeInf, reason)
     } yield {
       nodeInf
     }
 
-    promote.mapError {
+    promote.catchAll {
       err =>
-        logger.error(err.fullMsg) *>  rollbackPromote(ruleTarget, ruleSetup, ruleDistribPolicy, nodeInf, nodeGroup, activeTechniqueId, activeTechniqueIdCommon, modId, actor)
+        for {
+          _ <- demoteRelay(nodeInf, modId, actor)
+          _ <- logger.error(s"Promote node ${nodeInf.node.id.value} have failed, cause by : ${err.fullMsg}")
+        } yield {
+           nodeInf
+        }
     }
   }
 
-  private[scaleoutrelay] def rollbackPromote(
-      ruleTarget              : PolicyServerTarget
-    , ruleSetup               : Rule
-    , ruleDistribPolicy       : Rule
-    , newInfo                 : NodeInfo
-    , nodeGroup               : NodeGroup
-    , activeTechniqueId       : ActiveTechniqueId
-    , activeTechniqueIdCommon : ActiveTechniqueId
-    , modId                   : ModificationId
-    , actor                   : EventActor
+  private[scaleoutrelay] def demoteRelay(
+     newInfo        : NodeInfo
+    , modId         : ModificationId
+    , actor         : EventActor
   ): ZIO[Any, Accumulated[RudderError], List[Any]] = {
 
+    val ruleTarget              = PolicyServerTarget(newInfo.node.id)
+    val nodeGroup               = NodeGroupId(s"hasPolicyServer-${newInfo.node.id.value}")
+    val ruleDistribPolicy       = RuleId(s"${newInfo.node.id.value}-DP")
+    val ruleSetup               = RuleId(s"hasPolicyServer-${newInfo.node.id.value}")
+    val activeTechniqueId       = ActiveTechniqueId(DISTRIBUTE_POLICY)
+    val activeTechniqueIdCommon = ActiveTechniqueId(COMMON)
+    val common                  = DirectiveId(s"common-${newInfo.node.id.value}")
+    val distribPolicy           = DirectiveId(s"${newInfo.node.id.value}-distributePolicy")
+
     val old = PolicyServerToNode(newInfo)
-    val reason = Some("Promote node to relay rollback")
+    val reason = Some("Demote relay")
 
-    val z = woLDAPNodeRepository.deleteNode(newInfo.node, modId, actor, reason)
+    val nPromoted = woLDAPNodeRepository.deleteNode(newInfo.node, modId, actor, reason)
 
-    val a = woLDAPNodeRepository.createNode(old.node, modId, actor, reason)
-             .chainError(s"Rollback promote to relay failed : restore ${newInfo.node} configuration failed")
-    val b  = woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget)
-             .chainError(s"Rollback promote to relay failed : removing ${newInfo.node} configuration failed")
-    val c = woLDAPNodeGroupRepository.delete(nodeGroup.id, modId, actor, reason)
-             .chainError(s"Rollback promote to relay failed : removing node group ${nodeGroup.id.value} failed")
-    val d = woDirectiveRepository.deleteActiveTechnique(activeTechniqueId, modId, actor, reason)
-             .chainError(s"Rollback promote to relay failed : removing active technique ${activeTechniqueId.value} failed")
-    val e = woDirectiveRepository.deleteActiveTechnique(activeTechniqueIdCommon, modId, actor, reason)
-             .chainError(s"Rollback promote to relay failed : removing active technique ${activeTechniqueIdCommon.value} failed")
+    val nBeforePromoted = woLDAPNodeRepository.createNode(old.node, modId, actor, reason)
+             .chainError(s"Demote relay failed : restore '${newInfo.node}' configuration failed")
+    val policyServer  = woLDAPNodeGroupRepository.deletePolicyServerTarget(ruleTarget)
+             .chainError(s"Demote relay failed : removing '${newInfo.node}' configuration failed")
+    val nGroupSystem = woLDAPNodeGroupRepository.delete(nodeGroup, modId, actor, reason)
+             .chainError(s"Demote relay failed : removing node group '${nodeGroup.value}' failed")
+    val distributePolicy = woDirectiveRepository.deleteSystemDirective(distribPolicy, modId, actor, reason)
+             .chainError(s"Demote relay failed : removing active technique '${activeTechniqueId.value}' failed")
+    val commonDirective = woDirectiveRepository.deleteSystemDirective(common,modId, actor, reason)
+             .chainError(s"Demote relay failed : removing active technique '${activeTechniqueIdCommon.value}' failed")
 
     // Rules deletion return an error if there is no such ID
-    val f = woRuleRepository.delete(ruleSetup.id, modId, actor, reason).catchAll {
+    @silent("a type was inferred to be `Any`")
+    val f = woRuleRepository.deleteSystemRule(ruleSetup, modId, actor, reason) catchAll {
       err =>
-        logger.info(s"Trying to remove residual object Rule ${ruleSetup.id} : ${err.fullMsg}")
+        logger.info(s"Trying to remove residual object Rule ${ruleSetup.value} : ${err.fullMsg}")
     }
-    val g = woRuleRepository.delete(ruleDistribPolicy.id, modId, actor, reason).catchAll {
+    @silent("a type was inferred to be `Any`")
+    val g = woRuleRepository.deleteSystemRule(ruleDistribPolicy, modId, actor, reason) catchAll {
       err =>
-        logger.info(s"Trying to remove residual object Rule ${ruleDistribPolicy.id} : ${err.fullMsg}")
+        logger.info(s"Trying to remove residual object Rule ${ruleDistribPolicy.value} : ${err.fullMsg}")
     }
-    //type : ZIO[Any, Accumulated[RudderError], List[Any]]
-    List(z,a,b,c,d,e,f,g).accumulate(x => x)
-
+    List(nPromoted,nBeforePromoted,policyServer,nGroupSystem,distributePolicy,commonDirective,f,g).accumulate(x => x)
   }
 
   private[scaleoutrelay] def getNodeToPromote(uuid: NodeId): IOResult[NodeInfo] = {
@@ -164,10 +185,10 @@ class ScaleOutRelayService(
             , CriterionLine(objectType, attribute2, comparator, value2))
           )
       )
-      , true
+      , isDynamic = true
       , Set()
-      , true
-      , true
+      , _isEnabled = true
+      , isSystem = true
     )
   }
 
@@ -181,8 +202,8 @@ class ScaleOutRelayService(
       , None
       , ""
       ,  0
-      , true
-      , true
+      , _isEnabled = true
+      , isSystem = true
       , Tags(Set.empty)
     )
   }
@@ -209,8 +230,8 @@ class ScaleOutRelayService(
          , None
          , ""
          , 0
-         , true
-         , true
+         , _isEnabled = true
+         , isSystem = true
          , Tags(Set.empty)
        )
     }
@@ -225,8 +246,8 @@ class ScaleOutRelayService(
       , Set(DirectiveId(s"${uuid.value}-distributePolicy"))
       , "Distribute Policy - Technical"
       , "This rule allows to distribute policies to nodes"
-      , true
-      , true
+      , isEnabledStatus = true
+      , isSystem = true
     )
   }
 
@@ -239,8 +260,8 @@ class ScaleOutRelayService(
       , Set(DirectiveId(s"common-${uuid.value}"))
       , "Common - Technical"
       , "This is the basic system rule which all nodes must have."
-      , true
-      , true
+      , isEnabledStatus = true
+      , isSystem = true
     )
   }
 }
