@@ -28,7 +28,8 @@ class OpenScapNodeDetailsExtension(
   def addOpenScapReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq): NodeSeq = {
     // Actually extend
     def display(): NodeSeq = {
-      val content = openScapReader.checkOpenScapReportExistence(snippet.nodeId) match {
+      val nodeId = snippet.nodeId
+      val content = openScapReader.checkOpenScapReportExistence(nodeId) match {
         case eb: EmptyBox =>
           val e = eb ?~! "Can not display OpenScap report for that node"
           (<div class="error">
@@ -37,7 +38,7 @@ class OpenScapNodeDetailsExtension(
         case Full(existence) =>
           existence match {
             case false =>
-              <div id="openscap_reports">
+              <div id="openscap_reports" class="ui-tabs-panel ui-corner-bottom ui-widget-content">
                 <p>That tab gives access to OpenScap reports configured for that node</p>
                 <div class="error">No OpenScap report available for node
                   {snippet.nodeId.value}
@@ -62,9 +63,9 @@ class OpenScapNodeDetailsExtension(
                     {tabTitle}
                   </a>
                 </li>
-                  <li>
+                <div id="openscap_reports" class="ui-tabs-panel ui-corner-bottom ui-widget-content">
                     {content}
-                  </li>
+                </div>
                 )
             } &
               "#node_logs" #> <div>test</div>
@@ -81,26 +82,25 @@ class OpenScapNodeDetailsExtension(
 
   def frameContent(nodeId : NodeId): CssSel = {
 
-        "iframe [src]"      #> s"/secure/api/openscap/sanitized/${nodeId.value}"
+        "iframe [src]"      #> s"/secure/api/openscap/sanitized/${nodeId.value}" &
+          "a [href]"      #> s"/secure/api/openscap/report/${nodeId.value}"
 
   }
 
   private def openScapExtensionXml =
-    <div id="openscap_reports">
-      <div id="openScapReports">
-        <br />
+      <div>
         <div class="col-xs-12">
           <div class="page-title" id="agentPolicyMode">OpenSCAP reporting</div>
           <div class="col-xs-12 callout-fade callout-info">
             <div class="marker">
               <span class="glyphicon glyphicon-info-sign"></span>
             </div>
-            <p>That tab gives access to OpenSCAP report configured for that node</p>
+            <p>That tab gives access to OpenSCAP report configured for that node. Below is a sanitized version of the
+            report (without any scripts or specific scripts).</p>
+            <br/>
+            <p>You can also download the original version of the report <a href="">here</a></p>
           </div>
           <iframe width="100%" height="500"></iframe>
         </div>
-
-
       </div>
-    </div>
 }
