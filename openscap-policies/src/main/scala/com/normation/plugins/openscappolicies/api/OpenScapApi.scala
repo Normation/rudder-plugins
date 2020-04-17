@@ -29,7 +29,7 @@ import sourcecode.Line
 sealed trait OpenScapApi extends EndpointSchema with GeneralApi with SortIndex
 object OpenScapApi extends ApiModuleProvider[OpenScapApi] {
 
-  final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion10 {
+  final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion15 {
     val z = implicitly[Line].value
     val description    = "Get OpenScap report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
