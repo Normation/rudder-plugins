@@ -43,7 +43,10 @@ class ScalaOutRelayPluginDef(override val status: PluginStatus) extends DefaultP
 
   override val basePackage = "com.normation.plugins.scaleoutrelay"
 
-  def init = {}
+  def init = {
+    // check that the plugin is enable to workaround #17160
+    ScalaOutRelayLogger.info(s"Checking for plugin status: ${if(status.isEnabled()) "enabled" else "disabled"}")
+  }
 
   def oneTimeInit : Unit = {}
 
