@@ -3,11 +3,8 @@
 # make licensed : will build a license limited version of the plugin
 #
 
-FILES = $(NAME)/server-node-to-relay
+FILES =
 SCRIPTS = postinst
 
 include ../makefiles/common-scala-plugin.mk
-
-target/$(NAME)/server-node-to-relay:
-	cp ./src/main/resources/server-node-to-relay target/$(NAME)/
 
