@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: CC-BY-SA-2.0
+# SPDX-FileCopyrightText: 2013-2020 Normation SAS
+
+# @description promote a node to relay
+# @man Promote a node to relay by using scale-out-relay plugin API
+# @man +
+# @man *Arguments*:
+# @man +
+# @man *UUID*: node ID to promote
+
+RUDDER_OPT=/opt/rudder
+RUDDER_VAR=/var/rudder
+RUDDER_JSON="${RUDDER_VAR}/cfengine-community/inputs/rudder.json"
+
+rudder_json_value() {
+	jq -r ".$1" ${RUDDER_JSON}
+}
+
+if [ -f "${RUDDER_JSON}" ]; then
+  RUDDER_VERIFY_CERTIFICATES=$(rudder_json_value 'RUDDER_VERIFY_CERTIFICATES')
+fi
+
+if [ "${RUDDER_VERIFY_CERTIFICATES}" = "true" ]
+then
+  CERTIFICATE_OPTION=""
+else
+  CERTIFICATE_OPTION="--insecure"
+fi
+
+DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --location --noproxy --globoff"
+
+usage() {
+	echo "Usage: $0 <UUID of the node to make a relay server>"
+}
+
+RELAY_UUID=$1
+
+# Check arguments
+if [ "${RELAY_UUID}" = "" ]; then
+	echo "ERROR: Need the UUID of the Relay server as an argument, aborting."
+	usage
+	exit 1
+elif [ "${RELAY_UUID}" = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeee" ]; then
+	echo "ERROR: Please use a real UUID, not the one supplied in the documentation, aborting."
+	exit 1
+fi
+
+echo "Rudder relay installation script starting, using UUID ${RELAY_UUID}.\n"
+
+# Scale-out-relay API call (must have the plugin installed)
+API_URL="https://127.0.0.1/rudder/api/latest/scaleoutrelay/promote/${RELAY_UUID}"
+TOKEN_SYSTEM=$(cat /var/rudder/run/api-token)
+response=$(${DOWNLOAD_COMMAND} --header "X-API-Token: ${TOKEN_SYSTEM}" --request POST "${API_URL}")
+code=$?
+
+if [ ${code} -ne 0 ]; then
+	 echo "Failed to promote ${RELAY_UUID} to relay. Code ${code}" 1>&2
+	 exit 1
+fi
+
+result_api=$(echo "$response" | jq -r '.result')
+parse_response=$?
+
+if [ "${result_api}" = "error" ]; then
+	echo "ERROR: Promote ${RELAY_UUID} have failed" 1>&2
+	error_details=$(echo "$response" | jq -r '.errorDetails')
+	echo "Reason: ${error_details}"
+	exit 1
+elif [ ${parse_response} = 4 ];then
+	echo "ERROR: Unknow response format, parsing failed. Code ${parse_response}" 1>&2
+else
+	echo "Done."
+
+	echo -n "INFO: Triggering promises generation..."
+	${DOWNLOAD_COMMAND} -k "https://localhost/rudder/api/deploy/reload"
+	echo " Done."
+
+	echo "\nSuccess: all steps completed successfully."
+	exit 0
+fi
