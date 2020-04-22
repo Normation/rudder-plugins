@@ -1,0 +1,31 @@
+{
+  "displayName": "CIS - Ensure Samba is not enabled",
+  "enabled": true,
+  "id": "8ba7e5b9-4227-4036-8bfd-0af3d937fbed",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "smbd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Disable_Service",
+  "techniqueVersion": "1.0"
+}
