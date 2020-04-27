@@ -166,7 +166,7 @@ class AuthBackendsRepository(
           , "rudder.auth.radius.host.name"
         )
       , param("""# Authentication port for the Radius server""".stripMargin('#')
-          , "rudder.auth.radius.host.authPort"
+          , "rudder.auth.radius.host.auth.port"
         )
       , param("""# The shared secret as configured in your Radius server
                  # for Rudder application / host.""".stripMargin('#')
