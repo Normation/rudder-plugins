@@ -218,7 +218,7 @@ object Validation {
 
     val checkedAgent : Validation[AgentInfo] = nodeDetails.agentKey match {
       case Some(a) => checkAgent(os.os, a)
-      case None    => AgentInfo(AgentType.CfeCommunity, None, PublicKey("placeholder-value - not a real key")).validNel
+      case None    => AgentInfo(AgentType.CfeCommunity, None, PublicKey("placeholder-value - not a real key"), Set.empty).validNel
     }
 
 
@@ -342,7 +342,7 @@ object Validation {
     }
 
     checkSecurityToken(tpe, agent.value) andThen { token =>
-      AgentInfo(tpe, None, token).validNel
+      AgentInfo(tpe, None, token, Set.empty).validNel
     }
   }
 
