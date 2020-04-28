@@ -37,7 +37,6 @@
 
 package com.normation.plugins.datasources
 
-import com.github.ghik.silencer.silent
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
@@ -104,7 +103,7 @@ class DataSourceScheduler(
     // only want to be sure to have them)
     val prog = (DataSourceLoggerPure.info(msg) *> DataSourceLoggerPure.trace(s"details: ${datasource}") *>
                  updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))
-               ).catchAll(err => DataSourceLoggerPure.debug(err.fullMsg)) : @silent //suppress "a type was inferred to be `Any`"
+               ).catchAll(err => DataSourceLoggerPure.debug(err.fullMsg))
 
     for {
       s <- schedule

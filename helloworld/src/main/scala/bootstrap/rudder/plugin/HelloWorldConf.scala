@@ -45,6 +45,7 @@ object Module1 extends Loggable with RudderPluginModule {
     val name = PluginName("rudder-plugin-module1")
     val shortName = "module1"
     val version = PluginVersion(0,0,1)
+    val versionInfo = None
     val basePackage = "com.normation.plugins.helloworld"
     val description : NodeSeq  = Text {
       "A template plugin for testing purpose"

@@ -40,28 +40,25 @@ package com.normation.plugins.datasources
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.DocumentContext
 import com.jayway.jsonpath.JsonPath
-import com.normation.cfclerk.domain.Variable
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeProperty
-import com.normation.rudder.domain.parameters.Parameter
-import com.normation.rudder.domain.parameters.ParameterName
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import com.normation.rudder.services.policies.InterpolationContext
 import net.liftweb.json.JsonAST
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
 import net.minidev.json.JSONValue
 
-import scala.collection.immutable.TreeMap
 import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
-
 import zio._
 import zio.syntax._
 import com.normation.errors._
+import com.normation.rudder.domain.nodes.GenericPropertyUtils
+import com.normation.rudder.domain.parameters.GlobalParameter
+import com.normation.rudder.services.policies.ParamInterpolationContext
 import zio.duration._
 
 /*
@@ -98,7 +95,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     , node             : NodeInfo
     , policyServer     : NodeInfo
     , globalPolicyMode : GlobalPolicyMode
-    , parameters       : Set[Parameter]
+    , parameters       : Set[GlobalParameter]
     , connectionTimeout: Duration
     , readTimeOut      : Duration
   ) : IOResult[Option[NodeProperty]] = {
@@ -150,7 +147,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
    * Get information for many nodes.
    * Policy servers for each node must be in the map.
    */
-  def getMany(datasource: DataSource, nodes: Seq[NodeId], policyServers: Map[NodeId, NodeInfo], parameters: Set[Parameter]): Seq[IOResult[NodeProperty]] = {
+  def getMany(datasource: DataSource, nodes: Seq[NodeId], policyServers: Map[NodeId, NodeInfo], parameters: Set[GlobalParameter]): Seq[IOResult[NodeProperty]] = {
     ???
   }
 
@@ -210,17 +207,17 @@ object QueryHttp {
  */
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
-  def compileParameters(parameter: Parameter): PureResult[(ParameterName, InterpolationContext => PureResult[String])] = {
-    compiler.compile(parameter.value).map(v => (parameter.name, v))
+  def compileParameters(parameter: GlobalParameter): PureResult[(String, ParamInterpolationContext => PureResult[String])] = {
+    compiler.compileParam(GenericPropertyUtils.serializeValue(parameter.value)).map(v => (parameter.name.value, v))
   }
 
-  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[ParameterName, InterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
+  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[String, ParamInterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
 
     //build interpolation context from node:
-    val context = InterpolationContext(node, policyServer, globalPolicyMode, TreeMap[String, Variable](), parameters, 5)
+    val context = ParamInterpolationContext(node, policyServer, globalPolicyMode, parameters, 5)
 
     for {
-      compiled <- compiler.compile(input)
+      compiled <- compiler.compileParam(input)
       bounded  <- compiled(context)
     } yield {
       bounded

@@ -165,7 +165,7 @@ class DataSourceApiImpl (
       val res: Box[Seq[NodeUpdateResult]] = for {
         nodes   <- nodeInfoService.getAllNodes()
         updated <- Control.bestEffort(nodes.values.toSeq) { node =>
-                     erase(cause(node.id), node, DataSourceId(datasourceId))
+                     erase(cause(node.id), node, DataSourceId(datasourceId)).toBox
                    }
       } yield {
         updated
@@ -189,7 +189,7 @@ class DataSourceApiImpl (
                      case None    => Failure(s"Node with ID '${nodeId}' was not found")
                      case Some(x) => Full(x)
                    }
-        updated <- erase(cause, node.node, DataSourceId(datasourceId))
+        updated <- erase(cause, node.node, DataSourceId(datasourceId)).toBox
       } yield {
         updated
       }
@@ -313,21 +313,23 @@ class DataSourceApiImpl (
     }
   }
 
-  private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId) = {
+  private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId)  = {
+    import com.normation.errors._
+    import zio.syntax._
     val newProp = DataSource.nodeProperty(datasourceId.value, "")
     node.properties.find(_.name == newProp.name) match {
-      case None    => Full(NodeUpdateResult.Unchanged(node.id))
+      case None    => NodeUpdateResult.Unchanged(node.id).succeed
       case Some(p) =>
         if(p.provider == newProp.provider) {
           for {
-            newProps     <- CompareProperties.updateProperties(node.properties, Some(Seq(newProp)))
+            newProps     <- CompareProperties.updateProperties(node.properties, Some(newProp :: Nil)).toIO
             newNode      =  node.copy(properties = newProps)
-            nodeUpdated  <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason).toBox ?~! s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'"
+            nodeUpdated  <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason).chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
           } yield {
             NodeUpdateResult.Updated(nodeUpdated.id)
           }
         } else {
-          Failure(s"Can not update property '${newProp.name}' on node '${node.id.value}': this property is not managed by data sources.")
+          Unexpected(s"Can not update property '${newProp.name}' on node '${node.id.value}': this property is not managed by data sources.").fail
         }
     }
   }

@@ -46,7 +46,6 @@ import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie._
 import com.normation.rudder.domain.eventlog._
 import com.normation.rudder.domain.nodes.NodeInfo
-import com.normation.rudder.domain.parameters.Parameter
 import com.normation.utils.StringUuidGenerator
 import doobie._
 import doobie.implicits._
@@ -58,7 +57,7 @@ import com.normation.zio._
 import zio._
 import zio.clock.Clock
 import zio.syntax._
-import com.github.ghik.silencer.silent
+import com.normation.rudder.domain.parameters.GlobalParameter
 import zio.console.Console
 import zio.interop.catz._
 
@@ -66,7 +65,7 @@ import zio.interop.catz._
 final case class PartialNodeUpdate(
     nodes        : Map[NodeId, NodeInfo] //the node to update
   , policyServers: Map[NodeId, NodeInfo] //there policy servers
-  , parameters   : Set[Parameter]
+  , parameters   : Set[GlobalParameter]
 )
 
 trait DataSourceRepository {
@@ -210,13 +209,14 @@ class DataSourceRepoImpl(
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
     datasources.all.flatMap(m => ZIO.foreach(m.toIterable) { case (_, dss) =>
-      if(condition(dss.datasource)) {
+      if (condition(dss.datasource)) {
         action(dss)
       } else {
         DataSourceLoggerPure.debug(s"Skipping data source '${dss.datasource.name}' (${dss.datasource.id.value}): disabled or trigger not configured")
       }
-    }).unit : @silent //suppress "a type was inferred to be `Any`"
+    }).unit
   }
+
   private[this] def updateDataSourceScheduler(clock: Clock, source: DataSource, delay: Option[Duration]): IOResult[Unit] = {
     // create live instance
     val dss = new DataSourceScheduler(
@@ -373,7 +373,7 @@ class DataSourceRepoImpl(
 
     toStart.map(l => ZIO.foreach(l) { case ((period, dss), i) =>
       dss.startWithDelay((i+1).minutes)
-    }): @silent //suppress "a type was inferred to be `Any`"
+    })
   }
 
 }
@@ -438,7 +438,7 @@ class DataSourceJdbcRepository(
         transactIOResult(s"Error when saving datasource '${source.id.value}'")(xa => sql.map(_ => source).transact(xa))
 
       case Some(msg) =>
-        Inconsistancy(s"You can't use the reserved data sources id '${source.id.value}': ${msg}").fail
+        Inconsistency(s"You can't use the reserved data sources id '${source.id.value}': ${msg}").fail
     }
   }
 

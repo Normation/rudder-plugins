@@ -336,6 +336,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       })
     }
 
+
     // NodeInfoService
     def getAll() = synchronized(Full(nodes))
     def getNumberOfManagedNodes: Int = nodes.size - 1
@@ -348,6 +349,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
+
+    override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
+
+    override def deleteNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
 
     def updateNodeKeyInfo(nodeId: NodeId, agentKey: Option[SecurityToken], agentKeyStatus: Option[KeyStatus], modId: ModificationId, actor:EventActor, reason:Option[String])                   = throw new IllegalAccessException("Thou shall not used that method here")
   }
@@ -806,8 +811,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       //set a value for all propName if asked
       val modId = ModificationId("set-test-404")
       nodes.values.foreach { node =>
-
-        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse(""), None)))).openOrThrowException("test must be able to set prop")
+        import com.normation.box.EitherToBox
+        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse(""), None)))).toBox.openOrThrowException("test must be able to set prop")
         val up = node.node.copy(properties = newProps)
         infos.updateNode(up, modId, actor, None).runNow
       }

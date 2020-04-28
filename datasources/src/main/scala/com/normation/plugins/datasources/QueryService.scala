@@ -41,13 +41,13 @@ import cats.data.NonEmptyList
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.rudder.domain.nodes.NodeInfo
-import com.normation.rudder.domain.parameters.Parameter
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.errors._
+import com.normation.rudder.domain.parameters.GlobalParameter
 import zio._
 import zio.clock.Clock
 import zio.syntax._
@@ -163,12 +163,12 @@ class HttpQueryDataSourceService(
     , nodeInfo        : NodeInfo
     , policyServers   : Map[NodeId, NodeInfo]
     , globalPolicyMode: GlobalPolicyMode
-    , parameters      : Set[Parameter]
+    , parameters      : Set[GlobalParameter]
     , cause           : UpdateCause
   ): IOResult[NodeUpdateResult] = {
     (for {
       policyServer <- (policyServers.get(nodeInfo.policyServerId) match {
-                        case None    => Inconsistancy(s"PolicyServer with ID '${nodeInfo.policyServerId.value}' was not found for node '${nodeInfo.hostname}' ('${nodeInfo.id.value}'). Abort.").fail
+                        case None    => Inconsistency(s"PolicyServer with ID '${nodeInfo.policyServerId.value}' was not found for node '${nodeInfo.hostname}' ('${nodeInfo.id.value}'). Abort.").fail
                         case Some(p) => p.succeed
                       })
                       //connection timeout: 5s ; getdata timeout: freq ?
@@ -183,7 +183,7 @@ class HttpQueryDataSourceService(
                             case Some(value) if(value == property.value) => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
                             case _                                       =>
                               for {
-                                newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(Seq(property))).toIO
+                                newProps     <- CompareProperties.updateProperties(nodeInfo.properties, Some(property :: Nil)).toIO
                                 newNode      =  nodeInfo.node.copy(properties = newProps)
                                 nodeUpdated  <- nodeRepository.updateNode(newNode, cause.modId, cause.actor, cause.reason).chainError(
                                                   s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
@@ -207,7 +207,7 @@ class HttpQueryDataSourceService(
     , onUpdatedHook   : (Set[NodeId], UpdateCause) => IOResult[Unit]
   ): IOResult[Set[NodeUpdateResult]] = {
 
-    def tasks(nodes: Map[NodeId, NodeInfo], policyServers: Map[NodeId, NodeInfo], globalPolicyMode: GlobalPolicyMode, parameters: Set[Parameter]): IOResult[List[Either[RudderError, NodeUpdateResult]]] = {
+    def tasks(nodes: Map[NodeId, NodeInfo], policyServers: Map[NodeId, NodeInfo], globalPolicyMode: GlobalPolicyMode, parameters: Set[GlobalParameter]): IOResult[List[Either[RudderError, NodeUpdateResult]]] = {
 
       /*
        * Here, we are executing all the task (one by node) in parallel. We want to limit the number of
@@ -253,7 +253,7 @@ class HttpQueryDataSourceService(
     for {
       nodes         <- nodeInfo.getAll().toIO
       policyServers  = nodes.filter { case (_, n) => n.isPolicyServer }
-      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
+      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet )
       updated       <- querySubsetByNode(datasourceId, datasource, globalPolicyMode, PartialNodeUpdate(nodes, policyServers, parameters), cause, onUpdatedHook)
     } yield {
       updated
@@ -266,7 +266,7 @@ class HttpQueryDataSourceService(
       allNodes      <- nodeInfo.getAll().toIO
       node          <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
       policyServers =  allNodes.filter( _._1 == node.policyServerId)
-      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet[Parameter] )
+      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet )
       updated       <- buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause)
                          .timeout(datasource.requestTimeOut).provide(clock).notOptional(s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'")
                        //post update hooks
