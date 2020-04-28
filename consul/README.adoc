@@ -28,17 +28,7 @@ your needs. The Rudder server does not need to access the Consul server to get k
 
 * You're supposed to already have your Consul environment configured, with differents keys-values that can be: Indexed objects, configuration parameters or metadata.
 
-* You must download and install the plugin from the repository with the rudder-pkg tool on your Rudder server.
-
-....
-rudder package install-file <path to the rpkg>
-....
-
-Or if you have an active subscription: 
-
-....
-rudder package install rudder-plugin-consul
-....
+* Install the plugin on your Rudder server
 
 * Once the plugin is installed, you need to edit the configuration file in `/var/rudder/plugin-resources/consul.json` on each agent.
 This config file must contain the address of your Consul server and the optional token parameter in case your Consul server is configured with one.

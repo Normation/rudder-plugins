@@ -14,17 +14,6 @@ OpenSCAP is an ecosystem that provides several tools to assist admnistrators and
 
 The plugin aims to upload automatically the openSCAP auditing results to the Rudder Server, and, if you have the `external-reports-plugin`, to integrate these reports directly in the Rudder node webpage.
 
-== Installation
-
-As most of the Rudder plugins, you must install the plugin with the rudder-pkg tool on your Server Rudder.
-
-....
-/opt/rudder/bin/rudder-pkg install-file <path to the rpkg>
-....
-
-This will *add one Rudder technique to your Rudder Server*.
-
-
 === Usage
 
 In order to use the technique provided and get reports from your nodes, you will need to decline it in different directives following your requirements.

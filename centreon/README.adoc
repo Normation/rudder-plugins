@@ -34,6 +34,8 @@ not required to be running on the same host as the Rudder server.
 However, this plugin has to be installed and running on the Rudder
 server.
 
+* Install the Centreon plugin on your Rudder server.
+
 * Edit the configuration file `/opt/rudder/etc/centreon.conf`. This config
 file has to contain your Centreon server’s webservice API URL, the
 credentials to access it, and the name of the Centreon poller used to

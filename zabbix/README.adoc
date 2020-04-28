@@ -27,11 +27,7 @@ when the corresponding node is set up for monitoring in Rudder.
 
 == Installation
 
-* Install the package on the Rudder server:
-
-----
-/opt/rudder/bin/rudder-pkg install-file <plugin>.rpkg
-----
+* Install the plugin on your Rudder server
 
 * Edit the configuration file `/opt/rudder/etc/zabbix.conf`. This config file has to contain your Zabbix
   server's webservice API URL and the credentials to access it.
