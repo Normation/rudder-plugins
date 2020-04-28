@@ -1,6 +1,5 @@
 package com.normation.plugins.scaleoutrelay
 
-import com.github.ghik.silencer.silent
 import com.normation.NamedZioLogger
 import com.normation.cfclerk.domain.TechniqueVersion
 import com.normation.errors._
@@ -133,12 +132,10 @@ class ScaleOutRelayService(
              .chainError(s"Demote relay failed : removing active technique '${activeTechniqueIdCommon.value}' failed")
 
     // Rules deletion return an error if there is no such ID
-    @silent("a type was inferred to be `Any`")
     val f = woRuleRepository.deleteSystemRule(ruleSetup, modId, actor, reason) catchAll {
       err =>
         logger.info(s"Trying to remove residual object Rule ${ruleSetup.value} : ${err.fullMsg}")
     }
-    @silent("a type was inferred to be `Any`")
     val g = woRuleRepository.deleteSystemRule(ruleDistribPolicy, modId, actor, reason) catchAll {
       err =>
         logger.info(s"Trying to remove residual object Rule ${ruleDistribPolicy.value} : ${err.fullMsg}")
@@ -177,6 +174,7 @@ class ScaleOutRelayService(
         NodeGroupId(s"hasPolicyServer-${uuid.value}")
       , s"All classic Nodes managed by ${uuid.value} policy server"
       , s"All classic Nodes known by Rudder directly connected to the ${uuid.value} server. This group exists only as internal purpose and should not be used to configure Nodes."
+      , Nil
       , Some(
           Query(
               NodeAndPolicyServerReturnType
