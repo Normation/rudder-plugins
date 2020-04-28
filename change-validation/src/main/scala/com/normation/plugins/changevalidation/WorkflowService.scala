@@ -256,7 +256,7 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
 
-  def getAllChangeRequestsStep : Box[Map[ChangeRequestId,WorkflowNodeId]] = {
+  def getAllChangeRequestsStep() : Box[Map[ChangeRequestId,WorkflowNodeId]] = {
     roWorkflowRepo.getAllChangeRequestsState
   }
 

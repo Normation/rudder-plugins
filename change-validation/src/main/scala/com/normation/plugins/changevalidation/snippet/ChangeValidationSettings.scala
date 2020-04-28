@@ -193,7 +193,7 @@ class ChangeValidationSettings extends DispatchSnippet {
       } &
 
       "#workflowSubmit " #> {
-         SHtml.ajaxSubmit("Save change", submit _ , ("class","btn btn-default"))
+         SHtml.ajaxSubmit("Save change", () => submit, ("class","btn btn-default"))
       }
     ) apply (finalXml)
   }
