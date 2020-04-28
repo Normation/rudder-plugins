@@ -139,7 +139,7 @@ class CreateNodeApiImpl(
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
-        enabled <- if(status.isEnabled()) UIO.unit else Inconsistancy(s"The plugin for that API is disable. Please check installation and licence information.").fail
+        enabled <- if(status.isEnabled()) UIO.unit else Inconsistency(s"The plugin for that API is disable. Please check installation and licence information.").fail
         json    <- (req.json ?~! "This API only Accept JSON request").toIO
         nodes   <- Serialize.parseAll(json)
       } yield {
@@ -210,7 +210,7 @@ class CreateNodeApiImpl(
           case None => // ok, it doesn't exists
             UIO.unit
           case Some(s) => // oups, already present
-            Inconsistancy(s"A node with id '${nodeId.value}' already exists with status '${s.name}'").fail
+            Inconsistency(s"A node with id '${nodeId.value}' already exists with status '${s.name}'").fail
         }
       }
 
