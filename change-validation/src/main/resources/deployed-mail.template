@@ -1,0 +1,7 @@
+<h2>CR #{{id}}: {{name}}</h2>
+<h3>Deployed</h3>
+<ul>
+  <li>Author: {{author}}</li>
+  <li>Description: {{description}}</li>
+</ul>
+<a href="{{link}}">Click here to see deployed Change request</a></li>

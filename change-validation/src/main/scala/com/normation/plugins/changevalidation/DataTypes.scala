@@ -37,6 +37,7 @@
 
 package com.normation.plugins.changevalidation
 
+import com.normation.NamedZioLogger
 import com.normation.rudder.domain.policies.FullRuleTargetInfo
 import com.normation.rudder.domain.policies.RuleTarget
 import com.normation.rudder.domain.policies.SimpleTarget
@@ -65,6 +66,16 @@ object ChangeValidationLogger extends Logger {
     override protected def _logger = LoggerFactory.getLogger("change-validation.metrics")
   }
 }
+
+object ChangeValidationLoggerPure extends NamedZioLogger {
+
+  override val loggerName: String = "change-validation"
+
+  object Metrics extends NamedZioLogger {
+    override def loggerName: String = "change-validation.metrics"
+  }
+}
+
 
 /*
  * What is a group in the API ?
