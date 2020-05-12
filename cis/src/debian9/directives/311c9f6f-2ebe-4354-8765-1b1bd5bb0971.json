@@ -1,0 +1,43 @@
+{
+  "displayName": "CIS - Ensure SELinux policy is configured (status)",
+  "enabled": true,
+  "id": "311c9f6f-2ebe-4354-8765-1b1bd5bb0971",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "sestatus"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "Policy from config file: (default|mls)"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Execute_command",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure lockout for failed password attempts is configured",
+  "enabled": true,
+  "id": "3db32dc8-104f-44bf-8ef9-89a6f8cfd3ea",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "586D5935-1730-4266-9D07-9A380D822400",
+                  "value": "^.*pam_tally2.*$"
+                }
+              },
+              {
+                "var": {
+                  "name": "7A0460B3-3BAF-4A29-A810-CEDD41F34188",
+                  "value": "/etc/pam.d/common-auth"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Check_if_pattern_match_content",
+  "techniqueVersion": "1.0"
+}

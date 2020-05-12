@@ -1,0 +1,43 @@
+{
+  "displayName": "CIS - Ensure root is the only UID 0 account",
+  "enabled": true,
+  "id": "3a1eef08-3b53-400c-ae04-0b7c0eb81132",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "/bin/false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "cat /etc/passwd | awk -F: '($3 == 0) { print $1 }'"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "root"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Execute_command",
+  "techniqueVersion": "1.0"
+}

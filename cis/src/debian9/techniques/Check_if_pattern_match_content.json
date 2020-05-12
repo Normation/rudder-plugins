@@ -1,0 +1,67 @@
+{
+  "data": {
+    "bundle_args": [
+      "regex",
+      "path"
+    ],
+    "bundle_name": "CIS_debian9___Check_if_pattern_match_content",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "args": [
+          "skip_item_${report_data.directive_id}",
+          "node.properties[skip][${report_data.directive_id}]"
+        ],
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence"
+      },
+      {
+        "args": [
+          "regex",
+          "item",
+          "${regex}",
+          ","
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "Variable iterator",
+        "method_name": "variable_iterator"
+      },
+      {
+        "args": [
+          "${path}",
+          "${regex.item}"
+        ],
+        "class_context": "any.(skip_item_${report_data.directive_id}_false)",
+        "component": "File line check present",
+        "method_name": "file_line_check_present"
+      }
+    ],
+    "name": "Check if pattern match content",
+    "parameter": [
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "586d5935-1730-4266-9d07-9a380d822400",
+        "name": "regex"
+      },
+      {
+        "constraints": {
+          "allow_empty_string": false,
+          "allow_whitespace_string": false,
+          "max_length": 16384
+        },
+        "id": "7a0460b3-3baf-4a29-a810-cedd41f34188",
+        "name": "path"
+      }
+    ],
+    "version": "1.0"
+  },
+  "tags": [],
+  "type": "ncf_technique",
+  "version": "1"
+}

@@ -1,0 +1,43 @@
+{
+  "displayName": "CIS - Ensure rsyslog or syslog-ng is installed",
+  "enabled": true,
+  "id": "69af0238-67de-43f5-9320-199d69717cc8",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "2310A2DF-17BB-4C43-BCB0-C4E30911075C",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "rsyslog"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

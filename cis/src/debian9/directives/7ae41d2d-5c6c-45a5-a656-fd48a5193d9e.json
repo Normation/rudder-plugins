@@ -1,0 +1,48 @@
+{
+  "displayName": "CIS - Ensure permissions on SSH public host key files are configured (ssh_host_ed25519_key.pub)",
+  "enabled": true,
+  "id": "7ae41d2d-5c6c-45a5-a656-fd48a5193d9e",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "586D5935-1730-4266-9D07-9A380D822400",
+                  "value": "/etc/ssh/ssh_host_ed25519_key.pub"
+                }
+              },
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "644"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "root"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "root"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Set_permissions",
+  "techniqueVersion": "1.0"
+}

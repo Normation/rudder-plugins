@@ -1,0 +1,37 @@
+{
+  "displayName": "CIS - Ensure bootloader password is set",
+  "enabled": true,
+  "id": "8149a32b-2136-4c1d-b545-3f68c112e2c6",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "586D5935-1730-4266-9D07-9A380D822400",
+                  "value": "^set superusers,^password"
+                }
+              },
+              {
+                "var": {
+                  "name": "7A0460B3-3BAF-4A29-A810-CEDD41F34188",
+                  "value": "/boot/grub/grub.cfg"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "policyMode": "audit",
+  "shortDescription": "",
+  "tags": [],
+  "techniqueName": "CIS_debian9___Check_if_pattern_match_content",
+  "techniqueVersion": "1.0"
+}
