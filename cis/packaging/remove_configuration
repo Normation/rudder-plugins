@@ -42,6 +42,7 @@ import os, sys
 import requests
 # Hack to import rudder lib, remove, some day ...
 sys.path.insert(0, "/opt/rudder/share/python")
+sys.path.insert(0, "/opt/rudder/bin")
 import rudder_synchronize as rudder_synchro
 import subprocess
 import docopt

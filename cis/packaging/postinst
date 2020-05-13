@@ -4,7 +4,7 @@ CATEGORY="{category}"
 C_CATEGORY=$(echo $CATEGORY | sed "s/[^a-zA-Z0-9_]/_/g")
 FOLDERS="ncf/30_generic_methods/cis techniques/${C_CATEGORY}"
 CONFIGURATION_PATH="/var/rudder/packages/rudder-plugin-{plugin-id}"
-SOURCE_DIR="${CONFIGURATION_PATH}/techniques"
+RUDDER_BIN="/opt/rudder/bin"
 
 mkdir -p $CONFIG_REPO/techniques/$C_CATEGORY
 
@@ -31,10 +31,10 @@ git commit -m "CIS plugin installation"
 
 
 # Import Techniques
-${CONFIGURATION_PATH}/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques
+${RUDDER_BIN}/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques
 
 # Import Directives
-${CONFIGURATION_PATH}/rudder_synchronize.py import directive ${CONFIGURATION_PATH}/directives
+${RUDDER_BIN}/rudder_synchronize.py import directive ${CONFIGURATION_PATH}/directives
 
 # Import Rules
-${CONFIGURATION_PATH}/rudder_synchronize.py import rule ${CONFIGURATION_PATH}/rules
+${RUDDER_BIN}/rudder_synchronize.py import rule ${CONFIGURATION_PATH}/rules

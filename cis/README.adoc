@@ -159,7 +159,7 @@ cis-workstation: 2
 * Export them by running:
 +
 ....
-/var/rudder/packages/rudder-plugin-cis/rudder-synchronize export rule <rule-id> <destination-file>
+/opt/rudder/bin/rudder_synchronize export rule <rule-id> <destination-file>
 ....
 * And add the content of `<destination-file>/directives` and `<destination-file>/rules` to the plugin
 repo under the `configuration` directory.
