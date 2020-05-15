@@ -19,10 +19,8 @@ WARNING: The plugin brings a sizable number of directives (>100) and may obfusca
 *The directives set is not meant to be used in `Enforce mode` without manual customization* of the provided
 configurations. Without any changes, it will most likely break your system.
 
-*Currently, the plugin is still in a Beta version* and only support parts of the `RedHat7` benchmarks. It is still in active development
+*Currently, the plugin is still in a Beta version* and only support parts of the `RedHat7` and `Debian9` benchmarks. It is still in active development
 and may not behave as you expect. Check the <<Troubleshootings, troubleshooting section below>>.
-
-*You can still try to make it works for other benchmarks, see <<Build, below>>*.
 
 image::docs/images/cis.png[]
 
@@ -33,7 +31,7 @@ This plugin needs the package `rudder-api-client` and `python3-requests` to be i
 
 == Usage
 
-The plugin provides one rule per supported/builded benchmark to help you audit them with Rudder.
+The plugin provides one rule to help you audit the target benchmark with Rudder.
 *We recommend to not modify the rules provided by the plugin* and to apply them to your audit wanted groups of nodes. For most commons cases, skipping items on a per node basis as described below should be enough to adapt the rule set to your needs and will make eventual plugin upgrade much more easier.
 
 == Installation
@@ -43,13 +41,7 @@ Installing the plugin will install a set of Techniques, Directives and Rules to 
 == Uninstallation
 
 When removing the plugin, you will be asked for each Rule/Directive/Technique if you want to remove it.
-Except if you did customize the Techniques or Directives distributed with the plugin, we strongly recommend to always wipe all the content distributed with it when asked for.
-
-== Upgrade
-
-Since the plugin provides a lot of different Rudder objects which you may want to modify, the upgrade process needs to be kept as simple as possible.
-
-Currently, an upgrade is litteraly a remove followed by an install. It means that if you make changes on the provided configuration, you will need to skip the remove part of the modified directives and techniques if you do not want them to be replaced at upgrade.
+Except if you did customize the Techniques or Directives distributed with the plugin, we recommend to always wipe all the content distributed with it when asked for.
 
 == How it works
 
@@ -69,7 +61,7 @@ This items is declined in two directives, called: "CIS - Ensure suspicious packe
 "cis-workstation" : "1"                #Based on the benchmark level for workstation
 }
 ....
-* Each directive is based on techniques written from the `Technique Editor`, this will let you modify it easily if needed.
+* Each directive is based on techniques written from the `Technique Editor`, this will let you modify them easily if needed.
 
 == Test a subset of the benchmark
 
@@ -113,35 +105,6 @@ RateLimitInterval=0
 RateLimitBurst=0
 ....
 
-[#Build]
-== Build for others benchmarks
-
-The plugin build is based on pdfs benchmark parsing. Each items parsed from the pdfs will be tested by regex matching on their name with a directive bank put in the configuration folder.
-
-If an item name matches with a directive name, it will tagg the directive based on the pdfs, edit its description and add it to the distributed configuration.
-
-*There is no proper check on what the directive is doing, we assume they were written by users and should be generic enough to support multiple benchmarks if the items name are identical.*
-
-To generate a plugin providing rules for one or more non supported benchmarks, deposit the associated pdfs in the `pdfs` folder with the folowing naming convention:
-
-....
-cis_<benchmark_short_name>.pdf
-....
-
-A modification in the Makefile (to remove the private download of the pdfs, made on our side) and in the "targets" variable defined in the tools/cis-tag will be necessary
-to build it at your convenience.
-
-This will generate rules named: `CIS - <benchmark_short_name> sample rule`.
-Each directives used in the different rules will then be tagged as follow:
-
-....
-# Ex with item 1.1.22 of the redhat7 benchmark
-cis-redhat7: 1, 1.1, 1.1.22
-cis-server: 1
-cis-workstation: 2
-....
-
-
 == Extend, improve the directives
 
 * Install the plugin
@@ -149,10 +112,9 @@ cis-workstation: 2
 * Export them by running:
 +
 ....
-/var/rudder/packages/rudder-plugin-cis/rudder-synchronize export rule <rule-id> <destination-file>
+/opt/rudder/bin/rudder_synchronize export rule <rule-id> <destination-file>
 ....
-* And add the content of `<destination-file>/directives` and `<destination-file>/rules` to the plugin
-repo under the `configuration` directory.
+* And add the content of `<destination-file>/directives` and `<destination-file>/rules` to the plugin repo under the `src` folder.
 * You may need to run a build and a clean to normalize the newly added jsons.
 
 [#Skip_directive]
