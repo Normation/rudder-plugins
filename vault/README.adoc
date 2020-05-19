@@ -25,18 +25,7 @@ For security purpose, the Rudder server itself does not need to have access to t
 
 * You're supposed to already have your Vault server installed and configured, also configured with secrets that can be any of the following types: SSL certificates and keys for your organization's domain, credentials to connect to a corporate database server.
 
-* You must download and install the plugin from the repository with the rudder-pkg tool on your Server Rudder. 
-
-....
-rudder package install-file <path to the rpkg>
-....
-
-Or if you have an active subscription : 
-
-....
-rudder package install rudder-plugin-vault
-....
-
+* Install the plugin on your Rudder server 
 
 * Edit the configuration file in `/var/rudder/plugin-resources/vault.json` on each agent.
 This config file must contain the address of your Vault server, credentials to access it based on the auth mode you want to use. 

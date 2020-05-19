@@ -38,22 +38,12 @@ The plugin provides one rule per supported/builded benchmark to help you audit t
 
 == Installation
 
-As most of the Rudder plugins, you must install the plugin with the rudder-pkg tool on your Server Rudder.
-
-....
-/opt/rudder/bin/rudder-pkg install-file <path to the rpkg>
-....
-
-This will install a set of Techniques, Directives and Rules to your Rudder Server. All of them are tracked by the plugin and can be removed at any time by removing the plugin from the Server.
+Installing the plugin will install a set of Techniques, Directives and Rules to your Rudder Server. All of them are tracked by the plugin and can be removed at any time by removing the plugin from the Server.
 
 == Uninstallation
 
 When removing the plugin, you will be asked for each Rule/Directive/Technique if you want to remove it.
 Except if you did customize the Techniques or Directives distributed with the plugin, we strongly recommend to always wipe all the content distributed with it when asked for.
-
-....
-/opt/rudder/bin/rudder-pkg remove rudder-plugin-cis
-....
 
 == Upgrade
 
