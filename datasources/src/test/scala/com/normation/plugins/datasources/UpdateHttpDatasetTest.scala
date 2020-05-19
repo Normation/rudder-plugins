@@ -51,7 +51,6 @@ import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeProperty
-import com.normation.rudder.domain.parameters.ParameterName
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
@@ -311,7 +310,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   val parameterRepo = new RoParameterRepository() {
     def getAllGlobalParameters() = Seq().succeed
     def getAllOverridable() = Seq().succeed
-    def getGlobalParameter(parameterName: ParameterName) = None.succeed
+    def getGlobalParameter(parameterName: String) = None.succeed
   }
 
   class TestNodeRepoInfo(initNodeInfo: Map[NodeId, NodeInfo]) extends WoNodeRepository with NodeInfoService {

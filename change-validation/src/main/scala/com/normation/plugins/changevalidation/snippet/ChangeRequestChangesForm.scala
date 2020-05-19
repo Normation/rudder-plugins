@@ -205,12 +205,12 @@ class ChangeRequestChangesForm(
     override val attrs = List(("data-jstree" -> """{ "type" : "changeType" }"""),("id" -> { "groups"}))
   }
 
-  def globalParameterChild(paramName:ParameterName) = new JsTreeNode{
+  def globalParameterChild(paramName:String) = new JsTreeNode{
     val changes = changeRequest.globalParams(paramName).changes
-    val parameterName = changes.initialState.map(_.name.value).getOrElse(changes.firstChange.diff match{
-           case a :AddGlobalParameterDiff => a.parameter.name.value
-           case d :DeleteGlobalParameterDiff => d.parameter.name.value
-           case modTo : ModifyToGlobalParameterDiff => modTo.parameter.name.value
+    val parameterName = changes.initialState.map(_.name).getOrElse(changes.firstChange.diff match{
+           case a :AddGlobalParameterDiff => a.parameter.name
+           case d :DeleteGlobalParameterDiff => d.parameter.name
+           case modTo : ModifyToGlobalParameterDiff => modTo.parameter.name
     } )
     val body = SHtml.a(
         () => SetHtml("history",displayHistory(rootRuleCategory, Nil, Nil, Nil, List(changes)))
@@ -628,7 +628,7 @@ class ChangeRequestChangesForm(
                 case Some(initialParameter) =>
                   val diff = diffService.diffGlobalParameter(initialParameter, param)
                  displayGlobalParameterDiff(diff,param)
-                case None =>  val msg = s"Could not display diff for ${param.name.value}"
+                case None =>  val msg = s"Could not display diff for ${param.name}"
                 logger.error(msg)
                 <div>msg</div>
                }
@@ -652,7 +652,7 @@ class ChangeRequestChangesForm(
 
   private[this] def displayGlobalParameter(param: GlobalParameter) = (
       "#paramName" #> createGlobalParameterLink(param.name) &
-      "#name" #> param.name.value &
+      "#name" #> param.name &
       "#value" #> net.liftweb.json.prettyRender(param.value) &
       "#description" #> param.description
   )(globalParameterXML)
@@ -662,7 +662,7 @@ class ChangeRequestChangesForm(
       , param         : GlobalParameter
   ) = {
     ( "#paramName" #> createGlobalParameterLink(param.name) &
-      "#name" #> param.name.value &
+      "#name" #> param.name &
       "#value" #> displaySimpleDiff(diff.modValue,"value",Text(net.liftweb.json.prettyRender(param.value))) &
       "#description" #> displaySimpleDiff(diff.modDescription,"description",Text(param.description))
     ) (globalParameterXML)
@@ -746,9 +746,9 @@ class ChangeRequestChangesForm(
 
   def displayGlobalParameterChange(globalParameterChange: GlobalParameterChange) = {
     val action = globalParameterChange.firstChange.diff match {
-           case a : AddGlobalParameterDiff => Text(s"Create Global Parameter ${a.parameter.name.value}")
-           case d : DeleteGlobalParameterDiff => <span>Delete Global Parameter <a href={baseGlobalParameterLink(d.parameter.name)} onclick="noBubble(event);">{d.parameter.name.value}</a></span>
-           case m : ModifyToGlobalParameterDiff => <span>Modify Global Parameter <a href={baseGlobalParameterLink(m.parameter.name)} onclick="noBubble(event);">{m.parameter.name.value}</a></span>
+           case a : AddGlobalParameterDiff => Text(s"Create Global Parameter ${a.parameter.name}")
+           case d : DeleteGlobalParameterDiff => <span>Delete Global Parameter <a href={baseGlobalParameterLink(d.parameter.name)} onclick="noBubble(event);">{d.parameter.name}</a></span>
+           case m : ModifyToGlobalParameterDiff => <span>Modify Global Parameter <a href={baseGlobalParameterLink(m.parameter.name)} onclick="noBubble(event);">{m.parameter.name}</a></span>
          }
    displayEvent(action,globalParameterChange.firstChange.actor,globalParameterChange.firstChange.creationDate, globalParameterChange.firstChange.reason.getOrElse(""))
   }
