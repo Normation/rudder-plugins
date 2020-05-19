@@ -47,7 +47,10 @@ A permission is composed of a type and a level:
 * Type:  Indicates what kind of data will be displayed and/or can be set/updated by the user
 ** *configuration*, *rule*, *directive*, *technique*, *node*, *group*, *administration*, *deployment*.
 * Level: Access level to be granted on the related type
-** *read*, *write*, *edit*, *all* (Can read, write, and edit)
+** *read* to read given items
+** *write* can create/delete items
+** *edit* can modify existing items
+** *all*
 
 Depending on that value(s) you give, the user will have access to different pages and action in Rudder.
 
