@@ -10,13 +10,18 @@ See repository main README for information about licensing, contribution, and ot
 [OpenSCAP-plugin]
 = OpenSCAP
 
-OpenSCAP is an ecosystem that provides several tools to assist admnistrators and auditors with assessment, measurement, and enforcement of security baselines. It allows the use of different profiles aligned with different standards such as PCI-DSS.
+OpenSCAP is an ecosystem that provides several tools to assist administrators and auditors with assessment, measurement, and enforcement of security baselines. It allows the use of different profiles aligned with different standards such as PCI-DSS.
 
-The plugin aims to upload automatically the openSCAP auditing results to the Rudder Server, and, if you have the `external-reports-plugin`, to integrate these reports directly in the Rudder node webpage.
+The plugin provides a Technique to execute the OpenSCAP tool at regular interval, centralize the generated report on the Rudder Server, and show the report in a new tab in the Node details for all Nodes having the OpenSCAP Technique.
 
-=== Usage
+== Installation
 
-In order to use the technique provided and get reports from your nodes, you will need to decline it in different directives following your requirements.
+* Your Rudder server must have python-requests and rudder-api-client installed
+* Install the plugin on the Rudder Server with `rudder package`
+
+== Usage
+
+In order to use the Technique provided and get reports from your nodes, you will need to decline it in different directives following your requirements.
 
 The technique comes with two parameters:
 
@@ -40,9 +45,9 @@ The technique will take care of the openSCAP agent installation and will by defa
 
 == Rudder Webapp integration
 
-A new tab in Node Details called OpenScap is added by this plugin. If the node already sent its OpenScap report, it is
-available, in an iframe in this tab, in a sanitized version (no scripts)
+A new tab in Node Details called OpenSCAP is added by this plugin for nodes configured to have the OpenSCAP Technique running. It displays the report in an iframe in this tab, in a sanitized version (no scripts)
 
 Two news API endpoints are also available:
-*  /latest/openscap/report/{nodeId}    : the OpenScap report
-*  /latest/openscap/sanitized/{nodeId} : the OpenScap report as displayed in the web interface (sanitized)
+
+* /latest/openscap/report/{nodeId}    : the OpenSCAP report
+* /latest/openscap/sanitized/{nodeId} : the OpenSCAP report as displayed in the web interface (sanitized)
