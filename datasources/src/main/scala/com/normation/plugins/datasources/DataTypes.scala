@@ -40,12 +40,11 @@ package com.normation.plugins.datasources
 import com.normation.NamedZioLogger
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeProperty
-import com.normation.rudder.domain.nodes.NodePropertyProvider
+import com.normation.rudder.domain.nodes.PropertyProvider
 import net.liftweb.common.Logger
 import net.liftweb.json.JsonAST.JValue
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-
 import zio.duration._
 
 /**
@@ -69,7 +68,7 @@ object DataSourceLoggerPure extends NamedZioLogger {
 final object DataSource {
   val defaultDuration = 5.minutes
 
-  val providerName = NodePropertyProvider("datasources")
+  val providerName = PropertyProvider("datasources")
 
   /*
    * Name used in both datasource id and "reload" place in

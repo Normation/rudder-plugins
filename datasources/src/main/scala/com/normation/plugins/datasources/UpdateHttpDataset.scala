@@ -208,7 +208,7 @@ object QueryHttp {
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
   def compileParameters(parameter: GlobalParameter): PureResult[(String, ParamInterpolationContext => PureResult[String])] = {
-    compiler.compileParam(GenericPropertyUtils.serializeValue(parameter.value)).map(v => (parameter.name.value, v))
+    compiler.compileParam(GenericPropertyUtils.serializeValue(parameter.value)).map(v => (parameter.name, v))
   }
 
   def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[String, ParamInterpolationContext => PureResult[String]])(input: String): PureResult[String] = {

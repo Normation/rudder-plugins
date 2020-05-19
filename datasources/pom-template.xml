@@ -43,13 +43,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- it seems to not be resolved, don't know why -->
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_${scala-binary-version}</artifactId>
-      <version>${scala-parser-combinators-version}</version>
-    </dependency>
-
     <!-- Test: rudder -->
     <dependency>
       <groupId>com.normation.rudder</groupId>
