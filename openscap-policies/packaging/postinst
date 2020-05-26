@@ -34,7 +34,7 @@ git commit -m "$CATEGORY installation"
 /opt/rudder/bin/rudder-fix-repository-permissions
 
 # Make extra scripts executables
-chmod +x $CONFIGURATION_PATH/rudder_synchronize.py $CONFIGURATION_PATH/remove_configuration
+chmod +x $CONFIGURATION_PATH/remove_configuration
 
 # Import Techniques
-${CONFIGURATION_PATH}/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques
+/opt/rudder/bin/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques
