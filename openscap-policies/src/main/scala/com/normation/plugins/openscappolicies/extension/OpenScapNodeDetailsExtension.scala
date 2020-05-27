@@ -67,9 +67,8 @@ class OpenScapNodeDetailsExtension(
                     {content}
                 </div>
                 )
-            } &
-              "#node_logs" #> <div>test</div>
-            ) (xml)
+            }
+            ).apply(xml)
       }
     }
 
