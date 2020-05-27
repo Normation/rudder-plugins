@@ -47,7 +47,7 @@ elif [ "${RELAY_UUID}" = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeee" ]; then
 	exit 1
 fi
 
-echo "Rudder relay installation script starting, using UUID ${RELAY_UUID}.\n"
+echo "Rudder relay installation script starting, using UUID ${RELAY_UUID}."
 
 # Scale-out-relay API call (must have the plugin installed)
 API_URL="https://127.0.0.1/rudder/api/latest/scaleoutrelay/promote/${RELAY_UUID}"
@@ -77,6 +77,6 @@ else
 	${DOWNLOAD_COMMAND} -k "https://localhost/rudder/api/deploy/reload"
 	echo " Done."
 
-	echo "\nSuccess: all steps completed successfully."
+	echo "Success: all steps completed successfully."
 	exit 0
 fi
