@@ -6,6 +6,8 @@ import com.normation.errors._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
+import com.normation.rudder.batch.AsyncDeploymentActor
+import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupCategoryId
 import com.normation.rudder.domain.nodes.NodeGroupId
@@ -25,8 +27,6 @@ import com.softwaremill.quicklens._
 import zio.ZIO
 import zio.syntax._
 
-
-
 class ScaleOutRelayService(
     nodeInfosService              : NodeInfoService
   , woLDAPNodeGroupRepository     : WoNodeGroupRepository
@@ -36,6 +36,7 @@ class ScaleOutRelayService(
   , uuidGen                       : StringUuidGenerator
   , policyServerManagementService : PolicyServerManagementService
   , actionLogger                  : EventLogRepository
+  , asyncDeploymentAgent          : AsyncDeploymentActor
 ) {
   val SYSTEM_GROUPS = "SystemGroups"
   val DISTRIBUTE_POLICY = "distributePolicy"
@@ -60,6 +61,7 @@ class ScaleOutRelayService(
                       nodeInfos.succeed
                     }
     } yield {
+      asyncDeploymentAgent ! AutomaticStartDeployment(modId, actor)
       targetedNode
     }
   }
