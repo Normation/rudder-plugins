@@ -41,8 +41,8 @@ import com.normation.NamedZioLogger
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.PropertyProvider
+import com.typesafe.config.ConfigValue
 import net.liftweb.common.Logger
-import net.liftweb.json.JsonAST.JValue
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import zio.duration._
@@ -82,8 +82,7 @@ final object DataSource {
   /**
    * A node property with the correct DataSource metadata
    */
-  def nodeProperty(name: String, value: JValue) = NodeProperty(name, value, Some(providerName))
-  def nodeProperty(name: String, value: String) = NodeProperty(name, value, Some(providerName))
+  def nodeProperty(name: String, value: ConfigValue) = NodeProperty(name, value, Some(providerName))
 }
 
 sealed trait DataSourceType {
@@ -163,7 +162,7 @@ final object MissingNodeBehavior {
   final case object Delete                      extends MissingNodeBehavior { val name = "delete"       }
   final case object NoChange                    extends MissingNodeBehavior { val name = "noChange"     }
   final object DefaultValue { val name = "defaultValue" }
-  final case class  DefaultValue(value: JValue) extends MissingNodeBehavior { val name = DefaultValue.name }
+  final case class  DefaultValue(value: ConfigValue) extends MissingNodeBehavior { val name = DefaultValue.name }
 }
 
 final case class DataSourceName(value : String)

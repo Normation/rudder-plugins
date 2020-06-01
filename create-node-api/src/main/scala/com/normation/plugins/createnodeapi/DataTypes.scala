@@ -49,8 +49,9 @@ import com.normation.plugins.createnodeapi.NodeTemplate.PendingNodeTemplate
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.PolicyMode
-import net.liftweb.json.JsonAST.JValue
 import com.normation.errors._
+import com.normation.rudder.domain.nodes.GenericProperty
+import com.typesafe.config.ConfigValue
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -95,7 +96,7 @@ object Rest {
     , state           : Option[String]
     , policyMode      : Option[String]
     , agentKey        : Option[AgentKey]
-    , properties      : Map[String, JValue]
+    , properties      : Map[String, ConfigValue]
     , ipAddresses     : List[String]
     , timezone        : Option[Timezone]
   )
@@ -142,8 +143,19 @@ object NodeTemplate {
 object Serialize {
   import net.liftweb.json._
 
-  implicit val formats = DefaultFormats
+  implicit val formats = DefaultFormats + new ConfigValueSerializer
 
+  class ConfigValueSerializer extends Serializer[ConfigValue] {
+    private val ConfigValueClass = classOf[ConfigValue]
+
+    def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), ConfigValue] = {
+      case (TypeInfo(ConfigValueClass, _), json) => GenericProperty.fromJsonValue(json)
+    }
+
+    def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
+      case x: ConfigValue => net.liftweb.json.parse(GenericProperty.serializeToJson(x))
+    }
+  }
 
   def parseAll(json: JValue): IOResult[List[Rest.NodeDetails]] = {
     IOResult.effect(s"Error when deserializing a nodes for creation API")(json.extract[List[Rest.NodeDetails]])

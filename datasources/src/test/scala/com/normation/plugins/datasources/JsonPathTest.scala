@@ -38,8 +38,8 @@
 package com.normation.plugins.datasources
 
 import com.normation.BoxSpecMatcher
+import com.normation.rudder.domain.nodes.GenericProperty._
 import net.liftweb.common._
-import net.liftweb.json._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
@@ -69,15 +69,15 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
     "retrieve first" in {
       val res = JsonSelect.fromPath("$.store.book", json).map( _.head ).either.runNow
-
-      res must beRight( compactRender(parse("""
+      val expectedVal = """
             {
                 "category": "reference",
                 "author": "Nigel Rees",
                 "title": "Sayings of the Century",
                 "price": 8.95
             }
-        """)) )
+        """.toConfigValue
+      res must beRight (expectedVal)
     }
   }
 
@@ -109,28 +109,28 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
                 "title": "The Lord of the Rings",
                 "isbn": "0-395-19395-8",
                 "price": 22.99
-            }""").map(s => compactRender(parse(s))))
+            }""").map(_.toConfigValue))
     }
     "retrieve NUMBER childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight(List("8.95", "12.99", "8.99", "22.99"))
+      JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight(List("8.95", "12.99", "8.99", "22.99").map(_.toConfigValue))
     }
     "retrieve STRING childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight(List("reference", "fiction", "\"quotehorror\"", "fiction"))
+      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight(List("reference", "fiction", "\"quotehorror\"", "fiction").map(_.toConfigValue))
     }
     "retrieve JSON childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight(List("""{"color":"red","price":19.95}"""))
+      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight(List("""{"color":"red","price":19.95}""").map(_.toConfigValue))
     }
     "retrieve NUMBER childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle.price", json).either.runNow must beRight(List("19.95"))
+      JsonSelect.fromPath("$.store.bicycle.price", json).either.runNow must beRight(List("19.95").map(_.toConfigValue))
     }
     "retrieve STRING childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle.color", json).either.runNow must beRight(List("red"))
+      JsonSelect.fromPath("$.store.bicycle.color", json).either.runNow must beRight(List("red").map(_.toConfigValue))
     }
     "retrieve ARRAY INT childrens (one)" in {
-      JsonSelect.fromPath("$.intTable", json).either.runNow must beRight(List("1", "2", "3"))
+      JsonSelect.fromPath("$.intTable", json).either.runNow must beRight(List("1", "2", "3").map(_.toConfigValue))
     }
     "retrieve ARRAY STRING childrens (one)" in {
-      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight(List("one", "two"))
+      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight(List("one", "two").map(_.toConfigValue))
     }
   }
 

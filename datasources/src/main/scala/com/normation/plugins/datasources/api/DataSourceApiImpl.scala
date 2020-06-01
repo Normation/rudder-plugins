@@ -76,6 +76,7 @@ import com.normation.rudder.domain.nodes.CompareProperties
 import net.liftweb.common.Failure
 import com.normation.plugins.datasources.api.{DataSourceApi => API}
 import com.normation.box._
+import com.normation.rudder.domain.nodes.GenericProperty._
 import net.liftweb.json.JsonAST.JArray
 import zio.duration.Duration
 
@@ -316,15 +317,15 @@ class DataSourceApiImpl (
   private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId)  = {
     import com.normation.errors._
     import zio.syntax._
-    val newProp = DataSource.nodeProperty(datasourceId.value, "")
+    val newProp = DataSource.nodeProperty(datasourceId.value, "".toConfigValue)
     node.properties.find(_.name == newProp.name) match {
-      case None    => NodeUpdateResult.Unchanged(node.id).succeed
+      case None => NodeUpdateResult.Unchanged(node.id).succeed
       case Some(p) =>
-        if(p.provider == newProp.provider) {
+        if (p.provider == newProp.provider) {
           for {
-            newProps     <- CompareProperties.updateProperties(node.properties, Some(newProp :: Nil)).toIO
-            newNode      =  node.copy(properties = newProps)
-            nodeUpdated  <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason).chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
+            newProps <- CompareProperties.updateProperties(node.properties, Some(newProp :: Nil)).toIO
+            newNode = node.copy(properties = newProps)
+            nodeUpdated <- nodeRepos.updateNode(newNode, cause.modId, cause.actor, cause.reason).chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
           } yield {
             NodeUpdateResult.Updated(nodeUpdated.id)
           }
