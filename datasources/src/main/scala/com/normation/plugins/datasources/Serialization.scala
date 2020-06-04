@@ -49,9 +49,9 @@ import net.liftweb.json._
 import net.liftweb.util.ControlHelpers.tryo
 
 import scala.concurrent.duration.FiniteDuration
-import com.normation.rudder.domain.nodes.NodeProperty
 import cats._
 import cats.implicits._
+import com.normation.rudder.domain.nodes.GenericProperty._
 import zio.duration.Duration
 
 object Translate {
@@ -100,7 +100,7 @@ object DataSourceJsonSerializer{
                       case MissingNodeBehavior.Delete              =>  ("name"  -> MissingNodeBehavior.Delete.name):JObject
                       case MissingNodeBehavior.NoChange            =>  ("name"  -> MissingNodeBehavior.NoChange.name):JObject
                       case MissingNodeBehavior.DefaultValue(value) => (("name"  -> MissingNodeBehavior.DefaultValue.name) ~
-                                                                       ("value" -> value )):JObject
+                                                                       ("value" -> parse(serializeToJson(value)))):JObject
                     })
                   )
                 )
@@ -337,14 +337,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
               case JString(MissingNodeBehavior.DefaultValue.name) =>
                 (obj \ "value") match {
                   case JNothing => Failure("Missing 'value' field for default value in data source")
-                  case value    =>
-                    value match {
-                      //here, we want to have the same semantic regarding strings and json than
-                      //node property. So we are using a NodeProperty directly.
-                      case JString(string) => Full(MissingNodeBehavior.DefaultValue(NodeProperty("default", string, None).value))
-                      case obj:JObject     => Full(MissingNodeBehavior.DefaultValue(obj))
-                      case x               => Failure(s"Can not extract onMissingNode default value from ${compactRender(x)} (expecting string of JSON")
-                    }
+                  case value    => Full(MissingNodeBehavior.DefaultValue(fromJsonValue(value)))
                 }
               case _                                                                    =>
                 Failure(s"Can not extract onMissingNode behavior from fields ${compactRender(obj)}")

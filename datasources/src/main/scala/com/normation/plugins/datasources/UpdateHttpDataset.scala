@@ -45,7 +45,6 @@ import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import net.liftweb.json.JsonAST
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
 import net.minidev.json.JSONValue
@@ -56,9 +55,10 @@ import scalaj.http.HttpOptions
 import zio._
 import zio.syntax._
 import com.normation.errors._
-import com.normation.rudder.domain.nodes.GenericPropertyUtils
+import com.normation.rudder.domain.nodes.GenericProperty._
 import com.normation.rudder.domain.parameters.GlobalParameter
 import com.normation.rudder.services.policies.ParamInterpolationContext
+import com.typesafe.config.ConfigValue
 import zio.duration._
 
 /*
@@ -128,7 +128,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
                       // this mean we got a 404 => choose behavior based on onMissing value
                       case None => datasource.missingNodeBehavior match {
                         case MissingNodeBehavior.Delete              => Some(Nil).succeed
-                        case MissingNodeBehavior.DefaultValue(value) => Some(JsonAST.compactRender(value) :: Nil).succeed
+                        case MissingNodeBehavior.DefaultValue(value) => Some(value :: Nil).succeed
                         case MissingNodeBehavior.NoChange            => None.succeed
                       }
                     }
@@ -137,7 +137,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
       // We only get the first element from the path, ignoring if there is several.
       // And if list is empty, returns "" (remove property).
       optJson.map {
-        case Nil        => DataSource.nodeProperty(datasourceName.value, ""   )
+        case Nil        => DataSource.nodeProperty(datasourceName.value, "".toConfigValue)
         case value :: _ => DataSource.nodeProperty(datasourceName.value, value)
       }
     }
@@ -208,7 +208,7 @@ object QueryHttp {
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
   def compileParameters(parameter: GlobalParameter): PureResult[(String, ParamInterpolationContext => PureResult[String])] = {
-    compiler.compileParam(GenericPropertyUtils.serializeValue(parameter.value)).map(v => (parameter.name, v))
+    compiler.compileParam(serializeToHocon(parameter.value)).map(v => (parameter.name, v))
   }
 
   def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[String, ParamInterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
@@ -250,13 +250,15 @@ object JsonSelect {
    *
    * The list may be empty if 0 node matches the results.
    */
-  def fromPath(path: String, json: String): IOResult[List[String]] = {
+  def fromPath(path: String, json: String): IOResult[List[ConfigValue]] = {
     for {
       p <- compilePath(path)
       j <- parse(json)
       r <- select(p, j)
+
     } yield {
-      r
+
+      r.map(_.toConfigValue)
     }
   }
 

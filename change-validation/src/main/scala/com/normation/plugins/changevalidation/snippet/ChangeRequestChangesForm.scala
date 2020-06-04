@@ -653,7 +653,7 @@ class ChangeRequestChangesForm(
   private[this] def displayGlobalParameter(param: GlobalParameter) = (
       "#paramName" #> createGlobalParameterLink(param.name) &
       "#name" #> param.name &
-      "#value" #> net.liftweb.json.prettyRender(param.value) &
+      "#value" #> param.value.render() &
       "#description" #> param.description
   )(globalParameterXML)
 
@@ -663,7 +663,7 @@ class ChangeRequestChangesForm(
   ) = {
     ( "#paramName" #> createGlobalParameterLink(param.name) &
       "#name" #> param.name &
-      "#value" #> displaySimpleDiff(diff.modValue,"value",Text(net.liftweb.json.prettyRender(param.value))) &
+      "#value" #> displaySimpleDiff(diff.modValue,"value",Text(param.value.render())) &
       "#description" #> displaySimpleDiff(diff.modDescription,"description",Text(param.description))
     ) (globalParameterXML)
   }

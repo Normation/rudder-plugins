@@ -58,8 +58,6 @@ import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
 import net.liftweb.common._
-import net.liftweb.json.JsonAST.JString
-import net.liftweb.json.JsonAST.JValue
 import org.http4s.util._
 import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
@@ -88,7 +86,9 @@ import org.http4s.server.blaze.BlazeServerBuilder
 import zio.syntax._
 import zio.{IO => _, _}
 import com.normation.errors._
+import com.normation.rudder.domain.nodes.GenericProperty._
 import com.normation.zio._
+import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
 import zio.test.environment._
 import zio.duration._
@@ -346,6 +346,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
+    def getNodeInfoPure(nodeId: NodeId)                = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
 
@@ -359,7 +360,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   val root = NodeConfigData.root
   val n1 = {
     val n = NodeConfigData.node1.node
-    NodeConfigData.node1.copy(node = n.copy(properties = DataSource.nodeProperty("get-that", "book") :: Nil ))
+    NodeConfigData.node1.copy(node = n.copy(properties = DataSource.nodeProperty("get-that", "book".toConfigValue) :: Nil ))
   }
 
   val httpDatasourceTemplate = DataSourceType.HTTP(
@@ -740,12 +741,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
 
       res.either.runNow must beRight(===(
-          Some(DataSource.nodeProperty("test-get-one-node", compact("""{
+          Some(DataSource.nodeProperty("test-get-one-node",  """{
             "category": "reference",
             "author": "Nigel Rees",
             "title": "Sayings of the Century",
             "price": 8.95
-          }"""))):Option[NodeProperty]))
+          }""".toConfigValue)):Option[NodeProperty]))
     }
   }
 
@@ -783,7 +784,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
         infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
-            NodeProperty("test-http-service", JString("bar"), Some(DataSource.providerName))
+            NodeProperty("test-http-service", "bar".toConfigValue, Some(DataSource.providerName))
         )
       )
     }
@@ -800,7 +801,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
      * In finalStatCond, the implementation ensures that all nodes are in the map, i.e
      *   PROPS.keySet() == infos.getAll().keySet()
      */
-    type PROPS = Map[NodeId, Option[JValue]]
+    type PROPS = Map[NodeId, Option[ConfigValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
       val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
       val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
@@ -811,7 +812,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val modId = ModificationId("set-test-404")
       nodes.values.foreach { node =>
         import com.normation.box.EitherToBox
-        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse(""), None)))).toBox.openOrThrowException("test must be able to set prop")
+        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse("").toConfigValue, None)))).toBox.openOrThrowException("test must be able to set prop")
         val up = node.node.copy(properties = newProps)
         infos.updateNode(up, modId, actor, None).runNow
       }
@@ -841,8 +842,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       }
     }
     "have a working 'default value property' option" in {
-      test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.DefaultValue(JString("foo")), expectMod = true) { props =>
-        props must havePairs( props.keySet.map(x => (x, Some(JString("foo"))) ).toSeq:_* )
+      test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.DefaultValue("foo".toConfigValue), expectMod = true) { props =>
+        props must havePairs( props.keySet.map(x => (x, Some("foo".toConfigValue)) ).toSeq:_* )
       }
     }
     "have a working 'don't touch - not exists' option" in {
@@ -852,7 +853,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
     "have a working 'don't touch - exists' option" in {
       test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.NoChange, expectMod = false) { props =>
-        props must havePairs( props.keySet.map(x => (x, Some(JString("test-404"))) ).toSeq:_* )
+        props must havePairs( props.keySet.map(x => (x, Some("test-404".toConfigValue)) ).toSeq:_* )
       }
     }
   }
