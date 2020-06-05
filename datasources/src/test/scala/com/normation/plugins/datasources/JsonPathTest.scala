@@ -38,6 +38,7 @@
 package com.normation.plugins.datasources
 
 import com.normation.BoxSpecMatcher
+import com.normation.rudder.domain.nodes.GenericProperty
 import com.normation.rudder.domain.nodes.GenericProperty._
 import net.liftweb.common._
 import org.junit.runner.RunWith
@@ -48,7 +49,12 @@ import com.normation.zio._
 @RunWith(classOf[JUnitRunner])
 class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
-
+   implicit class ForceGet(json: String) {
+     def forceParse = GenericProperty.parseValue(json) match {
+       case Right(value) => value
+       case Left(err)    => throw new IllegalArgumentException(s"Error in parsing value: ${err.fullMsg}")
+     }
+   }
 
   "These path are valid" should {
 
@@ -76,7 +82,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
                 "title": "Sayings of the Century",
                 "price": 8.95
             }
-        """.toConfigValue
+        """.forceParse
       res must beRight (expectedVal)
     }
   }
@@ -109,7 +115,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
                 "title": "The Lord of the Rings",
                 "isbn": "0-395-19395-8",
                 "price": 22.99
-            }""").map(_.toConfigValue))
+            }""").map(_.forceParse))
     }
     "retrieve NUMBER childrens forming an array" in {
       JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight(List("8.95", "12.99", "8.99", "22.99").map(_.toConfigValue))
@@ -118,7 +124,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
       JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight(List("reference", "fiction", "\"quotehorror\"", "fiction").map(_.toConfigValue))
     }
     "retrieve JSON childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight(List("""{"color":"red","price":19.95}""").map(_.toConfigValue))
+      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight(List("""{"color":"red","price":19.95}""").map(_.forceParse))
     }
     "retrieve NUMBER childrens (one)" in {
       JsonSelect.fromPath("$.store.bicycle.price", json).either.runNow must beRight(List("19.95").map(_.toConfigValue))

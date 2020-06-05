@@ -1,8 +1,8 @@
 <lift:surround with="common-layout" at="content">
   <head_merge>
     <title>Rudder - Data sources</title>
-    <link type="text/css" class="lift:DataSourcesResources.css">
-    <script type="text/javascript" class="lift:DataSourcesResources.js"></script>
+    <link data-lift="with-cached-resource" href="/toserve/datasources/rudder-datasources.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" data-lift="with-cached-resource" src="/toserve/datasources/rudder-datasources.js"></script>
   </head_merge>
   <div class="tw-bs" id="datasource" ng-controller="datasourceCtrl">
     <div class="row">

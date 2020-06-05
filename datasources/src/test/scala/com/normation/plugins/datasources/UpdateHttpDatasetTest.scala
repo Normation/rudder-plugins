@@ -86,6 +86,7 @@ import org.http4s.server.blaze.BlazeServerBuilder
 import zio.syntax._
 import zio.{IO => _, _}
 import com.normation.errors._
+import com.normation.rudder.domain.nodes.GenericProperty
 import com.normation.rudder.domain.nodes.GenericProperty._
 import com.normation.zio._
 import com.typesafe.config.ConfigValue
@@ -741,12 +742,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
 
       res.either.runNow must beRight(===(
-          Some(DataSource.nodeProperty("test-get-one-node",  """{
+          Some(DataSource.nodeProperty("test-get-one-node",  GenericProperty.parseValue("""{
             "category": "reference",
             "author": "Nigel Rees",
             "title": "Sayings of the Century",
             "price": 8.95
-          }""".toConfigValue)):Option[NodeProperty]))
+          }""").getOrElse(throw new IllegalArgumentException("error in test")))):Option[NodeProperty]))
     }
   }
 

@@ -55,6 +55,7 @@ import scalaj.http.HttpOptions
 import zio._
 import zio.syntax._
 import com.normation.errors._
+import com.normation.rudder.domain.nodes.GenericProperty
 import com.normation.rudder.domain.nodes.GenericProperty._
 import com.normation.rudder.domain.parameters.GlobalParameter
 import com.normation.rudder.services.policies.ParamInterpolationContext
@@ -255,10 +256,9 @@ object JsonSelect {
       p <- compilePath(path)
       j <- parse(json)
       r <- select(p, j)
-
+      h <- r.accumulatePure(GenericProperty.parseValue(_)).toIO
     } yield {
-
-      r.map(_.toConfigValue)
+      h
     }
   }
 
