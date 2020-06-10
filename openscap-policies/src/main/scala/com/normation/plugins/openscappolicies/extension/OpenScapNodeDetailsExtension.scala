@@ -97,9 +97,9 @@ class OpenScapNodeDetailsExtension(
             <p>That tab gives access to OpenSCAP report configured for that node. Below is a sanitized version of the
             report (without any scripts or specific scripts).</p>
             <br/>
-            <p>You can also download the original version of the report <a href="">here</a></p>
+            <p><b><a href="">Original version of the report can be downloaded here</a></b></p>
           </div>
-          <iframe width="100%" height="500"></iframe>
+          <iframe width="100%" height="800"></iframe>
         </div>
       </div>
 }

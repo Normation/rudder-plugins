@@ -63,14 +63,14 @@ http://www.w3.org/TR/html401/struct/global.html
 		<regexp name="boolean" value="(true|false)"/>
 		<regexp name="singlePrintable" value="[a-zA-Z0-9]{1}"/> <!-- \w allows the '_' character -->
 
-		<!-- This is for elements (ex: elemName { ... }) -->
-		<regexp name="cssElementSelector" value="[a-zA-Z0-9\-_]+|\*"/>
-		
+		<!-- This is for elements (ex: elemName { ... })  bootstrap includes []-->
+		<regexp name="cssElementSelector" value="[a-zA-Z0-9\-_\[\]:\(\)]+|\*"/>
+
 		<!--  This is to list out any element names that are *not* valid -->
 		<regexp name="cssElementExclusion" value=""/>
 		
 		<!--  This if for classes (ex: .className { ... }) -->
-		<regexp name="cssClassSelector" value="\.[a-zA-Z0-9\-_]+"/>
+		<regexp name="cssClassSelector" value="\.[a-zA-Z0-9\-_\[\]:\(\)]+"/>
 
 		<!--  This is to list out any class names that are *not* valid -->
 		<regexp name="cssClassExclusion" value=""/>
@@ -82,14 +82,14 @@ http://www.w3.org/TR/html401/struct/global.html
 		<regexp name="cssIDExclusion" value=""/>
 		
 		<!--  This is for pseudo-element selector (ex. foo:pseudo-element { ... } -->
-		<regexp name="cssPseudoElementSelector" value=":[a-zA-Z0-9\-_]+"/>
-		
+		<regexp name="cssPseudoElementSelector" value=":[a-zA-Z0-9\-_\(\)\:]+"/>
+
 		<!--  This is to list out any psuedo-element names that are *not* valid -->
-		<regexp name="cssPsuedoElementExclusion" value=""/>
+		<regexp name="cssPseudoElementExclusion" value=""/>
 		
 		<!--  This is for attribute selectors (ex. foo[attr=value] { ... } -->
 		<regexp name="cssAttributeSelector" value="\[[a-zA-Z0-9\-_]+((=|~=|\|=){1}[a-zA-Z0-9\-_]+){1}\]"/>
-		
+
 		<!--  This is to list out any attribute names that are *not* valid -->
 		<regexp name="cssAttributeExclusion" value=""/>
 		
@@ -98,8 +98,8 @@ http://www.w3.org/TR/html401/struct/global.html
 		<regexp name="cssOffsiteUri" value="url\((\s)*((ht|f)tp(s?)://)[\p{L}\p{N}]+[~\p{L}\p{N}\p{Zs}\-_\.@#$%&amp;;:,\?=/\+!]*(\s)*\)"/>
 		
 		<!--  This if for CSS Identifiers -->
-		<regexp name="cssIdentifier" value="[a-zA-Z0-9\-_]+"/>
-		
+		<regexp name="cssIdentifier" value="[a-zA-Z0-9\-_\.]+"/>
+
 		<!--  This is for comments within CSS (ex. /* comment */) -->
 		<regexp name="cssCommentText" value="[\p{L}\p{N}\-_,\/\\\.\s\(\)!\?\=\$#%\^&amp;:&quot;']+"/>
 
@@ -123,8 +123,6 @@ http://www.w3.org/TR/html401/struct/global.html
 		<!-- CSS2 Allowed System Color Values -->		
 		<regexp name="systemColor" value="(activeborder|activecaption|appworkspace|background|buttonface|buttonhighlight|buttonshadow|buttontext|captiontext|graytext|highlight|highlighttext|inactiveborder|inactivecaption|inactivecaptiontext|infobackground|infotext|menu|menutext|scrollbar|threeddarkshadow|threedface|threedhighlight|threedlightshadow|threedshadow|window|windowframe|windowtext)"/>
 
-		<!-- This is where we specify what Flash src to allow -->
-		<regexp name="flashSites" value="http://(download\.macromedia\.com/pub|www\.macromedia\.com/(go|shockwave)|c\.brightcove\.com/services|gamevideos\.1up\.com/swf|www\.youtube\.com/v|vimeo\.com|www\.gametrailers\.com|videomedia\.ign\.com/ev|image\.com\.com/gamespot|www\.hulu\.com/embed|embed\.break\.com|player\.ordienetworks\.com/flash|www\.adultswim\.com/video/vplayer|www\.dailymotion\.com/swf|www\.ustream\.tv/flash/video|cdn-i\.dmdentertainment\.com|media\.mtvnservices\.com|www\.justin\.tv/widgets|www\.viddler\.com/(player|simple_on_site)|static\.twitter\.com/flash|www\.gamepro\.com/bin|www\.divshare\.com/flash|www\.facebook\.com/v)/.*"/>
 	</common-regexps>
 	
 	<!-- 
@@ -152,18 +150,6 @@ http://www.w3.org/TR/html401/struct/global.html
 				<regexp name="htmlId"/>
 			</regexp-list>
 		</attribute>
-	
-		<attribute name="classid">
-			<regexp-list>
-				<regexp name="anything" />
-			</regexp-list>
-		</attribute>
-
-		<attribute name="codebase">
-			<regexp-list>
-				<regexp name="flashSites" />
-			</regexp-list>
-		</attribute>
 
 		<attribute name="class" description="The 'class' of any HTML attribute is usually a single word, but it can also be a list of class names separated by spaces">
 			<regexp-list>
@@ -188,11 +174,6 @@ http://www.w3.org/TR/html401/struct/global.html
 		 	</regexp-list>
 		 </attribute>
 
-		<attribute name="data-" description="Allows the HTML5 'data-' attribute to be added to elements">
-			<regexp-list>
-				<regexp name="anything"/>
-			</regexp-list>
-		</attribute>
 
  		<!-- the "style" attribute will be validated by an inline stylesheet scanner, so no need to define anything here - i hate having to special case this but no other choice -->
 		 <attribute name="style" description="The 'style' attribute provides the ability for users to change many attributes of the tag's contents using a strict syntax"/>
@@ -512,11 +493,6 @@ http://www.w3.org/TR/html401/struct/global.html
 		<attribute name="lang"/>
 	</global-tag-attributes>
 
-	<!-- Declare "dynamic" tag attributes here. The directive "allowDynamicAttributes" must be set to true -->
-	<dynamic-tag-attributes>
-		<attribute name="data-"/> <!-- HTML5 "data-" tag -->
-	</dynamic-tag-attributes>
-
 	<tags-to-encode>
 		<tag>g</tag>
 		<tag>grin</tag>
@@ -821,14 +797,9 @@ http://www.w3.org/TR/html401/struct/global.html
 		<!-- Stylesheet Tags -->
 		
 		<tag name="style" action="validate">
-			<attribute name="type">
-				<literal-list>
-					<literal value="text/css"/>
-				</literal-list>
-			</attribute>
-			<attribute name="media"/>
+
 		</tag>
-		
+
 		<tag name="span" action="validate"/>
 
 		<tag name="div" action="validate">
@@ -871,8 +842,6 @@ http://www.w3.org/TR/html401/struct/global.html
 		<tag name="link" action="validate">
 
 			<!-- <attribute name="href" onInvalid="removeTag"/>  -->
-			
-			<attribute name="media"/>
 			
 			<attribute name="type" onInvalid="removeTag">
 				<literal-list>
@@ -1034,114 +1003,8 @@ http://www.w3.org/TR/html401/struct/global.html
 
 		<!-- tags for popular Flash embeds -->
 
-		<tag name="object" action="validate">
-			<attribute name="id" />
-			<attribute name="classid" />
-			<attribute name="codebase" />
-			<attribute name="type" onInvalid="removeTag">
-				<literal-list>
-					<literal value="application/x-shockwave-flash" />
-				</literal-list>
-			</attribute>
-			<attribute name="data" onInvalid="removeTag">
-				<regexp-list>
-					<regexp name="flashSites" />
-				</regexp-list>
-			</attribute>
-			<attribute name="align" />
-			<attribute name="height" />
-			<attribute name="width" />
-			<attribute name="alt" />
-			<attribute name="bgcolor">
-				<regexp-list>
-					<regexp name="colorCode" />
-				</regexp-list>
-			</attribute>
-		</tag>
-
-		<!-- with validateParamAsEmbed=true, this tag rule also covers <param> name/value pairs -->
-		<tag name="embed" action="validate">
-			<attribute name="src" onInvalid="removeTag">
-				<regexp-list>
-					<regexp name="flashSites" />
-				</regexp-list>
-			</attribute>
-			<attribute name="movie" onInvalid="removeTag">
-				<regexp-list>
-					<regexp name="flashSites" />
-				</regexp-list>
-			</attribute>
-			<attribute name="pluginspage">
-				<regexp-list>
-					<regexp name="flashSites" />
-				</regexp-list>
-			</attribute>
-			<attribute name="bgcolor">
-				<regexp-list>
-					<regexp name="colorCode" />
-				</regexp-list>
-			</attribute>
-			<attribute name="base">
-				<literal-list>
-					<literal value="http://admin.brightcove.com" />
-				</literal-list>
-			</attribute>
-			<attribute name="type">
-				<literal-list>
-					<literal value="application/x-shockwave-flash" />
-				</literal-list>
-			</attribute>
-			<attribute name="name">
-				<regexp-list>
-					<regexp name="anything" />
-				</regexp-list>
-			</attribute>
-			<attribute name="flashvars">
-				<regexp-list>
-					<regexp name="anything" /><!-- we could put something complex in here, but this is prolly fine for now-->
-				</regexp-list>
-			</attribute>
-			<attribute name="align" />
-			<attribute name="height" />
-			<attribute name="width" />
-			<attribute name="allowfullscreen">
-				<regexp-list>
-					<regexp name="boolean" />
-				</regexp-list>
-			</attribute>
-			<attribute name="quality">
-				<literal-list>
-					<literal value="high" />
-				</literal-list>
-			</attribute>
-			<attribute name="allowscriptaccess">
-				<literal-list>
-					<literal value="always" />
-					<literal value="samedomain" />
-				</literal-list>
-			</attribute>
-			<attribute name="seamlesstabbing">
-				<regexp-list>
-					<regexp name="boolean" />
-				</regexp-list>
-			</attribute>
-			<attribute name="swliveconnect">
-				<regexp-list>
-					<regexp name="boolean" />
-				</regexp-list>
-			</attribute>
-			<attribute name="wmode">
-				<literal-list>
-					<literal value="transparent" />
-					<literal value="window" />
-				</literal-list>
-			</attribute>
-			<attribute name="allownetworking">
-				<literal-list>
-					<literal value="all" />
-				</literal-list>
-			</attribute>
-		</tag>
+		<tag name="object" action="remove"/>
+		<tag name="embed" action="remove"/>
 		
 	</tag-rules>
 
