@@ -1,0 +1,9 @@
+<h2>CR #{{id}}: {{info}}</h2>
+<h3>Pending Deployment</h3>
+<ul>
+  <li>Author: {{author}}</li>
+  <li>Description: {{description}}</li>
+  <li>Action: {{actionName}}</li>
+  <li>date: {{date}}</li>
+  <li>Change Request: <a href="{{link}}">{{link}}</a></li>
+</ul>
