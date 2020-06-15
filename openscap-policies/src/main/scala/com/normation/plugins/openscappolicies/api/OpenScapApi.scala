@@ -84,9 +84,7 @@ class OpenScapApiImpl(
           logger.trace("doing in memory response")
           InMemoryResponse(
               report.content.getBytes()
-            , ("Content-Type" -> "text/html") ::
-              ("Content-Disposition","""attachment;filename="rudder-openscap-%s.html"""".format(nodeId)) ::
-              Nil
+            , ("Content-Type", "text/html") :: ("Content-Disposition", "inline")  :: Nil
             , Nil
             , 200)
         case Full(None) =>
@@ -127,7 +125,6 @@ class OpenScapApiImpl(
           logger.trace("Doing in memory response")
           InMemoryResponse(
             sanitizedReport.toString().getBytes()
-            // somehow, the X-FRAME-OPTIONS get rewrote to DENY here
             ,  ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil
             , Nil
             , 200)

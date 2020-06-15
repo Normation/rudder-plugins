@@ -81,8 +81,8 @@ class OpenScapNodeDetailsExtension(
 
   def frameContent(nodeId : NodeId): CssSel = {
 
-        "iframe [src]"      #> s"/secure/api/openscap/sanitized/${nodeId.value}" &
-          "a [href]"      #> s"/secure/api/openscap/report/${nodeId.value}"
+        "iframe [src]"      #> s"/secure/api/openscap/report/${nodeId.value}" &
+        "a [href]"      #> s"/secure/api/openscap/report/${nodeId.value}"
 
   }
 
@@ -94,10 +94,9 @@ class OpenScapNodeDetailsExtension(
             <div class="marker">
               <span class="glyphicon glyphicon-info-sign"></span>
             </div>
-            <p>That tab gives access to OpenSCAP report configured for that node. Below is a sanitized version of the
-            report (without any scripts or specific scripts).</p>
+            <p>That tab gives access to OpenSCAP report configured for that node. Below is the raw report as sent by the node.</p>
             <br/>
-            <p><b><a href="">Original version of the report can be downloaded here</a></b></p>
+            <p><b><a href="">You can also download this report here</a></b></p>
           </div>
           <iframe width="100%" height="800"></iframe>
         </div>
