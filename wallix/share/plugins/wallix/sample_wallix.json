@@ -1,0 +1,8 @@
+{
+  "server_addr": "https://192.168.180.11",
+  "auth":
+    {
+       "user": "USER",
+       "pass": "PASS"
+    }
+}

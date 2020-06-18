@@ -1,0 +1,7 @@
+#!/bin/sh
+mkdir -p /var/rudder/plugin-resources
+cp -a /opt/rudder/share/plugins/wallix/* /var/rudder/configuration-repository/ncf/
+cd /var/rudder/configuration-repository/ncf/
+rm sample_wallix.json auth.sh
+git add . && git commit -m "Wallix plugin installation"
+echo 'A sample config file was provided at /opt/rudder/share/plugins/wallix/sample_wallix.json'

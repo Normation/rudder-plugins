@@ -1,0 +1,79 @@
+#####################################################################################
+# Copyright 2020 Normation SAS
+#####################################################################################
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, Version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################################
+#
+# @name Variable from Wallix
+# @description Gets a Secret for a specific target user from Wallix Server. 
+#
+# @documentation To use the generated variable, you must use the form `${variable_prefix.variable_name}` with each name replaced with the parameters of this method.
+#
+#
+#
+# This generic method will report as performing a repair when it fetches a key, and an error when it fails to do so.
+#
+# @parameter variable_prefix The prefix of the variable name
+# @parameter variable_name   The variable to define, the full name will be variable_prefix.variable_name
+# @parameter user_name       wallix device user
+# @parameter domain_name     wallix device domain
+# @parameter device_name     wallix device name
+#
+# @class_prefix variable_from_wallix
+# @class_parameter user_name
+
+bundle agent variable_from_wallix(variable_prefix, variable_name, user_name, domain_name, device_name)
+{
+  vars:
+      "old_class_prefix" string => canonify("variable_from_wallix_${user_name}");
+      "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
+      "class_prefix" string => canonify(join("_", "promisers"));
+      "args" slist => {"${variable_prefix}", "${variable_name}", "${user_name}", "${domain_name}", "${device_name}"};
+
+    pass1::
+      "wallix_seal" string => execresult('/bin/sh /var/rudder/plugin-resources/auth.sh ${wallix_user} ${wallix_server_addr} ${wallix_pass}}', "useshell");
+
+      "${variable_prefix}.${variable_name}" string => execresult('/usr/bin/waapm checkout -b mybastion ${user_name}@${domain_name}@${device_name}', "useshell");
+
+  reports:
+    "${${variable_prefix}.${variable_name}}";
+
+  classes:
+      "pass2" expression => "pass1";
+      "pass1";
+
+    pass2::
+      "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");  
+      "config_defined" expression => isvariable("wallix_config");
+
+  methods:
+    pass2.variable_defined::
+      "success" usebundle => _classes_success("${old_class_prefix}");
+      "success" usebundle => _classes_success("${class_prefix}");
+      "report" usebundle => _log("Variable definition for ${user_name} in Wallix", "${old_class_prefix}", "${class_prefix}", @{args});
+
+    pass2.!variable_defined.!wallix_reachable::
+      "failure" usebundle => _classes_failure("${old_class_prefix}");
+      "failure" usebundle => _classes_failure("${class_prefix}");
+      "report" usebundle => _log("Wallix server unreachable. Variable definition for ${user_name} in Bastion", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "config_defined";
+      "report" usebundle => _log("Undefined configuration. Variable definition for ${user_name} in Bastion", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "!config_defined";
+
+    pass2.!variable_defined.wallix_reachable::
+      "failure" usebundle => _classes_failure("${old_class_prefix}");
+      "failure" usebundle => _classes_failure("${class_prefix}");
+      "report" usebundle => _log("Wallix server is reachable, but your request failed. Check your auth and parameters. Variable definition for ${user_name} in Bastion", "${old_class_prefix}", "${class_prefix}", @{args});
+}
