@@ -8,24 +8,26 @@ See repository main README for information about licensing, contribution, and ot
 // ====doc====
 [Wallix Bastion-plugin]
 
-== Plugin Description
+= Bastion Wallix integration plugin with Rudder
+
+= Plugin Description
 This is a first version of Wallix Bastion plugin integration with Rudder that allows, via a generic method, a Wallix Bastion user to authenticate and provide his credentials in order to get either a password or an ssh key of a target user associated with a target device configured in Bastion server.
 
 == Introduction to Wallix Bastion
-Wallix is a solution destined for system administrators that would like to manage their infrastructure in terms of secrets storage, managaement, tracability, control access, etc.
+Wallix is a solution destined for system administrators that would like to manage their infrastructure in terms of secrets storage, management, traceability, control access, etc.
 
-Wallix Bastion uses WAPPM (Wallix Application to Application Password Management) to use the Bastion APIs and then find a secret and make it available to an application.
+Wallix Bastion uses `waapm` (Wallix Application to Application Password Management) to use the Bastion APIs and fetch a secret,making it available to an application.
 
-Basically an AAPM is a feature that elimantes the fact that we can store crendetials or any kind of secret in configuration file or whatever and instead, to fetch those secrets, a privileged user can do so by using REST API in a secure and reliable manner.
+Basically an AAPM is a feature that elminates the need to store credentials or any kind of secret in configuration file or whatever and instead, to fetch those secrets, a privileged user can do so by using REST API in a secure and reliable manner.
 
 The main key features of Wallix Bastion are:
 
-* Stores and manage secrets.
-* Offer secure access to credentials.
-* Act as filter proxy.
-* Manages accounts and record session.
+* Stores and manages secrets.
+* Offers secure access to credentials.
+* Acts as filter proxy.
+* Manages accounts and records session.
 * Stores and manage the secrets.
-* Control and monitor remote access.
+* Controls and monitors remote access.
 * Integrates access control (ACL) and traceability functionalities.
 
 The one particular thing about Wallix Bastion is that it provides an authentication process for Bastion users via a 'seal' process
@@ -62,6 +64,6 @@ In the method parameters below, you are required to provide the target username,
 
 The secret will be stored in the `variable_prefix.variable_name` variable as you can use it elsewhere on the agents.
 
-image::docs/images/BastionWallix1.png[]
+image::docs/images/BastionWallix.png[]
 
 
