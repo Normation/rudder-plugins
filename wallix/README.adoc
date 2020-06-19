@@ -8,7 +8,7 @@ See repository main README for information about licensing, contribution, and ot
 // ====doc====
 [Wallix Bastion-plugin]
 
-= Bastion Wallix integration plugin with Rudder
+= Wallix Bastion integration plugin with Rudder
 
 = Plugin Description
 This is a first version of Wallix Bastion plugin integration with Rudder that allows, via a generic method, a Wallix Bastion user to authenticate and provide his credentials in order to get either a password or an ssh key of a target user associated with a target device configured in Bastion server.
