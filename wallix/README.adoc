@@ -26,7 +26,7 @@ The main key features of Wallix Bastion are:
 * Offers secure access to credentials.
 * Acts as filter proxy.
 * Manages accounts and records session.
-* Stores and manage the secrets.
+* Stores and manages the secrets.
 * Controls and monitors remote access.
 * Integrates access control (ACL) and traceability functionalities.
 
