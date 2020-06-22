@@ -130,34 +130,30 @@ class ChangeValidationWorkflowLevelService(
     }
   }
 
-  override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
-      case (valid, Full(false)) => valid.forRule(actor,change)
-      case (_, res) => res
-    }
-      getWorkflow(result)
+  /**
+   * Methode to use to combine several validationNeeded check. It's the same for all objects?
+   */
+  def combine[T](checkFn:(ValidationNeeded, EventActor, T) => Box[Boolean], checks: Seq[ValidationNeeded], actor: EventActor, change: T): Box[WorkflowService] = {
+    getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) { case (shouldValidate, nextCheck) =>
+      shouldValidate.flatMap {
+        // logic is "or": if previous should validate is true, don't check following
+        case true  => Full(true)
+        case false => checkFn(nextCheck, actor, change)
+      }
+    })
   }
 
+  override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
+    combine[RuleChangeRequest]( (v,a,c) => v.forRule(a,c), validationNeeded, actor, change)
+  }
   override def getForDirective(actor: EventActor, change: DirectiveChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
-      case (valid, Full(false)) => valid.forDirective(actor,change)
-      case (_, res) => res
-    }
-    getWorkflow(result)
+    combine[DirectiveChangeRequest]( (v,a,c) => v.forDirective(a,c), validationNeeded, actor, change)
   }
   override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
-      case (valid, Full(false)) => valid.forNodeGroup(actor,change)
-      case (_, res) => res
-    }
-    getWorkflow(result)
+    combine[NodeGroupChangeRequest]( (v,a,c) => v.forNodeGroup(a,c), validationNeeded, actor, change)
   }
   override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
-    val result : Box[Boolean] =  (validationNeeded foldRight (Full(false) : Box[Boolean])) {
-      case (valid, Full(false)) => valid.forGlobalParam(actor,change)
-      case (_, res) => res
-    }
-    getWorkflow(result)
+    combine[GlobalParamChangeRequest]( (v,a,c) => v.forGlobalParam(a,c), validationNeeded, actor, change)
   }
 
   override def getByDirective(id: DirectiveId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {

@@ -374,6 +374,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
             closePopup & JsRaw(""" callPopupWithTimeout(200, "successWorkflow"); """)
           case eb:EmptyBox => val fail = eb ?~! "could not change Change request step"
             formTracker.addFormError(error(fail.msg))
+            logger.error(s"Error when saving change request '${cr.id.value}': ${fail.messageChain}")
             updateForm(nextChosen)
         }
 

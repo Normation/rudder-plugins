@@ -172,6 +172,7 @@ class NodeGroupValidationNeeded(
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
       val exists = groups.getNodeIds(monitored.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
+
       // we want to let the log knows why the change request need validation
       exists.foreach { nodeId =>
         ChangeValidationLogger.debug(s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.value}]")
