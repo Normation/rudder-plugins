@@ -9,7 +9,7 @@ import net.liftweb.common.Box
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.http.{LiftResponse, Req}
 import sourcecode.Line
-
+import com.normation.box._
 
 sealed trait BrandingApiSchema extends EndpointSchema with GeneralApi with SortIndex
 object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
@@ -97,7 +97,7 @@ class BrandingApi (
       val result = for {
         json    <- req.json
         newConf <- BrandingConf.parse(json)
-        result  <- brandingApiService.update(newConf)
+        result  <- brandingApiService.update(newConf).toBox
       } yield {
         result
       }
@@ -115,7 +115,7 @@ class BrandingApiService (
     brandingConfService.getConf.map(BrandingConf.serialize)
   }
   def reloadConf() = {
-    brandingConfService.reloadCache(false).map(BrandingConf.serialize)
+    brandingConfService.reloadCache.map(BrandingConf.serialize).toBox
   }
   def update(newConf : BrandingConf) = {
     brandingConfService.updateConf(newConf).map(BrandingConf.serialize)

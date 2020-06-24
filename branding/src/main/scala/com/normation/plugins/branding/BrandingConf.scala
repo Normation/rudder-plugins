@@ -42,7 +42,8 @@ import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.{NoTypeHints, Serialization}
 
 // This case class is serialized with it's parameters directly in json
-// Changing a parameter name impacts Rest api and parsing in Elm app
+// Changing a parameter name impacts Rest api and parsing in Elm app and file format.
+// Migration must be done at least for config file format.
 final case class BrandingConf (
     displayBar       : Boolean
   , barColor         : JsonColor
@@ -55,6 +56,36 @@ final case class BrandingConf (
   , displayMotd      : Boolean
   , motd             : String
 )
+
+// for compat with previous version of plugin
+final case class BrandingConfV5_0(
+    displayBar       : Boolean
+  , barColor         : JsonColor
+  , displayLabel     : Boolean
+  , labelText        : String
+  , labelColor       : JsonColor
+  , enableLogo       : Boolean
+  , displayFavIcon   : Boolean
+  , displaySmallLogo : Boolean
+  , displayBigLogo   : Boolean
+  , displayBarLogin  : Boolean
+  , displayLoginLogo : Boolean
+  , displayMotd      : Boolean
+  , motd             : String
+) {
+  def toCurrent = BrandingConf(
+      displayBar
+    , barColor
+    , displayLabel
+    , labelText
+    , labelColor
+    , Logo(displayBigLogo, None, None)
+    , Logo(displaySmallLogo, None, None)
+    , displayBarLogin
+    , displayMotd
+    , motd
+  )
+}
 
 final case class JsonColor (
     red   : Double
@@ -111,7 +142,10 @@ object BrandingConf {
   }
   def parse(jValue: JValue) : Box[BrandingConf] = {
     import net.liftweb.json.Extraction.extractOpt
-    Box(extractOpt[BrandingConf](jValue)) ?~! "Could not extract Branding plugin configuration from json"
+    import net.liftweb.json.prettyRender
+    Box(
+      extractOpt[BrandingConf](jValue).orElse(extractOpt[BrandingConfV5_0](jValue).map(_.toCurrent))
+    ) ?~! s"Could not extract Branding plugin configuration from json: ${prettyRender(jValue)}"
   }
 }
 

@@ -40,10 +40,14 @@ package com.normation.plugins.branding
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
+import com.normation.errors._
 import net.liftweb.common._
-
-import scala.util.{Success, Try, Failure => CatchException}
-
+import zio._
+import zio.syntax._
+import com.normation.zio._
+import better.files._
+import net.liftweb.json.parseOpt
+import com.normation.box._
 
 class BrandingConfService extends Loggable {
 
@@ -73,57 +77,66 @@ class BrandingConfService extends Loggable {
   val configFilePath = "/var/rudder/plugins/branding/configuration.json"
 
 
-  private[this] var cache : Box[BrandingConf] = reloadCache(true)
+  private[this] lazy val cache : Ref[Either[RudderError, BrandingConf]] = (for {
+    v <- Ref.make[Either[RudderError, BrandingConf]](Left(Unexpected("Cache is not yet initialized")))
+    c <- reloadCacheInternal(true, v).either
+  } yield v).runNow
 
-  def reloadCache(init : Boolean) : Box[BrandingConf] = {
-    Try {
-      val path = Paths.get(configFilePath)
-      if (Files.exists(path)) {
-        import net.liftweb.json.parseOpt
-        import scala.io.Source.fromFile
-        val content = fromFile(configFilePath).mkString("")
-        for {
-          json <- Box(parseOpt(content)) ?~! "Could nor parse correctly Branding plugin configuration file"
-          conf <- BrandingConf.parse(json)
-        }  yield {
-          cache = Full(conf)
-          conf
-        }
-      } else {
-        if (init) {
-          updateConf(initialValue)
-        } else {
-          // Should we update cache to that value ??
-          Failure("Could not read plugin configuration from cache")
-        }
-      }
-    } match {
-      case Success(_) =>
-        cache
-      case CatchException(e) =>
-        logger.debug(e.getMessage)
-        Failure("Could not read configuration for branding plugin", Full(e), Empty)
-    }
+  private def reloadCacheInternal(init: Boolean, ref: Ref[Either[RudderError, BrandingConf]]) : IOResult[BrandingConf] = {
+    (for {
+      path   <- IOResult.effect(Paths.get(configFilePath))
+      exists <- IOResult.effect(Files.exists(path))
+      res    <- if(exists) {
+                  for {
+                    content <- IOResult.effect(s"Error when trying to read file: ${configFilePath}")(
+                                 File(configFilePath).contentAsString(StandardCharsets.UTF_8)
+                               )
+                    json    <- parseOpt(content).notOptional("Could nor parse correctly Branding plugin configuration file")
+                    conf    <- BrandingConf.parse(json).toIO
+                    ref     <- ref.set(Right(conf))
+                  }  yield {
+                    conf
+                  }
+                } else {
+                  if (init) {
+                    updateConf(initialValue)
+                  } else {
+                    // Should we update cache to that value ??
+                    Inconsistency("Could not read plugin configuration from cache").fail
+                  }
+                }
+    } yield {
+      res
+    }).chainError("Could not read configuration for branding plugin")
   }
 
-  def getConf : Box[BrandingConf] = cache
+  def reloadCache : IOResult[BrandingConf] = reloadCacheInternal(false, cache)
 
-  def updateConf(newConf : BrandingConf) : Box[BrandingConf] = {
+  def getConf : Box[BrandingConf] = {
+    (for {
+      c <- cache.get
+      r <- c.toIO
+    } yield {
+      r
+    }).toBox
+  }
+
+
+  def updateConf(newConf : BrandingConf) : IOResult[BrandingConf] = {
     import net.liftweb.json.prettyRender
     val content = prettyRender(BrandingConf.serialize(newConf))
-    Try{
-      val path = Paths.get(configFilePath)
-      if (!Files.exists(path)) {
-        Files.createDirectories(path.getParent)
-        Files.createFile(path)
-      }
-      Files.write(path, content.getBytes(StandardCharsets.UTF_8))
-    } match {
-      case Success(_) =>
-        cache = Full(newConf)
-        cache
-      case CatchException(e) =>
-        Failure("Could not write new configuration for branding plugin", Full(e), Empty)
-    }
+    (for {
+      _ <- IOResult.effect {
+             val path = Paths.get(configFilePath)
+             if (!Files.exists(path)) {
+               Files.createDirectories(path.getParent)
+               Files.createFile(path)
+             }
+             Files.write(path, content.getBytes(StandardCharsets.UTF_8))
+           }
+      _ <- cache.set(Right(newConf))
+    } yield {
+      newConf
+    }).chainError("Could not write new configuration for branding plugin")
   }
 }

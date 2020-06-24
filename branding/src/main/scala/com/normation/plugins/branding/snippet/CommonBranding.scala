@@ -95,7 +95,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
         , NodeSeq.Empty
         )
     }
-    var style =
+    val style =
       <style>
         .custom-branding-logo {{
         background-size: contain;
@@ -134,7 +134,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
         max-width: 35px;
         }}
       </style>
-    var commonBrandingCss : NodeSeq = data match {
+    val commonBrandingCss : NodeSeq = data match {
       case Full(d) => (d.wideLogo.enable, d.wideLogo.data, d.smallLogo.enable, d.smallLogo.data) match {
         case (true, Some(wideLogoData), _, _)  => style
         case (_, _, true, Some(smallLogoData)) => style
