@@ -61,6 +61,7 @@ import com.normation.rudder.domain.parameters.GlobalParameter
 import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.typesafe.config.ConfigValue
 import zio.duration._
+import com.softwaremill.quicklens._
 
 /*
  * This file contain the logic to update dataset from an
@@ -214,11 +215,16 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
   def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[String, ParamInterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
 
-    //build interpolation context from node:
-    val context = ParamInterpolationContext(node, policyServer, globalPolicyMode, parameters, 5)
+    // we inject some props that are usefull as identity pivot (like short name)
+    // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}
+    val injectedPropsJson = s"""{"short-hostname": "${node.hostname.split("\\.")(0)}"}"""
 
     for {
       compiled <- compiler.compileParam(input)
+      injected <- GenericProperty.parseValue(injectedPropsJson)
+      //build interpolation context from node:
+      enhanced =  node.modify(_.node.properties).using(props =>  NodeProperty("datasources-injected", injected, None) :: props )
+      context  =  ParamInterpolationContext(enhanced, policyServer, globalPolicyMode, parameters, 5)
       bounded  <- compiled(context)
     } yield {
       bounded
