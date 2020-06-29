@@ -212,9 +212,6 @@ class ScaleOutRelayService(
      for {
       authorizedNetworks <- policyServerManagementService.getAuthorizedNetworks(nodeInf.policyServerId)
     } yield {
-       println(authorizedNetworks)
-       println(nodeInf.id)
-       println(nodeInf.policyServerId)
        val parameters =
          Map (
             "OWNER"              -> Seq("${rudder.node.admin}")
