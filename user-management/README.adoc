@@ -22,6 +22,7 @@ dashboard and nothing else.
 
 image::docs/images/usermanagement-display.png[]
 
+WARNING: No Change Request will be generated when changes are made. The plugin is not subject to validation workflow when Change validation plugin is enabled.
 == Pre-defined roles
 
 |====
@@ -44,7 +45,7 @@ For each user you can define more than one role, each role adding its authorizat
 Example: "rule_only,administration_only" will only give access to the "Administration" tab as well as the
 Rules.
 
-.Nesting of roles 
+.Nesting of roles
 image::docs/images/authorization_nesting.png[]
 
 == Custom roles
