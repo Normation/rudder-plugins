@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-PLUGIN_NAME="openscap-policies"
+PLUGIN_NAME="openscap"
 PRETTY_NAME="OpenSCAP Policies"
 CONFIGURATION_PATH=/opt/rudder/share/plugins/$PLUGIN_NAME
 

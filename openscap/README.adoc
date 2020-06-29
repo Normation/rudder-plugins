@@ -28,7 +28,7 @@ The technique comes with two parameters:
 * `profile` which is the profile name you want to audit
 * `scap_file` which is the absolute path (on the node) of the SCAP content from which you will base the audit on
 
-image:openscap-policies/openscap-directive.png[OpenSCAP directive example]
+image:openscap/openscap-directive.png[OpenSCAP directive example]
 
 SCAP content refers to document in the XCCDF, OVAL and Source DataStream formats. These documents can be presented in different forms and by different organizations to meet their security automation and technical implementation needs. You can find more informations on the https://github.com/ComplianceAsCode/content[ComplianceAsCode]  GitHub project.
 
@@ -49,7 +49,7 @@ The technique will take care of the openSCAP agent installation and will by defa
 
 A new tab in Node Details called OpenSCAP is added by this plugin for nodes configured to have the OpenSCAP Technique running. It displays the report in an iframe in this tab, as it is sent by the node, without any sanitization yet.
 
-image:openscap-policies/openscap-tab.png[OpenSCAP tab in node details]
+image:openscap/openscap-tab.png[OpenSCAP tab in node details]
 
 A new API endpoint is also available:
 

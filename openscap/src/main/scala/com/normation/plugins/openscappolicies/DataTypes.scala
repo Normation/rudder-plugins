@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory
  * Applicative log of interest for Rudder ops.
  */
 object OpenscapPoliciesLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("openscap-policies")
+  override protected def _logger = LoggerFactory.getLogger("openscap")
 }
 
 // other data types for you plugin

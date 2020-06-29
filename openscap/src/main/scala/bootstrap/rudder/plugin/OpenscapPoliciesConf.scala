@@ -57,7 +57,7 @@ import com.typesafe.config.ConfigFactory
 
 object OpenScapProperties {
   val CONFIG_FILE_KEY = "rudder.plugin.openScapPolicies.config"
-  val DEFAULT_CONFIG_FILE_NAME = "openscap-policies.properties"
+  val DEFAULT_CONFIG_FILE_NAME = "openscap.properties"
 
   val configResource = System.getProperty(CONFIG_FILE_KEY) match {
     case null | "" => //use default location in classpath
