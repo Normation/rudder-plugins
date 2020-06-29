@@ -200,4 +200,8 @@ A validated user is an user who is not subject to the workflow validation by cha
 is automatically deployed without any validation needed by another user
 Initially all validated users are displayed in change validation main page, you can manage the list by add or remove them from it.
 
+image::docs/images/1_Validated_User.png[List of validated users]
 
+image::docs/images/2_Validated_User.png[Update validated users]
+
+image::docs/images/3_Validated_User.png[Upadated list of validated users]
