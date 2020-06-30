@@ -12,4 +12,4 @@ cd $ELM_DIR
 # Please for now delete elm-stuff file
 # On CI, since we clean repository before build, elm-stuff will not exist
 
-elm make sources/Branding.elm --output=generated/branding.js
+elm make --optimize sources/Branding.elm --output=generated/branding.js
