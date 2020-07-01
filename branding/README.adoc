@@ -15,4 +15,4 @@ This plugin allows to customize some part of Rudder UI to facilitate its integra
 your other applications or internal branding but also to clearly differentiate among
 several Rudder instances (typically, with a dedicated color and message for test/qa/prod instances).
 
-image::docs/images/branding_conf.png[Branding configurations]
+image::doc/images/branding_conf.png[Branding configurations]
