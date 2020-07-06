@@ -41,6 +41,8 @@ import cats.data.NonEmptyList
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.rudder.domain.nodes.NodeInfo
+import com.normation.rudder.domain.nodes.NodeState
+import com.normation.rudder.domain.parameters.Parameter
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
@@ -236,9 +238,12 @@ class HttpQueryDataSourceService(
     // give a timeout for the whole tasks sufficiently large, but that won't overlap too much on following runs
     val timeout = datasource.requestTimeOut
 
+    // filter out nodes with "disabled" state
+    val nodes = info.nodes.filter { case (k, v) => v.state != NodeState.Ignored }
+
     for {
       mode          <- globalPolicyMode()
-      updated       <- tasks(info.nodes, info.policyServers, mode, info.parameters).timeout(timeout).provide(clock).notOptional(
+      updated       <- tasks(nodes, info.policyServers, mode, info.parameters).timeout(timeout).provide(clock).notOptional(
                          s"Timout error after ${timeout.asScala.toString()}"
                        )
                        // execute hooks
