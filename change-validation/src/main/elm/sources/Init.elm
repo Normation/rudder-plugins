@@ -71,4 +71,4 @@ createSuccessNotification message =
 
 httpErrorNotification : String -> Http.Error -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 httpErrorNotification message e =
-  Debug.log (getErrorMessage e)   ( addToast (Toasty.Defaults.Error "Error..." (message ++ " (" ++ getErrorMessage e ++ ")")) defaultConfig)
+  addToast (Toasty.Defaults.Error "Error..." (message ++ " (" ++ getErrorMessage e ++ ")")) defaultConfig
