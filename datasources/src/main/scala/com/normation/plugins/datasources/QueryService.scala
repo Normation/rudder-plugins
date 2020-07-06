@@ -42,7 +42,6 @@ import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.CompareProperties
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeState
-import com.normation.rudder.domain.parameters.Parameter
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
