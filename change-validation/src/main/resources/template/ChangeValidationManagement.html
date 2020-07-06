@@ -24,7 +24,7 @@
               <span class="glyphicon glyphicon-info-sign"></span>
             </div>
             <p>
-              If enabled, all change to configuration (Directives, Rules, Groups and Parameters) will be submitted for validation via a Change Request based on node targeting (fconfigured below).<br/>
+              If enabled, all change to configuration (Directives, Rules, Groups and Parameters) will be submitted for validation via a Change Request based on node targeting (configured below).<br/>
               A new Change Request will enter the <b>Pending validation</b> status, then can be moved to <b>Pending deployment</b> (approved but not yet deployed) or <b>Deployed</b> (approved and deployed) statuses.
             </p>
             <p>
@@ -92,9 +92,28 @@
     </div>
 
     <div class="inner-portlet">
-      <div class="page-title">Configure Users with change validation</div>
+      <div class="page-title">Configure change request triggers</div>
       <div class="portlet-content">
-        <div class="col-xs-12 callout-fade callout-warning">
+        <div class="col-xs-12 callout-fade callout-info">
+          <div class="marker">
+            <span class="glyphicon glyphicon-info-sign"></span>
+          </div>
+          <p>
+            By default, change request are created for all users. You can change when a change request
+            is created with below options:
+          </p>
+          <ul>
+            <li>exempt some users from validation;</li>
+            <li>trigger change request only for changes impacting nodes belonging to some supervised groups;</li>
+          </ul>
+          <p>Be careful: a change request is created when <b>at least one</b> predicate matches, so an exempted user
+            still need a change request to modify a node from a supervised group.</p>
+        </div>
+      </div>
+
+      <div class="page-subtitle">Configure Users with change validation</div>
+      <div class="portlet-content">
+        <div class="col-xs-12 callout-fade callout-info">
           <div class="marker">
             <span class="glyphicon glyphicon-info-sign"></span>
           </div>
@@ -106,55 +125,50 @@
           <div id="validated-users-management"/>
         </div>
       </div>
-    </div>
 
-    <div id="supervised-target">
-      <div class="inner-portlet">
-        <div class="page-title">Configure Groups with Change Validations</div>
-        <div class="portlet-content">
-          <div class="row">
-            <div class="col-xs-12">
-              <div class="callout-fade callout-warning">
-                <div class="marker">
-                  <span class="glyphicon glyphicon-info-sign"></span>
-                </div>
-                <p>
-                  Change validation are enable only for nodes belonging to chosen groups below: click the
-                  checkbox to force any modification impacting a node in the corresponding group to go through a
-                  change request and validation workflow.
-                </p>
-                <p>
-                  The supervised changes are:
-                <ul>
-                  <li>any change in a global parameter, as these change can have side effects spreading technique code,</li>
-                  <li>any modification in one of the supervised groups,</li>
-                  <li>any change in a rule which targets a node which belong to a group marked as supervised,</li>
-                  <li>any change in a directive used in one of the previous rules.</li>
-                </ul>
-                </p>
-                <p>
-                  Changes in techniques are not subjected to change validation, nor are changes resulting from an archive import.
-                </p>
-              </div>
+      <div class="page-subtitle">Configure Groups with Change Validations</div>
+      <div class="portlet-content">
+        <div class="col-xs-12">
+          <div class="callout-fade callout-info">
+            <div class="marker">
+              <span class="glyphicon glyphicon-info-sign"></span>
             </div>
+            <p>
+              Change validation are enable for <b>any</b> change that would impact a node belonging to one of the chosen groups below.
+              Be careful: a change on one another group
+            </p>
+            <p>
+              The supervised changes are:
+            <ul>
+              <li>any change in a global parameter, as these changes can have side effects spreading technique code,</li>
+              <li>any modification in one of the supervised groups,</li>
+              <li>any change in a rule which targets a node which belong to a group marked as supervised,</li>
+              <li>any change in a directive used in one of the previous rules.</li>
+            </ul>
+            </p>
+            <p>
+              Changes in techniques are not subjected to change validation, nor are changes resulting from an archive import.
+            </p>
           </div>
-          <div id="supervised-targets-app">
-            <div id="list-groups-change-validation"/>
-          </div>
-          <script>
-              var main = document.getElementById("list-groups-change-validation");
-              var wu = document.getElementById("validated-users-management");
-              var initValues = {
-                 contextPath : contextPath
-              };
-              var app  = Elm.SupervisedTargets.init({ node: main,  flags: initValues});
-              var app2 = Elm.WorkflowUsers.init({ node: wu, flags: initValues})
-          </script>
-
+        </div>
+        <div id="supervised-targets-app">
+          <div id="list-groups-change-validation"/>
         </div>
       </div>
+
+      <script>
+          var main = document.getElementById("list-groups-change-validation");
+          var wu = document.getElementById("validated-users-management");
+          var initValues = {
+             contextPath : contextPath
+          };
+          var app  = Elm.SupervisedTargets.init({ node: main,  flags: initValues});
+          var app2 = Elm.WorkflowUsers.init({ node: wu, flags: initValues})
+      </script>
+
     </div>
   </div>
+
 </body>
 </html>
 

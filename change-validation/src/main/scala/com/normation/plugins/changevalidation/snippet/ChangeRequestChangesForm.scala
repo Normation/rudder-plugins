@@ -72,6 +72,7 @@ import org.joda.time.DateTime
 
 import scala.xml._
 import com.normation.box._
+import com.normation.rudder.domain.nodes.GroupProperty
 
 object ChangeRequestChangesForm {
   def form = ChooseTemplate(
@@ -411,6 +412,7 @@ class ChangeRequestChangesForm(
         <li><b>Enabled:&nbsp;</b><value id="isEnabled"/></li>
         <li><b>Dynamic:&nbsp;</b><value id="isDynamic"/></li>
         <li><b>System:&nbsp;</b><value id="isSystem"/></li>
+        <li><b>Properties:&nbsp;</b><value id="properties"/></li>
         <li><b>Query:&nbsp;</b><value id="query"/></li>
         <li><b>Node list:&nbsp;</b><value id="nodes"/></li>
       </ul>
@@ -425,6 +427,9 @@ class ChangeRequestChangesForm(
         case Some(q) => Text(q.toJSONString)
       } ) &
       "#isDynamic" #> group.isDynamic &
+      "#properties" #> <ul>{group.properties.map { p =>
+        <li>{p.name}: {p.valueAsString}</li>
+      } }</ul> &
       "#nodes" #>( <ul>
                    {
                      val l = group.serverList.toList
@@ -449,13 +454,17 @@ class ChangeRequestChangesForm(
       }
     def displayServerList(servers:Set[NodeId]):String = {
       servers.map(_.value).toList.sortBy(s => s).mkString("\n")
-
     }
+    def displayProperties(props: List[GroupProperty]) = {
+      props.map(_.toData).mkString("\n")
+    }
+
     ( "#groupID" #> createGroupLink(group.id) &
       "#groupName" #> displaySimpleDiff(diff.modName,"name",Text(group.name))&
       "#shortDescription" #> displaySimpleDiff(diff.modDescription,"description",Text(group.description)) &
       "#query" #> diff.modQuery.map( query =>displayFormDiff(query , "query")(displayQuery)).getOrElse(Text(displayQuery(group.query))) &
       "#isDynamic" #> displaySimpleDiff(diff.modIsDynamic,"isDynamic",Text(group.isDynamic.toString)) &
+      "#properties" #> diff.modProperties.map(d => displayFormDiff(d, "properties")(displayProperties)).getOrElse(Text(displayProperties(group.properties))) &
       "#nodes" #> diff.modNodeList.map(displayFormDiff(_, "nodeList")(displayServerList)).getOrElse(Text(group.serverList.mkString("\n"))) &
       "#isEnabled" #> displaySimpleDiff(diff.modIsActivated,"isEnabled",Text(group.isEnabled.toString)) &
       "#isSystem" #> group.isSystem
