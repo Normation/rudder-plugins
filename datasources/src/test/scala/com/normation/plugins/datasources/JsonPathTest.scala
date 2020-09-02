@@ -140,7 +140,56 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
     }
   }
 
+  "from hostnames" should {
 
+    "be able to compare with content with dot" in {
+      JsonSelect.fromPath("$.nodes.[?(@.hostname =~ /abc123.some.host.com.*/i)]", hostnames).either.runNow must beRight(
+        List("""{"environment":"DEV_INFRA","hostname":"abc123.some.host.com"}""".forceParse)
+      )
+    }
+
+    "be able to compare with content with dot" in {
+      JsonSelect.fromPath("""$.nodes['abc456.some.host.com']""", hostnames2).either.runNow must beRight(
+        List("""{ "environment": "DEV_INFRA" }""".forceParse)
+      )
+    }
+
+
+  }
+
+
+
+
+
+  lazy val hostnames = """
+  { "nodes": [
+    {
+      "hostname": "abc123.some.host.com",
+      "environment": "DEV_INFRA"
+    },
+    {
+      "abc456.some.host.com": { "environment": "DEV_INFRA" }
+    },
+    {
+      "hostname": "def123",
+      "environment": "DEV_INFRA"
+    },
+    {
+      "hostname": "ghi123.some.host.com",
+      "environment": "DEV_INFRA"
+    },
+    {
+      "hostname": "ghi456",
+      "environment": "DEV_INFRA"
+    }
+  ] }
+  """
+
+  lazy val hostnames2 = """
+  { "nodes": {
+       "abc456.some.host.com": { "environment": "DEV_INFRA" }
+  } }
+  """
 
 
   lazy val json = """

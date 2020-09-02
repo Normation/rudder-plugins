@@ -64,14 +64,6 @@ As displayed, a data source provides a way for Rudder to query (when some
 conditions are met) a third party REST API to retrieve interesting
 properties for nodes and save them for a given Node property key.
 
-== Rudder compatibility and breaking changes
-
-=== Rudder 4.3.7 needs version 4.3-1.4.1 or above
-
-There was a Rudder internal API breaking change that needs to be repercuted here:
-- Plugin ticket: https://issues.rudder.io/issues/13933
-
-
 
 == Data source configuration screen
 
@@ -86,7 +78,7 @@ with a human readable name and description.
 
 == Second set: query configuration
 
-The second set of properties allows to define how the third party REST API will
+The second set of properties allows defining how the third party REST API will
 be queried and the returned JSON response processed.
 
 For now, we only support one query mode which is to do one HTTP query for each
@@ -107,10 +99,23 @@ the document as the actual data to use as a node property.
 Finally, the resulting data is assigned to the node, using the key name defined
 in the data source configuration.
 
-You can use Rudder variables expansion (`${rudder.node.xxx}`,
+You can use Rudder variable expansion (`${rudder.node.xxx}`,
 `${rudder.parameter.xxx}`, `${node.properties[xxx]}`) in most of these
-configuration option: URL, headers, query parameters, JSON path. They will be
-replaced by their values for each node at the time the HTTP query is run.
+configurations option: URL, headers, query parameters, JSON path. They will be
+replaced by their values for each node at the time the HTTP query is ran.
+
+[TIP]
+====
+
+A special node property that contains node short hostname, i.e. the first part of
+node FQDN, is available in datasources variable expansion:
+
+`${node.properties[datasources-injected][short-hostname]}`
+
+This is useful as the node short hostname is often used in CMDB as a join
+attribute.
+
+====
 
 
 == Third set: query triggers
