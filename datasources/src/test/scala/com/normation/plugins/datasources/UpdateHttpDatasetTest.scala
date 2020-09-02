@@ -144,6 +144,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
   implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
+  implicit class ForceGet(json: String) {
+    def forceParse = GenericProperty.parseValue(json) match {
+      case Right(value) => value
+      case Left(err)    => throw new IllegalArgumentException(s"Error in parsing value: ${err.fullMsg}")
+    }
+  }
 
   implicit class DurationToScala(d: Duration) {
     def toScala = scala.concurrent.duration.FiniteDuration(d.toMillis, "millis")
@@ -200,6 +206,17 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         Ok{
           counterSuccess.update(_+1).runNow
           """{"foo":"bar"}"""
+        }
+
+      case GET -> Root / "server" =>
+        Ok{
+          counterSuccess.update(_+1).runNow
+          """{"hostname":"server.rudder.local"}"""
+        }
+      case GET -> Root / "hostnameJson" =>
+        Ok{
+          counterSuccess.update(_+1).runNow
+          hostnameJson
         }
 
       case GET -> Root / "404" =>
@@ -789,6 +806,41 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         )
       )
     }
+
+    "understand ${node.properties[datasources-injected][short-hostname]} in API" in {
+      //all node updated one time
+      val d2 = NewDataSource(
+          "test-http-service"
+        , url  = s"""${REST_SERVER_URL}/$${node.properties[datasources-injected][short-hostname]}"""
+        , path = "$.hostname"
+      )
+      infos.updates.clear()
+      // root hostname is server.rudder.local, so short hostname is "server"
+      val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
+
+      res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
+        infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+            NodeProperty("test-http-service", "server.rudder.local".toConfigValue, Some(DataSource.providerName))
+        )
+      )
+    }
+    "understand ${node.properties[datasources-injected][short-hostname]} in JSON path" in {
+      //all node updated one time
+      val d2 = NewDataSource(
+          "test-http-service"
+        , url  = s"""${REST_SERVER_URL}/hostnameJson"""
+        , path = "$.['nodes']['${node.properties[datasources-injected][short-hostname]}']"
+      )
+      infos.updates.clear()
+      // root hostname is server.rudder.local, so short hostname is "server"
+      val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
+
+      res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
+        infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+            NodeProperty("test-http-service", """{ "environment": "DEV_INFRA", "mergeBucket" : { "test_merge2" : "aPotentialMergeValue1" } }""".forceParse, Some(DataSource.providerName))
+        )
+      )
+    }
   }
 
   "The behavior on 404 " should {
@@ -859,6 +911,17 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
   }
   }
+
+  lazy val hostnameJson =
+    """{ "nodes":
+      {
+        "some.node.com":
+          { "environment": "DEV_INFRA", "mergeBucket" : { "test_merge2" : "aPotentialMergeValue1" } },
+        "server":
+          { "environment": "DEV_INFRA", "mergeBucket" : { "test_merge2" : "aPotentialMergeValue1" } }
+      }
+    }
+    """
 
   lazy val booksJson = """
   {
