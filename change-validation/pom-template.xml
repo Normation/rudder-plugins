@@ -44,6 +44,16 @@
 
   <dependencies>
     <!-- Add other plugin specific dependencies -->
+    <dependency>
+      <groupId>com.github.spullara.mustache.java</groupId>
+      <artifactId>compiler</artifactId>
+      <version>0.9.6</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>1.6.2</version>
+    </dependency>
   </dependencies>
 
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->

@@ -54,6 +54,10 @@ import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.common._
+import com.normation.box._
+import com.normation.errors._
+import zio.UIO
+
 
 
 /**
@@ -123,6 +127,7 @@ class TwoValidationStepsWorkflowServiceImpl(
   , changeRequestEventLogService  : ChangeRequestEventLogService
   , val roChangeRequestRepository : RoChangeRequestRepository
   , woChangeRequestRepository     : WoChangeRequestRepository
+  , notificationService           : NotificationService
   , workflowEnable                : () => Box[Boolean]
   , selfValidation                : () => Box[Boolean]
   , selfDeployment                : () => Box[Boolean]
@@ -148,15 +153,15 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
 
     for {
-    saved  <- save ?~! s"could not save change request ${changeRequest.info.name}"
-    modId  =  ModificationId(uuidGen.newUuid)
-    workflowEnable <- workflowEnable()
-    logged <- if(workflowEnable) {
-                changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
-                  s"could not save event log for change request ${saved.changeRequest.id} creation"
-              } else {
-                Full("OK, no workflow")
-              }
+      saved  <- save ?~! s"could not save change request ${changeRequest.info.name}"
+      modId  =  ModificationId(uuidGen.newUuid)
+      workflowEnable <- workflowEnable()
+      logged <- if(workflowEnable) {
+        changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
+          s"could not save event log for change request ${saved.changeRequest.id} creation"
+      } else {
+        Full("OK, no workflow")
+      }
     } yield { saved.changeRequest }
   }
 
@@ -184,10 +189,10 @@ class TwoValidationStepsWorkflowServiceImpl(
         val validatorActions =
           if (authorizedRoles.contains("validator") && canValid)
             Seq((Deployment.id,stepValidationToDeployment _)) ++ {
-            if(authorizedRoles.contains("deployer") && canDeploy)
-              Seq((Deployed.id,stepValidationToDeployed _))
+              if(authorizedRoles.contains("deployer") && canDeploy)
+                Seq((Deployed.id,stepValidationToDeployed _))
               else Seq()
-             }
+            }
           else Seq()
         WorkflowAction("Validate",validatorActions )
 
@@ -260,6 +265,19 @@ class TwoValidationStepsWorkflowServiceImpl(
     roWorkflowRepo.getAllChangeRequestsState
   }
 
+
+  def startWorkflow(changeRequest: ChangeRequest, actor:EventActor, reason: Option[String]) : Box[ChangeRequestId] = {
+    ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
+    for {
+      saved    <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), actor, reason)
+      workflow <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
+      _        =  notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
+    } yield {
+      workflowComet ! WorkflowUpdate
+      saved.id
+    }
+  }
+
   private[this] def changeStep(
       from           : WorkflowNode
     , to             : WorkflowNode
@@ -268,33 +286,60 @@ class TwoValidationStepsWorkflowServiceImpl(
     , reason         : Option[String]
   ) : Box[WorkflowNodeId] = {
     (for {
-      state <- woWorkflowRepo.updateState(changeRequestId,from.id, to.id)
-      workflowStep = WorkflowStepChange(changeRequestId,from.id,to.id)
-      log   <- workflowLogger.saveEventLog(workflowStep,actor,reason)
+      state        <- woWorkflowRepo.updateState(changeRequestId,from.id, to.id)
+      workflowStep =  WorkflowStepChange(changeRequestId,from.id,to.id)
+      log          <- workflowLogger.saveEventLog(workflowStep,actor,reason)
+      _            =  sendEmail(from, to, changeRequestId).catchEmailError(from.id.value, to.id.value)
     } yield {
       workflowComet ! WorkflowUpdate
       state
     }) match {
       case Full(state) => Full(state)
-      case e:Failure => ChangeValidationLogger.error(s"Error when changing step in workflow for Change Request ${changeRequestId.value} : ${e.msg}")
-                        e
-      case Empty => ChangeValidationLogger.error(s"Error when changing step in workflow for Change Request ${changeRequestId.value} : no reason given")
-                    Empty
+      case eb:EmptyBox =>
+        val e = eb ?~! s"Error when changing step in workflow for Change Request ${changeRequestId.value}"
+        ChangeValidationLogger.error(e.messageChain)
+        e
     }
   }
 
-  private[this] def toFailure(from: WorkflowNode, changeRequestId: ChangeRequestId, actor: EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
-    changeStep(from, Cancelled,changeRequestId,actor,reason)
+
+
+  /**
+   *  Send an email notification. Failing to send email does not fail the method (ie: change validation is ok, no
+   *  error displayed to user) BUT of course we log.
+   */
+  private[this] def sendEmail(from: WorkflowNode, to: WorkflowNode, changeRequestId: ChangeRequestId): IOResult[Unit] = {
+    for {
+      cr <- roChangeRequestRepository.get(changeRequestId).toIO.notOptional(
+                 s"Change request with ID '${changeRequestId.value}' was not found in database"
+               )
+      _  <- (from,to) match {
+                  case (Validation, Deployment) =>
+                    notificationService.sendNotification(Deployment, cr)
+                  case (_, Cancelled) =>
+                    notificationService.sendNotification(Cancelled, cr)
+                  case (_, Deployed) =>
+                    notificationService.sendNotification(Deployed, cr)
+                  case _ =>
+                    ChangeValidationLoggerPure.debug(s"Not sending email for update from '${from.id.value}' to '${to.id.value}''") *>
+                    UIO.unit
+                }
+    } yield ()
   }
 
-  def startWorkflow(changeRequest: ChangeRequest, actor:EventActor, reason: Option[String]) : Box[ChangeRequestId] = {
-    ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
-    for {
-      saved    <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), actor, reason)
-      workflow <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
-    } yield {
-      workflowComet ! WorkflowUpdate
-      saved.id
+  /**
+   * We never want to have an email sending error lead to an error in the CR request creation: the CR is
+   * already created, and it's ok. It's still important to let log about what goes wrong in the notification
+   * for admin (because they are the one who can do something about it).
+   */
+  implicit class CatchEmailError(result: IOResult[Unit]) {
+    def catchEmailError(from: String, to: String): Unit = {
+      result.toBox match {
+        case eb: EmptyBox =>
+          val msg = (eb ?~! s"Error when trying to send email for change request status update from '${from}' to '${to}'").messageChain
+          ChangeValidationLogger.error(msg)
+        case Full(_) => // nothing
+      }
     }
   }
 
@@ -309,6 +354,11 @@ class TwoValidationStepsWorkflowServiceImpl(
     } yield {
       state
     }
+  }
+
+
+  private[this] def toFailure(from: WorkflowNode, changeRequestId: ChangeRequestId, actor: EventActor, reason: Option[String]) : Box[WorkflowNodeId] = {
+    changeStep(from, Cancelled,changeRequestId,actor,reason)
   }
 
   //allowed workflow steps
@@ -339,5 +389,3 @@ class TwoValidationStepsWorkflowServiceImpl(
   // this THE workflow that needs external validation.
   override def needExternalValidation(): Boolean = true
 }
-
-

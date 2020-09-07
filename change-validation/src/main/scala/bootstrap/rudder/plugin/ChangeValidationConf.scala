@@ -90,8 +90,9 @@ import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
 import net.liftweb.common.Box
 import net.liftweb.common.Full
-
 import com.normation.box._
+import com.normation.plugins.changevalidation.EmailNotificationService
+import com.normation.plugins.changevalidation.NotificationService
 
 /*
  * The validation workflow level
@@ -186,6 +187,10 @@ class ChangeValidationWorkflowLevelService(
  */
 object ChangeValidationConf extends RudderPluginModule {
 
+  lazy val notificationService = new NotificationService(
+      new EmailNotificationService()
+    , "/opt/rudder/etc/plugins/change-validation.conf"
+  )
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
@@ -203,6 +208,7 @@ object ChangeValidationConf extends RudderPluginModule {
     , RudderConfig.changeRequestEventLogService
     , roChangeRequestRepository
     , woChangeRequestRepository
+    , notificationService
     , () => Full(RudderConfig.workflowLevelService.workflowEnabled)
     , () => RudderConfig.configService.rudder_workflow_self_validation.toBox
     , () => RudderConfig.configService.rudder_workflow_self_deployment.toBox
