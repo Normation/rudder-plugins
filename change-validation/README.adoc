@@ -194,6 +194,38 @@ You will be provided a Link to those change requests, so you can check if the ch
 
 image::docs/images/Warning.png[]
 
+=== Email notification
+
+You can set up email notification at each step of change request workflow.
+You will need to fill the information about the mail server settings and to whom it should be sent for each step, this file is located at :
+`/opt/rudder/etc/plugins/change-validation.conf`
+
+For each step you can set up an email's template, we provide templates, by default they are located at :
+
+`/var/rudder/plugins/change-validation/{step name}-mail.template`
+
+Here is an example:
+[source,mustache]
+----
+# Pending validation
+validation.to="JaneDoe@acme.com"
+validation.cc="JohnDo@acme.io,shelly@acme.com"
+validation.bcc="jcvd@acme.com"
+validation.subject="""[Pending Validation] CR #{{id}}: {{name}}"""
+validation.replyTo="no-reply@acme.com"
+validation.template="/var/rudder/plugins/change-validation/validation-mail.template"
+----
+
+Here a list of parameter available to use in the template:
+- author
+- link
+- name
+- description
+
+These parameters can also be used in `subject` parameter in the configuration file.
+
+> NOTE: You can change the templates' locations, but you will need to modify the parameter `{step name}.template` in `change-validation.conf`
+
 == Validated User
 
 A validated user is an user who is not subject to the workflow validation by change request. Any change done by a validated user
