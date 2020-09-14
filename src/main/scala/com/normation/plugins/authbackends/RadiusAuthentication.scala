@@ -139,7 +139,10 @@ class RadiusAuthenticationProvider(
     radiusClient
   }
 
-  private[this] val authenticator: RadiusAuthenticator = {
+  /**
+   * Authenticator is statefull, create a new one each time
+   */
+  private[this] def authenticator: RadiusAuthenticator = {
     RadiusClient.getAuthProtocol(radiusAuthProtocol) match {
       case null => new PAPAuthenticator()
       case x => x
@@ -240,8 +243,7 @@ class RadiusAuthenticationProvider(
         //get reply message, strip null characters
         val replyMessage = challenge.getAttributeValue(Attr_ReplyMessage.TYPE).asInstanceOf[String].replaceAll("\u0000", "");
         throw new BadCredentialsException("The server has issued a challenge and is waiting for" +
-          " a reply. Please follow the instructions and enter a response in the <b>SecurID Passcode</b> field (Username is disabled" +
-          " temporarily). " + replyMessage)
+          " a reply. Please give your authentication." + replyMessage)
     }
 
   }
