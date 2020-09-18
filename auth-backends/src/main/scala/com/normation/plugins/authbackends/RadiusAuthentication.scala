@@ -196,9 +196,11 @@ class RadiusAuthenticationProvider(
     val reply = try {
       // send and receive RADIUS packets to the specified address and port
       // with 2 retries (in case of no response)
+
       radiusClient.authenticate(request, authenticator, retries)
     } catch {
       case ex: RadiusException =>
+        logger.warn(s"Error when trying to authenticate to Radius server: " + ex.getMessage)
         throw new AuthenticationServiceException("An error occured when trying to process radius authentication", ex)
     }
 
