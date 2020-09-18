@@ -52,6 +52,16 @@ import com.normation.plugins.authbackends.api.AuthBackendsApiImpl
  */
 object AuthBackendsConf extends RudderPluginModule {
 
+  // Radius client WARN about a lot of things, which produce very long stack trace with rudder.
+  // If the user didn't explicitly set level, change it to error. User is still able to change
+  // it back in configuration file.
+  val log = org.slf4j.LoggerFactory.getLogger("net.jradius.log.Log4JRadiusLogger").asInstanceOf[ch.qos.logback.classic.Logger]
+  // if user didn' change level, set it to error only
+  if(log.getLevel == null) {
+    log.setLevel(ch.qos.logback.classic.Level.ERROR)
+  }
+
+
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
