@@ -1,30 +1,52 @@
-#!/bin/bash
+#!/bin/bash 
+set -eo pipefail
+readonly ACTION="$1"
+set -u
+readonly INVENTORIES_DIR=/var/rudder/inventories/received
+readonly GLPI_FUSION_URL=$(sed -e "/GLPI_FUSION_URL/s/^.*=//" /opt/rudder/etc/glpi.conf)
 
-INVENTORIES_DIR=/var/rudder/inventories/received
-GLPI_FUSION_URL=$(sed -e "/GLPI_FUSION_URL/s/^.*=//" /opt/rudder/etc/glpi.conf)
-INV_N=$(ls -1 "${INVENTORIES_DIR}" | egrep '.ocs$' | wc -l)
 
 send_inventory()
 {
-  curl -H "Content-Type: Application/x-compress" -k -s --data @$1 "${GLPI_FUSION_URL}" > /dev/null
+  curl -w "%{http_code}" -H "Content-Type: Application/x-compress" -k -s --data @"$1" "${GLPI_FUSION_URL}" || echo "Error sending $1" 
 }
+  curl -H "Content-Type: Application/x-compress" -k -s --data @$1 "${GLPI_FUSION_URL}" > /dev/null
 
 
-case "$1" in
+case "${ACTION}" in
   send-all)
+    INV_N=$(find "${INVENTORIES_DIR}" -type f -name "*.ocs" -atime -1 -printf "%f\n" | wc -l)
     echo "[ ] Sending ${INV_N} inventories to GLPI..."
     
-    for INV in $(ls -1 "${INVENTORIES_DIR}" | egrep '.ocs$'); do
-      send_inventory "${INVENTORIES_DIR}"/"${INV}"
+#shellcheck disable=SC2044
+    for INV in $(find "${INVENTORIES_DIR}" -type f -name "*.ocs" -atime -1 -printf "%f\n"); do
+      echo "${INV}"
+      send_inventory "${INVENTORIES_DIR}/${INV}"
     done
+    echo "[+] Done."
   ;;
   
   send-one)
-    echo "[ ] Sending inventory for node $2 to GLPI..."
-    
-    INV=$(ls -1 "${INVENTORIES_DIR}" | egrep "$2.ocs$")
+    echo "[ ] Sending inventory ${INVENTORIES_DIR}/${INV} to GLPI..."
+#shellcheck disable=SC2012
+    INV=$(ls -1 "${INVENTORIES_DIR}" | egrep "$2.*\.ocs$")
+    FIC="${INVENTORIES_DIR}"/"${INV}"
+    [ ! -r "${FIC}" ] && echo "No file candidate for $2" && exit 1
     send_inventory "${INVENTORIES_DIR}"/"${INV}"
+    echo "[+] Done."
+  ;;
+
+  list)
+    echo "List directory ${INVENTORIES_DIR}"
+    find "${INVENTORIES_DIR}" -type f -name "*.ocs" -atime -1 -printf "%f\n"
+  ;;
+  *)
+   echo "Usage :
+     $0 send-all
+     or
+     $0 send-one Computer
+     or
+     $0 list"
   ;;
 esac
 
-echo "[+] Done."
