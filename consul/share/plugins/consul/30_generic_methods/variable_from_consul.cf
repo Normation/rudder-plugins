@@ -41,7 +41,7 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
     
     pass1::
-      "${variable_prefix}.${variable_name}" string => execresult('${ncf_paths.path[curl]} -s ${consul.auth} http://${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
+      "${variable_prefix}.${variable_name}" string => execresult('${ncf_paths.path[curl]} -s ${consul.auth} ${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
 
   classes:
       "pass2" expression => "pass1";
