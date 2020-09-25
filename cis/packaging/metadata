@@ -4,6 +4,10 @@
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
+  "depends": {
+    "apt": [ "rudder-api-client" ],
+    "rpm": [ "rudder-api-client" ]
+  },
   "content": {
     "files.txz": "/var/rudder/",
     "configuration.txz": "/var/rudder/packages/${plugin-id}/"
