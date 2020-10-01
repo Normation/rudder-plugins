@@ -10,7 +10,6 @@ send_inventory()
 {
   curl -w "%{http_code}" -H "Content-Type: Application/x-compress" -k -s --data @"$1" "${GLPI_FUSION_URL}" || echo "Error sending $1" 
 }
-  curl -H "Content-Type: Application/x-compress" -k -s --data @$1 "${GLPI_FUSION_URL}" > /dev/null
 
 
 case "${ACTION}" in
