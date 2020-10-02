@@ -139,8 +139,9 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
       // We only get the first element from the path, ignoring if there is several.
       // And if list is empty, returns "" (remove property).
       optJson.map {
-        case Nil        => DataSource.nodeProperty(datasourceName.value, "".toConfigValue)
-        case value :: _ => DataSource.nodeProperty(datasourceName.value, value)
+        case Nil          => DataSource.nodeProperty(datasourceName.value, "".toConfigValue)
+        case value :: Nil => DataSource.nodeProperty(datasourceName.value, value)
+        case array        => DataSource.nodeProperty(datasourceName.value, array.toConfigValue)
       }
     }
   }
