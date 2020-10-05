@@ -93,6 +93,7 @@ import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
 import zio.test.environment._
 import zio.duration._
+import org.specs2.specification.core.Fragment
 
 object TheSpaced {
 
@@ -139,7 +140,7 @@ object TheSpaced {
 }
 
 @RunWith(classOf[JUnitRunner])
-class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll  {
+class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
   val makeTestClock = TestClock.default.build
 
   implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
@@ -201,6 +202,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           counterSuccess.update(_+1).runNow
           booksJson
         }
+
+      case GET -> Root / "testarray" / x =>
+        Ok{
+          counterSuccess.update(_+1).runNow
+          testArray(x.toInt)._1
+        }
+
 
       case GET -> Root / "single_node2" =>
         Ok{
@@ -364,7 +372,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
-    def getNodeInfoPure(nodeId: NodeId)                = throw new IllegalAccessException("Thou shall not used that method here")
+    def getNodeInfoPure(nodeId: NodeId)       = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
 
@@ -477,6 +485,57 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
 
   sequential
+
+  "Array validation with [*]" >> {
+    Fragment.foreach(0 until testArray.size) { i =>
+      s"for case: ${testArray(i)._1} -> ${testArray(i)._2}" >> {
+        val datasource = NewDataSource(
+            "test-http-service"
+          , url  = s"${REST_SERVER_URL}/testarray/$i"
+          , path = "$.[*]"
+        )
+
+        val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
+        val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
+        val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+        infos.updates.clear()
+        val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
+
+        res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
+          infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
+        ) and (
+          infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+              NodeProperty("test-http-service", testArray(i)._2.forceParse, Some(DataSource.providerName))
+          )
+        )
+      }
+    }
+  }
+  "Array validation with [:1]" >> {
+    Fragment.foreach(0 until testArray.size) { i =>
+      s"for case: ${testArray(i)._1} -> ${testArray(i)._3}" >> {
+        val datasource = NewDataSource(
+            "test-http-service"
+          , url  = s"${REST_SERVER_URL}/testarray/$i"
+          , path = "$.[:1]"
+        )
+
+        val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
+        val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
+        val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+        infos.updates.clear()
+        val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
+
+        res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
+          infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
+        ) and (
+          infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+              NodeProperty("test-http-service", testArray(i)._3.forceParse, Some(DataSource.providerName))
+          )
+        )
+      }
+    }
+  }
 
   "Update on datasource" should {
     val datasource = NewDataSource(
@@ -753,7 +812,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   "Getting a node" should {
     val datasource = httpDatasourceTemplate.copy(
         url  = s"${REST_SERVER_URL}/single_$${rudder.node.id}"
-      , path = "$.store.${node.properties[get-that]}"
+      , path = "$.store.${node.properties[get-that]}[:1]"
     )
     "get the node" in  {
       val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
@@ -910,7 +969,38 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       }
     }
   }
-  }
+}
+
+
+ /*
+  * Array rules:
+  * - an empty array is special: remove value, processed elsewhere
+  * - an array with one value (whatever the value) => remove array, get value as JSON
+  *   - so an array of array will return an array
+  * - an array with several values => keep array
+  */ 
+  // testing arrays, array of arrays, etc
+  lazy val testArray = List(
+    // [] is a special case handled elsewhere
+    // what API give                             -   expected with [*]                          - expected with [:1]
+    ("""[ 1 ]"""                                 , """1"""                                      , """1"""                                 )
+  , ("""[ "a" ]"""                               , """"a""""                                    , """"a""""                               )
+  , ("""[ { "a" : 1 }]"""                        , """{"a":1}"""                                , """{"a":1}"""                           )
+  , ("""[ 1, 2 ]"""                              , """[1,2]"""                                  , """1"""                                 ) // array of size 1 are lifted
+  , ("""[ "a", "b" ]"""                          , """["a","b"]"""                              , """"a""""                               ) // array of size 1 are lifted
+  , ("""[ { "a": 1 }, { "b": 2} ]"""             , """[{"a":1}, {"b":2}]"""                     , """{"a":1}"""                           ) // array of size 1 are lifted
+  , ("""[[]]"""                                  , """[]"""                                     , """[]"""                                )
+  , ("""[ [ 1 ] ]"""                             , """[1]"""                                    , """[1]"""                               )
+  , ("""[ [ { "a": 1 } ] ]"""                    , """[{"a":1}]"""                              , """[{"a":1}]"""                         )
+  , ("""[ [ 1, 2 ] ]"""                          , """[1,2]"""                                  , """[1,2]"""                             )
+  , ("""[ [ { "a": 1 }, {"b": 2 } ] ]"""         , """[{"a":1}, {"b":2}]"""                     , """[{"a":1}, {"b":2}]"""                )
+  , ("""[[1],[2]]"""                             , """[[1],[2]]"""                              , """[1]"""                               ) // array of size 1 are lifted
+  , ("""[ {"a": []} ]"""                         , """{"a": []}"""                              , """{"a": []}"""                         )
+  , ("""[ {"a": [{"v": 1}]} ]"""                 , """{"a": [{"v": 1}]}"""                      , """{"a": [{"v": 1}]}"""                 )
+  , ("""[ {"a": [{"v": 1}, {"v": 2}]} ]"""       , """{"a": [{"v": 1}, {"v": 2}]}"""            , """{"a": [{"v": 1}, {"v": 2}]}"""       )
+  , ("""[ {"a": [{"v": 1}]}, {"b":[{"v":2}]} ]""", """[ {"a": [{"v": 1}]}, {"b":[{"v":2}]} ]""" , """{"a": [{"v": 1}]}"""                 ) // array of size 1 are lifted
+  , ("""[ {"a": [{"v": 1}, {"v":2}]} ]"""        , """{"a": [{"v": 1}, {"v":2}]}"""             , """{"a": [{"v": 1}, {"v":2}]}"""        )
+  )
 
   lazy val hostnameJson =
     """{ "nodes":
@@ -922,6 +1012,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       }
     }
     """
+
 
   lazy val booksJson = """
   {
