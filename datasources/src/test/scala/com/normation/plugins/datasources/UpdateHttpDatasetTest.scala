@@ -89,6 +89,7 @@ import com.normation.errors._
 import com.normation.rudder.domain.nodes.GenericProperty
 import com.normation.rudder.domain.nodes.GenericProperty._
 import com.normation.zio._
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
 import zio.test.environment._
@@ -758,13 +759,58 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     "get the node" in  {
       val res = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
 
+
       res.either.runNow must beRight(===(
-          Some(DataSource.nodeProperty("test-get-one-node",  GenericProperty.parseValue("""{
-            "category": "reference",
-            "author": "Nigel Rees",
-            "title": "Sayings of the Century",
-            "price": 8.95
-          }""").getOrElse(throw new IllegalArgumentException("error in test")))):Option[NodeProperty]))
+          Some(DataSource.nodeProperty("test-get-one-node",  ConfigFactory.parseString("""{ "x" :  [
+              # String: 1
+              {
+                  # String: 2
+                  "author" : "Nigel Rees",
+                  # String: 2
+                  "category" : "reference",
+                  # String: 2
+                  "price" : 8.95,
+                  # String: 2
+                  "title" : "Sayings of the Century"
+              },
+              # String: 1
+              {
+                  # String: 2
+                  "author" : "Evelyn Waugh",
+                  # String: 2
+                  "category" : "fiction",
+                  # String: 2
+                  "price" : 12.99,
+                  # String: 2
+                  "title" : "Sword of Honour"
+              },
+              # String: 1
+              {
+                  # String: 2
+                  "author" : "Herman Melville",
+                  # String: 2
+                  "category" : "fiction",
+                  # String: 2
+                  "isbn" : "0-553-21311-3",
+                  # String: 2
+                  "price" : 8.99,
+                  # String: 2
+                  "title" : "Moby Dick"
+              },
+              # String: 1
+              {
+                  # String: 2
+                  "author" : "J. R. R. Tolkien",
+                  # String: 2
+                  "category" : "fiction",
+                  # String: 2
+                  "isbn" : "0-395-19395-8",
+                  # String: 2
+                  "price" : 22.99,
+                  # String: 2
+                  "title" : "The Lord of the Rings"
+              }
+          ]}""").getValue("x"))):Option[NodeProperty]))
     }
   }
 
