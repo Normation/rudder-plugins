@@ -23,7 +23,7 @@ object UserManagementIO {
 
   def replaceXml(currentXml: NodeSeq, newXml: Node, file: File): Box[File] = {
 
-    if (!file.isWriteable)
+    if (!file.isWritable)
       Failure(s"${file.path} is not writable")
     else if (!file.isReadable)
       Failure(s"${file.path} is not readable")
