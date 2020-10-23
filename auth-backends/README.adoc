@@ -14,22 +14,27 @@ other general information.
 
 This plugins allows to use alternative authentication backends for Rudder: LDAP/AD and radius.
 
-== Rudder compatibility and breaking changes
-
-=== Version 5.0-1.2 needs Rudder 5.0.2 or above
-
-There was a problem in the initialization order that cause the plugin backends to never be loaded correctly.
-
-- Rudder ticket: https://issues.rudder.io/issues/13695
-- Plugin ticket: https://issues.rudder.io/issues/13709
-
 == Configure enabled backends
 
 By default, both authentication and authorization are handle in the `rudder-users.xml`
 file. But you may want to rely on your existing entreprise Active Directory or LDAP
 to take care of the authentication part.
-To choose the scheme to use, either use 'file' or 'ldap' for the rudder.auth.provider
-parameter.
+
+To choose the scheme to use, either use 'file' or 'ldap' for the `rudder.auth.provider`
+parameter in configuration file: `/opt/rudder/etc/rudder-web.properties`. 
+
+[NOTE]
+=====
+
+After a change in Rudder `/opt/rudder/etc/rudder-web.properties` configuration file, 
+you need to restart the web application with the command: 
+
+```
+systemctl restart rudder-jetty
+```
+
+=====
+
 You can also use a comma separated list of authentication provider to use,
 like 'ldap,file' in which case each one will be tested in turned for authentication.
 
@@ -37,7 +42,23 @@ When set to 'ldap' or 'radius', passwords in rudder-users.xml are ignored and th
 authentication is delegated to the LDAP or radius server configured.
 
 By convention, when LDAP authentication is enable, 'password' field in
-rudder-users.xml are set to 'LDAP'.
+`rudder-users.xml` are set to 'LDAP'.
+
+
+[NOTE]
+=====
+
+After a change in `rudder-users.xml` configuration file, you need to reload user 
+information. This can be done with `user-management` plugin (either in UI or via API,
+see that plugin documentation for more information), or by restarting the web 
+application with the command:
+
+```
+systemctl restart rudder-jetty
+```
+
+=====
+
 
 For example, to use first and `ldap` authentication, and then in case the user is not found
 in `ldap`, fall-back in file authentication, you will specify:
