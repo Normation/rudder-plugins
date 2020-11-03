@@ -24,7 +24,7 @@ A node need at least the following information:
 - status,
 - OS: type, name
 
-Other information are possible. See the plugin page in Rudder (or src/main/resources/template/CreateNodeApiManagement.html) for more information.
+Other information are possible. See the https://docs.rudder.io/api/#tag/Create-Node[plugin API documentation] for more information.
 
 Whatever the final status, a node is created in pending status. Then, if the status is "accepted", node acceptation is automatically and immediately triggered. This ensure that nodes added by that API also follow the standard Rudder validation rules and dynamic group/policies are correctly updated.
 
