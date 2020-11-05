@@ -5,6 +5,7 @@ import bootstrap.liftweb.UserDetailList
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie._
+import com.normation.zio.ZioRuntime
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
@@ -88,7 +89,7 @@ class WoValidatedUserJdbcRepository(
           case None =>
             val q = sql"""INSERT INTO change_validation_validated_users (username)
             VALUES (${newVU.name})""".update
-            val linesAffected: Either[Throwable, Int] = transactRunEither(xa => q.run.transact(xa))
+            val linesAffected: Either[Throwable, Int] = ZioRuntime.unsafeRun(transactTask(xa => q.run.transact(xa)).either)
             linesAffected match {
               case Right(1)          => Full(newVU)
               case Right(0)          =>
@@ -117,7 +118,7 @@ class WoValidatedUserJdbcRepository(
         case Some(_) =>
           val q = sql"""DELETE FROM change_validation_validated_users
               WHERE username = (${actor.name})""".update
-          val linesAffected: Either[Throwable, Int] = transactRunEither(xa => q.run.transact(xa))
+          val linesAffected: Either[Throwable, Int] = ZioRuntime.unsafeRun(transactTask(xa => q.run.transact(xa)).either)
           linesAffected match {
             case Right(1) => Full(actor)
             case Right(0) =>
