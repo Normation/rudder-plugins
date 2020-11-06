@@ -11,9 +11,9 @@ include ../makefiles/global-vars.mk
 MAVEN_LOCAL_REPO =  $(shell $(MVN_PARAMS) ../makefiles/find_m2_repo.sh)
 
 NAME = $(LIB_$(LIB_TYPE)_NAME)
-VERSION = $(RUDDER_BRANCH)-$(LIB_$(LIB_TYPE)_VERSION)
+VERSION = $(BUILD_VERSION)-$(LIB_$(LIB_TYPE)_VERSION)
 PLUGINS_JAR_PATH = $(MAVEN_LOCAL_REPO)/com/normation/plugins/$(NAME)/$(VERSION)/$(NAME)-$(VERSION).jar
-PARENT_V = $(RUDDER_BRANCH)-$(PARENT_VERSION)
+PARENT_V = $(BUILD_VERSION)-$(PARENT_VERSION)
 PARENT_POM = $(MAVEN_LOCAL_REPO)/com/normation/plugins/plugins-parent/$(PARENT_V)/plugins-parent-$(PARENT_V).pom
 
 .DEFAULT_GOAL := $(PLUGINS_JAR_PATH)
