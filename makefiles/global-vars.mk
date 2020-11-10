@@ -15,9 +15,11 @@ BUILD_VERSION_NIGHTLY  = $(shell sed -ne '/^rudder-build-version-nightly=/s/rudd
 
 ifneq (,$(wildcard ./build.conf))
 PLUGIN_BRANCH   = $(shell sed -ne '/^plugin-branch=/s/plugin-branch=//p' build.conf)
+PLUGIN_BRANCH_NIGHTLY   = $(shell sed -ne '/^plugin-branch-nightly=/s/plugin-branch-nightly=//p' build.conf)
 PLUGIN_VERSION  = $(subst SNAPSHOT,nightly,$(PLUGIN_BRANCH))
 VERSION         = $(BUILD_VERSION)-$(PLUGIN_VERSION)
 POM_VERSION     = $(BUILD_VERSION)-$(PLUGIN_BRANCH)
+POM_VERSION_NIGHTLY     = $(BUILD_VERSION_NIGHTLY)-$(PLUGIN_BRANCH_NIGHTLY)
 NAME            = $(shell sed -ne '/^plugin-name=/s/plugin-name=//p' build.conf)
 FULL_NAME       = rudder-plugin-$(NAME)
 endif
@@ -38,8 +40,8 @@ generate-pom:
 generate-pom-nightly:
 	cp pom-template.xml pom.xml
 	sed -i -e "s/\$${rudder-branch}/$(BUILD_VERSION_NIGHTLY)/" pom.xml
-	sed -i -e "s/\$${parent-version}/$(PARENT_VERSION_NIGHTLY)/" pom.xml
-	sed -i -e "s/\$${lib-common-private}/$(LIB_PRIVATE_VERSION_NIGHTLY)/" pom.xml
-	sed -i -e "s/\$${plugin-version}/$(POM_VERSION)-SNAPSHOT/" pom.xml
+	sed -i -e "s/\$${parent-version}/$(PARENT_VERSION_NIGHTLY)-SNAPSHOT/" pom.xml
+	sed -i -e "s/\$${lib-common-private}/$(LIB_PRIVATE_VERSION_NIGHTLY)-SNAPSHOT/" pom.xml
+	sed -i -e "s/\$${plugin-version}/$(POM_VERSION_NIGHTLY)-SNAPSHOT/" pom.xml
 	sed -i -e "s/\$${rudder-build-version}/$(BUILD_VERSION_NIGHTLY)-SNAPSHOT/" pom.xml
 

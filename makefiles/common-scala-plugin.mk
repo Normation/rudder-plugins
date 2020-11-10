@@ -16,12 +16,17 @@ TARGET_LICENSE_PATH = /opt/rudder/etc/plugins/licenses/$(NAME).license
 # standard destination path for the key:
 TARGET_KEY_PATH = /opt/rudder/etc/plugins/licenses/license.key
 
-std-files: 
+std-files: generate-pom 
 	$(MVN_CMD) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
-licensed-files:
+std-files-nightly: generate-pom-nightly
+	$(MVN_CMD) package
+	mkdir -p target/$(NAME)
+	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
+
+licensed-files: generate-pom
 	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
