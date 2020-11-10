@@ -16,7 +16,9 @@ PLUGINS_JAR_PATH = $(MAVEN_LOCAL_REPO)/com/normation/plugins/$(NAME)/$(VERSION)/
 PARENT_V = $(BUILD_VERSION)-$(PARENT_VERSION)
 PARENT_POM = $(MAVEN_LOCAL_REPO)/com/normation/plugins/plugins-parent/$(PARENT_V)/plugins-parent-$(PARENT_V).pom
 
-.DEFAULT_GOAL := generate-pom $(PLUGINS_JAR_PATH)
+.DEFAULT_GOAL := std
+
+std: generate-pom $(PLUGINS_JAR_PATH)
 
 nightly: generate-pom-nightly $(PLUGINS_JAR_PATH)
 # maven is such a pain that "mvn install" can't be used with parametrized version (it

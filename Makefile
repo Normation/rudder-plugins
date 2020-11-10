@@ -39,7 +39,7 @@ $(PLUGINS-LICENSED):%-licensed:
 $(NIGHTLY):%-nightly:
 	cd $* && make nightly
 
-$(PLUGINS-LICENSED):%-nightly-licensed:
+$(NIGHTLY-LICENSED):%-nightly-licensed:
 	cd $* && make nightly-licensed
 
 generate-all-pom: generate-pom
