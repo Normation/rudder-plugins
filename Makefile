@@ -6,7 +6,7 @@
 
 include makefiles/global-vars.mk
 
-PUB_LIBS = 
+PUB_LIBS = plugins-common 
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 

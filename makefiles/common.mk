@@ -21,12 +21,12 @@ all: std-files $(FULL_NAME)-$(VERSION).rpkg
 # build a "licensed" version of the plugin, limited by a license file and verified by a public key
 licensed: licensed-files $(FULL_NAME)-$(VERSION).rpkg
 
-nightly: std-files-nightly $(FULL_NAME)-$(VERSION)-nightly.rpkg
+nightly: std-files-nightly $(FULL_NAME)-$(POM_VERSION_NIGHTLY)-nightly.rpkg
 
-nightly-licensed: licensed-files-nightly $(FULL_NAME)-$(VERSION)-nightly.rpkg
+nightly-licensed: licensed-files-nightly $(FULL_NAME)-$(POM_VERSION_NIGHTLY)-nightly.rpkg
 
-$(FULL_NAME)-$(VERSION)-nightly.rpkg: target/metadata-nightly target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
-	ar r $(FULL_NAME)-$(VERSION)-nightly.rpkg target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
+$(FULL_NAME)-$(POM_VERSION_NIGHTLY)-nightly.rpkg: target/metadata-nightly target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
+	ar r $(FULL_NAME)-$(POM_VERSION_NIGHTLY)-nightly.rpkg target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
 
 $(FULL_NAME)-$(VERSION).rpkg: target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
 	ar r $(FULL_NAME)-$(VERSION).rpkg target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
@@ -51,7 +51,7 @@ target/metadata-nightly:
 	mkdir -p target
 	cp packaging/metadata target/metadata
 	sed -i -e "s/\$${plugin-id}/$(FULL_NAME)/g" target/metadata
-	sed -i -e "s/\$${plugin-version}/$(VERSION)-nightly/g" target/metadata
+	sed -i -e "s/\$${plugin-version}/$(POM_VERSION_NIGHTLY)-nightly/g" target/metadata
 	sed -i -e "s/\$${maven.build.timestamp}/$(BUILD_TIMESTAMP)/g" target/metadata
 	sed -i -e "s/\$${commit-id}/$(COMMIT_ID)/g" target/metadata
 	sed -i -e "s/\$${plugin-name}/$(NAME)/g" target/metadata
