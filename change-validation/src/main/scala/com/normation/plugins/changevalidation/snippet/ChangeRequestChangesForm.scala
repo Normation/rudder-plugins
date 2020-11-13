@@ -61,7 +61,7 @@ import com.normation.rudder.domain.workflows._
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.rule.category.RuleCategory
 import com.normation.rudder.web.ChooseTemplate
-import com.normation.rudder.web.components.DateFormaterService
+import com.normation.utils.DateFormaterService
 import com.normation.rudder.web.model._
 import net.liftweb.common._
 import net.liftweb.http._

@@ -5,7 +5,8 @@ import org.joda.time.DateTime
 import com.normation.plugins.SnippetExtensionPoint
 import com.normation.plugins.helloworld.service.LogAccessInDb
 import com.normation.rudder.domain.policies.Rule
-import com.normation.rudder.web.components.{DateFormaterService, RuleEditForm}
+import com.normation.rudder.web.components.RuleEditForm
+import com.normation.utils.DateFormaterService
 import com.normation.rudder.web.snippet.configuration.RuleManagement
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
