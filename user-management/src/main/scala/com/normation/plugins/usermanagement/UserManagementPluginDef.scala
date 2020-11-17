@@ -63,7 +63,7 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
 
 
   override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("userManagement", <span>User Management</span>) /
+    Some(Menu("userManagement", <span>User management</span>) /
       "secure" / "plugins" / "UserManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))

@@ -66,7 +66,7 @@ class OpenscapPoliciesPluginDef(override val status: PluginStatus) extends Defau
 
 
   override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("openScapPolicies", <span>OpenScap Policies</span>) /
+    Some(Menu("openScapPolicies", <span>OpenSCAP policies</span>) /
       "secure" / "plugins" / "OpenScapPolicies"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
