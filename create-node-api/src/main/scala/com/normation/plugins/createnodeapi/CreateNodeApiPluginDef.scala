@@ -65,7 +65,7 @@ class CreateNodeApiPluginDef(override val status: PluginStatus) extends DefaultP
   }
 
   override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("createNodeApi", <span>Create Node API</span>) /
+    Some(Menu("createNodeApi", <span>Create node API</span>) /
       "secure" / "plugins" / "CreateNodeAPI"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))

@@ -119,7 +119,7 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
 
   override def pluginMenuEntry: Option[Menu] = {
     Some(
-      Menu("changeValidationManagement", <span>Change Validation</span>) /
+      Menu("changeValidationManagement", <span>Change validation</span>) /
       "secure" / "plugins" / "changeValidationManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", AuthorizationType.Administration.Read))
