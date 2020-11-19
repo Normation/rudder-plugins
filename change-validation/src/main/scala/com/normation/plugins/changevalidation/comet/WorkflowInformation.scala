@@ -79,7 +79,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
     </li>
 
   def render = {
-    val xml = RudderConfig.configService.rudder_workflow_enabled.toBox match {
+    val xml = RudderConfig.configService.rudder_workflow_enabled().toBox match {
       case eb:EmptyBox =>
         val e = eb ?~! "Error when trying to read Rudder configuration for workflow activation"
         logger.error(e.messageChain)
@@ -178,6 +178,6 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   }
 
   override def lowPriority = {
-    case WorkflowUpdate => reRender
+    case WorkflowUpdate => reRender()
   }
 }

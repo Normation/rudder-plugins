@@ -88,13 +88,14 @@ import zio.{IO => _, _}
 import com.normation.errors._
 import com.normation.rudder.domain.nodes.GenericProperty
 import com.normation.rudder.domain.nodes.GenericProperty._
-import com.normation.zio._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
 import zio.test.environment._
 import zio.duration._
 import org.specs2.specification.core.Fragment
+import com.normation.zio._
+import zio.test.Annotations
 
 object TheSpaced {
 
@@ -164,7 +165,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     compactRender(parse(json))
   }
 
-  implicit class RunNowTimeout[A](effect: ZIO[Live, RudderError, A]) {
+  implicit class RunNowTimeout[A](effect: ZIO[Live with Annotations, RudderError, A]) {
     def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provideLayer(testEnvironment).runNow
   }
 
@@ -368,13 +369,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getNumberOfManagedNodes: Int = nodes.size - 1
     def getAllNodes()                         = throw new IllegalAccessException("Thou shall not used that method here")
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
-    def getDeletedNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
+    def getDeletedNodeInfoPure(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
     def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfoPure(nodeId: NodeId)       = throw new IllegalAccessException("Thou shall not used that method here")
-    def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
+    def getPendingNodeInfoPure(nodeId: NodeId)= throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
 
     override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
@@ -505,8 +506,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         ) and (
-          infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
-              NodeProperty("test-http-service", testArray(i)._2.forceParse, Some(DataSource.providerName))
+          infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+              NodeProperty.apply("test-http-service", testArray(i)._2.forceParse, None, Some(DataSource.providerName))
           )
         )
       }
@@ -530,8 +531,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         ) and (
-          infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
-              NodeProperty("test-http-service", testArray(i)._3.forceParse, Some(DataSource.providerName))
+          infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+              NodeProperty.apply("test-http-service", testArray(i)._3.forceParse, None, Some(DataSource.providerName))
           )
         )
       }
@@ -558,7 +559,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val testAction = (q: Queue[Unit]) => (c: UpdateCause) => action(c) *> q.offer(()).unit
 
     "does nothing if scheduler is disabled" in {
-      val (total_0, total_1d) = (makeTestClock.use { testClock =>
+      val (total_0, total_1d) : (Int,Int) = makeTestClock.use { testClock =>
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
@@ -584,14 +585,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         } yield {
           (total_0, ce_1d + cs_1d)
         }
-      }).runTimeout(1 minute)
+      }.runTimeout(1 minute)
 
       (total_0, total_1d) must beEqualTo(
       (0      , 0       ))
     }
 
     "allows interactive updates with disabled scheduler (but not data source)" in {
-      val (total_0, total_1d, total_postGen) = (makeTestClock.use { testClock =>
+      val (total_0, total_1d, total_postGen) = makeTestClock.use { testClock =>
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
@@ -627,7 +628,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           cs_2    <- NodeDataset.counterSuccess.get
           total_2 =  ce_2 + cs_2
         } yield (total_0, total_1, total_2)
-      }).runTimeout(1 minute)
+      }.runTimeout(1 minute)
+
+
 
        val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
        logger.setLevel(Level.OFF)
@@ -637,7 +640,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "create a new schedule from data source information" in {
-      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = (makeTestClock.use { testClock =>
+      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = makeTestClock.use { testClock =>
         // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
         val queue = Queue.unbounded[Unit].runNow
 
@@ -690,7 +693,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           cs_8m    <- NodeDataset.counterSuccess.get
           total_8m =  ce_8m + cs_8m
         } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m)
-      }).runTimeout(1 minute)
+      }.runTimeout(1 minute)
 
       val size = NodeConfigData.allNodesInfo.size
       (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo(
@@ -698,7 +701,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
   }
-
   "querying a lot of nodes" should {
 
     // test on 100 nodes. With 30s timeout, even on small hardware it will be ok.
@@ -906,8 +908,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
-        infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
-            NodeProperty("test-http-service", "bar".toConfigValue, Some(DataSource.providerName))
+        infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+            NodeProperty.apply("test-http-service", "bar".toConfigValue, None, Some(DataSource.providerName))
         )
       )
     }
@@ -924,8 +926,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
-        infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
-            NodeProperty("test-http-service", "server.rudder.local".toConfigValue, Some(DataSource.providerName))
+        infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+            NodeProperty.apply("test-http-service", "server.rudder.local".toConfigValue, None, Some(DataSource.providerName))
         )
       )
     }
@@ -941,8 +943,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
-        infos.getAll.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
-            NodeProperty("test-http-service", """{ "environment": "DEV_INFRA", "mergeBucket" : { "test_merge2" : "aPotentialMergeValue1" } }""".forceParse, Some(DataSource.providerName))
+        infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+            NodeProperty.apply("test-http-service", """{ "environment": "DEV_INFRA", "mergeBucket" : { "test_merge2" : "aPotentialMergeValue1" } }""".forceParse, None, Some(DataSource.providerName))
         )
       )
     }
@@ -970,7 +972,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val modId = ModificationId("set-test-404")
       nodes.values.foreach { node =>
         import com.normation.box.EitherToBox
-        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty(propName, initValue.getOrElse("").toConfigValue, None)))).toBox.openOrThrowException("test must be able to set prop")
+        val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty.apply(propName, initValue.getOrElse("").toConfigValue, None, None)))).toBox.openOrThrowException("test must be able to set prop")
         val up = node.node.copy(properties = newProps)
         infos.updateNode(up, modId, actor, None).runNow
       }

@@ -86,7 +86,7 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
   override def findStep(changeRequestId: ChangeRequestId) : Box[WorkflowNodeId] =
     current.findStep(changeRequestId)
   override def getAllChangeRequestsStep() : Box[Map[ChangeRequestId,WorkflowNodeId]] =
-    current.getAllChangeRequestsStep
+    current.getAllChangeRequestsStep()
   override def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean =
     current.isEditable(currentUserRights, currentStep, isCreator)
   override def isPending(currentStep:WorkflowNodeId): Boolean =
@@ -262,7 +262,7 @@ class TwoValidationStepsWorkflowServiceImpl(
 
 
   def getAllChangeRequestsStep() : Box[Map[ChangeRequestId,WorkflowNodeId]] = {
-    roWorkflowRepo.getAllChangeRequestsState
+    roWorkflowRepo.getAllChangeRequestsState()
   }
 
 

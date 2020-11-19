@@ -62,7 +62,7 @@ class GetActiveTechniqueIds(
       allEntries <- con.searchSub(rudderDit.ACTIVE_TECHNIQUES_LIB.dn, filter, A_ACTIVE_TECHNIQUE_UUID)
       ids        <- ZIO.foreach(allEntries) { e => e.required(A_ACTIVE_TECHNIQUE_UUID).toIO }
     } yield {
-      ids.map(ActiveTechniqueId)
+      ids.toList.map(ActiveTechniqueId)
     }
   }
 }

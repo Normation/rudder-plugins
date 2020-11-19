@@ -156,9 +156,9 @@ class CreateNodeApiImpl(
           // if all succes, return success.
           // Or if at least one is not failed, return success ?
           if(resultHolder.failed.isEmpty) {
-            RestUtils.toJsonResponse(None, resultHolder.toJson)(schema.name, params.prettify)
+            RestUtils.toJsonResponse(None, resultHolder.toJson())(schema.name, params.prettify)
           } else {
-            RestUtils.toJsonError(None, resultHolder.toJson)(schema.name, params.prettify)
+            RestUtils.toJsonError(None, resultHolder.toJson())(schema.name, params.prettify)
           }
         case eb: EmptyBox =>
           val err = eb ?~! "Error when trying to parse node creation request"

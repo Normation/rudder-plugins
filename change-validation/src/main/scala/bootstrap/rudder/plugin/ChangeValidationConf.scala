@@ -210,8 +210,8 @@ object ChangeValidationConf extends RudderPluginModule {
     , woChangeRequestRepository
     , notificationService
     , () => Full(RudderConfig.workflowLevelService.workflowEnabled)
-    , () => RudderConfig.configService.rudder_workflow_self_validation.toBox
-    , () => RudderConfig.configService.rudder_workflow_self_deployment.toBox
+    , () => RudderConfig.configService.rudder_workflow_self_validation().toBox
+    , () => RudderConfig.configService.rudder_workflow_self_deployment().toBox
   )
 
   lazy val supervisedTargetRepo = new SupervisedTargetsReposiory(
@@ -250,7 +250,7 @@ object ChangeValidationConf extends RudderPluginModule {
         )
         , new UserValidationNeeded(roValidatedUserRepository)
       )
-      , () => RudderConfig.configService.rudder_workflow_enabled.toBox
+      , () => RudderConfig.configService.rudder_workflow_enabled().toBox
     )
   )
 

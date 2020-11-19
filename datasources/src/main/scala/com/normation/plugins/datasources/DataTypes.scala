@@ -82,7 +82,7 @@ final object DataSource {
   /**
    * A node property with the correct DataSource metadata
    */
-  def nodeProperty(name: String, value: ConfigValue) = NodeProperty(name, value, Some(providerName))
+  def nodeProperty(name: String, value: ConfigValue) = NodeProperty.apply(name, value, None, Some(providerName))
 }
 
 sealed trait DataSourceType {

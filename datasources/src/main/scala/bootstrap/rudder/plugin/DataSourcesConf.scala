@@ -88,7 +88,7 @@ object DatasourcesConf extends RudderPluginModule {
         , Cfg.woNodeRepository
         , Cfg.interpolationCompiler
         , regenerationHook.hook _
-        , () => Cfg.configService.rudder_global_policy_mode
+        , () => Cfg.configService.rudder_global_policy_mode()
         , ZioRuntime.environment
       )
     , Cfg.stringUuidGenerator

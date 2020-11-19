@@ -105,7 +105,7 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
         else
           Full(RedirectWithState("/secure/utilities/eventLogs", redirection ) )
       )
-    ) submenus (
+    ).submenus(
         Menu("changeRequestsList", <span>Change requests</span>) /
           "secure" / "plugins" / "changes" / "changeRequests"
           >> Hidden

@@ -104,7 +104,7 @@ class ChangeRequestChangesForm(
       _ =>
         changeRequest match {
           case cr: ConfigurationChangeRequest =>
-            ruleCategoryRepository.getRootCategory.toBox match {
+            ruleCategoryRepository.getRootCategory().toBox match {
               case Full(rootRuleCategory) =>
 
                 ( "#changeTree ul *" #>  new ChangesTreeNode(cr, rootRuleCategory).toXml &

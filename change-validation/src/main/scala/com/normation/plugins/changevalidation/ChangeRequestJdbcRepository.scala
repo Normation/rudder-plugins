@@ -96,7 +96,8 @@ class RoChangeRequestJdbcRepository(
   // Get every change request where a user add a change
   override def getByContributor(actor:EventActor) : Box[Vector[ChangeRequest]] = {
 
-    val q = (Fragment.const(SELECT_SQL) ++ sql"""where cast( xpath('//firstChange/change/actor/text()',content) as character varying[]) = ${Array(actor.name)}""").query[Box[ChangeRequest]]
+    val actorName = Array(actor.name)
+    val q = (Fragment.const(SELECT_SQL) ++ sql"""where cast( xpath('//firstChange/change/actor/text()',content) as character varying[]) = ${actorName}""").query[Box[ChangeRequest]]
     execQuery(q)
   }
 
@@ -136,11 +137,12 @@ class RoChangeRequestJdbcRepository(
    */
   private[this] def getChangeRequestsByXpathContent(xpath:String, shouldEquals:String, errorMessage:String, onlyPending:Boolean): Box[Vector[ChangeRequest]] = {
 
+    val param = Array(shouldEquals)
     val q = {
       if (onlyPending) {
-        (Fragment.const(s"""${SELECT_SQL_JOIN_WORKFLOW} where cast( xpath('${xpath}', content) as character varying[])""") ++ sql""" = ${Array(shouldEquals)} and state like 'Pending%'""").query[Box[ChangeRequest]]
+        (Fragment.const(s"""${SELECT_SQL_JOIN_WORKFLOW} where cast( xpath('${xpath}', content) as character varying[])""") ++ sql""" = ${param} and state like 'Pending%'""").query[Box[ChangeRequest]]
       } else {
-        (Fragment.const(s"""${SELECT_SQL} where cast( xpath('${xpath}', content) as character varying[])""") ++ sql""" = ${Array(shouldEquals)}""").query[Box[ChangeRequest]]
+        (Fragment.const(s"""${SELECT_SQL} where cast( xpath('${xpath}', content) as character varying[])""") ++ sql""" = ${param}""").query[Box[ChangeRequest]]
       }
     }
     execQuery(q)

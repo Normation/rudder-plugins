@@ -52,6 +52,7 @@ import com.normation.rudder.domain.parameters.GlobalParameter
 import zio._
 import zio.clock.Clock
 import zio.syntax._
+import zio.duration.DurationOps
 
 /*
  * This file contain the hight level logic to update
@@ -216,7 +217,7 @@ class HttpQueryDataSourceService(
        * do hundreds of simultaneous requests to the output server (and that make tests on macos
        * fail, see: http://www.rudder-project.org/redmine/issues/10341)
        */
-      ZIO.foreachParN(datasource.maxParallelRequest)( nodes.values) { nodeInfo =>
+      ZIO.foreachParN(datasource.maxParallelRequest)( nodes.values.toList) { nodeInfo =>
         buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, globalPolicyMode, parameters, cause).either
       }
     }
@@ -257,7 +258,7 @@ class HttpQueryDataSourceService(
     for {
       nodes         <- nodeInfo.getAll().toIO
       policyServers  = nodes.filter { case (_, n) => n.isPolicyServer }
-      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet )
+      parameters    <- parameterRepo.getAllGlobalParameters().map( _.toSet )
       updated       <- querySubsetByNode(datasourceId, datasource, globalPolicyMode, PartialNodeUpdate(nodes, policyServers, parameters), cause, onUpdatedHook)
     } yield {
       updated
@@ -270,7 +271,7 @@ class HttpQueryDataSourceService(
       allNodes      <- nodeInfo.getAll().toIO
       node          <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
       policyServers =  allNodes.filter( _._1 == node.policyServerId)
-      parameters    <- parameterRepo.getAllGlobalParameters.map( _.toSet )
+      parameters    <- parameterRepo.getAllGlobalParameters().map( _.toSet )
       updated       <- buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause)
                          .timeout(datasource.requestTimeOut).provide(clock).notOptional(s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'")
                        //post update hooks

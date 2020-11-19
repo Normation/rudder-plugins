@@ -74,7 +74,7 @@ class BrandingApi (
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       implicit val action = "getBrandingConf"
-      response(brandingApiService.getConf, req, "Could not fetch branding plugin configuration", None)
+      response(brandingApiService.getConf(), req, "Could not fetch branding plugin configuration", None)
     }
   }
 
@@ -84,7 +84,7 @@ class BrandingApi (
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       implicit val action = "getBrandingConf"
-      response(brandingApiService.reloadConf, req, "Could not reload branding plugin configuration", None)
+      response(brandingApiService.reloadConf(), req, "Could not reload branding plugin configuration", None)
     }
   }
 

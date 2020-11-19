@@ -224,7 +224,7 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
       compiled <- compiler.compileParam(input)
       injected <- GenericProperty.parseValue(injectedPropsJson)
       //build interpolation context from node:
-      enhanced =  node.modify(_.node.properties).using(props =>  NodeProperty("datasources-injected", injected, None) :: props )
+      enhanced =  node.modify(_.node.properties).using(props =>  NodeProperty.apply("datasources-injected", injected, None, None) :: props )
       context  =  ParamInterpolationContext(enhanced, policyServer, globalPolicyMode, parameters, 5)
       bounded  <- compiled(context)
     } yield {
