@@ -200,7 +200,7 @@ class DataSourceRepoImpl(
   // Initialize data sources scheduler, with all sources present in backend
   def initialize(): IOResult[Unit] = {
     getAll.flatMap(sources =>
-        ZIO.foreach(sources) { case (_, source) =>
+        ZIO.foreach(sources.toList) { case (_, source) =>
           updateDataSourceScheduler(clock, source, Some(source.runParam.schedule.duration))
         }.unit
     ).chainError("Error when initializing datasources")
@@ -208,7 +208,7 @@ class DataSourceRepoImpl(
 
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(condition: DataSource => Boolean)(action: DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
-    datasources.all.flatMap(m => ZIO.foreach(m.toIterable) { case (_, dss) =>
+    datasources.all().flatMap(m => ZIO.foreach(m.toList) { case (_, dss) =>
       if (condition(dss.datasource)) {
         action(dss)
       } else {
@@ -364,7 +364,7 @@ class DataSourceRepoImpl(
   override def startAll(): IOResult[Unit] = {
     //sort by period (the least frequent the last),
     //then start them every minutes
-    val toStart = datasources.all.map(_.values.flatMap { dss =>
+    val toStart = datasources.all().map(_.values.flatMap { dss =>
       dss.datasource.runParam.schedule match {
         case Scheduled(d) => Some((d, dss))
         case _            => None

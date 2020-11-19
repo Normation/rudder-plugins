@@ -15,7 +15,6 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.GeneralApi
 import com.normation.rudder.rest.SortIndex
-import com.normation.rudder.rest.StartsAtVersion10
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full

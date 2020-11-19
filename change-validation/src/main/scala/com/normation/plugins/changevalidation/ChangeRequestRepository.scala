@@ -74,7 +74,7 @@ class EitherRoChangeRequestRepository(cond: () => Box[Boolean], whenTrue: RoChan
     cond().flatMap( if(_) method(whenTrue) else method(whenFalse) )
   }
 
-  def getAll() : Box[Vector[ChangeRequest]] = condApply( _.getAll )
+  def getAll() : Box[Vector[ChangeRequest]] = condApply( _.getAll() )
 
   def get(changeRequestId:ChangeRequestId) : Box[Option[ChangeRequest]] = condApply( _.get(changeRequestId) )
 

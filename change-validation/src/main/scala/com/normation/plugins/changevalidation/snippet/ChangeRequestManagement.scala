@@ -110,13 +110,13 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
   }
 
   def getLines() = {
-    val changeRequests = if (currentUser) roCrRepo.getAll else roCrRepo.getByContributor(CurrentUser.actor)
+    val changeRequests = if (currentUser) roCrRepo.getAll() else roCrRepo.getByContributor(CurrentUser.actor)
     JsTableData(changeRequests match {
       case Full(changeRequests) =>
 
         val eventMap = getLastEventsMap
 
-        val workflowStateMap : Map[ChangeRequestId,WorkflowNodeId]= workflowService.getAllChangeRequestsStep match {
+        val workflowStateMap : Map[ChangeRequestId,WorkflowNodeId]= workflowService.getAllChangeRequestsStep() match {
           case Full(stateMap) => stateMap
           case eb:EmptyBox =>
             val fail = eb ?~! "Could not find change requests state"
@@ -131,7 +131,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     } )
   }
   def dataTableInit = {
-    val refresh = AnonFunc( SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines.json.toJsCmd})")))
+    val refresh = AnonFunc( SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().json.toJsCmd})")))
 
     val filter = initFilter match {
       case Full(filter) => s"$$('#${changeRequestTableId}').dataTable().fnFilter('${filter}',1,true,false,true);"
@@ -157,7 +157,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
         logger.error(fail.messageChain)
         Map()
     }
-    val workflowEventsMap : Map[ChangeRequestId,EventLog] = workflowLoggerService.getLastWorkflowEvents match {
+    val workflowEventsMap : Map[ChangeRequestId,EventLog] = workflowLoggerService.getLastWorkflowEvents() match {
       case Full(map) => map
       case eb:EmptyBox =>
         val fail = eb ?~! "Could not find last Change requests events requests state"

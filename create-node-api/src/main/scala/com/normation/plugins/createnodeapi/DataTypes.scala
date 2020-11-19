@@ -247,7 +247,7 @@ object Validation {
       , checkState(status, nodeDetails.state)
       ).mapN { case(summary, agent, mode, state) =>
         val inventory = FullInventory(NodeInventory(summary, agents = Seq(agent), machineId = Some((machine.id, PendingInventory))), Some(machine))
-        val properties = nodeDetails.properties.map {case (k,v) => NodeProperty(k, v, None) }.toList
+        val properties = nodeDetails.properties.map {case (k,v) => NodeProperty(k, v, None, None) }.toList
         if(status == PendingInventory) {
           PendingNodeTemplate(inventory, properties)
         } else {

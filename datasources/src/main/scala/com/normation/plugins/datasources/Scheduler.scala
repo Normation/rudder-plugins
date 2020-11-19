@@ -81,6 +81,7 @@ class DataSourceScheduler(
 
   //for that datasource, this is the timer
   private[this] val source : UIO[Unit] = {
+    val never: Schedule[Any, Any, Nothing] = Schedule((_, _) => UIO.never)
 
     val schedule = datasource.runParam.schedule match {
       case Scheduled(d)  =>
@@ -89,11 +90,11 @@ class DataSourceScheduler(
           Schedule.spaced(d).succeed
         } else {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
-          Schedule.never.succeed
+          never.succeed
         }
       case NoSchedule(_) => //in that case, our source doesn't produce anything
         DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and but no schedule is configured") *>
-        Schedule.never.succeed
+        never.succeed
     }
 
     val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value}): ${schedule}"
@@ -137,7 +138,7 @@ class DataSourceScheduler(
     cancel() *> (
     // actually start the scheduler by subscribing to it
     if(datasource.enabled) {
-      if(pluginStatus.isEnabled) {
+      if(pluginStatus.isEnabled()) {
         for {
           _     <- DataSourceLoggerPure.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
           fiber <- source.forkDaemon
