@@ -56,6 +56,8 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
      }
    }
 
+  sequential
+
   "These path are valid" should {
 
     "just an identifier" in  {
@@ -74,7 +76,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
     }
 
     "retrieve first" in {
-      val res = JsonSelect.fromPath("$.store.book", json).map( _.head ).either.runNow
+      val res = JsonSelect.fromPath("$.store.book[:1]", json).either.runNow
       val expectedVal = """
             {
                 "category": "reference",
@@ -89,54 +91,55 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
   "get childrens" should {
     "retrieve JSON childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*]", json).either.runNow must beRight(List(
-          """{
+      JsonSelect.fromPath("$.store.book[*]", json).either.runNow must beRight(
+          """[
+             {
                 "category": "reference",
                 "author": "Nigel Rees",
                 "title": "Sayings of the Century",
                 "price": 8.95
-            }""",
-            """{
+            },
+            {
                 "category": "fiction",
                 "author": "Evelyn Waugh",
                 "title": "Sword of Honour",
                 "price": 12.99
-            }""",
-            """{
-                "category": "\"quotehorror\"",
+            },
+            {
+                "category": "\"quote\"horror\"",
                 "author": "Herman Melville",
                 "title": "Moby Dick",
                 "isbn": "0-553-21311-3",
                 "price": 8.99
-            }""",
-            """{
+            },
+            {
                 "category": "fiction",
                 "author": "J. R. R. Tolkien",
                 "title": "The Lord of the Rings",
                 "isbn": "0-395-19395-8",
                 "price": 22.99
-            }""").map(_.forceParse))
+            }]""".forceParse)
     }
     "retrieve NUMBER childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight(List("8.95", "12.99", "8.99", "22.99").map(_.toConfigValue))
+      JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight("""[8.95, 12.99, 8.99, 22.99]""".forceParse)
     }
     "retrieve STRING childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight(List("reference", "fiction", "\"quotehorror\"", "fiction").map(_.toConfigValue))
+      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight("""["reference", "fiction", "\"quote\"horror\"", "fiction"]""".forceParse)
     }
     "retrieve JSON childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight(List("""{"color":"red","price":19.95}""").map(_.forceParse))
+      JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight("""{"color":"red","price":19.95}""".forceParse)
     }
     "retrieve NUMBER childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle.price", json).either.runNow must beRight(List("19.95").map(_.toConfigValue))
+      JsonSelect.fromPath("$.store.bicycle.price", json).either.runNow must beRight("19.95".forceParse)
     }
     "retrieve STRING childrens (one)" in {
-      JsonSelect.fromPath("$.store.bicycle.color", json).either.runNow must beRight(List("red").map(_.toConfigValue))
+      JsonSelect.fromPath("$.store.bicycle.color", json).either.runNow must beRight("red".forceParse)
     }
     "retrieve ARRAY INT childrens (one)" in {
-      JsonSelect.fromPath("$.intTable", json).either.runNow must beRight(List("1", "2", "3").map(_.toConfigValue))
+      JsonSelect.fromPath("$.intTable", json).either.runNow must beRight("[1, 2, 3]".forceParse)
     }
     "retrieve ARRAY STRING childrens (one)" in {
-      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight(List("one", "two").map(_.toConfigValue))
+      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight("[one, two]".forceParse)
     }
   }
 
@@ -144,13 +147,13 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
     "be able to compare with content with dot" in {
       JsonSelect.fromPath("$.nodes.[?(@.hostname =~ /abc123.some.host.com.*/i)]", hostnames).either.runNow must beRight(
-        List("""{"environment":"DEV_INFRA","hostname":"abc123.some.host.com"}""".forceParse)
+        """{"environment":"DEV_INFRA","hostname":"abc123.some.host.com"}""".forceParse
       )
     }
 
     "be able to compare with content with dot" in {
       JsonSelect.fromPath("""$.nodes['abc456.some.host.com']""", hostnames2).either.runNow must beRight(
-        List("""{ "environment": "DEV_INFRA" }""".forceParse)
+        """{ "environment": "DEV_INFRA" }""".forceParse
       )
     }
 
@@ -209,7 +212,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
                 "price": 12.99
             },
             {
-                "category": "\"quotehorror\"",
+                "category": "\"quote\"horror\"",
                 "author": "Herman Melville",
                 "title": "Moby Dick",
                 "isbn": "0-553-21311-3",

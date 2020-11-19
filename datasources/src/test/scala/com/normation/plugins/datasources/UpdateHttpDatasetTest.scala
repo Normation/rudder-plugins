@@ -482,11 +482,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   }
 
   implicit class QueueFailIfNonEmpty[A](queue: Queue[A]) {
-    def failIfNonEmpty = queue.poll.map(_.map(_ => ().fail))
+    def failIfNonEmpty: IOResult[Unit] = queue.poll.flatMap {
+      case None    => ().succeed
+      case Some(_) => Inconsistency(s"queue should be empty but size = ${1+queue.size.runNow}").fail
+    }
   }
-
-
-  sequential
 
   "Array validation with [*]" >> {
     Fragment.foreach(0 until testArray.size) { i =>
@@ -622,14 +622,13 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           total_1 =  ce_1 + cs_1
           //but asking for a direct update do the queries immediatly - task need at least 1ms to notice it should run
           _       <- dss.doActionAndSchedule(action(UpdateCause(ModificationId("plop"), RudderEventActor, None)))
-          _       <- testClock.get[TestClock.Service].adjust(1 millis)
+          _       <- testClock.get[TestClock.Service].adjust(1.second)
           _       <- queue.failIfNonEmpty
           ce_2    <- NodeDataset.counterError.get
           cs_2    <- NodeDataset.counterSuccess.get
           total_2 =  ce_2 + cs_2
         } yield (total_0, total_1, total_2)
       }.runTimeout(1 minute)
-
 
 
        val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
@@ -663,31 +662,31 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           _        <- dss.restartScheduleTask()
           //then just after, we have the first exec - it still need at least a ms to tick
           //still nothing here
-          _        <- testClock.get[TestClock.Service].setTime(1 millis)
+          _        <- testClock.get[TestClock.Service].adjust(1.second)
           //here we have results
           _        <- queue.take
           ce_0s    <- NodeDataset.counterError.get
           cs_0s    <- NodeDataset.counterSuccess.get
           total_0s =  ce_0s + cs_0s
           //then nothing happens before 5 minutes
-          _        <- testClock.get[TestClock.Service].setTime(1 second)
+          _        <- testClock.get[TestClock.Service].adjust(1.second)
           _        <- queue.failIfNonEmpty
           ce_1s    <- NodeDataset.counterError.get
           cs_1s    <- NodeDataset.counterSuccess.get
           total_1s =  ce_1s + cs_1s
-          _        <- testClock.get[TestClock.Service].setTime(4 minutes)
+          _        <- testClock.get[TestClock.Service].adjust(4 minutes)
           _        <- queue.failIfNonEmpty
           ce_4m    <- NodeDataset.counterError.get
           cs_4m    <- NodeDataset.counterSuccess.get
           total_4m =  ce_4m + cs_4m
           //then all the nodes gets their info
-          _        <- testClock.get[TestClock.Service].setTime(5 minutes)
+          _        <- testClock.get[TestClock.Service].adjust(1 minutes) // 5 minutes
           _        <- queue.take
           ce_5m    <- NodeDataset.counterError.get
           cs_5m    <- NodeDataset.counterSuccess.get
           total_5m =  ce_5m + cs_5m
           //then nothing happen anymore
-          _        <- testClock.get[TestClock.Service].setTime(8 minutes)
+          _        <- testClock.get[TestClock.Service].adjust(3 minutes) //8 minutes
           _        <- queue.failIfNonEmpty
           ce_8m    <- NodeDataset.counterError.get
           cs_8m    <- NodeDataset.counterSuccess.get
@@ -822,56 +821,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
 
       res.either.runNow must beRight(===(
-          Some(DataSource.nodeProperty("test-get-one-node",  ConfigFactory.parseString("""{ "x" :  [
-              # String: 1
-              {
-                  # String: 2
-                  "author" : "Nigel Rees",
-                  # String: 2
-                  "category" : "reference",
-                  # String: 2
-                  "price" : 8.95,
-                  # String: 2
-                  "title" : "Sayings of the Century"
-              },
-              # String: 1
-              {
-                  # String: 2
-                  "author" : "Evelyn Waugh",
-                  # String: 2
-                  "category" : "fiction",
-                  # String: 2
-                  "price" : 12.99,
-                  # String: 2
-                  "title" : "Sword of Honour"
-              },
-              # String: 1
-              {
-                  # String: 2
-                  "author" : "Herman Melville",
-                  # String: 2
-                  "category" : "fiction",
-                  # String: 2
-                  "isbn" : "0-553-21311-3",
-                  # String: 2
-                  "price" : 8.99,
-                  # String: 2
-                  "title" : "Moby Dick"
-              },
-              # String: 1
-              {
-                  # String: 2
-                  "author" : "J. R. R. Tolkien",
-                  # String: 2
-                  "category" : "fiction",
-                  # String: 2
-                  "isbn" : "0-395-19395-8",
-                  # String: 2
-                  "price" : 22.99,
-                  # String: 2
-                  "title" : "The Lord of the Rings"
-              }
-          ]}""").getValue("x"))):Option[NodeProperty]))
+          Some(DataSource.nodeProperty("test-get-one-node",  ConfigFactory.parseString("""{ "x" :
+          {
+              "author" : "Nigel Rees",
+              "category" : "reference",
+              "price" : 8.95,
+              "title" : "Sayings of the Century"
+          }
+          }""").getValue("x"))):Option[NodeProperty]))
     }
   }
 
@@ -1026,16 +983,16 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   * - an array with one value (whatever the value) => remove array, get value as JSON
   *   - so an array of array will return an array
   * - an array with several values => keep array
-  */ 
+  */
   // testing arrays, array of arrays, etc
   lazy val testArray = List(
     // [] is a special case handled elsewhere
     // what API give                             -   expected with [*]                          - expected with [:1]
     ("""[ 1 ]"""                                 , """1"""                                      , """1"""                                 )
-  , ("""[ "a" ]"""                               , """"a""""                                    , """"a""""                               )
+  , ("""[ "a" ]"""                               , """a"""                                      , """a"""                                 )
   , ("""[ { "a" : 1 }]"""                        , """{"a":1}"""                                , """{"a":1}"""                           )
   , ("""[ 1, 2 ]"""                              , """[1,2]"""                                  , """1"""                                 ) // array of size 1 are lifted
-  , ("""[ "a", "b" ]"""                          , """["a","b"]"""                              , """"a""""                               ) // array of size 1 are lifted
+  , ("""[ "a", "b" ]"""                          , """["a","b"]"""                              , """a"""                                 ) // array of size 1 are lifted
   , ("""[ { "a": 1 }, { "b": 2} ]"""             , """[{"a":1}, {"b":2}]"""                     , """{"a":1}"""                           ) // array of size 1 are lifted
   , ("""[[]]"""                                  , """[]"""                                     , """[]"""                                )
   , ("""[ [ 1 ] ]"""                             , """[1]"""                                    , """[1]"""                               )

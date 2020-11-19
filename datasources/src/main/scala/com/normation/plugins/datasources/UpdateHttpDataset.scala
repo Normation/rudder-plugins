@@ -47,7 +47,6 @@ import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
-import net.minidev.json.JSONValue
 
 import scala.util.control.NonFatal
 import scalaj.http.Http
@@ -129,20 +128,14 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
                       case Some(body) => JsonSelect.fromPath(path, body).map(x => Some(x)).chainError(s"Error when extracting sub-json at path ${path} from ${body}")
                       // this mean we got a 404 => choose behavior based on onMissing value
                       case None => datasource.missingNodeBehavior match {
-                        case MissingNodeBehavior.Delete              => Some(Nil).succeed
-                        case MissingNodeBehavior.DefaultValue(value) => Some(value :: Nil).succeed
+                        case MissingNodeBehavior.Delete              => Some("".toConfigValue).succeed
+                        case MissingNodeBehavior.DefaultValue(value) => Some(value).succeed
                         case MissingNodeBehavior.NoChange            => None.succeed
                       }
                     }
     } yield {
-      // optJson is an Option[value :: tails] (None meaning: don't change the existing value, that case is processed elsewhere).
-      // We only get the first element from the path, ignoring if there is several.
-      // And if list is empty, returns "" (remove property).
-      optJson.map {
-        case Nil          => DataSource.nodeProperty(datasourceName.value, "".toConfigValue)
-        case value :: Nil => DataSource.nodeProperty(datasourceName.value, value)
-        case array        => DataSource.nodeProperty(datasourceName.value, array.toConfigValue)
-      }
+      // optJson is an Option[value] (None meaning: don't change the existing value, that case is processed elsewhere).
+      optJson.map(DataSource.nodeProperty(datasourceName.value, _))
     }
   }
 
@@ -258,14 +251,13 @@ object JsonSelect {
    *
    * The list may be empty if 0 node matches the results.
    */
-  def fromPath(path: String, json: String): IOResult[List[ConfigValue]] = {
+  def fromPath(path: String, json: String): IOResult[ConfigValue] = {
     for {
       p <- compilePath(path)
       j <- parse(json)
       r <- select(p, j)
-      h <- r.accumulatePure(GenericProperty.parseValue(_)).toIO
     } yield {
-      h
+      r
     }
   }
 
@@ -291,17 +283,7 @@ object JsonSelect {
   /*
    * not exposed to user due to risk to not use the correct config
    */
-  protected[datasources] def select(path: JsonPath, json: DocumentContext): IOResult[List[String]] = {
-
-    // so, this lib seems to be a whole can of unconsistancies on String quoting.
-    // we would like to NEVER have quoted string if they are not in a JSON object
-    // but to have them quoted in json object.
-    def toJsonString(a: Any): String = {
-      a match {
-        case s: String => s
-        case x         => JSONValue.toJSONString(x)
-      }
-    }
+  protected[datasources] def select(path: JsonPath, json: DocumentContext): IOResult[ConfigValue] = {
 
     // I didn't find any other way to do that:
     // - trying to parse as Any, then find back the correct JSON type
@@ -322,11 +304,22 @@ object JsonSelect {
                        }
                      case NonFatal(ex) => SystemError(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", ex).fail
                    })
+      // we want to special process the case where the list has only one value to let the
+      // user access them directly WITHOUT having to lift it from the array.
+      // The case with no data is considered to be "".
+      // And when we have and array of several elements, we need to parse it as a JSON array
+      res        <- (jsonValue match {
+                      case x:JSONArray  => x.asScala.toList match {
+                        case Nil      => Right("".toConfigValue)
+                        // for following cases, we need to call "toString", which will call the correct "toJSONString"
+                        // by introspection :scream: Trying to call directly JSONAware.toJSONString won't work.
+                        case h :: Nil => GenericProperty.parseValue(h.toString)
+                        case array    => GenericProperty.parseValue(jsonValue.toString)
+                      }
+                      case x          => GenericProperty.parseValue(x.toString)
+                    }).toIO
     } yield {
-      jsonValue match {
-        case x:JSONArray  => x.asScala.toList.map(toJsonString)
-        case x            => toJsonString(x) :: Nil
-      }
+      res
     }
   }
 
