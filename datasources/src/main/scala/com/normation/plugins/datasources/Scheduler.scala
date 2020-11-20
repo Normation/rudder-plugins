@@ -87,13 +87,14 @@ class DataSourceScheduler(
       case Scheduled(d)  =>
         if(datasource.enabled) {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes") *>
-          Schedule.spaced(d).succeed
+          // This historical semantic is "do a sync immediately and then one spaced every 'd'"
+          Schedule.once.andThen(Schedule.spaced(d)).succeed
         } else {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
           never.succeed
         }
       case NoSchedule(_) => //in that case, our source doesn't produce anything
-        DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and but no schedule is configured") *>
+        DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled but no schedule is configured") *>
         never.succeed
     }
 
@@ -108,7 +109,7 @@ class DataSourceScheduler(
 
     for {
       s <- schedule
-      p <- prog.repeat(s).provide(clock).unit
+      p <- prog.schedule(s).provide(clock).unit
     } yield {
       p
     }
