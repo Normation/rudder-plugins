@@ -488,6 +488,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
   }
 
+  // must be sequential!
+  sequential
+
   "Array validation with [*]" >> {
     Fragment.foreach(0 until testArray.size) { i =>
       s"for case: ${testArray(i)._1} -> ${testArray(i)._2}" >> {
