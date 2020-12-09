@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure rsyslog default file permissions configured",
+  "enabled": true,
+  "id": "b00b03c7-b8e8-4704-a6ea-9171bc82f69f",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "/bin/false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "grep ^\\$FileCreateMode /etc/rsyslog.conf /etc/rsyslog.d/*.conf"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "^\\$FileCreateMode\\s+(0640|0600|0440|0400)$"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Execute_command",
+  "techniqueVersion": "1.0"
+}

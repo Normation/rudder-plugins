@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure SELinux or AppArmor are installed (selinux-policy-default)",
+  "enabled": true,
+  "id": "e73141a2-6b4a-45e7-8453-803b0b60cfc7",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "selinux-policy-default"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

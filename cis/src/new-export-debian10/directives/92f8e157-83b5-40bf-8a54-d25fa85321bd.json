@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure SNMP Server is not enabled",
+  "enabled": true,
+  "id": "92f8e157-83b5-40bf-8a54-d25fa85321bd",
+  "longDescription": "Description: The Simple Network Management Protocol (SNMP) server is used to listen for SNMP commands from an SNMP management system, execute the commands or collect the information and then send results back to the requesting system. Rationale: The SNMP server can communicate using SNMP v1, which transmits data in the clear and does not require authentication to execute commands. Unless absolutely necessary, it is recommended that the SNMP service not be used. If SNMP is required the server should be configured to disallow SNMP v1.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "snmpd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

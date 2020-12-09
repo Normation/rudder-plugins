@@ -1,0 +1,119 @@
+{
+  "data": {
+    "bundle_name": "CIS_debian9___Ensure_a_package_is_not_installed",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "Condition from command",
+        "method_name": "condition_from_command",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "cis_check_command_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "command",
+            "value": "${check_command}"
+          },
+          {
+            "name": "true_codes",
+            "value": "0"
+          },
+          {
+            "name": "false_codes",
+            "value": "999"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.cis_check_command_${report_data.canonified_directive_id}_false)",
+        "component": "command_execution",
+        "method_name": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${prerm}"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "package_absent",
+        "method_name": "package_absent",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${package}"
+          },
+          {
+            "name": "version",
+            "value": "any"
+          },
+          {
+            "name": "architecture",
+            "value": "default"
+          },
+          {
+            "name": "provider",
+            "value": "default"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.package_absent_${package}_repaired)",
+        "component": "command_execution",
+        "method_name": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${posthook}"
+          }
+        ]
+      }
+    ],
+    "name": "CIS debian9 - Ensure a package is not installed",
+    "parameter": [
+      {
+        "description": "",
+        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
+        "name": "package"
+      },
+      {
+        "description": "",
+        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
+        "name": "posthook"
+      },
+      {
+        "description": "",
+        "id": "f2da3dff-0634-48b0-8a8e-8c27393388cb",
+        "name": "prerm"
+      },
+      {
+        "description": "",
+        "id": "529b1f1a-0db6-4244-b84a-7abf0216da39",
+        "name": "check_command"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

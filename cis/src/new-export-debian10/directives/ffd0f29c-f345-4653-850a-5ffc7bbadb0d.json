@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure local login warning banner is configured properly",
+  "enabled": true,
+  "id": "ffd0f29c-f345-4653-850a-5ffc7bbadb0d",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "sed -i 's/Debian//g;s/\\\\m//g;s/\\\\r//g;s/\\\\s//g;s/\\\\v//g' /etc/issue"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "grep -E -i \"(\\\\\\v|\\\\\\r|\\\\\\m|\\\\\\s|$(grep '^ID=' /etc/os-release | cut -d= -f2 | sed -e 's/\"//g'))\" /etc/issue | wc -l"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "0"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Execute_command",
+  "techniqueVersion": "1.0"
+}

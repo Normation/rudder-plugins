@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - Ensure nftables service is enabled",
+  "enabled": true,
+  "id": "fb3c26ee-8d83-4d71-885f-dbc04b11a25f",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "nftables"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Enable_Service",
+  "techniqueVersion": "1.0"
+}

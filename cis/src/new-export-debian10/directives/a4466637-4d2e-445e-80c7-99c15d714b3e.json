@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - Ensure email services are not enabled",
+  "enabled": true,
+  "id": "a4466637-4d2e-445e-80c7-99c15d714b3e",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "dovecot"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

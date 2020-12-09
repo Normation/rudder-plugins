@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - Ensure RDS is disabled",
+  "enabled": true,
+  "id": "f8cebf6e-1854-4a76-8c49-0391cc5c4004",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "rds"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

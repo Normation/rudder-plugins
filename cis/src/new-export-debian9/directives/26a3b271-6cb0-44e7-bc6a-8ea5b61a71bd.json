@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - Ensure DCCP is disabled",
+  "enabled": true,
+  "id": "26a3b271-6cb0-44e7-bc6a-8ea5b61a71bd",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "dccp"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

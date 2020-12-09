@@ -1,0 +1,35 @@
+{
+  "displayName": " CIS - Ensure separate partition exists for /home",
+  "enabled": true,
+  "id": "10bc9dd6-da4c-49b1-93be-36bdd7135c28",
+  "longDescription": "Description: The /home directory is used to support disk storage needs of local users. Rationale: If the system is intended to support local users, create a separate partition for the /home directory to protect against resource exhaustion and restrict the type of files that can be stored under /home.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "11B7074D-62D8-4437-B5D5-17041BD79AC2",
+                  "value": "/home"
+                }
+              },
+              {
+                "var": {
+                  "name": "488F7662-A59B-4BD1-825D-7A3800FB6208",
+                  "value": "rw"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_mounting_partition_is_correct",
+  "techniqueVersion": "1.0"
+}

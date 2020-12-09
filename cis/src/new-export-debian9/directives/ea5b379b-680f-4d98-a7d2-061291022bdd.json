@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - 2.2.11 - debian9 - Ensure IMAP and POP3 server is not enabled",
+  "enabled": true,
+  "id": "ea5b379b-680f-4d98-a7d2-061291022bdd",
+  "longDescription": "Description: exim is an open source IMAP and POP3 server for Linux based systems.  Rationale: Unless POP3 and/or IMAP servers are to be provided by this system, it is recommended that the package be removed to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "dovecot"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Disable_Service",
+  "techniqueVersion": "1.0"
+}

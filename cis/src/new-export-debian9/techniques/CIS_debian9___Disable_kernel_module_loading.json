@@ -1,0 +1,62 @@
+{
+  "data": {
+    "bundle_name": "CIS_debian9___Disable_kernel_module_loading",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "kernel_module_configuration",
+        "method_name": "kernel_module_configuration",
+        "parameters": [
+          {
+            "name": "module_name",
+            "value": "${module}"
+          },
+          {
+            "name": "configuration",
+            "value": "install ${module} /bin/false"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "kernel_module_not_loaded",
+        "method_name": "kernel_module_not_loaded",
+        "parameters": [
+          {
+            "name": "module_name",
+            "value": "${module}"
+          }
+        ]
+      }
+    ],
+    "name": "CIS debian9 - Disable kernel module loading",
+    "parameter": [
+      {
+        "description": "",
+        "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
+        "name": "module"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

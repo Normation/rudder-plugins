@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure NFS and RPC are not enabled (RPC)",
+  "enabled": true,
+  "id": "266efc28-c220-45f8-bfd8-3c3e0b85f4bc",
+  "longDescription": "Description: The Network File System (NFS) is one of the first and most widely distributed file systems in the UNIX environment. It provides the ability for systems to mount file systems of other servers through the network. Rationale: If the system does not export NFS shares or act as an NFS client, it is recommended that these services be disabled to reduce remote attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "rpcbind"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure sudo log file exists",
+  "enabled": true,
+  "id": "ef42cc20-4f94-460c-b24d-85ac845fdca2",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "/bin/false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "grep -Ei '^\\s*Defaults\\s+logfile=\\S+' /etc/sudoers /etc/sudoers.d/* | wc -l"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Execute_command",
+  "techniqueVersion": "1.0"
+}

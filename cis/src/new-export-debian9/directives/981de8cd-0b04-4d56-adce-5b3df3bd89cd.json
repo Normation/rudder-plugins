@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure nodev option set on /home partition",
+  "enabled": true,
+  "id": "981de8cd-0b04-4d56-adce-5b3df3bd89cd",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "11B7074D-62D8-4437-B5D5-17041BD79AC2",
+                  "value": "/home"
+                }
+              },
+              {
+                "var": {
+                  "name": "488F7662-A59B-4BD1-825D-7A3800FB6208",
+                  "value": "nodev"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_mounting_partition_is_correct",
+  "techniqueVersion": "1.0"
+}

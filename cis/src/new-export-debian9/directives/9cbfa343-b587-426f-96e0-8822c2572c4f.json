@@ -1,0 +1,47 @@
+{
+  "displayName": "CIS - 2.3.3 - debian9 - Ensure talk client is not installed",
+  "enabled": true,
+  "id": "9cbfa343-b587-426f-96e0-8822c2572c4f",
+  "longDescription": "Description: The talk software makes it possible for users to send and receive messages across systems through a terminal session. The talk client, which allows initialization of talk sessions, is installed by default. Rationale: The software presents a security risk as it uses unencrypted protocols for communication.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "529B1F1A-0DB6-4244-B84A-7ABF0216DA39",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "talk"
+                }
+              },
+              {
+                "var": {
+                  "name": "F2DA3DFF-0634-48B0-8A8E-8C27393388CB",
+                  "value": "/bin/true"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_a_package_is_not_installed",
+  "techniqueVersion": "1.0"
+}

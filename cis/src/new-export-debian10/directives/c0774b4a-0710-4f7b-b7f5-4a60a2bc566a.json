@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure HTTP Proxy Server is not enabled",
+  "enabled": true,
+  "id": "c0774b4a-0710-4f7b-b7f5-4a60a2bc566a",
+  "longDescription": "Description: Squid is a standard proxy server used in many distributions and environments. Rationale: If there is no need for a proxy server, it is recommended that the squid proxy be deleted to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "squid"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - 2.2.5 - debian9 - Ensure DHCP Server is not enabled (isc-dhcp-server)",
+  "enabled": true,
+  "id": "ce46c4e8-db99-4c88-af36-2a275bda3b2e",
+  "longDescription": "Description: The Dynamic Host Configuration Protocol (DHCP) is a service that allows machines to be dynamically assigned IP addresses. Rationale: Unless a system is specifically set up to act as a DHCP server, it is recommended that this service be disabled to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "isc-dhcp-server"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Disable_Service",
+  "techniqueVersion": "1.0"
+}

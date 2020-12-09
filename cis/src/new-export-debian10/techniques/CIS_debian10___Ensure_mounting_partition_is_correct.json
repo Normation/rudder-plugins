@@ -1,0 +1,67 @@
+{
+  "data": {
+    "bundle_name": "CIS_debian10___Ensure_mounting_partition_is_correct",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "partition_check_mounted",
+        "method_name": "partition_check_mounted",
+        "parameters": [
+          {
+            "name": "mount_point",
+            "value": "${mount_point}"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "partition_check_options",
+        "method_name": "partition_check_options",
+        "parameters": [
+          {
+            "name": "mount_point",
+            "value": "${mount_point}"
+          },
+          {
+            "name": "options",
+            "value": "${mount_options}"
+          }
+        ]
+      }
+    ],
+    "name": "CIS debian10 - Ensure mounting partition is correct",
+    "parameter": [
+      {
+        "description": "",
+        "id": "11b7074d-62d8-4437-b5d5-17041bd79ac2",
+        "name": "mount_point"
+      },
+      {
+        "description": "",
+        "id": "488f7662-a59b-4bd1-825d-7a3800fb6208",
+        "name": "mount_options"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

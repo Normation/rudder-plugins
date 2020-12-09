@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure no legacy \"+\" entries exist in /etc/group",
+  "enabled": true,
+  "id": "4ee2d1f1-74c3-496d-8769-df53f115c7dd",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "/bin/false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "grep \"^\\+:\" /etc/group | wc -l"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "0"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Execute_command",
+  "techniqueVersion": "1.0"
+}

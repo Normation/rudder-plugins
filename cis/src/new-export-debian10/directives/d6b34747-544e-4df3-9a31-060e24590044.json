@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Disable Automounting",
+  "enabled": true,
+  "id": "d6b34747-544e-4df3-9a31-060e24590044",
+  "longDescription": "Description: autofs allows automatic mounting of devices, typically including CD/DVDs and USB drives.  Rationale: With automounting enabled anyone with physical access could attach a USB drive or disc and have its contents available in system even if they lacked permissions to mount it themselves.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "autofs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

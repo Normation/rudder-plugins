@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure the audit configuration is immutable",
+  "enabled": true,
+  "id": "71a72409-653a-4892-aa84-350f100a5ec5",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "/bin/false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "grep \\\"^\\\\s*[^#]\\\" /etc/audit/audit.rules | tail -1"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "-e 2"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Execute_command",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,65 @@
+{
+  "displayName": "CIS - Ensure only strong ciphers are used (cast128-cbc)",
+  "enabled": true,
+  "id": "202f6a06-d057-43ca-a3ae-7b4e80246ff3",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "27D1E871-43CA-468F-A4CD-E2E4BCA82415",
+                  "value": ","
+                }
+              },
+              {
+                "var": {
+                  "name": "8964EF96-B74B-43A9-B5FF-96333BE62A15",
+                  "value": "${ncf_const.s}"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/ssh/sshd_config"
+                }
+              },
+              {
+                "var": {
+                  "name": "B803642A-A663-4203-BADD-9A783128FD03",
+                  "value": "Ciphers"
+                }
+              },
+              {
+                "var": {
+                  "name": "D0C2C78D-A67B-41AE-AE68-6C2872C44192",
+                  "value": "cast128-cbc"
+                }
+              },
+              {
+                "var": {
+                  "name": "D8CECE9B-F8F3-4151-966D-4818C5FA7A49",
+                  "value": ""
+                }
+              },
+              {
+                "var": {
+                  "name": "DCCDA490-F509-42EB-B1A3-CE32A4B80F64",
+                  "value": ""
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_key_value_parameter_absent_in_file",
+  "techniqueVersion": "1.0"
+}

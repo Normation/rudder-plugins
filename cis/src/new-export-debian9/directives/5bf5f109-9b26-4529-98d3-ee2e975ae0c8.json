@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - 1.1.1.5 - debian9 - Ensure mounting of udf filesystems is disabled",
+  "enabled": true,
+  "id": "5bf5f109-9b26-4529-98d3-ee2e975ae0c8",
+  "longDescription": "Description: The udf filesystem type is the universal disk format used to implement ISO/IEC 13346 and ECMA-167 specifications. This is an open vendor filesystem type for data storage on a broad range of media. This filesystem type is necessary to support writing DVDs and newer optical disc formats. Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "udf"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure noexec option set on /tmp partition",
+  "enabled": true,
+  "id": "53f872fe-0b83-433a-bb5f-cd2750531891",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "11B7074D-62D8-4437-B5D5-17041BD79AC2",
+                  "value": "/tmp"
+                }
+              },
+              {
+                "var": {
+                  "name": "488F7662-A59B-4BD1-825D-7A3800FB6208",
+                  "value": "noexec"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_mounting_partition_is_correct",
+  "techniqueVersion": "1.0"
+}

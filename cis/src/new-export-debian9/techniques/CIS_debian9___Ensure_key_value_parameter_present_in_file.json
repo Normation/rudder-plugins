@@ -1,0 +1,101 @@
+{
+  "data": {
+    "bundle_name": "CIS_debian9___Ensure_key_value_parameter_present_in_file",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "File key-value parameter in list",
+        "method_name": "file_key_value_parameter_present_in_list",
+        "parameters": [
+          {
+            "name": "file",
+            "value": "${file}"
+          },
+          {
+            "name": "key",
+            "value": "${key}"
+          },
+          {
+            "name": "key_value_separator",
+            "value": "${key_separator}"
+          },
+          {
+            "name": "parameter",
+            "value": "${parameter}"
+          },
+          {
+            "name": "parameter_separator",
+            "value": "${parameter_separator}"
+          },
+          {
+            "name": "leading_char_separator",
+            "value": "${leading_char_parameter_separator}"
+          },
+          {
+            "name": "closing_char_separator",
+            "value": "${closing_char_parameter_separator}"
+          }
+        ]
+      }
+    ],
+    "name": "CIS debian9 - Ensure key value parameter present in file",
+    "parameter": [
+      {
+        "description": "",
+        "id": "9e79f7f8-3ca6-4376-a510-11e00e134c91",
+        "name": "file"
+      },
+      {
+        "description": "",
+        "id": "b803642a-a663-4203-badd-9a783128fd03",
+        "name": "key"
+      },
+      {
+        "description": "",
+        "id": "d0c2c78d-a67b-41ae-ae68-6c2872c44192",
+        "name": "parameter"
+      },
+      {
+        "description": "",
+        "id": "27d1e871-43ca-468f-a4cd-e2e4bca82415",
+        "name": "parameter_separator"
+      },
+      {
+        "description": "",
+        "id": "8964ef96-b74b-43a9-b5ff-96333be62a15",
+        "name": "key_separator"
+      },
+      {
+        "description": "",
+        "id": "d8cece9b-f8f3-4151-966d-4818c5fa7a49",
+        "name": "leading_char_parameter_separator"
+      },
+      {
+        "description": "",
+        "id": "dccda490-f509-42eb-b1a3-ce32a4b80f64",
+        "name": "closing_char_parameter_separator"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

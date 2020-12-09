@@ -1,0 +1,90 @@
+{
+  "data": {
+    "bundle_name": "CIS_debian10___Ensure_sysctl_key_value",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "sysctl_value",
+        "method_name": "sysctl_value",
+        "parameters": [
+          {
+            "name": "key",
+            "value": "${key}"
+          },
+          {
+            "name": "value",
+            "value": "${expected_value}"
+          },
+          {
+            "name": "filename",
+            "value": "${filename}"
+          },
+          {
+            "name": "option",
+            "value": "${option}"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.sysctl_value_${key}_repaired)",
+        "component": "command_execution",
+        "method_name": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${posthook}"
+          }
+        ]
+      }
+    ],
+    "name": "CIS debian10 - Ensure sysctl key value",
+    "parameter": [
+      {
+        "description": "",
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "key"
+      },
+      {
+        "description": "",
+        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
+        "name": "expected_value"
+      },
+      {
+        "description": "",
+        "id": "0029242a-ade2-4782-a79c-827dc59fb489",
+        "name": "filename"
+      },
+      {
+        "description": "",
+        "id": "7e7baaf0-d7fd-44f6-be28-78660b068c9d",
+        "name": "option"
+      },
+      {
+        "description": "",
+        "id": "da59974b-6686-4b35-a0a2-b9753942d0cf",
+        "name": "posthook"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

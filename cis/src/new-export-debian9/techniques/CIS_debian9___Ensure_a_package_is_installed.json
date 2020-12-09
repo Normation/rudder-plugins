@@ -1,0 +1,75 @@
+{
+  "data": {
+    "bundle_name": "CIS_debian9___Ensure_a_package_is_installed",
+    "category": "CIS_debian9",
+    "description": "",
+    "method_calls": [
+      {
+        "class_context": "any",
+        "component": "condition_from_variable_existence",
+        "method_name": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition_prefix",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "component": "package_present",
+        "method_name": "package_present",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${package}"
+          },
+          {
+            "name": "version",
+            "value": "any"
+          },
+          {
+            "name": "architecture",
+            "value": "default"
+          },
+          {
+            "name": "provider",
+            "value": "default"
+          }
+        ]
+      },
+      {
+        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.package_present_${package}_repaired)",
+        "component": "command_execution",
+        "method_name": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${posthook}"
+          }
+        ]
+      }
+    ],
+    "name": "CIS debian9 - Ensure a package is installed",
+    "parameter": [
+      {
+        "description": "",
+        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
+        "name": "package"
+      },
+      {
+        "description": "",
+        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
+        "name": "posthook"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "1"
+}

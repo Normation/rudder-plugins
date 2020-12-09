@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - 1.3.1 - debian9 - Ensure AIDE is installed",
+  "enabled": true,
+  "id": "4cc55e15-dd90-496b-94de-10dab87f9649",
+  "longDescription": "Description: AIDE takes a snapshot of filesystem state including modification times, permissions, and file hashes which can then be used to compare against the current state of the filesystem to detect modifications to the system. Rationale: By monitoring the filesystem state compromised files can be detected to prevent or limit the exposure of accidental or malicious misconfigurations or modified binaries.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "aide"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,53 @@
+{
+  "displayName": "CIS - Ensure core dumps are restricted (fs.suid_dumpable)",
+  "enabled": true,
+  "id": "7d6c194e-6391-4b1a-b0b6-6fe2bf9cf6f4",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "0029242A-ADE2-4782-A79C-827DC59FB489",
+                  "value": "00-sysctl-jn"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E7BAAF0-D7FD-44F6-BE28-78660B068C9D",
+                  "value": "default"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "fs.suid_dumpable"
+                }
+              },
+              {
+                "var": {
+                  "name": "DA59974B-6686-4B35-A0A2-B9753942D0CF",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "0"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_sysctl_key_value",
+  "techniqueVersion": "1.0"
+}

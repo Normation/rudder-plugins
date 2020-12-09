@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure mounting of hfs filesystems is disabled",
+  "enabled": true,
+  "id": "c1351423-198b-4d31-9e0b-258d9679109a",
+  "longDescription": "Description: The hfs filesystem type is a hierarchical filesystem that allows you to mount Mac OS filesystems. Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "hfs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

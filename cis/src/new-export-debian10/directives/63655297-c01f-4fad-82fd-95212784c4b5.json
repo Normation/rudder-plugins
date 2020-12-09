@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure rsyslog Service is enabled",
+  "enabled": true,
+  "id": "63655297-c01f-4fad-82fd-95212784c4b5",
+  "longDescription": "Description: Once the rsyslog package is installed it needs to be activated. Rationale: If the rsyslog service is not activated the system may default to the syslogd service or lack logging instead.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "rsyslog"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Enable_Service",
+  "techniqueVersion": "1.0"
+}

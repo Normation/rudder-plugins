@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure FTP Server is not enabled",
+  "enabled": true,
+  "id": "e78d4295-fab1-4675-b589-b47ba35494a5",
+  "longDescription": "Description: The File Transfer Protocol (FTP) provides networked computers with the ability to transfer files. Rationale: FTP does not protect the confidentiality of data or authentication credentials. It is recommended sftp be used if file transfer is required. Unless there is a need to run the system as a FTP server (for example, to allow anonymous downloads), it is recommended that the package be deleted to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "vsftpd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

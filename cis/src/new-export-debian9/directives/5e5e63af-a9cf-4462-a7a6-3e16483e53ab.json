@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure default deny firewall policy",
+  "enabled": true,
+  "id": "5e5e63af-a9cf-4462-a7a6-3e16483e53ab",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "iptables -P INPUT DROP && iptables -P OUTPUT DROP && iptables -P FORWARD DROP"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "iptables -L| grep -E \"^Chain (INPUT|OUTPUT|FORWARD) \\(policy (DROP|REJECT)\\)\" | wc -l"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "3"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Execute_command",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,47 @@
+{
+  "displayName": "CIS - 6.1.4 - debian9 - Ensure permissions on /etc/group are configured",
+  "enabled": true,
+  "id": "bf4a676b-9bd1-4381-803b-023fdd191692",
+  "longDescription": "Description: The /etc/group file contains a list of all the valid groups defined in the system. The command below allows read/write access for root and read access for everyone else. Rationale: The /etc/group file needs to be protected from unauthorized changes by non-privileged users, but needs to be readable as this information is used with many non-privileged programs.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "586D5935-1730-4266-9D07-9A380D822400",
+                  "value": "/etc/group"
+                }
+              },
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "644"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "root"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "root"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Set_permissions",
+  "techniqueVersion": "1.0"
+}

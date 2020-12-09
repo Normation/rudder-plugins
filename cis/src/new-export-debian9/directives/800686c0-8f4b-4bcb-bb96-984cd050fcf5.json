@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - 4.1.15 - debian9 - Ensure changes to system administration scope (sudoers) is collected",
+  "enabled": true,
+  "id": "800686c0-8f4b-4bcb-bb96-984cd050fcf5",
+  "longDescription": "Description: Monitor scope changes for system administrations. If the system has been properly configured to force system administrators to log in as themselves first and then use the sudo command to execute privileged commands, it is possible to monitor changes in scope. The file /etc/sudoers will be written to when the file or its attributes have changed. The audit records will be tagged with the identifier \"scope.\" Rationale: Changes in the /etc/sudoers file can indicate that an unauthorized change has been made to scope of system administrator activity.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "any"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "-w /etc/sudoers -p wa -k scope\r\n-w /etc/sudoers.d -p wa -k scope"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/audit/audit.rules"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure loopback traffic is configured (ip6)",
+  "enabled": true,
+  "id": "e28d8895-6873-46fb-bcaa-5deb54e6a820",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "nft add rule inet filter input ip6 saddr ::1 counter drop"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "nft list ruleset | awk '/hook input/,/}/' | grep 'ip6 saddr'"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "ip6 saddr ::1 counter packets 0 bytes 0 drop"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Execute_command",
+  "techniqueVersion": "1.0"
+}

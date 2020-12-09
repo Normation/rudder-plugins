@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure AppArmor is installed (apparmor)",
+  "enabled": true,
+  "id": "01425022-3617-4b09-b353-239769fa0e8b",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "apparmor"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

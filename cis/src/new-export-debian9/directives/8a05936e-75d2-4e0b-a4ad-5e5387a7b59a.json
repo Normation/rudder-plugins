@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - 5.1.1 - debian9 - Ensure cron daemon is enabled",
+  "enabled": true,
+  "id": "8a05936e-75d2-4e0b-a4ad-5e5387a7b59a",
+  "longDescription": "Description: The cron daemon is used to execute batch jobs on the system. Rationale: While there may not be user jobs that need to be run on the system, the system does have maintenance jobs that may include security monitoring that have to run, and cron is used to execute them.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "cron"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Enable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure mounting of jffs2 filesystems is disabled",
+  "enabled": true,
+  "id": "12c0a1b2-fa7f-4423-a778-d71124631e77",
+  "longDescription": "Description: The jffs2 (journaling flash filesystem 2) filesystem type is a log-structured filesystem used in flash memory devices. Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "jffs2"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - 2.2.8 - debian9 - Ensure DNS Server is not enabled",
+  "enabled": true,
+  "id": "f05e5056-c1af-4f92-a088-2923e19bf12f",
+  "longDescription": "Description: The Domain Name System (DNS) is a hierarchical naming system that maps names to IP addresses for computers, services and other resources connected to a network. Rationale: Unless a system is specifically designated to act as a DNS server, it is recommended that the package be deleted to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "bind9"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Disable_Service",
+  "techniqueVersion": "1.0"
+}

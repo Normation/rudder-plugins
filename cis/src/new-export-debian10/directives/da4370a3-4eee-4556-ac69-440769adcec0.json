@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure a Firewall package is installed (iptables)",
+  "enabled": true,
+  "id": "da4370a3-4eee-4556-ac69-440769adcec0",
+  "longDescription": "Description: iptables allows configuration of the IPv4 tables in the linux kernel and the rules stored  within them. Most firewall configuration utilities operate as a front end to iptables. Rationale: iptables is required for firewall management and configuration.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "iptables"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

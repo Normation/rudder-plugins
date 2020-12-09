@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure mounting of freevxfs filesystems is disabled",
+  "enabled": true,
+  "id": "74613c86-87ff-4251-a734-7802a38c7956",
+  "longDescription": "Description: The freevxfs filesystem type is a free version of the Veritas type filesystem. This is the primary filesystem type for HP-UX operating systems. Rationale: Removing support for unneeded filesystem types reduces the local attack surface of the system. If this filesystem type is not needed, disable it.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "freevxfs"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

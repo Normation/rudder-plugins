@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure rsyslog is installed",
+  "enabled": true,
+  "id": "f0195022-0700-4f4c-b15b-4215eaa32538",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "rsyslog"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

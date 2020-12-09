@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - 4.1.2 - debian9 - Ensure auditd service is enabled",
+  "enabled": true,
+  "id": "f3547569-ae48-4d31-b870-7df8837f24a0",
+  "longDescription": "Description: Turn on the auditd daemon to record system events. Rationale: The capturing of system events provides system administrators with information to allow them to determine if unauthorized access to their system is occurring.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "auditd"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian9___Enable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,29 @@
+{
+  "displayName": " CIS - Ensure HTTP server is not enabled",
+  "enabled": true,
+  "id": "3d11acc3-c046-4651-9393-daa152561e82",
+  "longDescription": "Description: HTTP or web servers provide the ability to host web site content. Rationale: Unless there is a need to run the system as a web server, it is recommended that the package be deleted to reduce the potential attack surface.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "981A5B9D-B062-4011-8DFF-DF1810CB2FE6",
+                  "value": "apache2"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_Service",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure /tmp is configured",
+  "enabled": true,
+  "id": "71aa836c-fb09-4484-b3b0-1a0bd32672ff",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "11B7074D-62D8-4437-B5D5-17041BD79AC2",
+                  "value": "/tmp"
+                }
+              },
+              {
+                "var": {
+                  "name": "488F7662-A59B-4BD1-825D-7A3800FB6208",
+                  "value": "rw"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_mounting_partition_is_correct",
+  "techniqueVersion": "1.0"
+}

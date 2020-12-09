@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure core dumps are restricted (/etc/security/limits.conf)",
+  "enabled": true,
+  "id": "4927d9c6-7fe2-432d-aa2a-93f8701f1d97",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "any"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "* hard core 0"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/security/limits.conf"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,29 @@
+{
+  "displayName": "CIS - Ensure mounting of FAT filesystems is limited",
+  "enabled": true,
+  "id": "372148dd-e252-4f56-9ea4-5bcc1c508fbb",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "EF3A3CC4-CE02-44B0-A280-D1B90876506A",
+                  "value": "vfat"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Disable_kernel_module_loading",
+  "techniqueVersion": "1.0"
+}

@@ -1,0 +1,35 @@
+{
+  "displayName": "CIS - Ensure time synchronization is in use (chrony)",
+  "enabled": true,
+  "id": "21ed71cf-864a-4082-8543-e5a9bc0a5b12",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "3DC0EB13-0FD2-426A-9965-84E35AA3F51B",
+                  "value": "/bin/true"
+                }
+              },
+              {
+                "var": {
+                  "name": "A1B9E560-A2C8-4759-9F93-99F05D48B14F",
+                  "value": "chrony"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_a_package_is_installed",
+  "techniqueVersion": "1.0"
+}

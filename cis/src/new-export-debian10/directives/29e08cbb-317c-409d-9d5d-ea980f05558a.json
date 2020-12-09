@@ -1,0 +1,41 @@
+{
+  "displayName": "CIS - Ensure rsyslog is configured to send logs to a remote log host",
+  "enabled": true,
+  "id": "29e08cbb-317c-409d-9d5d-ea980f05558a",
+  "longDescription": "",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "7ABE8FFE-7456-4FD1-A084-859D071B5B8F",
+                  "value": "/bin/false"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "grep -hE \"^\\*\\.\\*\\s+@.*$\" /etc/rsyslog.conf /etc/rsyslog.d/*.conf"
+                }
+              },
+              {
+                "var": {
+                  "name": "F73D12E6-725A-4602-9299-48E33823EDCD",
+                  "value": "^\\*\\.\\*\\s+@.*$"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Execute_command",
+  "techniqueVersion": "1.0"
+}

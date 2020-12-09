@@ -1,0 +1,41 @@
+{
+  "displayName": " CIS - Ensure login and logout events are collected",
+  "enabled": true,
+  "id": "be791876-3252-4ee1-83c5-e82aadd054d8",
+  "longDescription": "Description: Monitor login and logout events. The parameters below track changes to files associated with login/logout events. The file /var/log/faillog tracks failed events from login. The file /var/log/lastlog maintain records of the last time a user successfully logged in. The file /var/log/tallylog maintains records of failures via the pam_tally2 module Rationale: Monitoring login/logout events could provide a system administrator with information associated with brute force attacks against user logins.",
+  "parameters": {
+    "section": {
+      "name": "sections",
+      "sections": [
+        {
+          "section": {
+            "name": "Technique parameters",
+            "vars": [
+              {
+                "var": {
+                  "name": "1CF9A017-7FD9-49B8-BDAA-0C22365FA988",
+                  "value": "any"
+                }
+              },
+              {
+                "var": {
+                  "name": "7E9A3AA5-A697-4F88-8D3D-A02E27E1B5F8",
+                  "value": "-w /var/log/faillog -p wa -k logins\r\n-w /var/log/lastlog -p wa -k logins\r\n-w /var/log/tallylog -p wa -k logins"
+                }
+              },
+              {
+                "var": {
+                  "name": "9E79F7F8-3CA6-4376-A510-11E00E134C91",
+                  "value": "/etc/audit/audit.rules"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "shortDescription": "",
+  "techniqueName": "CIS_debian10___Ensure_lines_present_in_file",
+  "techniqueVersion": "1.0"
+}
