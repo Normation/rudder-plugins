@@ -30,7 +30,7 @@ $(PLUGINS_JAR_PATH): $(PARENT_POM)
 
 $(PARENT_POM):
 	echo $(PARENT_POM)
-	cd .. && $(MVN_CMD) install
+	$(MVN_CMD) install
 clean:
 	rm -f  pom.xml
 	rm -rf target
