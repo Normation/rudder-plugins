@@ -11,13 +11,16 @@ include ../makefiles/global-vars.mk
 MAVEN_LOCAL_REPO =  $(shell $(MVN_PARAMS) ../makefiles/find_m2_repo.sh)
 
 NAME = $(LIB_$(LIB_TYPE)_NAME)
-VERSION = $(RUDDER_BRANCH)-$(LIB_$(LIB_TYPE)_VERSION)
+VERSION = $(BUILD_VERSION)-$(LIB_$(LIB_TYPE)_VERSION)
 PLUGINS_JAR_PATH = $(MAVEN_LOCAL_REPO)/com/normation/plugins/$(NAME)/$(VERSION)/$(NAME)-$(VERSION).jar
-PARENT_V = $(RUDDER_BRANCH)-$(PARENT_VERSION)
+PARENT_V = $(BUILD_VERSION)-$(PARENT_VERSION)
 PARENT_POM = $(MAVEN_LOCAL_REPO)/com/normation/plugins/plugins-parent/$(PARENT_V)/plugins-parent-$(PARENT_V).pom
 
-.DEFAULT_GOAL := $(PLUGINS_JAR_PATH)
+.DEFAULT_GOAL := std
 
+std: generate-pom $(PLUGINS_JAR_PATH)
+
+nightly: generate-pom-nightly $(PLUGINS_JAR_PATH)
 # maven is such a pain that "mvn install" can't be used with parametrized version (it
 # uses the literal '${plugin-version}' string in path). So we are doing installation by 
 # hand. Yep, most beautiful tool.
@@ -27,7 +30,7 @@ $(PLUGINS_JAR_PATH): $(PARENT_POM)
 
 $(PARENT_POM):
 	echo $(PARENT_POM)
-	cd .. && $(MVN_CMD) -pl com.normation.plugins:plugins-parent install
+	$(MVN_CMD) install
 clean:
 	rm -f  pom.xml
 	rm -rf target

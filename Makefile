@@ -6,12 +6,14 @@
 
 include makefiles/global-vars.mk
 
-PUB_LIBS = 
+PUB_LIBS = plugins-common 
 PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
 PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
+NIGHTLY = $(addsuffix -nightly,$(PLUGINS))
+NIGHTLY-LICENSED = $(addsuffix -nightly-licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 
 # all 
@@ -21,6 +23,10 @@ unlicensed: $(PUB_LIBS) $(PLUGINS)
 
 licensed: $(LIBS) $(PLUGINS-LICENSED) 
 
+nightly-licensed: $(LIBS) $(NIGHTLY-LICENSED) 
+
+nightly: $(PUB_LIBS) $(NIGHTLY)
+
 $(LIBS):%:
 	cd $@ && make
 
@@ -29,6 +35,12 @@ $(PLUGINS):%:
 
 $(PLUGINS-LICENSED):%-licensed:
 	cd $* && make licensed
+
+$(NIGHTLY):%-nightly:
+	cd $* && make nightly
+
+$(NIGHTLY-LICENSED):%-nightly-licensed:
+	cd $* && make nightly-licensed
 
 generate-all-pom: generate-pom
 	for i in $(ALL); do cd $$i; $(MAKE) generate-pom; cd ..; done
