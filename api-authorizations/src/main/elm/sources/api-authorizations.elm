@@ -1,6 +1,5 @@
 port module ApiAuthorizations exposing (AccessControl, Api, ApiCategory, Model, Msg(..), Token, apiSelect, displayApi, displayCategory, giveAcl, init, main, setAcl, subscriptions, update, view)
 
-import Debug exposing (toString)
 import Html exposing (..)
 import Browser
 import Html.Attributes exposing (..)
@@ -95,6 +94,9 @@ init flags =
 -- UPDATE
 -- utility method that update a model adding or removing a list of acl
 
+makeAcComparable :  AccessControl -> String
+makeAcComparable ac =
+  ac.path ++ ac.verb
 
 setAcl : Model -> List AccessControl -> Bool -> ( Model, Cmd Msg )
 setAcl model acl status =
@@ -103,7 +105,7 @@ setAcl model acl status =
             if status then
                 -- add AC into list
                 List.append acl model.token.acl
-                    |> uniqueBy toString
+                    |> uniqueBy makeAcComparable
                 -- uniqueBy requires comparable and does work with structural equality, which it a pity. toString should be ok in all case for AccessControl, but it was not necessary.
 
             else
