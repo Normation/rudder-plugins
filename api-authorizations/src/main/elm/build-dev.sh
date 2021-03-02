@@ -5,3 +5,4 @@ cd $ELM_DIR
 
 ./build-app.sh
 cp generated/* ../../../target/classes/toserve/apiauthorizations
+cp ../resources/toserve/apiauthorizations/* ../../../target/classes/toserve/apiauthorizations
