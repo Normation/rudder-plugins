@@ -29,7 +29,7 @@ else
   CERTIFICATE_OPTION="--insecure"
 fi
 
-DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --location --noproxy --globoff"
+DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --location --proxy '' --globoff"
 
 usage() {
 	echo "Usage: $0 <UUID of the node to make a relay server>"
