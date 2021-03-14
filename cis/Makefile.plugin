@@ -9,6 +9,16 @@ debian9: all
 redhat7: OS = redhat7
 redhat7: all
 
+ubuntu18-nightly: OS = ubuntu18
+ubuntu18-nightly: nightly 
+
+debian9-nightly: OS = debian9
+debian9-nightly: nightly
+
+redhat7-nightly: OS = redhat7
+redhat7-nightly: nightly
+
+
 include ../makefiles/common.mk
 # Usage: $(GET) <destination_file> <url> <hash>
 PROXY_ENV = $(if $(PROXY), http_proxy=$(PROXY) ftp_proxy=$(PROXY))

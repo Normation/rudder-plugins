@@ -6,29 +6,23 @@
 
 include makefiles/global-vars.mk
 
-PUB_LIBS = plugins-common 
-PRIV_LIBS = plugins-common-private
-LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
-PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | xargs echo)
+PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common-private" | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 NIGHTLY = $(addsuffix -nightly,$(PLUGINS))
 NIGHTLY-LICENSED = $(addsuffix -nightly-licensed,$(PLUGINS))
-ALL = $(LIBS) $(PLUGINS)
+ALL = $(PLUGINS)
 
 # all 
 all: unlicensed
 
-unlicensed: $(PUB_LIBS) $(PLUGINS)
+unlicensed: $(PLUGINS)
 
-licensed: $(LIBS) $(PLUGINS-LICENSED) 
+licensed: $(PLUGINS-LICENSED) 
 
-nightly-licensed: $(LIBS) $(NIGHTLY-LICENSED) 
+nightly-licensed: $(NIGHTLY-LICENSED) 
 
-nightly: $(PUB_LIBS) $(NIGHTLY)
-
-$(LIBS):%:
-	cd $@ && make
+nightly: $(NIGHTLY)
 
 $(PLUGINS):%:
 	cd $@ && make
@@ -40,6 +34,7 @@ $(NIGHTLY):%-nightly:
 	cd $* && make nightly
 
 $(NIGHTLY-LICENSED):%-nightly-licensed:
+	echo "$(PLUGINS)"
 	cd $* && make nightly-licensed
 
 generate-all-pom: generate-pom
@@ -69,4 +64,4 @@ very-clean: clean
 optipng:
 	find . -name "*.png" -exec optipng -strip all {} \;
 
-.PHONY: $(LIBS) $(PLUGINS) doc
+.PHONY: $(PLUGINS) doc

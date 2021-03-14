@@ -29,7 +29,6 @@ $(PLUGINS_JAR_PATH): $(PARENT_POM)
 	$(MVN_CMD) clean install
 
 $(PARENT_POM):
-	echo $(PARENT_POM)
 	$(MVN_CMD) install
 clean:
 	rm -f  pom.xml
