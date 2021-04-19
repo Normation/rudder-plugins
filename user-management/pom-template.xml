@@ -134,13 +134,13 @@
     <repositories>
     <repository>
       <id>rudder-release-private</id>
-      <url>http://nexus.normation.com/nexus/content/repositories/private-releases/</url>
+      <url>https://nexus.normation.com/nexus/content/repositories/private-releases/</url>
       <layout>default</layout>
       <snapshots><enabled>false</enabled></snapshots>
     </repository>
     <repository>
       <id>rudder-snapshot-private</id>
-      <url>http://nexus.normation.com/nexus/content/repositories/private-snapshots/</url>
+      <url>https://nexus.normation.com/nexus/content/repositories/private-snapshots/</url>
       <layout>default</layout>
       <snapshots><enabled>true</enabled></snapshots>
     </repository>
