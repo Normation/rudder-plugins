@@ -56,7 +56,7 @@ import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.parameters._
 import com.normation.rudder.domain.policies._
-import com.normation.rudder.domain.queries.Query
+import com.normation.rudder.domain.queries.QueryTrait
 import com.normation.rudder.domain.workflows._
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.rule.category.RuleCategory
@@ -448,7 +448,7 @@ class ChangeRequestChangesForm(
         diff          : ModifyNodeGroupDiff
       , group         : NodeGroup
   ) = {
-    def displayQuery(query:Option[Query]) = query match {
+    def displayQuery(query:Option[QueryTrait]) = query match {
         case None => "None"
         case Some(q) => q.toJSONString
       }
