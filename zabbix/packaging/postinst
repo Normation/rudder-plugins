@@ -9,7 +9,7 @@ mkdir -p /var/rudder/plugin-resources
 if [ ! -f "${CRONFILE}"]; then
   cat > "${CRONFILE}" <<EOF
 0 * * * * /opt/rudder/bin/zabbix-plugin.py update 
-*/2 * * * * root /opt/rudder/bin/centreon-plugin apply-configuration >/dev/null
+*/2 * * * * root /opt/rudder/bin/zabbix-plugin apply-configuration >/dev/null
 EOF
 fi
 
