@@ -1,0 +1,34 @@
+@Library('slack-notification')
+import org.gradiant.jenkins.slack.SlackNotifier
+
+// Check vulns in dependencies on repo branches
+
+pipeline {
+    agent none
+    triggers { cron('@daily') }
+
+    stages {
+        stage('deps-plugins') {
+            when { not { changeRequest() } }
+            agent { label 'scala' }
+            steps {
+                withMaven(maven: "latest",
+                    // don't archive jars
+                    options: [artifactsPublisher(disabled: true)]
+                ) {
+                    sh script: 'make generate-all-pom-nightly', label: "generate pom.xml"
+                    sh script: 'mvn --update-snapshots -DsuppressionFiles=dependency-check-suppression.xml -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                }
+            }
+            post {
+                always {
+            		archiveArtifacts artifacts: 'target/dependency-check-report.html'
+                    script {
+                        new SlackNotifier().notifyResult("scala-team")
+                    }
+                }
+            }
+        }
+    }
+}
+

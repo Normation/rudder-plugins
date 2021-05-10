@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress>
+        <!-- We actually use 2.12.0 because it is overriden in rudder's pom.xml -->
+        <notes><![CDATA[
+        file name: xercesImpl-2.11.0.jar
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/xerces/xercesImpl@.*$</packageUrl>
+   	<cpe>cpe:/a:apache:xerces2_java</cpe>
+    </suppress>
+</suppressions>
