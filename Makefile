@@ -41,7 +41,7 @@ $(NIGHTLY-LICENSED):%-nightly-licensed:
 generate-all-pom:
 	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom; cd ..; done
 
-generate-all-pom-nightly: generate-pom-nightly
+generate-all-pom-nightly:
 	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom-nightly; cd ..; done
 
 doc-pages:
