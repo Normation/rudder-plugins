@@ -8,6 +8,7 @@ include makefiles/global-vars.mk
 
 
 PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common-private" | xargs echo)
+SCALA_PLUGINS = $(shell find . -path ./src -prune -o -name "pom-template.xml" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common-private" | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 NIGHTLY = $(addsuffix -nightly,$(PLUGINS))
 NIGHTLY-LICENSED = $(addsuffix -nightly-licensed,$(PLUGINS))
@@ -37,11 +38,11 @@ $(NIGHTLY-LICENSED):%-nightly-licensed:
 	echo "$(PLUGINS)"
 	cd $* && make nightly-licensed
 
-generate-all-pom: generate-pom
-	for i in $(ALL); do cd $$i; $(MAKE) generate-pom; cd ..; done
+generate-all-pom:
+	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom; cd ..; done
 
 generate-all-pom-nightly: generate-pom-nightly
-	for i in $(ALL); do cd $$i; $(MAKE) generate-pom-nightly; cd ..; done
+	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom-nightly; cd ..; done
 
 doc-pages:
 	mkdir -p doc/pages
