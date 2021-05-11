@@ -11,18 +11,31 @@ pipeline {
         stage('deps-plugins') {
             when { not { changeRequest() } }
             agent { label 'scala' }
+
             steps {
-                withMaven(maven: "latest",
-                    // don't archive jars
-                    options: [artifactsPublisher(disabled: true)]
-                ) {
-                    sh script: 'make generate-all-pom-nightly', label: "generate pom.xml"
-                    sh script: 'mvn --update-snapshots -DsuppressionFiles=dependency-check-suppression.xml -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                script {
+                    SCALA_PLUGINS = sh (
+                        script: 'make scala-plugins-list',
+                        returnStdout: true
+                    ).trim().split(' ')
+                    SCALA_PLUGINS.each {
+                        stage("${it}") {
+                            dir("${it}") {
+                                withMaven(maven: "latest",
+                                    // don't archive jars
+                                    options: [artifactsPublisher(disabled: true)]
+                                ) {
+                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                    sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
+                                }
+                            }
+                        }
+                    }
                 }
             }
             post {
                 always {
-            		archiveArtifacts artifacts: 'target/dependency-check-report.html'
+            		archiveArtifacts artifacts: '*/target/dependency-check-report.html, */target/site/aggregate-third-party-report.html'
                     script {
                         new SlackNotifier().notifyResult("scala-team")
                     }

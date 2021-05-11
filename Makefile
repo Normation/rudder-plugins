@@ -11,6 +11,7 @@ PRIV_LIBS = plugins-common-private
 LIBS= $(PUB_LIBS) $(PRIV_LIBS)
 
 PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | xargs echo)
+SCALA_PLUGINS = $(shell find . -path ./src -prune -o -name "pom-template.xml" -printf '%P\n' | cut -d "/" -f1 | grep -v "pom-template.xml" | grep -v "plugins-common-private" | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 ALL = $(LIBS) $(PLUGINS)
 
@@ -45,6 +46,9 @@ doc-assets:
 	for i in $(PLUGINS); do cd $$i; [ -d docs ] && cp -r docs/* ../doc/assets/; cd ..; done
 
 doc: doc-assets doc-pages
+
+scala-plugins-list:
+	@echo $(SCALA_PLUGINS)
 
 clean: 
 	rm -f pom.xml
