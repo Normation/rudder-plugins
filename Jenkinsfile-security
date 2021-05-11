@@ -11,21 +11,24 @@ pipeline {
         stage('deps-plugins') {
             when { not { changeRequest() } }
             agent { label 'scala' }
-
             steps {
                 script {
                     SCALA_PLUGINS = sh (
                         script: 'make scala-plugins-list',
                         returnStdout: true
                     ).trim().split(' ')
+                    stage('prepare') {
+                        sh script: 'make clean generate-all-pom-nightly', label: "generate pom.xml"
+                    }
                     SCALA_PLUGINS.each {
                         stage("${it}") {
                             dir("${it}") {
                                 withMaven(maven: "latest",
+                                    globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
                                     // don't archive jars
                                     options: [artifactsPublisher(disabled: true)]
                                 ) {
-                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DfailBuildOnCVSS=11 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
                                     sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                                 }
                             }
