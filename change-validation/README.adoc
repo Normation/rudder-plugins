@@ -200,6 +200,15 @@ You can set up email notification at each step of change request workflow.
 You will need to fill the information about the mail server settings and to whom it should be sent for each step, this file is located at :
 `/opt/rudder/etc/plugins/change-validation.conf`
 
+
+[NOTE]
+
+====
+
+When `smtp.hostServer` is empty, the email notification is disabled.
+
+====
+
 For each step you can set up an email's template, we provide templates, by default they are located at :
 
 `/var/rudder/plugins/change-validation/{step name}-mail.template`
