@@ -20,6 +20,13 @@
     plugins.
   </description>
 
+  <licenses>
+    <license>
+      <name> GPL-3.0-only</name>
+      <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+    </license>
+  </licenses>
+
   <properties>
     <!-- the destination path for build.conf. By default ${project.artifactId} but may be
          overriden in children project if needed (for ex if names is not a valid class name)
