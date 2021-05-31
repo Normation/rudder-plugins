@@ -5,7 +5,6 @@ import java.io.FileReader
 import java.io.StringReader
 import java.io.StringWriter
 import java.util.Properties
-
 import bootstrap.liftweb.FileSystemResource
 import bootstrap.liftweb.RudderConfig
 import com.github.mustachejava.DefaultMustacheFactory
@@ -20,6 +19,8 @@ import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNode
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import zio.ZIO
+
 import javax.mail.Session
 import javax.mail._
 import javax.mail.internet.InternetAddress
@@ -128,13 +129,17 @@ class NotificationService(
   def sendNotification(step: WorkflowNode, cr: ChangeRequest): IOResult[Unit] = {
     for {
       serverConfig  <- getSMTPConf(configMailPath)
-      emailConf     <- getStepMailConf(step, configMailPath)
-      rudderBaseUrl <- getRudderBaseUrl(configMailPath)
-      params        =  extractChangeRequestInfo(rudderBaseUrl, cr)
-      mf            =  new DefaultMustacheFactory()
-      emailBody     <- getContentFromTemplate(mf, emailConf, params)
-      emailSubject  <- getSubjectFromTemplate(mf, emailConf.subject, params)
-      _             <- emailService.sendEmail(serverConfig, emailConf.toEnvelop(emailBody).copy(subject = emailSubject))
+      _             <- ZIO.when(serverConfig.smtpHostServer.nonEmpty) {
+        for {
+          emailConf     <- getStepMailConf(step, configMailPath)
+          rudderBaseUrl <- getRudderBaseUrl(configMailPath)
+          params        =  extractChangeRequestInfo(rudderBaseUrl, cr)
+          mf            =  new DefaultMustacheFactory()
+          emailBody     <- getContentFromTemplate(mf, emailConf, params)
+          emailSubject  <- getSubjectFromTemplate(mf, emailConf.subject, params)
+          _             <- emailService.sendEmail(serverConfig, emailConf.toEnvelop(emailBody).copy(subject = emailSubject))
+        } yield ()
+      }
     } yield ()
   }
 
