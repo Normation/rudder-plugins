@@ -9,7 +9,7 @@ pipeline {
 
     stages {
         stage('deps-plugins') {
-            when { not { changeRequest() } }
+//            when { not { changeRequest() } }
             agent { label 'scala' }
             steps {
                 script {
