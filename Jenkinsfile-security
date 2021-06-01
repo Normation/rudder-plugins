@@ -28,7 +28,7 @@ pipeline {
                                     // don't archive jars
                                     options: [artifactsPublisher(disabled: true)]
                                 ) {
-                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=11 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=0 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
                                     sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                                 }
                             }
