@@ -38,7 +38,6 @@
 package bootstrap.rudder.plugin
 
 import java.nio.file.Paths
-
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderConfig.commitAndDeployChangeRequest
 import bootstrap.liftweb.RudderConfig.doobie
@@ -189,6 +188,7 @@ object ChangeValidationConf extends RudderPluginModule {
 
   lazy val notificationService = new NotificationService(
       new EmailNotificationService()
+    , RudderConfig.linkUtil
     , "/opt/rudder/etc/plugins/change-validation.conf"
   )
   // by build convention, we have only one of that on the classpath
