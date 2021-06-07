@@ -1,6 +1,6 @@
 /*
 *************************************************************************************
-* Copyright 2016 Normation SAS
+* Copyright 2018 Normation SAS
 *************************************************************************************
 *
 * This file is part of Rudder.
@@ -35,33 +35,37 @@
 *************************************************************************************
 */
 
-package bootstrap.rudder.plugin
+package com.normation.rudder.rest
 
-import bootstrap.liftweb.RudderConfig
-import com.normation.plugins.RudderPluginModule
-import com.normation.plugins.branding.CheckRudderPluginEnableImpl
-import com.normation.plugins.branding.snippet.CommonBranding
-import com.normation.plugins.branding.snippet.LoginBranding
-import com.normation.plugins.branding.BrandingConfService
-import com.normation.plugins.branding.BrandingPluginDef
-import com.normation.plugins.branding.api.BrandingApi
-import com.normation.plugins.branding.api.BrandingApiService
-
+import com.normation.rudder.api.HttpAction._
+import sourcecode.Line
 
 /*
- * Actual configuration of the data sources logic
+ * these files need to be in that package because they need access to the
+ * package-protected `z` methods.
  */
-object BrandingPluginConf extends RudderPluginModule {
 
-  // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
-  lazy val pluginDef = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
+sealed trait BrandingApiSchema extends EndpointSchema with GeneralApi with SortIndex
 
-  val brandingConfService : BrandingConfService = new BrandingConfService(BrandingConfService.defaultConfigFilePath)
-  val brandingApiService : BrandingApiService   = new BrandingApiService(brandingConfService)
-  val brandingApi : BrandingApi                 = new BrandingApi(brandingApiService, RudderConfig.restExtractorService, RudderConfig.stringUuidGenerator)
+object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
+  import EndpointSchema.syntax._
+  final case object GetBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
+    val z = implicitly[Line].value
+    val description = "Get branding plugin configuration"
+    val (action, path)  = GET / "branding"
+  }
 
-  RudderConfig.rudderApi.addModules(brandingApi.getLiftEndpoints())
-  RudderConfig.snippetExtensionRegister.register(new CommonBranding(pluginStatusService))
-  RudderConfig.snippetExtensionRegister.register(new LoginBranding(pluginStatusService, pluginDef.version))
+  final case object UpdateBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
+    val z = implicitly[Line].value
+    val description = "Update branding plugin configuration"
+    val (action, path)  = POST / "branding"
+  }
+
+  final case object ReloadBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
+    val z = implicitly[Line].value
+    val description = "Reload branding plugin configuration from config file"
+    val (action, path)  = POST / "branding" / "reload"
+  }
+
+  def endpoints = ca.mrvisser.sealerate.values[BrandingApiSchema].toList.sortBy( _.z )
 }

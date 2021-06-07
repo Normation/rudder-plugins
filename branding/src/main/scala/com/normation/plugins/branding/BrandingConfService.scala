@@ -49,9 +49,9 @@ import better.files._
 import net.liftweb.json.parseOpt
 import com.normation.box._
 
-class BrandingConfService extends Loggable {
+object BrandingConfService {
 
-  private[this] val initialValue =
+  def initialValue =
     BrandingConf(
         true
       , JsonColor(204,0,0,1)
@@ -73,11 +73,13 @@ class BrandingConfService extends Loggable {
       , "Welcome, please sign in:"
     )
 
+  val defaultConfigFilePath = "/var/rudder/plugins/branding/configuration.json"
 
-  val configFilePath = "/var/rudder/plugins/branding/configuration.json"
+}
 
+class BrandingConfService(configFilePath: String) {
 
-  private[this] lazy val cache : Ref[Either[RudderError, BrandingConf]] = (for {
+  private[this] val cache : Ref[Either[RudderError, BrandingConf]] = (for {
     v <- Ref.make[Either[RudderError, BrandingConf]](Left(Unexpected("Cache is not yet initialized")))
     c <- reloadCacheInternal(true, v).either
   } yield v).runNow
@@ -99,7 +101,7 @@ class BrandingConfService extends Loggable {
                   }
                 } else {
                   if (init) {
-                    updateConf(initialValue)
+                    updateConf(BrandingConfService.initialValue)
                   } else {
                     // Should we update cache to that value ??
                     Inconsistency("Could not read plugin configuration from cache").fail
