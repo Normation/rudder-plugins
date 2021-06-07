@@ -21,13 +21,13 @@ file. But you may want to rely on your existing entreprise Active Directory or L
 to take care of the authentication part.
 
 To choose the scheme to use, either use 'file' or 'ldap' for the `rudder.auth.provider`
-parameter in configuration file: `/opt/rudder/etc/rudder-web.properties`. 
+parameter in configuration file: `/opt/rudder/etc/rudder-web.properties`.
 
 [NOTE]
 =====
 
-After a change in Rudder `/opt/rudder/etc/rudder-web.properties` configuration file, 
-you need to restart the web application with the command: 
+After a change in Rudder `/opt/rudder/etc/rudder-web.properties` configuration file,
+you need to restart the web application with the command:
 
 ```
 systemctl restart rudder-jetty
@@ -48,9 +48,9 @@ By convention, when LDAP authentication is enable, 'password' field in
 [NOTE]
 =====
 
-After a change in `rudder-users.xml` configuration file, you need to reload user 
+After a change in `rudder-users.xml` configuration file, you need to reload user
 information. This can be done with `user-management` plugin (either in UI or via API,
-see that plugin documentation for more information), or by restarting the web 
+see that plugin documentation for more information), or by restarting the web
 application with the command:
 
 ```
@@ -136,12 +136,43 @@ rudder.auth.provider=ldap
 # an application connection (bind) is used to search (search) for an user entry
 # given some base and filter parameters, and then, a bind (rebind) is tried on
 # that entry with the credential provided by the user.
-# That allows to seperate the user DN (especially RDN) from the search criteria.
+# That allows to seperate the user DN (especially RDN) from the search criteria while
+# in the same time supporting users located in several different organisational units.
 #
-# Be careful, the authorization is still done in the rudder-user.xml, what means
-# that each user should have access to Rudder MUST have a line in that file.
+# Be careful, authorizations are still done based on the content of rudder-user.xml,
+# meaning that each user should have access to Rudder MUST have a line in that file.
 # Without that line, the user can have a successful LDAP authentication, but
-# won't be able to do or see anything in Rudder (safe logout).
+# won't be able to do or see anything in Rudder (only logout).
+#
+
+# === EXAMPLE / ldapsearch test===
+#
+# With the example data below, if the user "jon.doe" try to login with password "mypasswd",
+# the corresponding `ldapsearch` request are:
+#
+# 1/ search for user with `service` login:
+# ----
+# $ ldapsearch -LLL -o ldif-wrap=no -h ldap.mycorp.com -p 389 -x -D "cn=rudder,ou=services,dc=mycorp,dc=com" -w secret -b "ou=Users,dc=mycorp,dc=com" -s sub '(&(cn=jon.doe)(objectclass=person))' 1.1
+#
+#  dn: cn=jon.doe,ou=Paris,ou=Users,dc=mycorp,dc=com
+# ----
+#
+# Errors and unexpected:
+# - an authentication error here means that your rudder service user does not have the
+#   rights to do a search and will not be able to find the corresponding user full DN;
+# - you should get exactly one result: the DN to use in the second request. If you don't
+#   get any results, check the base DN and the LDAP filter.
+#
+# 2/ bind request with user DN (search user own entry with its credentials):
+# ----
+# $ ldapsearch -LLL -o ldif-wrap=no -h ldap.mycorp.com -p 389 -x -D "cn=jon.doe,ou=Paris,ou=Users,dc=mycorp,dc=com" -w mypasswd -b "cn=jon.doe,ou=Paris,ou=Users,dc=mycorp,dc=com" -s base 1.1
+#
+# dn: cn=jon.doe,ou=Paris,ou=Users,dc=mycorp,dc=com
+# ----
+#
+# Errors and unexpected:
+# - an authentication error here is likely to mean that the user password is not correct,
+#   but you should also check your LDAP directory ACLs.
 #
 
 #
@@ -151,13 +182,15 @@ rudder.auth.provider=ldap
 rudder.auth.ldap.connection.url=ldap://ldap.mycorp.com:389/dc=mycorp,dc=com
 
 #
-# Bind DN used by Rudder to do the search
+# Bind DN used by Rudder to do the search. This is the "service" or
+# "application" DN for Rudder in you LDAP directory, or an LDAP user with
+# enought rights to be able to walk the user branch configured below.
 # LDAP dn, no default value.
 #
-rudder.auth.ldap.connection.bind.dn=cn=admin,dc=mycorp,dc=com
+rudder.auth.ldap.connection.bind.dn=cn=rudder,ou=services,dc=mycorp,dc=com
 
 #
-# Bind password used by Rudder to do the search.
+# Bind password used by Rudder service (the DN configured just above) to do the search.
 # String, no default value.
 #
 rudder.auth.ldap.connection.bind.password=secret
@@ -168,11 +201,12 @@ rudder.auth.ldap.connection.bind.password=secret
 # case, the root of directory is used.
 #
 rudder.auth.ldap.searchbase=ou=People
+
 #
 # In the filter, {0} denotes the value provided as
 # login by the user.
 # The filter must lead to at most one result, which
-# will be used to try the bind request.
+# will be used to try the (re)bind request.
 #
 rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 
