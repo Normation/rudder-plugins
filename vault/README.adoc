@@ -9,7 +9,7 @@ See repository main README for information about licensing, contribution, and ot
 [vault-plugin]
 = Vault
 
-Vault is a centralized custom solution by Hashicrop, to manage secret that provides:
+Vault is a centralized custom solution by Hashicorp, to manage secret that provides:
 
 * A database to securely storing secrets.
 * A unified interface to any secret.
