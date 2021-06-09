@@ -111,7 +111,7 @@ class NodeGroupValidationNeeded(
    * We can't check only for group target by the rule, because of (for ex)
    * that case:
    * - A is a node in Group1 (supervised) and Group2 (not supervised)
-   * - rule R is changed to add Group2 in its target (or oposite change: Group2 removed)
+   * - rule R is changed to add Group2 in its target (or opposite change: Group2 removed)
    * - the change must be validated.
    */
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {

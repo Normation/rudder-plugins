@@ -14,7 +14,7 @@ def start_worker():
     w = notify.NotifyWorker(FIFO_PIPE, conf)
     w.start()
   except Exception as e:
-    logging.error("An error occured in the worker: " + str(e))
+    logging.error("An error occurred in the worker: " + str(e))
 
 
 start_worker()

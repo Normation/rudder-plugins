@@ -63,7 +63,7 @@ class ChangeValidationSettings extends DispatchSnippet {
 
   def workflowConfiguration: NodeSeq => NodeSeq = { xml : NodeSeq =>
 
-    //  initial values, updated on successfull submit
+    //  initial values, updated on successful submit
     var initEnabled = configService.rudder_workflow_enabled.toBox
     var initSelfVal = configService.rudder_workflow_self_validation.toBox
     var initSelfDep = configService.rudder_workflow_self_deployment.toBox

@@ -55,7 +55,7 @@ class PluginInfo extends DispatchSnippet with Loggable {
 
     reportsConfig.loadAndUpdateConfig() match {
       case eb: EmptyBox =>
-        val e = eb ?~! "An error occured when trying to read the config file"
+        val e = eb ?~! "An error occurred when trying to read the config file"
 
         "*" #> <div class="error">{e.messageChain}</div>
 

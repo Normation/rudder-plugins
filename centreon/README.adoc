@@ -6,7 +6,7 @@ See: http://rudder.io for more information.
 See repository main README for information about licensing, contribution, and
 other general information.
 
-== Synposis
+== Synopsis
 
 This plugin aims at providing Rudder integration with Centreon. It can
 automatically add or remove hosts in Centreon when the corresponding
@@ -94,7 +94,7 @@ the application.
 Once you know the name of a suitable template for a Rudder node/nodegroup, you can add it using the *Monitoring template*
 generic method from the technique editor.
 
-In order to configure the monitoring of the Rudder nodes, you can provide Centreon with parameters associated to its hosts. The *Monitoring parameter* generic method acheives this.
+In order to configure the monitoring of the Rudder nodes, you can provide Centreon with parameters associated to its hosts. The *Monitoring parameter* generic method achieves this.
 
 At this stage, Centreon supervise your rudder-node services in a fairly syncronized way.
 

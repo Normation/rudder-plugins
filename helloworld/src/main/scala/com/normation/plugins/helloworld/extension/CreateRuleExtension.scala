@@ -77,7 +77,7 @@ class CreateRuleEditFormExtension(
 
   private val myXml =
     <div id="anOtherTab">
-      <h3>This tab list all the node on wich that rule is applied</h3>
+      <h3>This tab list all the node on which that rule is applied</h3>
       <br/>
       <p>This is an other tab which is provided by a plugin. Cool, isn't it ?</p>
       <br/>

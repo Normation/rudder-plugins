@@ -276,7 +276,7 @@ class DataSourceRepoImpl(
              , ok  => ok.succeed
            )
       _ <- updateDataSourceScheduler(clock, source, delay = None)
-      _ <- DataSourceLoggerPure.debug(s"Data source '${source.name.value}' (${source.id.value}) udpated")
+      _ <- DataSourceLoggerPure.debug(s"Data source '${source.name.value}' (${source.id.value}) updated")
     } yield {
       source
     }

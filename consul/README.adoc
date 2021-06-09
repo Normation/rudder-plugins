@@ -41,7 +41,7 @@ Use the *Variable from Consul* generic method in Rudder to fetch key-value and m
 === Example of usage :
 * *Key-value storage via Consul Web Interface:*
 
-One of the main key features of Consul is that it provides reliable and hierarchical key-value storage where keys are seperated by `(/)`.
+One of the main key features of Consul is that it provides reliable and hierarchical key-value storage where keys are separated by `(/)`.
 
 Start by configuring a key-value pair that contains two hierarchical levels: my-app and address.
 

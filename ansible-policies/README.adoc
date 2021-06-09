@@ -26,7 +26,7 @@ Basically, when assigning a directive declined from this technique to a node, it
 
 == Usage
 
-Make sure that the target node has SSH access to every Ansible targetted hosts.
+Make sure that the target node has SSH access to every Ansible targeted hosts.
 The technique takes two arguments:
 
 * `PathPlaybookServer` Relative path (relative to `/var/rudder/configuration-repository/shared-files/`) to the playbook that will be downloaded on your executioner.

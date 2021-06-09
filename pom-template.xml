@@ -29,7 +29,7 @@
 
   <properties>
     <!-- the destination path for build.conf. By default ${project.artifactId} but may be
-         overriden in children project if needed (for ex if names is not a valid class name)
+         overridden in children project if needed (for ex if names is not a valid class name)
     -->
     <destDirectory>${project.artifactId}</destDirectory>
   </properties>
@@ -159,7 +159,7 @@
     </pluginManagement>
   </build>
 
-  <!-- We need to specify that dependencies comming from parent are provided (they are by rudder-web) -->
+  <!-- We need to specify that dependencies coming from parent are provided (they are by rudder-web) -->
   <dependencyManagement>
   <dependencies>
     <dependency>
@@ -278,7 +278,7 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- this one is needed else overriden by lift trans dep. Really. Don't remove it. -->
+    <!-- this one is needed else overridden by lift trans dep. Really. Don't remove it. -->
 
     <dependency>
       <groupId>org.scala-lang</groupId>

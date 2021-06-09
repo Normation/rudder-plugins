@@ -216,7 +216,7 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
   def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[String, ParamInterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
 
-    // we inject some props that are usefull as identity pivot (like short name)
+    // we inject some props that are useful as identity pivot (like short name)
     // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}
     val injectedPropsJson = s"""{"short-hostname": "${node.hostname.split("\\.")(0)}"}"""
 
