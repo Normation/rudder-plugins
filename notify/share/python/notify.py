@@ -123,7 +123,7 @@ class NotifyWorker:
 
     def get_mail_batch_period(self):
         regex = re.compile("([0-9]*)d?([0-9]*)h?([0-9]*)m?")
-        g = map(int, regex.search(self.conf["MAIL"]["batch_period"]).groups())
+        g = list(map(lambda v : 0 if v == '' else int(v), regex.search(self.conf["MAIL"]["batch_period"]).groups()))
         return 86400 * g[0] + 3600 * g[1] + 60 * g[2]
 
     def filterByNode(self, msg):
