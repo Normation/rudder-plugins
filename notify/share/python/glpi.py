@@ -31,9 +31,6 @@ class criteria:
 
 # Class used to create a ticket in the glpi api
 class glpiTicket:
-  def __init__(self, **fields): 
-    self.__dict__ = fields
-
   def __init__(self, name, content, status=1, urgency=3, impact=3, priority=3):
     self.name = name
     self.content = content
