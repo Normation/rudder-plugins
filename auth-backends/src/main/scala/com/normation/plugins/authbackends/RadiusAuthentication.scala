@@ -65,7 +65,7 @@ import net.jradius.packet.attribute.AttributeList
 
 
 /**
- * A security context that can hold security challange response
+ * A security context that can hold security challenge response
  * from radius.
  *
  * This is really springy, and mutable. Can't do otherwise.
@@ -201,7 +201,7 @@ class RadiusAuthenticationProvider(
     } catch {
       case ex: RadiusException =>
         logger.warn(s"Error when trying to authenticate to Radius server: " + ex.getMessage)
-        throw new AuthenticationServiceException("An error occured when trying to process radius authentication", ex)
+        throw new AuthenticationServiceException("An error occurred when trying to process radius authentication", ex)
     }
 
 

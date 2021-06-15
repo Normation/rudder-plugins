@@ -1,6 +1,6 @@
 import requests, json
 
-# TODO clean initalizing to create the adequate ticket
+# TODO clean initializing to create the adequate ticket
 
 # Class used to create the php filter to look for objects in the glpi api
 class criterias:

@@ -126,7 +126,7 @@ class ChangeRequestChangesForm(
                                  $$( "#changeDisplay" ).tabs();""") )
 
               case eb: EmptyBox =>
-                val e = eb ?~! "An error occured when trying to get data from base. "
+                val e = eb ?~! "An error occurred when trying to get data from base. "
                 logger.error(e.messageChain)
                 Text(e.msg)
             }

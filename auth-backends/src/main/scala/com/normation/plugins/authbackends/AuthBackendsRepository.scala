@@ -102,7 +102,7 @@ class AuthBackendsRepository(
 
       JsonAdminConfig(
         """Rudder has a root admin account, with full rights on the
-            # application, and whose authentication is independant from
+            # application, and whose authentication is independent from
             # the authentication provider chosen (file, LDAP, etc).
             # By default, the accound is disabled (either by letting the
             # the login or the password empty, or by commenting it)."""
@@ -126,7 +126,7 @@ class AuthBackendsRepository(
            # an application connection (bind) is used to search (search) for an user entry
            # given some base and filter parameters, and then, a bind (rebind) is tried on
            # that entry with the credential provided by the user.
-           # That allows to seperate the user DN (especially RDN) from the search criteria.
+           # That allows to separate the user DN (especially RDN) from the search criteria.
            #
            # Be careful, the authorization is still done in the rudder-user.xml, what means
            # that each user should have access to Rudder MUST have a line in that file.
@@ -162,7 +162,7 @@ class AuthBackendsRepository(
       , """# The following parameters allow to configure authentication with a
            # Radius server.""".stripMargin('#')
       , param("""# IP or hostname of the Radius server. Both work, but it
-                 # is prefered to use an IP.""".stripMargin('#')
+                 # is preferred to use an IP.""".stripMargin('#')
           , "rudder.auth.radius.host.name"
         )
       , param("""# Authentication port for the Radius server""".stripMargin('#')

@@ -6,7 +6,7 @@ See: http://rudder.io for more information.
 See repository main README for information about licensing, contribution, and
 other general information.
 
-= Synposis
+= Synopsis
 
 This plugin aims at providing Rudder integration with Zabbix. It can automatically
 add hosts to Zabbix when the corresponding node is set up for monitoring in Rudder.

@@ -63,7 +63,7 @@ final case class EmailEnvelop(
 
 
 /**
- * This service responsability is only to send emails using an SMTP config and an email envelop.
+ * This service responsibility is only to send emails using an SMTP config and an email envelop.
  */
 class EmailNotificationService {
 

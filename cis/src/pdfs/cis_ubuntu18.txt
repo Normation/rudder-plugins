@@ -1880,12 +1880,12 @@ Profile Applicability:
  Level 1 - Server
  Level 1 - Workstation
 Description:
-sudo can be configured to run only from a psuedo-pty
+sudo can be configured to run only from a pseudo-pty
 Rationale:
 Attackers can run a malicious program using sudo, which would again fork a background
 process that remains even when the main program has finished executing.
 Audit:
-Verify that sudo can only run other commands from a psuedo-pty
+Verify that sudo can only run other commands from a pseudo-pty
 Run the following command:
 # grep -Ei '^\s*Defaults\s+([^#]+,\s*)?use_pty(,\s+\S+\s*)*(\s+#.*)?$'
 /etc/sudoers /etc/sudoers.d/*
@@ -5807,7 +5807,7 @@ The nftables service allows for the loading of nftables rulesets during boot, or
 the nftables service
 Rationale:
 The nftables service restores the nftables rules from the rules files referenced in the
-/etc/sysconfig/nftables.conf file durring boot or the starting of the nftables service
+/etc/sysconfig/nftables.conf file during boot or the starting of the nftables service
 Audit:
 Run the following command and verify that the nftables service is enabled:
 # systemctl is-enabled nftables

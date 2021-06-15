@@ -124,7 +124,7 @@ def removeCategory(category):
         command = "git rm -r %s %s"%(TECHNIQUE_FOLDER, DIRECTIVE_FOLDER)
         completedProc = subprocess.run(command.split(" "), cwd=CONFIGURATION_REPO)
         if completedProc.returncode != 0:
-            print(rudder_synchro.colors.RED + "An error occured while removing directive category %s"%category + rudder_synchro.colors.ENDC)
+            print(rudder_synchro.colors.RED + "An error occurred while removing directive category %s"%category + rudder_synchro.colors.ENDC)
             print(rudder_synchro.colors.RED + "Executed command was: %s"%command + rudder_synchro.colors.ENDC)
 
 def disableCategories(categories):

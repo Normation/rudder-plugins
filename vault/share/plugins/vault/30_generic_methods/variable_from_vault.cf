@@ -17,7 +17,7 @@
 #####################################################################################
 #
 # @name Variable from Vault
-# @description Gets a key-value dictionnary from Vault given the secret path
+# @description Gets a key-value dictionary from Vault given the secret path
 #
 # @documentation To use the generated variable, you must use the form `${variable_prefix.variable_name}` with each name replaced with the parameters of this method.
 #
@@ -41,9 +41,9 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
       "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
 
     pass2::
-      "vault_apicall_ouput" string => execresult('${ncf_paths.path[curl]} ${vault.cert} -s -H "X-Vault-Token: ${vault.auth_token}" ${vault.server_addr}/v1/${path}', "noshell");
+      "vault_apicall_output" string => execresult('${ncf_paths.path[curl]} ${vault.cert} -s -H "X-Vault-Token: ${vault.auth_token}" ${vault.server_addr}/v1/${path}', "noshell");
 
-      "vault_test" data => parsejson("${vault_apicall_ouput}");
+      "vault_test" data => parsejson("${vault_apicall_output}");
 
       "${variable_prefix}.${variable_name}" data => mergedata("vault_test[data][data]");
 
