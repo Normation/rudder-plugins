@@ -1,10 +1,41 @@
 #!/bin/bash
-set -e
 
-test_python()
+set -ex
+
+test_shell()
 {
-  find . -name '*.py' | xargs -r grep -L "#\!/usr/bin/python3" | grep -v share/python | grep -v zabbix | xargs -r pylint -E --disable=C,R,undefined-variable  --persistent=n --init-hook="sys.path[0:0] = ['./centreon/share/python']"
-  find . -name '*.py' | xargs -r grep -l "#\!/usr/bin/python3" | grep -v share/python | grep -v zabbix | xargs -r pylint3 -E --disable=C,R,undefined-variable  --persistent=n
+  mkdir -p .shellcheck
+  find . \( -path ./.git -prune -o -path ./cis/src/pdfs -prune \) -o -type f -exec grep -Eq '^#!(.*/|.*env +)(sh|bash|ksh)' {} \; -print |
+    while IFS="" read -r file
+    do
+      # collect all warnings
+      shellcheck --format=checkstyle "$file" > .shellcheck/$(basename ${file}).log || true
+      # fail on >=error
+      shellcheck --severity error "$file"
+    done
+}
+
+# fails on error and ignores other levels
+test_shell_error()
+{
+  # Shellcheck
+  find . \( -path ./.git -prune -o -path ./cis/src/pdfs -prune \) -o -type f -exec grep -Eq '^#!(.*/|.*env +)(sh|bash|ksh)' {} \; -print |
+    while IFS="" read -r file
+    do
+      # with recent shellcheck, "-S error" replaces this hack
+      # kept as this runs on machines running rudder-dev
+      shellcheck --format gcc "$file" | grep " error: " && exit 1 || true
+    done
+}
+
+# fails on error and ignores other levels
+test_python_error()
+{
+  PYLINT="pylint"
+  if type pylint3 >/dev/null; then
+    PYLINT="pylint3"
+  fi
+  find . -name '*.py' | xargs ${PYLINT} -E --persistent=n --disable=C,R,import-error,no-member,no-name-in-module
 }
 
 test_typos()
@@ -13,14 +44,13 @@ test_typos()
   typos --exclude '*.css' --exclude '*-6a9f-4865-a837-95a6a0c49f04.json'
 }
 
-
 if [ "$1" = "--python" ]; then
-  test_python
-  exit 0
+  test_python_error
 elif [ "$1" = "--typos" ]; then
   test_typos
-  exit 0
+elif [ "$1" = "--shell" ]; then
+  test_shell
 else
-  test_python
-  exit 0
+  test_shell_error
+  test_python_error
 fi

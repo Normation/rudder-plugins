@@ -145,7 +145,7 @@ if __name__ == "__main__":
             if os.path.exists('rudderMonitor.csv'):
                 c = csv.writer(open("rudderMonitor.csv", "wb"))
             else:
-                print('[!] Node ' + name + ' has no rudder monitoring config file, considering it empty...')
+                print('[!] No rudder monitoring config file, considering it empty...')
             
         for host in zapi.host.get(output="extend"):
             if host['host'] in (node["hostname"] for node in rnodes):
