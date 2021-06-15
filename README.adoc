@@ -50,7 +50,7 @@ minus 'rudder-plugin-" prefix.
 
 Each plugin build information are grouped in file `build.conf` in plugin root directory.
 
-== Branch versionning and compability with Rudder versions
+== Branch versionning and compatibility with Rudder versions
 
 
 Plugins are linked to Rudder main version, so we retrieve in `rudder-plugins` the same branch
@@ -64,7 +64,7 @@ corresponding Rudder version:
 - etc
 ```
 
-This branch scheme allows to accomodate API changes between main Rudder versions.
+This branch scheme allows to accommodate API changes between main Rudder versions.
 
 Most of the time, there is no need to recompile a plugin for the corresponding Rudder minor version, so that
 plugins compiled on branch `branches/rudder/5.1` should be compatible with all Rudder 5.1.x versions.
@@ -143,7 +143,7 @@ make clean && make generate-all-pom && make plugin-name
 After compilation, you will find in plugin root directory (i.e at the same level than the Makefile file) the
 plugin package: `pluginShortName-pluginVersion.rpkg`.
 
-This package can then be transfered to a Rudder server and installed with the command:
+This package can then be transferred to a Rudder server and installed with the command:
 
 ```
 /opt/rudder/bin/rudder-pkg install-file /path/to/pluginShortName-pluginVersion.rpkg

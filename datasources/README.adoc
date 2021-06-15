@@ -26,7 +26,7 @@ You can log information about data source (behavior and errors) by adding the fo
 
     "datasource-timing" give information about how long it takes to fetch data from
     data source. Debug level is at the data source action level (ex: how long it takes
-    to update all nodes), trace times each http request individualy. It can be very
+    to update all nodes), trace times each http request individually. It can be very
     verbose if you have a couple of thousand of nodes with a "node by node" query type.
   -->
   <logger name="datasources" level="info" additivity="false">
@@ -159,7 +159,7 @@ Data source update max duration:: configure the maximum allowed time for all nod
 === Update triggers
 
 Update periodically - scheduled:: if checked, that data source we will be queried periodically with the period configured below the text.
-Update when a policy generation starts:: if checked, that data source will be queried at the begining of each policy generation.
+Update when a policy generation starts:: if checked, that data source will be queried at the beginning of each policy generation.
 Update when a new node is accepted:: if checked, that data source will be queried each time a node is successfully accepted into Rudder.
 
 === What to do when a query for a Node returns a 404 error?

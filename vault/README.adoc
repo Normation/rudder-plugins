@@ -31,7 +31,7 @@ For security purpose, the Rudder server itself does not need to have access to t
 This config file must contain the address of your Vault server, credentials to access it based on the auth mode you want to use.
 Auth modes can be: token, userpass or tls.
 
-To note that if you have a valid certificate in your Vault server, you need to specifiy 'true' as a value in the verify_certificate key
+To note that if you have a valid certificate in your Vault server, you need to specify 'true' as a value in the verify_certificate key
 which is the case by default however if you have a self signed one, you need to simply switch the value to 'false'.
 
 A sample config can be found on the Rudder server in `/opt/rudder/share/plugins/vault/sample_vault.json`.

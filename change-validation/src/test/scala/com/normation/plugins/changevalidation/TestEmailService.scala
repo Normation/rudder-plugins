@@ -98,7 +98,7 @@ class TestEmailService extends Specification with BeforeAfterAll {
 
 
   "The notification service" should {
-    "be able to read conifguration" in {
+    "be able to read configurations" in {
 
       val config = notification.getSMTPConf(conf.pathAsString).forceGet
 

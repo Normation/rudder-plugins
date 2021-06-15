@@ -623,7 +623,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           ce_1    <- NodeDataset.counterError.get
           cs_1    <- NodeDataset.counterSuccess.get
           total_1 =  ce_1 + cs_1
-          //but asking for a direct update do the queries immediatly - task need at least 1ms to notice it should run
+          //but asking for a direct update do the queries immediately - task need at least 1ms to notice it should run
           _       <- dss.doActionAndSchedule(action(UpdateCause(ModificationId("plop"), RudderEventActor, None)))
           _       <- testClock.get[TestClock.Service].adjust(1.second)
           _       <- queue.failIfNonEmpty

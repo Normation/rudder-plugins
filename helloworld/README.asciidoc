@@ -16,5 +16,5 @@ of Rudder plugins, as well as displaying a nice "Hello world" in the Web UI.
 [helloworld-plugin]
 = Hello world plugin
 
-This plugin is just an example intented for demonstrate how to structure and use Rudder
+This plugin is just an example intended for demonstrate how to structure and use Rudder
 internal APIs in a plugin.

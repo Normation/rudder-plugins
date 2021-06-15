@@ -281,7 +281,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
   }
 
   // A source type is composed of two fields : "name" and "parameters"
-  // name allow to determine which kind of datasource we are managing and how to extract paramters
+  // name allow to determine which kind of datasource we are managing and how to extract parameters
   def extractDataSourceTypeWrapper(obj : JObject) : Box[DataSourceTypeWrapper] = {
 
     obj \ "name" match {

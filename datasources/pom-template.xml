@@ -16,7 +16,7 @@
 
   <description>
     This plugin allows to define node properties to be feed by external
-    data sources contacted throught their REST API.
+    data sources contacted thought their REST API.
   </description>
 
   <build>
