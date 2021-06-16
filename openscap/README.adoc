@@ -44,6 +44,37 @@ The technique will take care of the openSCAP agent installation and will by defa
 /var/rudder/shared-files/root/files/<node-id>/openscap_report.html
 ----
 
+=== Usage on Ubuntu/Debian
+
+OpenSCAP packages in Debian and Ubuntu repositories are very out of date, and it is necessary
+to get up to date profiles from OpenSCAP sources.
+
+Example for Ubuntu 18.04 LTS:
+
+----
+# install openscap tools
+sudo apt-get install libopenscap8 python-openscap
+sudo apt install ssg-base ssg-debderived ssg-debian ssg-nondebian ssg-applications
+# install build dependencies for profiles
+apt-get install cmake make expat libopenscap8 libxml2-utils ninja-build python3-jinja2 python3-yaml xsltproc
+git clone https://github.com/ComplianceAsCode/content.git
+cd content
+# build up to date profiles
+./build_product ubuntu18.04
+# install the profiles to the system
+sudo cp build/*.xml /usr/share/openscap/
+----
+
+Then you can use the following parameters:
+
+* profile: `xccdf_org.ssgproject.content_profile_standard`
+* scap_file: `/usr/share/openscap/ssg-ubuntu1804-ds-1.2.xml`
+
+The reports are done every night, to trigger an immediate report add `-D schedule_simple_openscap_repaired` to your agent command like:
+
+----
+rudder agent run -D schedule_simple_openscap_repaired -ui
+----
 
 == Rudder Webapp integration
 

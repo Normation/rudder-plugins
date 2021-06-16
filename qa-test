@@ -35,7 +35,7 @@ test_python_error()
   if type pylint3 >/dev/null; then
     PYLINT="pylint3"
   fi
-  find . -name '*.py' | xargs ${PYLINT} -E --persistent=n --disable=C,R,import-error,no-member,no-name-in-module
+  find . ! -name ipaddress.py -name '*.py' | xargs ${PYLINT} -E --persistent=n --disable=C,R,import-error,no-member,no-name-in-module
 }
 
 test_typos()
