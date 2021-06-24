@@ -2,21 +2,50 @@ package com.normation.plugins.usermanagement
 
 import better.files.Dsl.SymbolicOperations
 import better.files.File
-import bootstrap.liftweb.{PasswordEncoder, UserConfigFileError, UserFile, UserFileProcessing}
+import bootstrap.liftweb.PasswordEncoder
+import bootstrap.liftweb.UserConfigFileError
+import bootstrap.liftweb.UserFile
+import bootstrap.liftweb.UserFileProcessing
 import com.normation.plugins.usermanagement.UserManagementIO.getUserFilePath
+import com.normation.rudder.AuthorizationType
+import com.normation.rudder.Rights
+import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
+import com.normation.rudder.RoleToRights
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
-import com.normation.rudder.{AuthorizationType, Rights, Role, RoleToRights}
-import net.liftweb.common.{Box, Failure, Full}
+import net.liftweb.common.Box
+import net.liftweb.common.Failure
+import net.liftweb.common.Full
 import net.liftweb.util.Helpers.tryo
 import org.springframework.core.io.{ClassPathResource => CPResource}
-import scala.xml.parsing.ConstructingParser
-import scala.xml.transform.{RewriteRule, RuleTransformer}
-import scala.xml.{Elem, Node, NodeSeq}
 
+import scala.xml.Elem
+import scala.xml.Node
+import scala.xml.NodeSeq
+import scala.xml.parsing.ConstructingParser
+import scala.xml.transform.RewriteRule
+import scala.xml.transform.RuleTransformer
+
+case class UserFileInfo(userOrigin: List[UserOrigin], digest: String)
+case class UserOrigin(user: User, hashValidHash: Boolean)
 
 case class User(username: String, password: String, role: Set[String]) {
   def toNode: Node = <user name={ username } password={ password } role={ role.mkString(",") } />
+}
+
+object UserOrigin {
+  def verifyHash(hashType: String, hash: String) = {
+    //$2[aby]$[cost]$[22 character salt][31 character hash]
+    val bcryptReg = "^\\$2[aby]?\\$[\\d]+\\$[./A-Za-z0-9]{53}$".r
+    hashType.toLowerCase match {
+      case "sha"    | "sha1"    => hash.matches("^[a-fA-F0-9]{40}$")
+      case "sha256" | "sha-256" => hash.matches("^[a-fA-F0-9]{64}$")
+      case "sha512" | "sha-512" => hash.matches("^[a-fA-F0-9]{128}$")
+      case "md5"                => hash.matches("^[a-fA-F0-9]{32}$")
+      case "bcrypt"             => hash.matches(bcryptReg.regex)
+      case _                    => false
+    }
+  }
 }
 
 object UserManagementIO {
@@ -146,7 +175,7 @@ object UserManagementService {
             case e: Elem =>
               val newXml =
                 if (isPreHashed)
-                  e.copy(child = e.child ++ newUser.copy(password = newUser.password).toNode)
+                  e.copy(child = e.child ++ newUser.toNode)
                 else
                   e.copy(child = e.child ++ newUser.copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
               UserManagementIO.replaceXml(userXML, newXml, file)
@@ -188,24 +217,46 @@ object UserManagementService {
           val newXml = new RuleTransformer(new RewriteRule {
             override def transform(n: Node): NodeSeq = n match {
               case user: Elem if (user \ "@name").text == currentUser =>
-                if (isPreHashed) {
-                  newUser.copy(
-                      username = if (newUser.username.isEmpty) currentUser else newUser.username
-                    , role = if (newUser.role.isEmpty) Set("no_rights") else newUser.role
-                    , password = if (newUser.password.isEmpty) (user \ "@password").text else newUser.password
-                  ).toNode
+
+                // for each user's parameters, if a new user's parameter is empty we decide to keep the original one
+                val newRoles    = if (newUser.role.isEmpty) (user \ "@role").text.split(",").toSet else newUser.role
+                val newUsername = if (newUser.username.isEmpty) currentUser else newUser.username
+                val newPassword = if (newUser.password.isEmpty) {
+                  (user \ "@password").text
+                } else {
+                  if (isPreHashed) newUser.password else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
                 }
-                else {
-                  newUser.copy(
-                    username = if (newUser.username.isEmpty) currentUser else newUser.username
-                    , password = if (newUser.password.isEmpty) (user \ "@password").text else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
-                    , role = if (newUser.role.isEmpty) Set("no_rights") else newUser.role
-                  ).toNode
-                }
+
+                User(newUsername, newPassword, newRoles).toNode
+
               case other => other
             }
           }).transform(toUpdate).head
           UserManagementIO.replaceXml(userXML, newXml, file)
+        }
+    }
+  }
+
+  def getAll: Box[UserFileInfo] = {
+    getUserFilePath match {
+      case Left(err)   =>
+        Failure(err.msg)
+      case Right(file) =>
+        tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap { parsedFile =>
+          val userXML = parsedFile.document.children
+          (userXML \\ "authentication").head match {
+            case e: Elem =>
+              val digest = (userXML \\ "authentication" \ "@hash").text.toUpperCase
+              val users = e.map(u => {
+                val password = (u \ "@password").text
+                val user = User((u \ "@name").text, (u \ "@password").text, (u \ "@role").map(_.text).toSet)
+                val hasValidHash = UserOrigin.verifyHash(digest, password)
+                UserOrigin(user, hasValidHash)
+              }).toList
+              Full(UserFileInfo(users, digest))
+            case _ =>
+              Failure(s"Wrong formatting : ${file.path}")
+          }
         }
     }
   }

@@ -1,13 +1,8 @@
 module DataTypes exposing (..)
 
-------------------------------
--- MODEL --
-------------------------------
--- An user: Login, List of rights,
-
-
 import Dict exposing (Dict)
 import Http exposing (Error)
+import String exposing (toLower)
 import Toasty
 import Toasty.Defaults
 
@@ -16,6 +11,12 @@ type alias Users = Dict Username Authorization
 type alias Username = String
 type alias Password = String
 type alias RoleConf = List Role
+
+type alias AddUserForm =
+    { user : User
+    , password : String
+    , isPreHashed : Bool
+    }
 
 type alias Role =
     { id: String
@@ -33,8 +34,31 @@ type alias User =
     , role : List String
     }
 
+type Provider
+  = File
+  | Ldap
+  | Radius
+  | Unknown
+
+toProvider: String -> Provider
+toProvider str =
+  case toLower str of
+    "file"   -> File
+    "ldap"   -> Ldap
+    "radius" -> Radius
+    _        -> Unknown
+
+providerToString: Provider -> String
+providerToString provider =
+  case provider of
+    File   -> "file"
+    Ldap   -> "ldap"
+    Radius -> "radius"
+    _      -> "unknown provider"
+
 type alias UsersConf =
     { digest : String
+    , authenticationBackends: List String
     , users : List User
     }
 
@@ -44,9 +68,7 @@ type PanelMode
   | Closed
 
 type StateInput
-    = InvalidPassword
-    | InvalidUsername
-    | InvalidInputs
+    = InvalidUsername
     | ValidInputs
 
 type alias Model =
@@ -60,9 +82,12 @@ type alias Model =
     , panelMode : PanelMode
     , password : String
     , login : String
-    , hashedPasswd : Bool
+    , isHashedPasswd : Bool
     , isValidInput : StateInput
     , authzToAddOnSave : List String
+    , providers : List Provider
+    , userForcePasswdInput : Bool
+    , openDeleteModal : Bool
     }
 
 type Msg
@@ -84,7 +109,11 @@ type Msg
     | RemoveRole User String
     | SubmitUpdatedInfos User
     | SubmitNewUser User
-    | PreHashedPasswd
+    | PreHashedPasswd Bool
+    | AddPasswdAnyway
+    | OpenDeleteModal String
+    | CloseDeleteModal
+
 
       -- NOTIFICATIONS
     | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)

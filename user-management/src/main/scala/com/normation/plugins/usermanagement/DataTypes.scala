@@ -38,6 +38,7 @@
 package com.normation.plugins.usermanagement
 
 import bootstrap.liftweb.PasswordEncoder
+import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.UserDetailList
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
@@ -53,19 +54,13 @@ object UserManagementLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("usermanagement")
 }
 
-
 object Serialisation {
 
   implicit class AuthConfigSer(auth: UserDetailList) {
     def toJson: JValue = {
-      val encoder = auth.encoder match {
-        case PasswordEncoder.MD5       => "MD5"
-        case PasswordEncoder.SHA1      => "SHA-1"
-        case PasswordEncoder.SHA256    => "SHA-256"
-        case PasswordEncoder.SHA512    => "SHA-512"
-        case PasswordEncoder.BCRYPT    => "BCRYPT"
-        case _                         => "plain text"
-      }
+      val encoder: String = PassEncoderToString(auth)
+      val authBackendsProvider = RudderConfig.authenticationProviders.getConfiguredProviders.map(_.name).toSet
+
 
       val jUser = auth.users.map {
         case(_,u) =>
@@ -74,21 +69,33 @@ object Serialisation {
             case _ => true
           }
           JsonUser(
-          u.getUsername
-          ,  if (custom.isEmpty) Set.empty else custom.head.rights.displayAuthorizations.split(",").toSet
-          , rs.map(_.name)
-        )
+            u.getUsername
+            , if (custom.isEmpty) Set.empty else custom.head.rights.displayAuthorizations.split(",").toSet
+            , rs.map(_.name)
+          )
       }.toList.sortBy( _.login )
-      val json = JsonAuthConfig(encoder, jUser)
+      val json = JsonAuthConfig(encoder, authBackendsProvider, jUser)
       import net.liftweb.json._
       implicit val formats = S.formats(NoTypeHints)
       Extraction.decompose(json)
+    }
+  }
+
+  def PassEncoderToString(auth: UserDetailList): String = {
+    auth.encoder match {
+      case PasswordEncoder.MD5    => "MD5"
+      case PasswordEncoder.SHA1   => "SHA-1"
+      case PasswordEncoder.SHA256 => "SHA-256"
+      case PasswordEncoder.SHA512 => "SHA-512"
+      case PasswordEncoder.BCRYPT => "BCRYPT"
+      case _                      => "plain text"
     }
   }
 }
 
 final case class JsonAuthConfig(
     digest: String
+  , authenticationBackends: Set[String]
   , users : List[JsonUser]
 )
 

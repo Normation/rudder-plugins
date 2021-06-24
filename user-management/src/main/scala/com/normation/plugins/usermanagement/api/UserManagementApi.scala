@@ -38,17 +38,29 @@
 package com.normation.plugins.usermanagement.api
 
 import bootstrap.liftweb.FileUserDetailListProvider
-import com.normation.plugins.usermanagement.{Serialization, User, UserManagementService}
-import com.normation.rudder.api.HttpAction.{DELETE, GET, POST}
+import com.normation.plugins.usermanagement.Serialization
+import com.normation.plugins.usermanagement.User
+import com.normation.plugins.usermanagement.UserManagementService
+import com.normation.rudder.api.HttpAction.DELETE
+import com.normation.rudder.api.HttpAction.GET
+import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.repository.json.DataExtractor.CompleteJson
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest._
-import com.normation.rudder.rest.lift.{DefaultParams, LiftApiModule, LiftApiModule0, LiftApiModuleProvider}
-import com.normation.rudder.{Role, RoleToRights}
-import net.liftweb.common.{Box, Failure, Full}
-import net.liftweb.http.{LiftResponse, Req}
+import com.normation.rudder.rest.lift.DefaultParams
+import com.normation.rudder.rest.lift.LiftApiModule
+import com.normation.rudder.rest.lift.LiftApiModule0
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.Role
+import com.normation.rudder.RoleToRights
+import net.liftweb.common.Box
+import net.liftweb.common.Failure
+import net.liftweb.common.Full
+import net.liftweb.http.LiftResponse
+import net.liftweb.http.Req
 import net.liftweb.json.JsonDSL._
-import net.liftweb.json.{JValue, NoTypeHints}
+import net.liftweb.json.JValue
+import net.liftweb.json.NoTypeHints
 import sourcecode.Line
 
 /*
@@ -251,7 +263,7 @@ class UserManagementApiImpl(
       val value: Box[JValue]  = for {
         json           <- req.json ?~! "No JSON data sent"
         user           <- extractUser(json)
-        isPreHashed       <- extractIsHashed(json)
+        isPreHashed    <- extractIsHashed(json)
         checkExistence <- if (!(userService.authConfig.users.keySet contains id)) Failure(s"'$id' does not exists") else Full("ok")
         updated        <- UserManagementService.update(id, user, isPreHashed)
         _              <- reload()
