@@ -25,7 +25,9 @@ import sourcecode.Line
 
 
 
-sealed trait ScaleOutRelayApi extends EndpointSchema with GeneralApi with SortIndex
+sealed trait ScaleOutRelayApi extends EndpointSchema with GeneralApi with SortIndex {
+  override def dataContainer: Option[String] = None
+}
 object ScaleOutRelayApi extends ApiModuleProvider[ScaleOutRelayApi] {
 
   final case object PromoteNodeToRelay extends ScaleOutRelayApi with OneParam with StartsAtVersion10 {
@@ -39,7 +41,7 @@ object ScaleOutRelayApi extends ApiModuleProvider[ScaleOutRelayApi] {
 
 class ScaleOutRelayApiImpl(
     restExtractorService: RestExtractorService
-    , scaleOutRelayService : ScaleOutRelayService
+  , scaleOutRelayService : ScaleOutRelayService
 ) extends LiftApiModuleProvider[ScaleOutRelayApi] {
 
   api =>

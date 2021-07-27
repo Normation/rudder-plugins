@@ -37,6 +37,7 @@
 
 package com.normation.plugins.scaleoutrelay
 
+import com.normation.NamedZioLogger
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.domain.Constants
 import com.normation.rudder.services.policies.NodeRunHook
@@ -53,8 +54,12 @@ import org.slf4j.LoggerFactory
 /**
  * Applicative log of interest for Rudder ops.
  */
-object ScalaOutRelayLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("scale-out-relay")
+object ScaleOutRelayLogger extends Logger {
+  override protected def _logger = LoggerFactory.getLogger("plugin.scale-out-relay")
+}
+
+object ScaleOutRelayLoggerPure extends NamedZioLogger {
+  override def loggerName: String = "plugin.scale-out-relay"
 }
 
 
