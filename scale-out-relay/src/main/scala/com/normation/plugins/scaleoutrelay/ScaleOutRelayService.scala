@@ -22,6 +22,7 @@ import com.softwaremill.quicklens._
 import zio.ZIO
 import zio.syntax._
 
+
 class ScaleOutRelayService(
     nodeInfosService              : NodeInfoService
   , woLDAPNodeGroupRepository     : WoNodeGroupRepository
@@ -129,7 +130,7 @@ class ScaleOutRelayService(
   }
 
   private[scaleoutrelay] def getNodeToPromote(uuid: NodeId): IOResult[NodeInfo] = {
-    nodeInfosService.getNodeInfo(uuid).toIO.notOptional(s"Node with UUID ${uuid.value} is missing and can not be upgraded to relay")
+    nodeInfosService.getNodeInfo(uuid).notOptional(s"Node with UUID ${uuid.value} is missing and can not be upgraded to relay")
   }
 
   private[scaleoutrelay] def NodeToPolicyServer(nodeInf: NodeInfo) = {
