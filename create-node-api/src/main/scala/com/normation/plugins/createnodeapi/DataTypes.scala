@@ -40,17 +40,17 @@ package com.normation.plugins.createnodeapi
 import cats.data._
 import cats.implicits._
 import com.normation.NamedZioLogger
+import com.normation.errors._
 import com.normation.inventory.domain.AgentType.CfeCommunity
 import com.normation.inventory.domain.AgentType.Dsc
 import com.normation.inventory.domain._
 import com.normation.plugins.createnodeapi.Creation.CreationError
 import com.normation.plugins.createnodeapi.NodeTemplate.AcceptedNodeTemplate
 import com.normation.plugins.createnodeapi.NodeTemplate.PendingNodeTemplate
-import com.normation.rudder.domain.nodes.NodeProperty
 import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.PolicyMode
-import com.normation.errors._
-import com.normation.rudder.domain.nodes.GenericProperty
+import com.normation.rudder.domain.properties.GenericProperty
+import com.normation.rudder.domain.properties.NodeProperty
 import com.typesafe.config.ConfigValue
 
 /**

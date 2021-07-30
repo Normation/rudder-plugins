@@ -97,6 +97,8 @@ object CreateNodeApi extends ApiModuleProvider[CreateNodeApi] {
     val z = implicitly[Line].value
     val description    = "Create one of more new nodes"
     val (action, path) = PUT / "createnodes"
+
+    override def dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[CreateNodeApi].toList.sortBy( _.z )
