@@ -30,10 +30,16 @@ sealed trait ScaleOutRelayApi extends EndpointSchema with GeneralApi with SortIn
 }
 object ScaleOutRelayApi extends ApiModuleProvider[ScaleOutRelayApi] {
 
-  final case object PromoteNodeToRelay extends ScaleOutRelayApi with OneParam with StartsAtVersion10 {
+  final case object PromoteToRelay extends ScaleOutRelayApi with OneParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description = "Promote a node to relay"
     val (action, path) = POST / "scaleoutrelay" / "promote" / "{nodeId}"
+  }
+
+  final case object DemoteToNode extends ScaleOutRelayApi with OneParam with StartsAtVersion14 {
+    val z = implicitly[Line].value
+    val description = "Demote a relay to a simple node"
+    val (action, path) = POST / "scaleoutrelay" / "demote" / "{nodeId}"
   }
 
   override def endpoints: List[ScaleOutRelayApi] = ca.mrvisser.sealerate.values[ScaleOutRelayApi].toList.sortBy( _.z )
@@ -51,7 +57,8 @@ class ScaleOutRelayApiImpl(
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
     ScaleOutRelayApi.endpoints.map {
-      case ScaleOutRelayApi.PromoteNodeToRelay => PromoteNodeToRelay
+      case ScaleOutRelayApi.PromoteToRelay => PromoteToRelay
+      case ScaleOutRelayApi.DemoteToNode   => DemoteToNode
     }.toList
   }
 
@@ -59,23 +66,31 @@ class ScaleOutRelayApiImpl(
     RestUtils.response(restExtractorService, dataName, id)(function, req, errorMessage)
   }
 
-  object PromoteNodeToRelay extends LiftApiModule {
-    val schema = ScaleOutRelayApi.PromoteNodeToRelay
+  object PromoteToRelay extends LiftApiModule {
+    val schema = ScaleOutRelayApi.PromoteToRelay
     val restExtractor = api.restExtractorService
 
     def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authz: AuthzToken): LiftResponse = {
-      val response = for {
-        node <- scaleOutRelayService.promoteNodeToRelay(NodeId(nodeId), EventActor("rudder"), Some(s"Promote node ${nodeId} to relay")).toBox
-      } yield {
-        node
-      }
-
-      response match {
+      scaleOutRelayService.promoteNodeToRelay(NodeId(nodeId), EventActor("rudder"), Some(s"Promote node ${nodeId} to relay")).toBox match {
         case Full(node) =>
-          toJsonResponse(None,node.id.value)("promoteToRelay",true)
+          toJsonResponse(None, nodeId)("promoteToRelay",true)
         case eb: EmptyBox =>
           val message = (eb ?~ (s"Error when trying to promote mode $nodeId")).msg
           toJsonError(None, message)("promoteToRelay",true)
+      }
+    }
+  }
+  object DemoteToNode extends LiftApiModule {
+    val schema = ScaleOutRelayApi.DemoteToNode
+    val restExtractor = api.restExtractorService
+
+    def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authz: AuthzToken): LiftResponse = {
+      scaleOutRelayService.demoteRelayToNode(NodeId(nodeId), EventActor("rudder"), Some(s"Demote relay ${nodeId} to node")).toBox match {
+        case Full(node) =>
+          toJsonResponse(None, nodeId)("demoteToNode",true)
+        case eb: EmptyBox =>
+          val message = (eb ?~ (s"Error when trying to promote mode $nodeId")).msg
+          toJsonError(None, message)("demoteToNode",true)
       }
     }
   }
