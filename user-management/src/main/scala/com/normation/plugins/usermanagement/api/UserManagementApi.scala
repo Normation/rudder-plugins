@@ -63,12 +63,16 @@ object UserManagementApi extends ApiModuleProvider[UserManagementApi] {
     val z = implicitly[Line].value
     val description    = "Get information about registered users in Rudder"
     val (action, path) = GET / "usermanagement" / "users"
+
+    override def dataContainer: Option[String] = None
   }
 
   final case object GetRole extends UserManagementApi with ZeroParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description    = "Get roles and their authorizations"
     val (action, path) = GET / "usermanagement" / "roles"
+
+    override def dataContainer: Option[String] = None
   }
 
   /*
@@ -79,30 +83,40 @@ object UserManagementApi extends ApiModuleProvider[UserManagementApi] {
     val z = implicitly[Line].value
     val description    = "Reload (read again rudder-users.xml and process result) information about registered users in Rudder"
     val (action, path) = POST / "usermanagement" / "users" / "reload"
+
+    override def dataContainer: Option[String] = None
   }
 
   final case object DeleteUser extends UserManagementApi with OneParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description = "Delete a user from the system"
     val (action, path) = DELETE / "usermanagement" / "{username}"
+
+    override def dataContainer: Option[String] = None
   }
 
   final case object AddUser extends UserManagementApi with ZeroParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description = "Add a user with his information and privileges"
     val (action, path) = POST / "usermanagement"
+
+    override def dataContainer: Option[String] = None
   }
 
   final case object UpdateUserInfos extends UserManagementApi with OneParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description = "Update user's infos"
     val (action, path) = POST / "usermanagement" / "update" / "{username}"
+
+    override def dataContainer: Option[String] = None
   }
 
   final case object RoleCoverage extends UserManagementApi with OneParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description = "Get the coverage of roles over rights"
     val (action, path) = POST / "usermanagement" / "coverage" / "{username}"
+
+    override def dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[UserManagementApi].toList.sortBy( _.z )

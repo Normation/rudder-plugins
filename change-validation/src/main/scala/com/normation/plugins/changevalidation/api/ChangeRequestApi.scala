@@ -92,22 +92,32 @@ object ChangeRequestApi extends ApiModuleProvider[ChangeRequestApi] {
   final case object ListChangeRequests extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "List all change requests"
     val (action, path)  = GET / "changeRequests"
+
+    override def dataContainer: Option[String] = None
   }
   final case object ChangeRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Get information about given change request"
     val (action, path)  = GET / "changeRequests" / "{id}"
+
+    override def dataContainer: Option[String] = None
   }
   final case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Decline given change request"
     val (action, path)  = DELETE / "changeRequests" / "{id}"
+
+    override def dataContainer: Option[String] = None
   }
   final case object AcceptRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Accept given change request"
     val (action, path)  = POST / "changeRequests" / "{id}" / "accept"
+
+    override def dataContainer: Option[String] = None
   }
   final case object UpdateRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex { val z = implicitly[Line].value
     val description = "Update information about given change request"
     val (action, path)  = POST / "changeRequests" / "{id}"
+
+    override def dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[ChangeRequestApi].toList.sortBy( _.z )

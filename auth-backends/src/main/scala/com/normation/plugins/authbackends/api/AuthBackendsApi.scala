@@ -76,6 +76,8 @@ object AuthBackendsApi extends ApiModuleProvider[AuthBackendsApi] {
     val z = implicitly[Line].value
     val description    = "Get information about current authentication configuration"
     val (action, path) = GET / "authbackends" / "current-configuration"
+
+    override def dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[AuthBackendsApi].toList.sortBy( _.z )
