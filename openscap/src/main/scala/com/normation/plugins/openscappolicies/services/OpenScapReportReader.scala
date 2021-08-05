@@ -85,7 +85,7 @@ class OpenScapReportReader(
    * Everything else is a failure
    */
   def checkOpenScapReportExistence(nodeId: NodeId) : Box[Boolean] = {
-    nodeInfoService.getNodeInfo(nodeId) match {
+    nodeInfoService.getNodeInfo(nodeId).toBox match {
       case t: EmptyBox =>
         val errMessage = s"Node with id ${nodeId.value} does not exists"
         logger.error(errMessage)

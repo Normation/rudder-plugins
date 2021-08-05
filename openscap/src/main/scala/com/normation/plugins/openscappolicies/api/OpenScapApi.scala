@@ -32,12 +32,16 @@ object OpenScapApi extends ApiModuleProvider[OpenScapApi] {
     val z = implicitly[Line].value
     val description    = "Get OpenScap report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
+
+    override def dataContainer: Option[String] = Some("openscap")
   }
 
   final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
     val z = implicitly[Line].value
     val description    = "Get sanitized OpenScap report for a node"
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
+
+    override def dataContainer: Option[String] = Some("openscap")
   }
 
   def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy( _.z )
