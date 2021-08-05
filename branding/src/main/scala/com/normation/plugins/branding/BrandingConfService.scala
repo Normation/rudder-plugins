@@ -101,7 +101,7 @@ class BrandingConfService(configFilePath: String) {
                   }
                 } else {
                   if (init) {
-                    updateConf(BrandingConfService.initialValue)
+                    updateConf(BrandingConfService.initialValue, Some(ref))
                   } else {
                     // Should we update cache to that value ??
                     Inconsistency("Could not read plugin configuration from cache").fail
@@ -124,7 +124,8 @@ class BrandingConfService(configFilePath: String) {
   }
 
 
-  def updateConf(newConf : BrandingConf) : IOResult[BrandingConf] = {
+  // During init, cache doesn't exist yet, so we need the ref to init the cache
+  def updateConf(newConf : BrandingConf, ref: Option[Ref[Either[RudderError, BrandingConf]]] = None) : IOResult[BrandingConf] = {
     import net.liftweb.json.prettyRender
     val content = prettyRender(BrandingConf.serialize(newConf))
     (for {
@@ -136,7 +137,10 @@ class BrandingConfService(configFilePath: String) {
              }
              Files.write(path, content.getBytes(StandardCharsets.UTF_8))
            }
-      _ <- cache.set(Right(newConf))
+      _       <- ref match {
+                   case None => cache.set(Right(newConf))
+                   case Some(cacheDuringInit) => cacheDuringInit.set(Right(newConf))
+                 }
     } yield {
       newConf
     }).chainError("Could not write new configuration for branding plugin")
