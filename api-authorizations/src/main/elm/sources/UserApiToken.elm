@@ -1,4 +1,4 @@
-port module UserApiToken exposing (Model, Msg(..), Token, apiRequestTemplate, createUserToken, decodeApiUserToken, decodeDeleteToken, decodeToken, deleteUserToken, getUserToken, init, main, printError, response, subscriptions, tokenAbsent, tokenPresent, update, updateFromApiResult, updateFromDelete, view)
+module UserApiToken exposing (Model, Msg(..), Token, apiRequestTemplate, createUserToken, decodeApiUserToken, decodeDeleteToken, decodeToken, deleteUserToken, getUserToken, init, main, printError, response, subscriptions, tokenAbsent, tokenPresent, update, updateFromApiResult, updateFromDelete, view)
 
 import Html exposing (..)
 import Browser

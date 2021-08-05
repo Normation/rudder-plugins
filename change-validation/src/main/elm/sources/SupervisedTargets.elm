@@ -1,4 +1,4 @@
-port module SupervisedTargets exposing (Category, Model, Msg(..), Subcategories(..), Target, addTempToast, addToast, alphanumericRegex, createDecodeErrorNotification, createErrorNotification, createSuccessNotification, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, defaultConfig, displayCategory, displaySubcategories, displayTarget, encodeTargets, getErrorMessage, getSupervisedIds, getTargets, init, isAlphanumeric, main, saveTargets, subscriptions, tempConfig, update, updateTarget, view)
+module SupervisedTargets exposing (Category, Model, Msg(..), Subcategories(..), Target, addTempToast, addToast, alphanumericRegex, createDecodeErrorNotification, createErrorNotification, createSuccessNotification, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, defaultConfig, displayCategory, displaySubcategories, displayTarget, encodeTargets, getErrorMessage, getSupervisedIds, getTargets, init, isAlphanumeric, main, saveTargets, subscriptions, tempConfig, update, updateTarget, view)
 
 import Html exposing (..)
 import Browser

@@ -1,4 +1,4 @@
-port module WorkflowUsers exposing (..)
+module WorkflowUsers exposing (..)
 
 import ApiCalls exposing (getUsers)
 import Browser

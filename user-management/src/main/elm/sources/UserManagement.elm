@@ -1,4 +1,4 @@
-port module UserManagement exposing (processApiError, update)
+module UserManagement exposing (processApiError, update)
 
 import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
