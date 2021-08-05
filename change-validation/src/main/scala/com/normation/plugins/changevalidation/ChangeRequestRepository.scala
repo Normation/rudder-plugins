@@ -39,7 +39,7 @@ package com.normation.plugins.changevalidation
 
 import com.normation.eventlog.EventActor
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.DirectiveId
+import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
@@ -55,7 +55,7 @@ trait RoChangeRequestRepository {
 
   def get(changeRequestId:ChangeRequestId) : Box[Option[ChangeRequest]]
 
-  def getByDirective(id : DirectiveId, onlyPending:Boolean) : Box[Vector[ChangeRequest]]
+  def getByDirective(id : DirectiveUid, onlyPending:Boolean) : Box[Vector[ChangeRequest]]
 
   def getByNodeGroup(id : NodeGroupId, onlyPending:Boolean) : Box[Vector[ChangeRequest]]
 
@@ -78,7 +78,7 @@ class EitherRoChangeRequestRepository(cond: () => Box[Boolean], whenTrue: RoChan
 
   def get(changeRequestId:ChangeRequestId) : Box[Option[ChangeRequest]] = condApply( _.get(changeRequestId) )
 
-  def getByDirective(id : DirectiveId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = condApply( _.getByDirective(id, onlyPending) )
+  def getByDirective(id : DirectiveUid, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = condApply( _.getByDirective(id, onlyPending) )
 
   def getByNodeGroup(id : NodeGroupId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = condApply( _.getByNodeGroup(id, onlyPending) )
 

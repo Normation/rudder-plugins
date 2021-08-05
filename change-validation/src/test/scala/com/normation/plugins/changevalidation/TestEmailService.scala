@@ -40,7 +40,7 @@ package com.normation.plugins.changevalidation
 import better.files._
 import com.normation.errors.IOResult
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.DirectiveId
+import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ChangeRequestInfo
@@ -120,7 +120,7 @@ class TestEmailService extends Specification with BeforeAfterAll {
           ChangeRequestId(42)
         , None
         , ChangeRequestInfo("A test CR", "this CR is for test")
-        , Map[DirectiveId, DirectiveChanges]()
+        , Map[DirectiveUid, DirectiveChanges]()
         , Map[NodeGroupId, NodeGroupChanges]()
         , Map[RuleId, RuleChanges]()
         , Map[String, GlobalParameterChanges]()
