@@ -39,8 +39,8 @@ package com.normation.plugins.datasources
 
 import com.normation.NamedZioLogger
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.NodeProperty
-import com.normation.rudder.domain.nodes.PropertyProvider
+import com.normation.rudder.domain.properties.NodeProperty
+import com.normation.rudder.domain.properties.PropertyProvider
 import com.typesafe.config.ConfigValue
 import net.liftweb.common.Logger
 import org.joda.time.DateTime

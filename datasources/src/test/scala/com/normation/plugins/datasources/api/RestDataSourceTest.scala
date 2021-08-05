@@ -38,8 +38,9 @@
 package com.normation.plugins.datasources.api
 
 import com.normation.plugins.datasources._
-import java.util.concurrent.TimeUnit.SECONDS
+import com.normation.rudder.rest.RestTest
 
+import java.util.concurrent.TimeUnit.SECONDS
 import com.normation.rudder.rest.RestTestSetUp
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
@@ -54,11 +55,13 @@ import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import zio.duration._
-
 import com.normation.zio._
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {
+
+  val restTestSetUp = RestTestSetUp.newEnv
+  val restTest = new RestTest(restTestSetUp)
 
   def extractDataFromResponse (response : LiftResponse, kind : String) : Box[List[JValue]] = {
     response match {
@@ -77,14 +80,14 @@ class RestDataSourceTest extends Specification with Loggable {
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
 
   val dataSourceApi9 = new DataSourceApiImpl(
-      RestTestSetUp.restExtractorService
-    , RestTestSetUp.restDataSerializer
+      restTestSetUp.restExtractorService
+    , restTestSetUp.restDataSerializer
     , datasourceRepo
     , null
     , null
-    , RestTestSetUp.uuidGen
+    , restTestSetUp.uuidGen
   )
-  RestTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
+  restTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
 
   val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", DataSourceType.HTTP.defaultMaxParallelRequest, HttpRequestMode.OneRequestByNode, DataSource.defaultDuration, MissingNodeBehavior.Delete)
   val baseRunParam  = DataSourceRunParameters(DataSourceSchedule.NoSchedule(DataSource.defaultDuration), false,false)
@@ -220,9 +223,9 @@ class RestDataSourceTest extends Specification with Loggable {
 
 
     "Get all base data source" in {
-      RestTestSetUp.testGET("/api/latest/datasources") { req =>
+      restTest.testGET("/api/latest/datasources") { req =>
         val result = for {
-          answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+          answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
           data   <- extractDataFromResponse(answer, "datasources")
         } yield {
           data
@@ -233,9 +236,9 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Accept new data source as json" in {
-      RestTestSetUp.testPUT("/api/latest/datasources", d2Json) { req =>
+      restTest.testPUT("/api/latest/datasources", d2Json) { req =>
        val result = for {
-         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
          data   <- extractDataFromResponse(answer, "datasources")
        } yield {
          data
@@ -246,9 +249,9 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "List new data source" in {
-      RestTestSetUp.testGET("/api/latest/datasources") { req =>
+      restTest.testGET("/api/latest/datasources") { req =>
        val result = for {
-         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
          data   <- extractDataFromResponse(answer, "datasources")
 
        } yield {
@@ -259,9 +262,9 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Accept modification as json" in {
-      RestTestSetUp.testPOST(s"/api/latest/datasources/${datasource2.id.value}", d2modJson) { req =>
+      restTest.testPOST(s"/api/latest/datasources/${datasource2.id.value}", d2modJson) { req =>
        val result = for {
-         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
          data   <- extractDataFromResponse(answer, "datasources")
        } yield {
          data
@@ -272,9 +275,9 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Get updated data source" in {
-      RestTestSetUp.testGET(s"/api/latest/datasources/${datasource2.id.value}") { req =>
+      restTest.testGET(s"/api/latest/datasources/${datasource2.id.value}") { req =>
        val result = for {
-         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
          data   <- extractDataFromResponse(answer, "datasources")
 
        } yield {
@@ -285,9 +288,9 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Delete the newly added data source" in {
-      RestTestSetUp.testDELETE(s"/api/latest/datasources/${datasource2.id.value}") { req =>
+      restTest.testDELETE(s"/api/latest/datasources/${datasource2.id.value}") { req =>
        val result = for {
-         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
          data   <- extractDataFromResponse(answer, "datasources")
 
        } yield {
@@ -298,9 +301,9 @@ class RestDataSourceTest extends Specification with Loggable {
     }
 
     "Be removed from list of all data sources" in {
-      RestTestSetUp.testGET("/api/latest/datasources") { req =>
+      restTest.testGET("/api/latest/datasources") { req =>
        val result = for {
-         answer <- RestTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
+         answer <- restTestSetUp.rudderApi.getLiftRestApi().apply(req).apply()
          data   <- extractDataFromResponse(answer, "datasources")
 
        } yield {

@@ -42,7 +42,7 @@ import com.jayway.jsonpath.DocumentContext
 import com.jayway.jsonpath.JsonPath
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
-import com.normation.rudder.domain.nodes.NodeProperty
+import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import net.minidev.json.JSONArray
@@ -54,9 +54,9 @@ import scalaj.http.HttpOptions
 import zio._
 import zio.syntax._
 import com.normation.errors._
-import com.normation.rudder.domain.nodes.GenericProperty
-import com.normation.rudder.domain.nodes.GenericProperty._
-import com.normation.rudder.domain.parameters.GlobalParameter
+import com.normation.rudder.domain.properties.GenericProperty
+import com.normation.rudder.domain.properties.GenericProperty._
+import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.typesafe.config.ConfigValue
 import zio.duration._
@@ -101,14 +101,14 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     , readTimeOut      : Duration
   ) : IOResult[Option[NodeProperty]] = {
     //utility to expand both key and values of a map
-    def expandMap(expand: String => PureResult[String], map: Map[String, String]): IOResult[Map[String, String]] = {
+    def expandMap(expand: String => IOResult[String], map: Map[String, String]): IOResult[Map[String, String]] = {
       (ZIO.foreach(map.toList) { case (key, value) =>
         (for {
           newKey   <- expand(key)
           newValue <- expand(value)
         } yield {
           (newKey, newValue)
-        }).toIO
+        })
       }).map( _.toMap )
     }
 
@@ -117,8 +117,8 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     for {
       parameters <- ZIO.foreach(parameters)(compiler.compileParameters(_).toIO).chainError("Error when transforming Rudder Parameter for variable interpolation")
       expand     =  compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap) _
-      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}").toIO
-      path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}").toIO
+      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
+      path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
       time_0     <- UIO.effectTotal(System.currentTimeMillis)
@@ -203,19 +203,24 @@ object QueryHttp {
  */
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
-  def compileParameters(parameter: GlobalParameter): PureResult[(String, ParamInterpolationContext => PureResult[String])] = {
+  def compileParameters(parameter: GlobalParameter): PureResult[(String, ParamInterpolationContext => IOResult[String])] = {
     compiler.compileParam(serializeToHocon(parameter.value)).map(v => (parameter.name, v))
   }
 
-  def compileInput(node: NodeInfo, policyServer: NodeInfo, globalPolicyMode: GlobalPolicyMode,  parameters: Map[String, ParamInterpolationContext => PureResult[String]])(input: String): PureResult[String] = {
+  def compileInput(
+      node: NodeInfo
+    , policyServer: NodeInfo
+    , globalPolicyMode: GlobalPolicyMode
+    , parameters: Map[String, ParamInterpolationContext => IOResult[String]]
+  )(input: String): IOResult[String] = {
 
     // we inject some props that are useful as identity pivot (like short name)
     // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}
     val injectedPropsJson = s"""{"short-hostname": "${node.hostname.split("\\.")(0)}"}"""
 
     for {
-      compiled <- compiler.compileParam(input)
-      injected <- GenericProperty.parseValue(injectedPropsJson)
+      compiled <- compiler.compileParam(input).toIO
+      injected <- GenericProperty.parseValue(injectedPropsJson).toIO
       //build interpolation context from node:
       enhanced =  node.modify(_.node.properties).using(props =>  NodeProperty.apply("datasources-injected", injected, None, None) :: props )
       context  =  ParamInterpolationContext(enhanced, policyServer, globalPolicyMode, parameters, 5)

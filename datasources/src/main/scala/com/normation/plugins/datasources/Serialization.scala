@@ -51,7 +51,7 @@ import net.liftweb.util.ControlHelpers.tryo
 import scala.concurrent.duration.FiniteDuration
 import cats._
 import cats.implicits._
-import com.normation.rudder.domain.nodes.GenericProperty._
+import com.normation.rudder.domain.properties.GenericProperty._
 import zio.duration.Duration
 
 object Translate {

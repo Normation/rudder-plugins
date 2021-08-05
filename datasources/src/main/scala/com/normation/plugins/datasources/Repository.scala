@@ -57,7 +57,7 @@ import com.normation.zio._
 import zio._
 import zio.clock.Clock
 import zio.syntax._
-import com.normation.rudder.domain.parameters.GlobalParameter
+import com.normation.rudder.domain.properties.GlobalParameter
 import zio.console.Console
 import zio.interop.catz._
 
