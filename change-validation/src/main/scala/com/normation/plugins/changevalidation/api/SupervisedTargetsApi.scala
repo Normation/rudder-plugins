@@ -81,11 +81,15 @@ object SupervisedTargetsApi extends ApiModuleProvider[SupervisedTargetsApi] {
     val z = implicitly[Line].value
     val description    = "Get all available node groups with their role in change request validation"
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
+
+    override def dataContainer: Option[String] = None
   }
   final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z = implicitly[Line].value
     val description    = "Save the updated list of groups"
     val (action, path) = POST / "changevalidation" / "supervised" / "targets"
+
+    override def dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[SupervisedTargetsApi].toList.sortBy( _.z )

@@ -54,7 +54,7 @@ import com.normation.rudder.domain.nodes.ModifyNodeGroupDiff
 import com.normation.rudder.domain.nodes.ModifyToNodeGroupDiff
 import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.parameters._
+import com.normation.rudder.domain.properties._
 import com.normation.rudder.domain.policies._
 import com.normation.rudder.domain.queries.QueryTrait
 import com.normation.rudder.domain.workflows._
@@ -72,7 +72,7 @@ import org.joda.time.DateTime
 
 import scala.xml._
 import com.normation.box._
-import com.normation.rudder.domain.nodes.GroupProperty
+import com.normation.rudder.domain.properties.GroupProperty
 
 object ChangeRequestChangesForm {
   def form = ChooseTemplate(
@@ -137,8 +137,8 @@ class ChangeRequestChangesForm(
 
  class ChangesTreeNode(changeRequest:ConfigurationChangeRequest, rootRuleCategory: RuleCategory) extends JsTreeNode{
 
-  def directiveChild(directiveId:DirectiveId) = new JsTreeNode{
-    def changes = changeRequest.directives(directiveId).changes
+  def directiveChild(directiveUid:DirectiveUid) = new JsTreeNode{
+    def changes = changeRequest.directives(directiveUid).changes
     def directiveName = changes.initialState.map(_._2.name).getOrElse(changes.firstChange.diff.directive.name)
 
     def body = SHtml.a(
@@ -486,7 +486,7 @@ class ChangeRequestChangesForm(
         case None => "default"
       }
 
-    ( "#directiveID" #> createDirectiveLink(directive.id) &
+    ( "#directiveID" #> createDirectiveLink(directive.id.uid) &
       "#directiveName" #> directive.name &
       "#techniqueVersion" #> directive.techniqueVersion.toString &
       "#techniqueName" #> techniqueName.value &
@@ -514,7 +514,7 @@ class ChangeRequestChangesForm(
       case None => "default"
     }
 
-    ( "#directiveID"      #> createDirectiveLink(directive.id) &
+    ( "#directiveID"      #> createDirectiveLink(directive.id.uid) &
       "#techniqueName"    #> techniqueName.value &
       "#isSystem"         #> directive.isSystem &
       "#directiveName"    #> displaySimpleDiff(diff.modName, "name", Text(directive.name)) &
@@ -556,7 +556,7 @@ class ChangeRequestChangesForm(
                   val diff = diffService.diffDirective(initialDirective, initialRS, directive, rootSection, techniqueName)
                   displayDirectiveDiff(diff,directive,techniqueName,rootSection)
                 case None =>
-                  val msg = s"Could not display diff for ${directive.name} (${directive.id.value})"
+                  val msg = s"Could not display diff for ${directive.name} (${directive.id.uid.value})"
                   logger.error(msg)
                   <div>msg</div>
               }
@@ -747,8 +747,8 @@ class ChangeRequestChangesForm(
   def displayDirectiveChange(directiveChange: DirectiveChange) = {
     val action = directiveChange.firstChange.diff match {
            case a : AddDirectiveDiff => Text(s"Create Directive ${a.directive.name}")
-           case d : DeleteDirectiveDiff => <span>Delete Directive <a href={baseDirectiveLink(d.directive.id)} onclick="noBubble(event);">{d.directive.name}</a></span>
-           case m : ModifyToDirectiveDiff => <span>Modify Directive <a href={baseDirectiveLink(m.directive.id)} onclick="noBubble(event);">{m.directive.name}</a></span>
+           case d : DeleteDirectiveDiff => <span>Delete Directive <a href={baseDirectiveLink(d.directive.id.uid)} onclick="noBubble(event);">{d.directive.name}</a></span>
+           case m : ModifyToDirectiveDiff => <span>Modify Directive <a href={baseDirectiveLink(m.directive.id.uid)} onclick="noBubble(event);">{m.directive.name}</a></span>
          }
    displayEvent(action,directiveChange.firstChange.actor,directiveChange.firstChange.creationDate, directiveChange.firstChange.reason.getOrElse(""))
   }

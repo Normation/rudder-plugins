@@ -73,7 +73,6 @@ import com.normation.rudder.AuthorizationType.Deployer
 import com.normation.rudder.AuthorizationType.Validator
 import com.normation.rudder.api.ApiAclElement
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.DirectiveId
 import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.rest.ApiModuleProvider
@@ -92,6 +91,7 @@ import net.liftweb.common.Full
 import com.normation.box._
 import com.normation.plugins.changevalidation.EmailNotificationService
 import com.normation.plugins.changevalidation.NotificationService
+import com.normation.rudder.domain.policies.DirectiveUid
 
 /*
  * The validation workflow level
@@ -156,9 +156,9 @@ class ChangeValidationWorkflowLevelService(
     combine[GlobalParamChangeRequest]( (v,a,c) => v.forGlobalParam(a,c), validationNeeded, actor, change)
   }
 
-  override def getByDirective(id: DirectiveId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
     if(workflowEnabled) {
-      validationWorkflowService.roChangeRequestRepository.getByDirective(id, onlyPending)
+      validationWorkflowService.roChangeRequestRepository.getByDirective(uid, onlyPending)
     } else {
       Full(Vector())
     }

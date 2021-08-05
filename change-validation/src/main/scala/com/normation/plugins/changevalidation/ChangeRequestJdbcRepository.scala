@@ -42,7 +42,7 @@ import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie._
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.DirectiveId
+import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
@@ -101,7 +101,7 @@ class RoChangeRequestJdbcRepository(
     execQuery(q)
   }
 
-  override def getByDirective(id : DirectiveId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = {
+  override def getByDirective(id : DirectiveUid, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = {
     getChangeRequestsByXpathContent(
         "/changeRequest/directives/directive/@id"
       , id.value

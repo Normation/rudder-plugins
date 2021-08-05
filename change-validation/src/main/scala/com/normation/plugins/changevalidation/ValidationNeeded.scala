@@ -118,7 +118,7 @@ class NodeGroupValidationNeeded(
     val start = System.currentTimeMillis()
     val res = for {
       groups    <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo  <- nodeInfoService.getAll()
+      nodeInfo  <- nodeInfoService.getAll().toBox
       monitored <- monitoredTargets()
     } yield {
       val targets = Set(change.newRule) ++ change.previousRule.toSet
@@ -167,7 +167,7 @@ class NodeGroupValidationNeeded(
 
     val res = for {
       groups      <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo <- nodeInfoService.getAll()
+      allNodeInfo <- nodeInfoService.getAll().toBox
       monitored   <- monitoredTargets()
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
@@ -196,11 +196,11 @@ class NodeGroupValidationNeeded(
       newRules  =  change.updatedRules
       monitored <- monitoredTargets()
       groups    <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo  <- nodeInfoService.getAll()
+      nodeInfo  <- nodeInfoService.getAll().toBox
     } yield {
       checkNodeTargetByRule(groups, nodeInfo, monitored, (rules++newRules).toSet)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 
