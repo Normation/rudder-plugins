@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import java.util.concurrent.Executors
-
 import com.normation.plugins.PluginEnableImpl
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
@@ -47,10 +46,10 @@ import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.{KeyStatus, NodeId, SecurityToken}
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
-import com.normation.rudder.domain.nodes.CompareProperties
+import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
-import com.normation.rudder.domain.nodes.NodeProperty
+import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
@@ -58,7 +57,6 @@ import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
 import net.liftweb.common._
-import org.http4s.util._
 import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
 import org.specs2.matcher.MatchResult
@@ -73,7 +71,6 @@ import com.normation.rudder.domain.queries.NodeInfoMatcher
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
-import org.http4s.HttpService
 import org.http4s._
 import org.http4s.dsl.io._
 import org.http4s.implicits._
@@ -86,8 +83,9 @@ import org.http4s.server.blaze.BlazeServerBuilder
 import zio.syntax._
 import zio.{IO => _, _}
 import com.normation.errors._
-import com.normation.rudder.domain.nodes.GenericProperty
-import com.normation.rudder.domain.nodes.GenericProperty._
+import com.normation.rudder.domain.properties.GenericProperty
+import com.normation.rudder.domain.properties.GenericProperty._
+import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
@@ -96,6 +94,8 @@ import zio.duration._
 import org.specs2.specification.core.Fragment
 import com.normation.zio._
 import zio.test.Annotations
+import com.normation.box._
+import org.typelevel.ci.CIString
 
 object TheSpaced {
 
@@ -239,7 +239,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         }
 
       case r @ GET -> Root / "delay" / x =>
-        r.headers.get(CaseInsensitiveString("nodeId")).map( _.value) match {
+        r.headers.get(CIString("nodeId")).map( _.value) match {
           case Some(`x`) =>
             delayResponse(Ok {
               counterSuccess.update(_+1).runNow
@@ -255,7 +255,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       case r @ POST -> Root / "delay" =>
 
-        val headerId = r.headers.get(CaseInsensitiveString("nodeId")).map( _.value)
+        val headerId = r.headers.get(CIString("nodeId")).map( _.value)
 
         r.decode[UrlForm] { data =>
           val formId = data.values.get("nodeId").flatMap(_.headOption)
@@ -290,12 +290,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         }
     }
 
-    @silent // deprecation warning
-    def ioCountService(implicit F: cats.effect.Async[IO]): IO[HttpService[IO]] = {
+    def ioCountService(implicit F: cats.effect.Async[IO]): IO[HttpRoutes[IO]] = {
       for {
         currentConcurrent <- Ref.of[IO, Int](0)
         maxConcurrent     <- Ref.of[IO, Int](0)
-        service           <- IO.pure(HttpService[IO] {
+        service           <- IO.pure( HttpRoutes.of[IO] {
                                case GET -> Root / x =>
                                  for {
                                    - <- currentConcurrent.update(_ + 1)
@@ -332,7 +331,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   val actor = EventActor("Test-actor")
   def modId = ModificationId("test-id-@" + System.currentTimeMillis)
 
-  val interpolation = new InterpolatedValueCompilerImpl
+  val interpolation = new InterpolatedValueCompilerImpl(new PropertyEngineServiceImpl(
+    List.empty
+  ))
   val fetch = new GetDataset(interpolation)
 
   val parameterRepo = new RoParameterRepository() {
@@ -365,7 +366,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
 
     // NodeInfoService
-    def getAll() = synchronized(Full(nodes))
+    def getAll() = synchronized(Full(nodes)).toIO
     def getNumberOfManagedNodes: Int = nodes.size - 1
     def getAllNodes()                         = throw new IllegalAccessException("Thou shall not used that method here")
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
@@ -378,9 +379,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getPendingNodeInfoPure(nodeId: NodeId)= throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
 
-    override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
+    override def  getAllNodesIds(): IOResult[Set[NodeId]] = ???
+    override def  getDeletedNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
+    override def  getPendingNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
 
     override def deleteNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
+    override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
 
     def updateNodeKeyInfo(nodeId: NodeId, agentKey: Option[SecurityToken], agentKeyStatus: Option[KeyStatus], modId: ModificationId, actor:EventActor, reason:Option[String])                   = throw new IllegalAccessException("Thou shall not used that method here")
   }
@@ -502,14 +506,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
         val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
         val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
-        val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+        val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
         infos.updates.clear()
         val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         ) and (
-          infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+          infos.getAll().toBox.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
               NodeProperty.apply("test-http-service", testArray(i)._2.forceParse, None, Some(DataSource.providerName))
           )
         )
@@ -527,14 +531,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
         val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
         val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
-        val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+        val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
         infos.updates.clear()
         val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
           infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
         ) and (
-          infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+          infos.getAll().toBox.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
               NodeProperty.apply("test-http-service", testArray(i)._3.forceParse, None, Some(DataSource.providerName))
           )
         )
@@ -734,7 +738,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       // So tests don't fait if the build machine has one core
       val MAX_PARALLEL = Math.min(2, java.lang.Runtime.getRuntime.availableProcessors)
       val ds = maxParDataSource(MAX_PARALLEL)
-      val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+      val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       //all node updated one time
       infos.updates.clear()
       NodeDataset.reset()
@@ -752,7 +756,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         , path = "$.hostname"
         , headers = Map( "nodeId" -> "${rudder.node.id}" )
       )
-      val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+      val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       //all node updated one time
       infos.updates.clear()
       NodeDataset.reset()
@@ -772,7 +776,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         , params = Map( "nodeId" -> "${rudder.node.id}" )
         , headers = Map( "nodeId" -> "${rudder.node.id}" )
       )
-      val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+      val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       //all node updated one time
       infos.updates.clear()
       NodeDataset.reset()
@@ -794,7 +798,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         , path = "$.hostname"
       )
       val nodeRegEx = "node(.*)".r
-      val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet.filter(n => n.value match {
+      val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet.filter(n => n.value match {
         case "root"       => true
         case nodeRegEx(i) => i.toInt % 2 == 1
       })
@@ -848,7 +852,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
     "correctly update all nodes" in {
       //all node updated one time
-      val nodeIds = infos.getAll().openOrThrowException("test shall not throw").keySet
+      val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       infos.updates.clear()
       val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
@@ -868,7 +872,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
-        infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+        infos.getAll().toBox.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
             NodeProperty.apply("test-http-service", "bar".toConfigValue, None, Some(DataSource.providerName))
         )
       )
@@ -886,7 +890,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
-        infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+        infos.getAll().toBox.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
             NodeProperty.apply("test-http-service", "server.rudder.local".toConfigValue, None, Some(DataSource.providerName))
         )
       )
@@ -903,7 +907,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res = http.queryOne(d2, root.id, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id):NodeUpdateResult)) and (
-        infos.getAll().flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
+        infos.getAll().toBox.flatMap( m => m(root.id).properties.find( _.name == "test-http-service") ) mustFullEq(
             NodeProperty.apply("test-http-service", """{ "environment": "DEV_INFRA", "mergeBucket" : { "test_merge2" : "aPotentialMergeValue1" } }""".forceParse, None, Some(DataSource.providerName))
         )
       )
@@ -919,7 +923,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
      * - get the props for the value and await a test on them
      *
      * In finalStatCond, the implementation ensures that all nodes are in the map, i.e
-     *   PROPS.keySet() == infos.getAll().keySet()
+     *   PROPS.keySet() == infos.getAll().toBox.keySet()
      */
     type PROPS = Map[NodeId, Option[ConfigValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
@@ -927,11 +931,10 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
       val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
-      val nodes = infos.getAll().openOrThrowException("test shall not throw")
+      val nodes = infos.getAll().toBox.openOrThrowException("test shall not throw")
       //set a value for all propName if asked
       val modId = ModificationId("set-test-404")
       nodes.values.foreach { node =>
-        import com.normation.box.EitherToBox
         val newProps = CompareProperties.updateProperties(node.node.properties, Some(List(NodeProperty.apply(propName, initValue.getOrElse("").toConfigValue, None, None)))).toBox.openOrThrowException("test must be able to set prop")
         val up = node.node.copy(properties = newProps)
         infos.updateNode(up, modId, actor, None).runNow
@@ -951,7 +954,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         }
       ) and ({
         //none should have "test-404"
-        val props = infos.getAll().openOrThrowException("test shall not throw").map { case(id, n) => (id, n.node.properties.find( _.name == propName ).map( _.value)) }
+        val props = infos.getAll().toBox.openOrThrowException("test shall not throw").map { case(id, n) => (id, n.node.properties.find( _.name == propName ).map( _.value)) }
         finalStateCond(props)
       })
     }

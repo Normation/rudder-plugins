@@ -39,7 +39,7 @@ package com.normation.plugins.datasources
 
 import cats.data.NonEmptyList
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.CompareProperties
+import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.GlobalPolicyMode
@@ -48,7 +48,7 @@ import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.errors._
-import com.normation.rudder.domain.parameters.GlobalParameter
+import com.normation.rudder.domain.properties.GlobalParameter
 import zio._
 import zio.clock.Clock
 import zio.syntax._
@@ -256,7 +256,7 @@ class HttpQueryDataSourceService(
 
   def queryAllByNode(datasourceId: DataSourceId, datasource: DataSourceType.HTTP, globalPolicyMode: () => IOResult[GlobalPolicyMode], cause: UpdateCause): IOResult[Set[NodeUpdateResult]] = {
     for {
-      nodes         <- nodeInfo.getAll().toIO
+      nodes         <- nodeInfo.getAll()
       policyServers  = nodes.filter { case (_, n) => n.isPolicyServer }
       parameters    <- parameterRepo.getAllGlobalParameters().map( _.toSet )
       updated       <- querySubsetByNode(datasourceId, datasource, globalPolicyMode, PartialNodeUpdate(nodes, policyServers, parameters), cause, onUpdatedHook)
@@ -268,7 +268,7 @@ class HttpQueryDataSourceService(
   def queryNodeByNode(datasourceId: DataSourceId, datasource: DataSourceType.HTTP, globalPolicyMode: () => IOResult[GlobalPolicyMode], nodeId: NodeId, cause: UpdateCause): IOResult[NodeUpdateResult] = {
     for {
       mode          <- globalPolicyMode()
-      allNodes      <- nodeInfo.getAll().toIO
+      allNodes      <- nodeInfo.getAll()
       node          <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
       policyServers =  allNodes.filter( _._1 == node.policyServerId)
       parameters    <- parameterRepo.getAllGlobalParameters().map( _.toSet )

@@ -72,11 +72,11 @@ import com.normation.plugins.datasources.UpdateCause
 import com.normation.plugins.datasources.NodeUpdateResult
 import com.normation.utils.Control
 import com.normation.rudder.domain.nodes.Node
-import com.normation.rudder.domain.nodes.CompareProperties
+import com.normation.rudder.domain.properties.CompareProperties
 import net.liftweb.common.Failure
 import com.normation.plugins.datasources.api.{DataSourceApi => API}
 import com.normation.box._
-import com.normation.rudder.domain.nodes.GenericProperty._
+import com.normation.rudder.domain.properties.GenericProperty._
 import net.liftweb.json.JsonAST.JArray
 import zio.duration.Duration
 
@@ -164,7 +164,7 @@ class DataSourceApiImpl (
       def cause(nodeId: NodeId) = UpdateCause(modId, authzToken.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
 
       val res: Box[Seq[NodeUpdateResult]] = for {
-        nodes   <- nodeInfoService.getAllNodes()
+        nodes   <- nodeInfoService.getAllNodes().toBox
         updated <- Control.bestEffort(nodes.values.toSeq) { node =>
                      erase(cause(node.id), node, DataSourceId(datasourceId)).toBox
                    }
@@ -185,7 +185,7 @@ class DataSourceApiImpl (
       val (datasourceId, nodeId) = ids
       val cause = UpdateCause(ModificationId(uuidGen.newUuid), authzToken.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId}'"), false)
       val res: Box[NodeUpdateResult] = for {
-        optNode <- nodeInfoService.getNodeInfo(NodeId(nodeId))
+        optNode <- nodeInfoService.getNodeInfo(NodeId(nodeId)).toBox
         node    <- optNode match {
                      case None    => Failure(s"Node with ID '${nodeId}' was not found")
                      case Some(x) => Full(x)
