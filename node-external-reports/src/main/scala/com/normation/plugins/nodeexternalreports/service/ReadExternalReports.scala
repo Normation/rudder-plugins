@@ -47,6 +47,7 @@ import com.typesafe.config._
 
 import net.liftweb.common._
 import net.liftweb.util.Helpers.tryo
+import com.normation.box._
 
 final case class ExternalReport(
     title        : String
@@ -131,7 +132,7 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
 
     for {
       conf    <- config
-      optNode <- nodeInfoService.getNodeInfo(nodeId)
+      optNode <- nodeInfoService.getNodeInfo(nodeId).toBox
       node    <- optNode match {
         case None    => Failure(s"The node with ID '${nodeId}' was not found, we can add external information")
         case Some(n) => Full(n)
