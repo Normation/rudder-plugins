@@ -15,8 +15,7 @@ import com.normation.rudder.repository.WoNodeGroupRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.repository.WoRuleRepository
 import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.rudder.services.servers.PolicyServerConfigurationObjects
-import com.normation.rudder.services.servers.PolicyServerManagementService
+import com.normation.rudder.services.servers.{PolicyServer, PolicyServerConfigurationObjects, PolicyServerManagementService}
 import com.normation.utils.StringUuidGenerator
 import com.softwaremill.quicklens._
 import zio._
@@ -83,6 +82,12 @@ class ScaleOutRelayService(
       _ <- ZIO.foreach(objects.rules) { r =>
              woRuleRepository.create(r, modId, actor, reason)
            }
+
+      // save the relay in the rudder_policy_servers entry in LDAP
+      existingPolicyServers <- policyServerManagementService.getPolicyServers()
+      newPolicyServers      = existingPolicyServers.copy(relays = PolicyServer(nodeInfo.id, Nil) :: existingPolicyServers.relays)
+      _                     <- policyServerManagementService.savePolicyServers(newPolicyServers)
+
       _ <- actionLogger.savePromoteToRelay(modId,actor,nodeInfo, reason)
     } yield {
       nodeInfo
