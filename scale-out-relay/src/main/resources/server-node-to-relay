@@ -74,7 +74,7 @@ else
 	echo "Done."
 
 	echo -n "INFO: Triggering promises generation..."
-	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" -k "https://localhost/rudder/api/deploy/reload"
+	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" -k "https://localhost/rudder/api/latest/system/reload/techniques"
 	echo " Done."
 
 	echo "Success: all steps completed successfully."
