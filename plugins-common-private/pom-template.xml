@@ -6,12 +6,12 @@
   <!--
     Do not change version here, update content into: build.conf
   -->
-  <version>${rudder-branch}-${lib-common-private}</version>
+  <version>${private-version}</version>
 
   <parent>
     <groupId>com.normation.plugins</groupId>
     <artifactId>plugins-parent</artifactId>
-    <version>${rudder-branch}-${parent-version}</version>
+    <version>${parent-version}</version>
   </parent>
 
   <description>
