@@ -11,7 +11,7 @@
   <parent>
     <groupId>com.normation.plugins</groupId>
     <artifactId>plugins-parent</artifactId>
-    <version>${rudder-branch}-${parent-version}</version>
+    <version>${parent-version}</version>
   </parent>
 
   <description>
