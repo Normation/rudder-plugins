@@ -95,7 +95,7 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
           }}
           </style>
         )
-      case _       => (<img src="/images/login/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"/>, NodeSeq.Empty)
+      case _       => (<img src="/images/logo-rudder-white.svg" data-lift="with-cached-resource" alt="Rudder"/>, NodeSeq.Empty)
     }
     val legend =
       <div>
