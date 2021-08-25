@@ -61,6 +61,8 @@ import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.typesafe.config.ConfigValue
 import zio.duration._
 import com.softwaremill.quicklens._
+import net.minidev.json.JSONStyle
+import net.minidev.json.JSONValue
 
 /*
  * This file contain the logic to update dataset from an
@@ -290,7 +292,17 @@ object JsonSelect {
     //   lead to a mess of quoted strings
     // - just parsing as JSONAware fails on string, int, etc.
 
-    import scala.jdk.CollectionConverters._
+    // we need to special case String to avoid double-quoting it
+    def parseOneElem(x: Any): PureResult[ConfigValue] = {
+      x match {
+        case x: String =>
+          Right(x.toConfigValue)
+        case x =>
+          // be careful here, other things than NO_COMPRESS, like MAX_COMPRESSION, means "not valid json"
+          val json = JSONValue.toJSONString(x, JSONStyle.NO_COMPRESS)
+          GenericProperty.parseValue(json)
+      }
+    }
 
     for {
       jsonValue <- IOResult.effectM(try {
@@ -309,14 +321,17 @@ object JsonSelect {
       // The case with no data is considered to be "".
       // And when we have and array of several elements, we need to parse it as a JSON array
       res        <- (jsonValue match {
-                      case x:JSONArray  => x.asScala.toList match {
-                        case Nil      => Right("".toConfigValue)
-                        // for following cases, we need to call "toString", which will call the correct "toJSONString"
-                        // by introspection :scream: Trying to call directly JSONAware.toJSONString won't work.
-                        case h :: Nil => GenericProperty.parseValue(h.toString)
-                        case array    => GenericProperty.parseValue(jsonValue.toString)
+                      case x:JSONArray => x.size match {
+                        case 0 =>
+                          Right("".toConfigValue)
+                        // JSONPath is horrible. Don't touch that without double checking that all unit tests pass. See #19863
+                        case 1 =>
+                          parseOneElem(x.get(0))
+                        case _ =>
+                          GenericProperty.parseValue(x.toJSONString)
                       }
-                      case x          => GenericProperty.parseValue(x.toString)
+                      case x =>
+                        parseOneElem(x)
                     }).toIO
     } yield {
       res
