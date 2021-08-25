@@ -49,6 +49,7 @@ object DataSourceApi extends ApiModuleProvider[DataSourceApi] {
   /* Avoiding POST unreachable endpoint:
    * (note: datasource must not have id "reload")
    *
+   * POST /datasources/reload/node/
    * POST /datasources/reload/node/$nodeid
    * POST /datasources/reload/$datasourceid
    * POST /datasources/reload/$datasourceid/node/$nodeid
@@ -58,6 +59,11 @@ object DataSourceApi extends ApiModuleProvider[DataSourceApi] {
    *
    * And then the simpler on datasource CRUD
    */
+
+  final case object ReloadAllDatasourcesAllNodes extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
+    val description = "Reload all datasources for all nodes"
+    val (action, path)  = POST / "datasources" / "reload" / "node"
+  }
 
   final case object ReloadAllDatasourcesOneNode extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Reload all datasources for the given node"
@@ -72,11 +78,6 @@ object DataSourceApi extends ApiModuleProvider[DataSourceApi] {
   final case object ReloadOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
     val description = "Reload the given datasource for the given node"
     val (action, path)  = POST / "datasources" / "reload" / "{datasourceid}" / "node" / "{nodeid}"
-  }
-
-  final case object ReloadAllDatasourcesAllNodes extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
-    val description = "Reload all datasources for all nodes"
-    val (action, path)  = POST / "datasources" / "reload" / "node"
   }
 
   final case object ClearValueOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex { val z = implicitly[Line].value
