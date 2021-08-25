@@ -176,7 +176,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   //create a rest server for test
   object NodeDataset {
 
-    //for debuging - of course works correctly only if sequential
+    //for debugging - of course works correctly only if sequential
     val counterError   = zio.Ref.make(0).runNow
     val counterSuccess = zio.Ref.make(0).runNow
     val maxPar = zio.Ref.make(0).runNow

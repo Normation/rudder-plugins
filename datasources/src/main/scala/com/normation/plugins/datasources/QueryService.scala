@@ -55,10 +55,10 @@ import zio.syntax._
 import zio.duration.DurationOps
 
 /*
- * This file contain the hight level logic to update
+ * This file contain the high level logic to update
  * datasources by name:
  * - get the datasource by name,
- * - get the list of nodes to udpate and there context,
+ * - get the list of nodes to update and there context,
  * - update all nodes
  * - (event log are generated because we are just changing node properties,
  *   so same behaviour)
@@ -244,7 +244,7 @@ class HttpQueryDataSourceService(
     for {
       mode          <- globalPolicyMode()
       updated       <- tasks(nodes, info.policyServers, mode, info.parameters).timeout(timeout).provide(clock).notOptional(
-                         s"Timout error after ${timeout.asScala.toString()}"
+                         s"Timeout error after ${zio.duration.Duration.fromJava(timeout).render}"
                        )
                        // execute hooks
       _             <- onUpdatedHook(updated.collect { case Right(NodeUpdateResult.Updated(id)) => id }.toSet, cause)

@@ -193,7 +193,7 @@ class DataSourceRepoImpl(
       stop(id) *>
       internalRef.update(_ - id)
     }
-    //get alls - return an immutable map
+    //get all - return an immutable map
     def all(): IOResult[Map[DataSourceId, DataSourceScheduler]] = semaphore.withPermit { internalRef.get }
   }
 
@@ -259,13 +259,13 @@ class DataSourceRepoImpl(
   ///
   ///         DB WRITE ONLY
   /// write methods need to manage the "live" scheduler
-  /// write methods need to be synchronised to keep consistancy between
-  /// the backend and the live data (the self-consistancy of live data
+  /// write methods need to be synchronised to keep consistency between
+  /// the backend and the live data (the self-consistency of live data
   /// is ensured in the datasources object).
   /// All the lock are on datasources object.
 
   /*
-   * on update, we need to stop the corresponding optionnaly existing
+   * on update, we need to stop the corresponding optionally existing
    * scheduler, and update with the new one.
    */
   override def save(source : DataSource) : IOResult[DataSource] = dataSourcesLock.withPermit {

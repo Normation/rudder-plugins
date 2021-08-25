@@ -104,7 +104,7 @@ class DataSourceApiImpl (
   }
 
   import extractor._
-  import com.normation.plugins.datasources.DataSourceExtractor.OptionnalJson._
+  import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson._
   import net.liftweb.json.JsonDSL._
 
 

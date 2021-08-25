@@ -100,7 +100,7 @@ class DataSourceScheduler(
 
     val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value}): ${schedule}"
 
-    // The full action with loggin. We don't want it to be able to fail, because it would stop
+    // The full action with logging. We don't want it to be able to fail, because it would stop
     // futur update. So we catch all error and log them (in debug because they are (should) already log in error, we
     // only want to be sure to have them)
     val prog = (DataSourceLoggerPure.info(msg) *> DataSourceLoggerPure.trace(s"details: ${datasource}") *>
@@ -131,7 +131,7 @@ class DataSourceScheduler(
   }
 
   /*
-   * This is the main interesting method, seting
+   * This is the main interesting method, setting
    * things up for schedule
    */
   def restartScheduleTask(): IOResult[Unit] = {
