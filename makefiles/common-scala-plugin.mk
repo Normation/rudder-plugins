@@ -38,20 +38,4 @@ build-licensed-files:
 
 licensed-files: plugins-common-private${LIB_SUFFIX} build-pom build-licensed-files
 
-generate-pom: PLUGIN_POM_VERSION = $(RUDDER_VERSION)-${PLUGIN_VERSION}
-generate-pom: RUDDER_BUILD_VERSION = $(RUDDER_VERSION)
-generate-pom: RUDDER_POM_VERSION = $(RUDDER_VERSION)
-generate-pom: build-pom
-
-generate-pom-nightly: PLUGIN_POM_VERSION = $(RUDDER_VERSION)-${PLUGIN_VERSION}-SNAPSHOT
-generate-pom-nightly: RUDDER_BUILD_VERSION = $(RUDDER_VERSION)
-generate-pom-nightly: RUDDER_POM_VERSION = $(RUDDER_VERSION)
-generate-pom-nightly: build-pom
-
-generate-pom-next: PLUGIN_POM_VERSION = $(RUDDER_VERSION_NEXT)-${PLUGIN_VERSION}-SNAPSHOT
-generate-pom-next: RUDDER_BUILD_VERSION = $(RUDDER_VERSION_NEXT)-SNAPSHOT
-generate-pom-next: RUDDER_POM_VERSION = $(RUDDER_VERSION)
-generate-pom-next: build-pom
-
-
 .PHONY: std-files licensed-files 
