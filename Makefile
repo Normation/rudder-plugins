@@ -7,11 +7,13 @@
 include makefiles/global-vars.mk
 
 
-PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common-private" | xargs echo)
-SCALA_PLUGINS = $(shell find . -path ./src -prune -o -name "pom-template.xml" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common-private" | xargs echo)
+PLUGINS = $(shell find . -path ./src -prune -o -name "build.conf" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common" | xargs echo)
+SCALA_PLUGINS = $(shell find . -path ./src -prune -o -name "pom-template.xml" -printf '%P\n' | cut -d "/" -f1 | grep -v "plugins-common" | xargs echo)
 PLUGINS-LICENSED = $(addsuffix -licensed,$(PLUGINS))
 NIGHTLY = $(addsuffix -nightly,$(PLUGINS))
+NEXT = $(addsuffix -next,$(PLUGINS))
 NIGHTLY-LICENSED = $(addsuffix -nightly-licensed,$(PLUGINS))
+NEXT-LICENSED = $(addsuffix -next-licensed,$(PLUGINS))
 ALL = $(PLUGINS)
 
 # all 
@@ -25,6 +27,10 @@ nightly-licensed: $(NIGHTLY-LICENSED)
 
 nightly: $(NIGHTLY)
 
+next: $(NEXT)
+
+next-licensed: $(NEXT-LICENSED) 
+
 $(PLUGINS):%:
 	cd $@ && make
 
@@ -34,15 +40,25 @@ $(PLUGINS-LICENSED):%-licensed:
 $(NIGHTLY):%-nightly:
 	cd $* && make nightly
 
+$(NEXT):%-next:
+	cd $* && make next 
+
 $(NIGHTLY-LICENSED):%-nightly-licensed:
 	echo "$(PLUGINS)"
 	cd $* && make nightly-licensed
+
+$(NEXT-LICENSED):%-next-licensed:
+	echo "$(PLUGINS)"
+	cd $* && make next-licensed
 
 generate-all-pom:
 	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom; cd ..; done
 
 generate-all-pom-nightly:
 	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom-nightly; cd ..; done
+
+generate-all-pom-next:
+	for i in $(SCALA_PLUGINS); do cd $$i; $(MAKE) generate-pom-next; cd ..; done
 
 doc-pages:
 	mkdir -p doc/pages

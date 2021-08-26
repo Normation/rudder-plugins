@@ -14,12 +14,7 @@ licensed:
     $(MAKE) halfclean && $(MAKE) $$bench ; \
 done
 
-nightly:
-	for bench in $(BUILDABLE) ; do \
-    $(MAKE) halfclean && $(MAKE) $$bench-nightly ; \
-done
-
-nightly-licensed:
+nightly next nightly-licensed next-licensed:
 	for bench in $(BUILDABLE) ; do \
     $(MAKE) halfclean && $(MAKE) $$bench-nightly ; \
 done

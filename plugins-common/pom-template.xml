@@ -6,7 +6,7 @@
   <!--
     This is the plugin-parent pom version. plugin will have a different one.
   -->
-  <version>${rudder-branch}-${parent-version}</version>
+  <version>${parent-version}</version>
 
   <parent>
     <groupId>com.normation.rudder</groupId>
@@ -165,7 +165,7 @@
     <dependency>
       <groupId>com.normation.plugins</groupId>
       <artifactId>plugins-common-private</artifactId>
-      <version>${rudder-branch}-${lib-common-private}</version>
+      <version>${private-version}</version>
     </dependency>
 
     <!-- from rudder-web: use:
@@ -289,7 +289,7 @@
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>
-      <version>${rudder-version}</version>
+      <version>${rudder-build-version}</version>
       <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
       <classifier>classes</classifier>
       <scope>provided</scope>
@@ -299,21 +299,21 @@
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-core</artifactId>
-      <version>${rudder-version}</version>
+      <version>${rudder-build-version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-rest</artifactId>
-      <version>${rudder-version}</version>
+      <version>${rudder-build-version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>
-      <version>${rudder-version}</version>
+      <version>${rudder-build-version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
