@@ -38,7 +38,7 @@
 package com.normation.plugins.datasources
 
 import com.normation.BoxSpecMatcher
-import com.normation.rudder.domain.properties.GenericProperty
+import com.normation.rudder.domain.nodes.GenericProperty
 import net.liftweb.common._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
@@ -78,7 +78,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
       val res = JsonSelect.fromPath("$.store.book[:1]", json).either.runNow
       val expectedVal = """
             {
-                "category": "reference",
+                "category": "@reference",
                 "author": "Nigel Rees",
                 "title": "Sayings of the Century",
                 "price": 8.95
@@ -86,33 +86,70 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
         """.forceParse
       res must beRight (expectedVal)
     }
+
+    "retrieve all" in {
+      val res = JsonSelect.fromPath("$", json).either.runNow
+      val expectedVal = json.forceParse
+      res must beRight (expectedVal)
+    }
+
+    "works on empty top level array" in {
+      val res = JsonSelect.fromPath("$", arrayEmpty).either.runNow
+      val expectedVal = "".forceParse
+      res must beRight (expectedVal)
+    }
+
+    "works top level array of size 1 (but directly get the object)" in {
+      val res = JsonSelect.fromPath("$", arrayOfObjects1).either.runNow
+      val expectedVal = """ {"id":"@one"} """.forceParse
+      res must beRight (expectedVal)
+    }
+    "works top level array of size 1 when access the first child" in {
+      val res = JsonSelect.fromPath("$.[0]", arrayOfObjects1).either.runNow
+      val expectedVal = """ {"id":"@one"} """.forceParse
+      res must beRight (expectedVal)
+    }
+
+    "works on top level array of size n" in {
+      val res = JsonSelect.fromPath("$", arrayOfObjects2).either.runNow
+      val expectedVal = arrayOfObjects2.forceParse
+      res must beRight (expectedVal)
+    }
+
+    "works top level array of size n when access the first child" in {
+      val res = JsonSelect.fromPath("$.[0]", arrayOfObjects2).either.runNow
+      val expectedVal = """ {"id":"@one"} """.forceParse
+      res must beRight (expectedVal)
+    }
   }
+
+  // we need to add @ since it caused bugs like https://issues.rudder.io/issues/19863
 
   "get childrens" should {
     "retrieve JSON childrens forming an array" in {
       JsonSelect.fromPath("$.store.book[*]", json).either.runNow must beRight(
           """[
              {
-                "category": "reference",
+                "category": "@reference",
                 "author": "Nigel Rees",
                 "title": "Sayings of the Century",
                 "price": 8.95
             },
             {
-                "category": "fiction",
+                "category": "@fiction",
                 "author": "Evelyn Waugh",
                 "title": "Sword of Honour",
                 "price": 12.99
             },
             {
-                "category": "\"quote\"horror\"",
+                "category": "@\"quote\"horror\"",
                 "author": "Herman Melville",
                 "title": "Moby Dick",
                 "isbn": "0-553-21311-3",
                 "price": 8.99
             },
             {
-                "category": "fiction",
+                "category": "@fiction",
                 "author": "J. R. R. Tolkien",
                 "title": "The Lord of the Rings",
                 "isbn": "0-395-19395-8",
@@ -123,7 +160,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
       JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight("""[8.95, 12.99, 8.99, 22.99]""".forceParse)
     }
     "retrieve STRING childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight("""["reference", "fiction", "\"quote\"horror\"", "fiction"]""".forceParse)
+      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight("""["@reference", "@fiction", "@\"quote\"horror\"", "@fiction"]""".forceParse)
     }
     "retrieve JSON childrens (one)" in {
       JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight("""{"color":"red","price":19.95}""".forceParse)
@@ -138,7 +175,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
       JsonSelect.fromPath("$.intTable", json).either.runNow must beRight("[1, 2, 3]".forceParse)
     }
     "retrieve ARRAY STRING childrens (one)" in {
-      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight("[one, two]".forceParse)
+      JsonSelect.fromPath("$.stringTable", json).either.runNow must beRight("""["@one", "@two"]""".forceParse)
     }
   }
 
@@ -193,32 +230,44 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
   } }
   """
 
+  lazy val arrayOfObjects1 =
+  """[
+     {"id":"@one"}
+  ]"""
+
+  lazy val arrayOfObjects2 =
+  """[
+     {"id":"@one"}
+   , {"id":"@two"}
+  ]"""
+
+  lazy val arrayEmpty = """[]"""
 
   lazy val json = """
   {
     "store": {
         "book": [
             {
-                "category": "reference",
+                "category": "@reference",
                 "author": "Nigel Rees",
                 "title": "Sayings of the Century",
                 "price": 8.95
             },
             {
-                "category": "fiction",
+                "category": "@fiction",
                 "author": "Evelyn Waugh",
                 "title": "Sword of Honour",
                 "price": 12.99
             },
             {
-                "category": "\"quote\"horror\"",
+                "category": "@\"quote\"horror\"",
                 "author": "Herman Melville",
                 "title": "Moby Dick",
                 "isbn": "0-553-21311-3",
                 "price": 8.99
             },
             {
-                "category": "fiction",
+                "category": "@fiction",
                 "author": "J. R. R. Tolkien",
                 "title": "The Lord of the Rings",
                 "isbn": "0-395-19395-8",
@@ -232,7 +281,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
     },
     "expensive": 10,
     "intTable": [1,2,3],
-    "stringTable": ["one", "two"]
+    "stringTable": ["@one", "@two"]
   }
   """
 

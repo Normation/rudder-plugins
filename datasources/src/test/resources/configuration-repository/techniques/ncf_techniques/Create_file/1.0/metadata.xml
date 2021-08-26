@@ -24,7 +24,7 @@
       <REPORT name="vim_installed"/>
       <PARAMETER name="package" value="vim"/>
     </PRE>
-    <POST bundle="runhook_servive" if="debian">
+    <POST bundle="runhook_service" if="debian">
       <REPORT name="some value status" value="restarted"/>
       <PARAMETER name="service" value="some value"/>
       <PARAMETER name="a post command">/something/that/is/complicated "with" 'all sort of quote'</PARAMETER>
@@ -45,7 +45,7 @@
         <REPORT name="vim_installed"/>
         <PARAMETER name="package" value="vim"/>
       </PRE>
-      <POST bundle="runhook_servive" if="debian">
+      <POST bundle="runhook_service" if="debian">
         <REPORT name="some value status" value="restarted"/>
         <PARAMETER name="service" value="some value"/>
         <PARAMETER name="a post command">/something/that/is/complicated "with" 'all sort of quote'</PARAMETER>

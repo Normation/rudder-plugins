@@ -417,7 +417,7 @@ trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
 }
 
 object DataSourceExtractor {
-  object OptionnalJson extends DataSourceExtractor[Option] {
+  object OptionalJson extends DataSourceExtractor[Option] {
     def monad = implicitly
     def emptyValue[T](id : String) = Full(None)
     def getOrElse[T](value : Option[T], default : T) = value.getOrElse(default)
