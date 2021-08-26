@@ -1,7 +1,7 @@
 # Make directive to build the two plugins-common and 
 # plugins-common-private library. 
 
-include ../makefiles/common-scala-plugin.mk
+include ../makefiles/global-vars.mk
 
 # define the lib name with that variable before include:
 #LIB_TYPE = COMMON or PRIVATE

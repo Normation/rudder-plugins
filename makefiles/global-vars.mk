@@ -25,3 +25,11 @@ LIB_PUBLIC_VERSION = ${COMMON_VERSION}
 # if you want to add maven command line parameter, add them with MVN_PARAMS
 MVN_CMD = mvn $(MVN_PARAMS) --batch-mode 
 
+build-pom:
+	cp pom-template.xml pom.xml
+	sed -i -e "s/\$${plugin-version}/${PLUGIN_POM_VERSION}/" pom.xml
+	sed -i -e "s/\$${parent-version}/${RUDDER_POM_VERSION}-${COMMON_VERSION}/" pom.xml
+	sed -i -e "s/\$${private-version}/${RUDDER_POM_VERSION}-${PRIVATE_VERSION}/" pom.xml
+	sed -i -e "s/\$${rudder-version}/$(RUDDER_POM_VERSION)/" pom.xml
+	sed -i -e "s/\$${rudder-build-version}/$(RUDDER_BUILD_VERSION)/" pom.xml
+
