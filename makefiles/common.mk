@@ -33,7 +33,7 @@ next: VERSION = ${RUDDER_VERSION_NEXT}-${PLUGIN_VERSION}-nightly
 next: PLUGIN_POM_VERSION = $(RUDDER_VERSION_NEXT)-${PLUGIN_VERSION}-SNAPSHOT
 next: RUDDER_BUILD_VERSION = $(RUDDER_VERSION_NEXT)-SNAPSHOT
 next: RUDDER_POM_VERSION = $(RUDDER_VERSION_NEXT)
-next: LIB = -next
+next: LIB_SUFFIX = -next
 next: std-files $(FULL_NAME)-$(VERSION).rpkg
 
 # build a "licensed" version of the plugin, limited by a license file and verified by a public key
