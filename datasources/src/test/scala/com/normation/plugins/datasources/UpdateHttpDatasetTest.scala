@@ -801,6 +801,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet.filter(n => n.value match {
         case "root"       => true
         case nodeRegEx(i) => i.toInt % 2 == 1
+        case _ => throw new IllegalArgumentException(s"Unrecognized name for test node: " + n.value)
       })
       //all node updated one time
       infos.updates.clear()

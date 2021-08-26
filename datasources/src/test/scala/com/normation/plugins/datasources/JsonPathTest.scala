@@ -38,7 +38,7 @@
 package com.normation.plugins.datasources
 
 import com.normation.BoxSpecMatcher
-import com.normation.rudder.domain.nodes.GenericProperty
+import com.normation.rudder.domain.properties.GenericProperty
 import net.liftweb.common._
 import org.junit.runner.RunWith
 import org.specs2.mutable._

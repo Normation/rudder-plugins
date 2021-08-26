@@ -79,6 +79,7 @@ import com.normation.box._
 import com.normation.rudder.domain.properties.GenericProperty._
 import net.liftweb.json.JsonAST.JArray
 import zio.duration.Duration
+import com.normation.zio._
 
 class DataSourceApiImpl (
     extractor         : RestExtractorService
@@ -129,7 +130,7 @@ class DataSourceApiImpl (
     val restExtractor = extractor
     def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       //reloadData OneNode All datasources
-      dataSourceRepo.onUserAskUpdateNode(authzToken.actor, NodeId(nodeId))
+      dataSourceRepo.onUserAskUpdateNode(authzToken.actor, NodeId(nodeId)).forkDaemon.runNow
       toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))(schema.name, params.prettify)
     }
   }
@@ -139,7 +140,7 @@ class DataSourceApiImpl (
     val restExtractor = extractor
     def process(version: ApiVersion, path: ApiPath, datasourceId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       //reloadData AllNodes One datasources
-      dataSourceRepo.onUserAskUpdateAllNodesFor(authzToken.actor, DataSourceId(datasourceId))
+      dataSourceRepo.onUserAskUpdateAllNodesFor(authzToken.actor, DataSourceId(datasourceId)).forkDaemon.runNow
       toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', are going to be updated"))(schema.name, params.prettify)
     }
   }
@@ -150,7 +151,7 @@ class DataSourceApiImpl (
     def process(version: ApiVersion, path: ApiPath, ids: (String,String), req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       val (datasourceId, nodeId) = ids
       // reload Data One Node One datasource
-      dataSourceRepo.onUserAskUpdateNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId))
+      dataSourceRepo.onUserAskUpdateNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId)).forkDaemon.runNow
       toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated"))(schema.name, params.prettify)
     }
   }
@@ -207,7 +208,7 @@ class DataSourceApiImpl (
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       // reloadData All Nodes All Datasources
-      dataSourceRepo.onUserAskUpdateAllNodes(authzToken.actor)
+      dataSourceRepo.onUserAskUpdateAllNodes(authzToken.actor).forkDaemon.runNow
       toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))(schema.name, params.prettify)
     }
   }
