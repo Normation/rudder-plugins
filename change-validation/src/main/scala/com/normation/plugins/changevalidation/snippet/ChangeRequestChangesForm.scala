@@ -488,9 +488,9 @@ class ChangeRequestChangesForm(
 
     ( "#directiveID" #> createDirectiveLink(directive.id.uid) &
       "#directiveName" #> directive.name &
-      "#techniqueVersion" #> directive.techniqueVersion.toString &
+      "#techniqueVersion" #> directive.techniqueVersion.serialize &
       "#techniqueName" #> techniqueName.value &
-      "#techniqueVersion" #> directive.techniqueVersion.toString &
+      "#techniqueVersion" #> directive.techniqueVersion.serialize &
       "#techniqueName" #> techniqueName.value &
       "#priority" #> directive.priority &
       "#isEnabled" #> directive.isEnabled &
@@ -518,7 +518,7 @@ class ChangeRequestChangesForm(
       "#techniqueName"    #> techniqueName.value &
       "#isSystem"         #> directive.isSystem &
       "#directiveName"    #> displaySimpleDiff(diff.modName, "name", Text(directive.name)) &
-      "#techniqueVersion" #> displaySimpleDiff(diff.modTechniqueVersion, "techniqueVersion", Text(directive.techniqueVersion.toString)) &
+      "#techniqueVersion" #> displaySimpleDiff(diff.modTechniqueVersion, "techniqueVersion", Text(directive.techniqueVersion.serialize)) &
       "#priority"         #> displaySimpleDiff(diff.modPriority, "priority", Text(directive.priority.toString)) &
       "#isEnabled"        #> displaySimpleDiff(diff.modIsActivated, "active", Text(directive.isEnabled.toString)) &
       "#shortDescription" #> displaySimpleDiff(diff.modShortDescription, "short", Text(directive.shortDescription)) &

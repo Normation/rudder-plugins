@@ -104,6 +104,8 @@ class WoValidatedUserJdbcRepository(
                 }
               case Right(x) if x > 1 => Failure(s"The creation of validated user ${newVU.name} have alter $x table lines")
               case Left(e)           => throw e
+              // for non-exhaustiveness God
+              case x => throw new IllegalArgumentException(s"This case should not happen, please report to developers")
             }
         }
       case eb: EmptyBox =>
@@ -133,6 +135,8 @@ class WoValidatedUserJdbcRepository(
               }
             case Right(x) if x > 1 => Failure(s"Deletion of validated user ${actor.name} have alter $x table lines")
             case Left(e)           => throw e
+            // for non-exhaustiveness God
+            case x => throw new IllegalArgumentException(s"This case should not happen, please report to developers")
           }
         case None => Full(actor)
       }
