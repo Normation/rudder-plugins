@@ -17,11 +17,11 @@ TARGET_LICENSE_PATH = /opt/rudder/etc/plugins/licenses/$(NAME).license
 TARGET_KEY_PATH = /opt/rudder/etc/plugins/licenses/license.key
 
 plugins-common:
-	cd ../plugins-common && make ${LIB_SUFFIX}
+	cd ../plugins-common && make
 	cd ../$(NAME)
 
 plugins-common-private:plugins-common
-	cd ../plugins-common-private && make ${LIB_SUFFIX}
+	cd ../plugins-common-private && make
 	cd ../$(NAME)
 
 build-files:   
@@ -29,13 +29,14 @@ build-files:
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
-std-files: plugins-common$(LIB_SUFFIX) build-pom build-files
+std-files: plugins-common generate-pom build-files
+	echo "${VERSION}"
 
 build-licensed-files:
 	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
-licensed-files: plugins-common-private${LIB_SUFFIX} build-pom build-licensed-files
+licensed-files: plugins-common-private generate-pom build-licensed-files
 
 .PHONY: std-files licensed-files 
