@@ -360,14 +360,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getNumberOfManagedNodes: Int = nodes.size - 1
     def getAllNodes()                         = throw new IllegalAccessException("Thou shall not used that method here")
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
-    def getDeletedNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
     def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
-    def getNodeInfoPure(nodeId: NodeId)                = throw new IllegalAccessException("Thou shall not used that method here")
-    def getPendingNodeInfo(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
+    def getNodeInfoPure(nodeId: NodeId)       = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
+    def getDeletedNodeInfoPure(nodeId: NodeId): IOResult[Option[NodeInfo]] =  throw new IllegalAccessException("Thou shall not used that method here")
+    def getPendingNodeInfoPure(nodeId: NodeId): IOResult[Option[NodeInfo]] =  throw new IllegalAccessException("Thou shall not used that method here")
 
     override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
 
