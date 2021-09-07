@@ -18,13 +18,13 @@ pipeline {
                         returnStdout: true
                     ).trim().split(' ')
                     stage('prepare') {
-                        sh script: 'make clean generate-all-pom-next', label: "generate pom.xml"
+                        sh script: 'make clean generate-all-pom', label: "generate pom.xml"
                         withMaven(maven: "latest",
                             globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
                             // don't archive jars
                             options: [artifactsPublisher(disabled: true)]
                         ) {
-                            sh script: 'cd plugins-common && make generate-pom-next && mvn clean install', label: "install plugin-commons"
+                            sh script: 'cd plugins-common && make generate-pom && mvn clean install', label: "install plugin-commons"
                         }
                     }
                     SCALA_PLUGINS.each {
