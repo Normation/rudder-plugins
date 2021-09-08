@@ -121,7 +121,6 @@ class ScaleOutRelayService(
                       }
     } yield {
       asyncDeploymentAgent ! AutomaticStartDeployment(modId, actor)
-      targetedNode
     }
 
   }
