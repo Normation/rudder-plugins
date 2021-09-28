@@ -19,7 +19,7 @@ import docopt
 def printItems(path):
     items = parsePDF(path)
     for i in items:
-        print(i["id"] + " " + i["name"])
+        print(i["id"] + " " + i.get("server", "0") + " " + i.get("workstation", "0") + " " + i["name"])
 
 def parsePDF(path):
     command  = ["/usr/bin/pdftotext",  path, "-"]

@@ -1,0 +1,21 @@
+#!/bin/bash
+set -x
+CONFIG_REPO=/var/rudder/configuration-repository
+CONFIGURATION_PATH="/var/rudder/packages/rudder-plugin-cis-redhat7"
+JETTY_CONF_FILE="/opt/rudder/etc/rudder-jetty-base/start.ini"
+TECHNIQUE_FILE=$CONFIGURATION_PATH/src/technique
+
+# Generate rudder language lib
+/opt/rudder/share/language/tools/generate_lib
+
+# Update the jetty input limit size since the technique is huge and default limit is too small
+grep -q "\-Dorg.eclipse.jetty.server.Request.maxFormKeys=200" $JETTY_CONF_FILE || echo "-Dorg.eclipse.jetty.server.Request.maxFormKeys=200" >> $JETTY_CONF_FILE
+grep -q "\-Dorg.eclipse.jetty.server.Request.maxFormContentSize=400000" $JETTY_CONF_FILE || echo "-Dorg.eclipse.jetty.server.Request.maxFormContentSize=400000" >> $JETTY_CONF_FILE
+
+systemctl restart rudder-jetty
+
+# Compile the technique and add it to rudder
+/opt/rudder/bin/rudderc technique read -i "${TECHNIQUE_FILE}.rd"
+
+# Import the technique
+curl --silent -k --header "X-API-Token: $(cat /var/rudder/run/api-token)" --header "Content-type: application/json" --request PUT https://localhost/rudder/api/latest/techniques --data "@${TECHNIQUE_FILE}.json" | jq '{"result": .result, "action": .action, "technique_name": .data.techniques.technique.bundle_name, "version": .data.techniques.technique.version}'

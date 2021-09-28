@@ -1,0 +1,12 @@
+{
+  "type": "plugin",
+  "name": "${plugin-id}",
+  "version": "${plugin-version}",
+  "build-date": "${maven.build.timestamp}",
+  "build-commit": "${commit-id}",
+  "depends": {},
+  "content": {
+    "ncf.txz": "/var/rudder/configuration-repository",
+    "src.txz": "/var/rudder/packages/${plugin-id}/"
+  }
+}
