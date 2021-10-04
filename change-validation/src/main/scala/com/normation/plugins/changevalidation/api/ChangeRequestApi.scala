@@ -44,6 +44,7 @@ import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceI
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
 import com.normation.plugins.changevalidation.WoWorkflowRepository
 import com.normation.rudder.AuthorizationType
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
@@ -52,12 +53,11 @@ import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
-import com.normation.rudder.rest.ApiVersion
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.GeneralApi
 import com.normation.rudder.rest.OneParam
-import com.normation.rudder.rest.RestDataSerializer
+import com.normation.rudder.apidata.RestDataSerializer
 import com.normation.rudder.rest.RestExtractorService
 import com.normation.rudder.rest.RestUtils._
 import com.normation.rudder.rest.RestUtils.toJsonError

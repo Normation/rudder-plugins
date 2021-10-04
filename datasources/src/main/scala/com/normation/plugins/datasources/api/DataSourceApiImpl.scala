@@ -50,6 +50,8 @@ import com.normation.plugins.datasources.HttpMethod
 import com.normation.plugins.datasources.HttpRequestMode
 import com.normation.plugins.datasources.MissingNodeBehavior
 import com.normation.rudder.rest._
+import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.apidata.RestDataSerializer
 import com.normation.rudder.rest.RestUtils._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
