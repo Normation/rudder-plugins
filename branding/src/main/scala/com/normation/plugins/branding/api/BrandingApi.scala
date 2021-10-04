@@ -42,6 +42,7 @@ import com.normation.eventlog.EventActor
 import com.normation.plugins.branding.BrandingConf
 import com.normation.plugins.branding.BrandingConfService
 import com.normation.rudder.rest._
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
