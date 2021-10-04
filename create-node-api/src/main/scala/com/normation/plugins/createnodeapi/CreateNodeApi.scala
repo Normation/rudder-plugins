@@ -55,6 +55,7 @@ import com.normation.plugins.createnodeapi.NodeTemplate.AcceptedNodeTemplate
 import com.normation.plugins.createnodeapi.NodeTemplate.PendingNodeTemplate
 import com.normation.plugins.createnodeapi.Serialize.ResultHolder
 import com.normation.plugins.createnodeapi.Validation.NodeValidationError
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.PUT
 import com.normation.rudder.domain.NodeDit
 import com.normation.rudder.domain.nodes.Node

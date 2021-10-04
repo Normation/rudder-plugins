@@ -41,12 +41,14 @@ import com.normation.eventlog.EventActor
 import com.normation.plugins.changevalidation.RoValidatedUserRepository
 import com.normation.plugins.changevalidation.WoValidatedUserRepository
 import com.normation.plugins.changevalidation.WorkflowUsers
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest.RestUtils.toJsonError
 import com.normation.rudder.rest.RestUtils.toJsonResponse
+import com.normation.rudder.apidata.RestDataSerializer
 import com.normation.rudder.rest._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
