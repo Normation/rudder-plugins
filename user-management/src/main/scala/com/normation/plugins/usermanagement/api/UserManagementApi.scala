@@ -43,6 +43,7 @@ import com.normation.rudder.api.HttpAction.{DELETE, GET, POST}
 import com.normation.rudder.repository.json.DataExtractor.CompleteJson
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest._
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.lift.{DefaultParams, LiftApiModule, LiftApiModule0, LiftApiModuleProvider}
 import com.normation.rudder.{Role, RoleToRights}
 import net.liftweb.common.{Box, Failure, Full}
