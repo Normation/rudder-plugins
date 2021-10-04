@@ -61,7 +61,7 @@ class ScaleOutRelayService(
 
   private[scaleoutrelay] def createRelayFromNode(nodeInfo: NodeInfo, modId: ModificationId, actor: EventActor, reason:Option[String]) = {
 
-    val objects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id, nodeInfo.hostname, nodeInfo.policyServerId)
+    val objects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
 
     val promote = for {
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create entry with relay status")
@@ -112,7 +112,7 @@ class ScaleOutRelayService(
       _            <- ScaleOutRelayLoggerPure.debug(s"Start demotion of relay '${nodeId.value}' to node")
       nodeInfo     <- nodeInfosService.getNodeInfo(nodeId).notOptional(s"Relay with UUID ${nodeId.value} is missing and can not be demoted to node")
       targetedNode <- if (nodeInfo.isPolicyServer) {
-                        val configObjects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id, nodeInfo.hostname, nodeInfo.policyServerId)
+                        val configObjects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
                         demoteRelay(nodeInfo, configObjects, modId, actor).unit *>
                         actionLogger.saveDemoteToNode(modId, actor, nodeInfo, reason)
                       } else {

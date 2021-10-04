@@ -10,6 +10,7 @@ import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest.RestUtils.toJsonError
 import com.normation.rudder.rest.RestUtils.toJsonResponse
 import com.normation.rudder.rest._
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
