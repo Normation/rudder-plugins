@@ -40,7 +40,7 @@ package com.normation.plugins.apiauthorizations
 import com.normation.rudder.api._
 import com.normation.rudder.rest._
 import com.normation.rudder.rest.lift._
-import com.normation.rudder.rest.ApiAccountSerialisation._
+import com.normation.rudder.apidata.ApiAccountSerialisation._
 
 import com.normation.eventlog.ModificationId
 import com.normation.utils.StringUuidGenerator
