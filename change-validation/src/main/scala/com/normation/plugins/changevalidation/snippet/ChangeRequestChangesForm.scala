@@ -506,7 +506,7 @@ class ChangeRequestChangesForm(
         diff          : ModifyDirectiveDiff
       , directive     : Directive
       , techniqueName : TechniqueName
-      , rootSection   : SectionSpec
+      , rootSection   : Option[SectionSpec]
   ) = {
 
     val policyMode = directive.policyMode match {
@@ -530,7 +530,7 @@ class ChangeRequestChangesForm(
 
       "#parameters"       #> {
         implicit val fun = (section:SectionVal) => xmlPretty.format(SectionVal.toXml(section))
-        val parameters = <pre>{fun(SectionVal.directiveValToSectionVal(rootSection,directive.parameters))}</pre>
+        val parameters = <pre>{rootSection.map { section => fun(SectionVal.directiveValToSectionVal(section,directive.parameters))}.getOrElse(NodeSeq.Empty)  }</pre>
         diff.modParameters.map(displayFormDiff(_,"parameters")).getOrElse(parameters)
       }
     ) (DirectiveXML)
