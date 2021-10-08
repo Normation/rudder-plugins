@@ -30,9 +30,9 @@ Whatever the final status, a node is created in pending status. Then, if the sta
 
 == Request format
 
-The plugin provides a new API endpoint: PUT `/api/latest/createnode`
+The plugin provides a new API endpoint: PUT `/api/latest/createnodes`
 
-So for example, for curl: curl -k -H "X-API-Token: 5YJnb4EenqDHzwx0U0eTPWWhgjTJ8mkk" -H "Content-Type: application/json" -X PUT 'https://your-server/rudder/api/latest/createnode' -d@/path/to/node.json
+So for example, for curl: curl -k -H "X-API-Token: 5YJnb4EenqDHzwx0U0eTPWWhgjTJ8mkk" -H "Content-Type: application/json" -X PUT 'https://your-server/rudder/api/latest/createnodes' -d@/path/to/node.json
 
 With "node.json" expected to be a JSON file with the following format:
 
