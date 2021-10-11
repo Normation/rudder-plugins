@@ -73,7 +73,6 @@ import com.normation.rudder.AuthorizationType.Deployer
 import com.normation.rudder.AuthorizationType.Validator
 import com.normation.rudder.api.ApiAclElement
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.AuthorizationApiMapping
@@ -92,6 +91,7 @@ import com.normation.box._
 import com.normation.plugins.changevalidation.EmailNotificationService
 import com.normation.plugins.changevalidation.NotificationService
 import com.normation.rudder.domain.policies.DirectiveUid
+import com.normation.rudder.domain.policies.RuleUid
 
 /*
  * The validation workflow level
@@ -172,7 +172,7 @@ class ChangeValidationWorkflowLevelService(
     }
   }
 
-  override def getByRule(id: RuleId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
     if(workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByRule(id, onlyPending)
     } else {

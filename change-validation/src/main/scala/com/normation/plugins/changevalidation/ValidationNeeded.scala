@@ -124,7 +124,7 @@ class NodeGroupValidationNeeded(
       val targets = Set(change.newRule) ++ change.previousRule.toSet
       checkNodeTargetByRule(groups, nodeInfo, monitored, targets)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check rule '${change.newRule.name}' [${change.newRule.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 
@@ -140,7 +140,7 @@ class NodeGroupValidationNeeded(
     if(exists && ChangeValidationLogger.isDebugEnabled) {
       rules.foreach { rule =>
         groups.getNodeIds(rule.targets, allNodeInfo).find(nodeId => monitoredNodes.contains(nodeId)).foreach { node =>
-           ChangeValidationLogger.debug(s"Node '${node.value}' belongs to both a supervised group and is a target of rule '${rule.name}' [${rule.id.value}]")
+           ChangeValidationLogger.debug(s"Node '${node.value}' belongs to both a supervised group and is a target of rule '${rule.name}' [${rule.id.serialize}]")
         }
       }
     }

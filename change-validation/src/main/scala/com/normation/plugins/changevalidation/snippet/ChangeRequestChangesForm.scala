@@ -137,7 +137,7 @@ class ChangeRequestChangesForm(
 
  class ChangesTreeNode(changeRequest:ConfigurationChangeRequest, rootRuleCategory: RuleCategory) extends JsTreeNode{
 
-  def directiveChild(directiveUid:DirectiveUid) = new JsTreeNode{
+  def directiveChild(directiveUid:DirectiveId) = new JsTreeNode{
     def changes = changeRequest.directives(directiveUid).changes
     def directiveName = changes.initialState.map(_._2.name).getOrElse(changes.firstChange.diff.directive.name)
 
@@ -488,9 +488,9 @@ class ChangeRequestChangesForm(
 
     ( "#directiveID" #> createDirectiveLink(directive.id.uid) &
       "#directiveName" #> directive.name &
-      "#techniqueVersion" #> directive.techniqueVersion.toString &
+      "#techniqueVersion" #> directive.techniqueVersion.serialize &
       "#techniqueName" #> techniqueName.value &
-      "#techniqueVersion" #> directive.techniqueVersion.toString &
+      "#techniqueVersion" #> directive.techniqueVersion.serialize &
       "#techniqueName" #> techniqueName.value &
       "#priority" #> directive.priority &
       "#isEnabled" #> directive.isEnabled &
@@ -518,7 +518,7 @@ class ChangeRequestChangesForm(
       "#techniqueName"    #> techniqueName.value &
       "#isSystem"         #> directive.isSystem &
       "#directiveName"    #> displaySimpleDiff(diff.modName, "name", Text(directive.name)) &
-      "#techniqueVersion" #> displaySimpleDiff(diff.modTechniqueVersion, "techniqueVersion", Text(directive.techniqueVersion.toString)) &
+      "#techniqueVersion" #> displaySimpleDiff(diff.modTechniqueVersion, "techniqueVersion", Text(directive.techniqueVersion.serialize)) &
       "#priority"         #> displaySimpleDiff(diff.modPriority, "priority", Text(directive.priority.toString)) &
       "#isEnabled"        #> displaySimpleDiff(diff.modIsActivated, "active", Text(directive.isEnabled.toString)) &
       "#shortDescription" #> displaySimpleDiff(diff.modShortDescription, "short", Text(directive.shortDescription)) &
@@ -601,7 +601,7 @@ class ChangeRequestChangesForm(
                       val diff = diffService.diffRule(initialRule, rule)
                       displayRuleDiff(diff, rule, groupLib, rootRuleCategory)
                     case None =>
-                      val msg = s"Could not display diff for ${rule.name} (${rule.id.value})"
+                      val msg = s"Could not display diff for ${rule.name} (${rule.id.serialize})"
                       logger.error(msg)
                       <div>{msg}</div>
                   }
@@ -613,7 +613,7 @@ class ChangeRequestChangesForm(
                 case Full(xml) =>
                   xml
                 case eb:EmptyBox =>
-                  val fail = eb ?~! s"Could not display diff for ${rule.name} (${rule.id.value})"
+                  val fail = eb ?~! s"Could not display diff for ${rule.name} (${rule.id.serialize})"
                   logger.error(fail.messageChain)
                   <div>{fail.messageChain}</div>
             }

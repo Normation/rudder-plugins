@@ -41,6 +41,7 @@ import com.normation.eventlog.EventActor
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleId
+import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import net.liftweb.common.Box
@@ -59,7 +60,7 @@ trait RoChangeRequestRepository {
 
   def getByNodeGroup(id : NodeGroupId, onlyPending:Boolean) : Box[Vector[ChangeRequest]]
 
-  def getByRule(id : RuleId, onlyPending:Boolean) : Box[Vector[ChangeRequest]]
+  def getByRule(id : RuleUid, onlyPending:Boolean) : Box[Vector[ChangeRequest]]
 
   def getByContributor(actor:EventActor) : Box[Vector[ChangeRequest]]
 }
@@ -82,7 +83,7 @@ class EitherRoChangeRequestRepository(cond: () => Box[Boolean], whenTrue: RoChan
 
   def getByNodeGroup(id : NodeGroupId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = condApply( _.getByNodeGroup(id, onlyPending) )
 
-  def getByRule(id : RuleId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = condApply( _.getByRule(id, onlyPending) )
+  def getByRule(id : RuleUid, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = condApply( _.getByRule(id, onlyPending) )
 
   def getByContributor(actor:EventActor) : Box[Vector[ChangeRequest]] = condApply( _.getByContributor(actor) )
 }

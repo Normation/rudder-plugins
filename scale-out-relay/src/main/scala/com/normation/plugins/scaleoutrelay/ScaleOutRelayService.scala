@@ -154,7 +154,7 @@ class ScaleOutRelayService(
     )
     val rules = objects.rules.map(r =>
       woRuleRepository.deleteSystemRule(r.id, modId, actor, reason).catchAll {
-        err => ScaleOutRelayLoggerPure.info(s"Trying to remove residual object Rule ${r.id.value} : ${err.fullMsg}")
+        err => ScaleOutRelayLoggerPure.info(s"Trying to remove residual object Rule ${r.id.serialize} : ${err.fullMsg}")
       }.unit
     )
 
