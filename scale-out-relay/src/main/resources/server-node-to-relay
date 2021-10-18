@@ -69,12 +69,12 @@ if [ "${result_api}" = "error" ]; then
 	echo "Reason: ${error_details}"
 	exit 1
 elif [ ${parse_response} = 4 ];then
-	echo "ERROR: Unknow response format, parsing failed. Code ${parse_response}" 1>&2
+	echo "ERROR: Unknown response format, parsing failed. Code ${parse_response}" 1>&2
 else
 	echo "Done."
 
 	echo -n "INFO: Triggering promises generation..."
-	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" -k "https://localhost/rudder/api/latest/system/reload/techniques"
+	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST -k "https://localhost/rudder/api/latest/system/reload/techniques"
 	echo " Done."
 
 	echo "Success: all steps completed successfully."
