@@ -38,12 +38,12 @@
 package com.normation.plugins.changevalidation.api
 
 import com.normation.plugins.changevalidation._
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.repository.RoNodeGroupRepository
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
-import com.normation.rudder.rest.ApiVersion
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.EndpointSchema.syntax._

@@ -43,7 +43,7 @@ import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie._
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
-import com.normation.rudder.domain.policies.RuleId
+import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ChangeRequestInfo
@@ -119,7 +119,7 @@ class RoChangeRequestJdbcRepository(
     )
   }
 
-  override def getByRule(id : RuleId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = {
+  override def getByRule(id : RuleUid, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = {
     getChangeRequestsByXpathContent(
         "/changeRequest/rules/rule/@id"
       , id.value

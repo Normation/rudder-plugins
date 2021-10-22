@@ -137,7 +137,7 @@ class ChangeRequestChangesForm(
 
  class ChangesTreeNode(changeRequest:ConfigurationChangeRequest, rootRuleCategory: RuleCategory) extends JsTreeNode{
 
-  def directiveChild(directiveUid:DirectiveUid) = new JsTreeNode{
+  def directiveChild(directiveUid:DirectiveId) = new JsTreeNode{
     def changes = changeRequest.directives(directiveUid).changes
     def directiveName = changes.initialState.map(_._2.name).getOrElse(changes.firstChange.diff.directive.name)
 
@@ -601,7 +601,7 @@ class ChangeRequestChangesForm(
                       val diff = diffService.diffRule(initialRule, rule)
                       displayRuleDiff(diff, rule, groupLib, rootRuleCategory)
                     case None =>
-                      val msg = s"Could not display diff for ${rule.name} (${rule.id.value})"
+                      val msg = s"Could not display diff for ${rule.name} (${rule.id.serialize})"
                       logger.error(msg)
                       <div>{msg}</div>
                   }
@@ -613,7 +613,7 @@ class ChangeRequestChangesForm(
                 case Full(xml) =>
                   xml
                 case eb:EmptyBox =>
-                  val fail = eb ?~! s"Could not display diff for ${rule.name} (${rule.id.value})"
+                  val fail = eb ?~! s"Could not display diff for ${rule.name} (${rule.id.serialize})"
                   logger.error(fail.messageChain)
                   <div>{fail.messageChain}</div>
             }
