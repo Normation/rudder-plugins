@@ -1,11 +1,9 @@
 {
-  "type": "ncf_technique",
-  "version": 1,
-  "data": {
     "bundle_name": "plugin_openscap_policies",
     "description": "## Summary\n\nThis technique triggers an OpenSCAP audit every day, between 2:00 and 8:00 by default, and sends the report to the Rudder Server to be displayed on the Node Details.\n\n## Usage\n\nThis Technique takes 2 parameters:\n\n* *profile*: name of the profile to check (e.g. RHEL6-Default)\n* *scap_file*: XCCDF Checklist file (e.g XCCDF Checklist)\n\nWhen a Directive based on this Technique is applied on a Node, a new tab _OpenSCAP_ is available for this node, displaying a sanitized (no JS, no CSS) version of the reports, plus a link to download the raw version.\n\n## Resource\n\nAn introduction to OpenSCAP is available [here](https://www.open-scap.org/getting-started/) that explains the concepts of profile, and checklist file",
     "name": "plugin_openscap_policies",
     "version": "1.0",
+    "category" :"OpenSCAP_Policies_plugin",
     "parameter": [
       {
         "id": "0bad6c1e-59c9-44ca-a935-210af4188643",
@@ -125,5 +123,4 @@
         "component": "send report to server"
       }
     ]
-  }
 }
