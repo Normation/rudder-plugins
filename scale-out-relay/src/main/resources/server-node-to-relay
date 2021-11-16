@@ -10,10 +10,13 @@
 # @man +
 # @man *UUID*: node ID to promote
 
+. "${BASEDIR}/../lib/common.sh"
+
 RUDDER_OPT=/opt/rudder
 RUDDER_VAR=/var/rudder
 RUDDER_JSON="${RUDDER_VAR}/cfengine-community/inputs/rudder.json"
 SYSTEM_TOKEN=$(cat /var/rudder/run/api-token)
+PORT=$(get_https_port)
 
 rudder_json_value() {
 	jq -r ".$1" ${RUDDER_JSON}
@@ -51,8 +54,8 @@ fi
 echo "Rudder relay installation script starting, using UUID ${RELAY_UUID}."
 
 # Scale-out-relay API call (must have the plugin installed)
-API_URL="https://127.0.0.1/rudder/api/latest/scaleoutrelay/promote/${RELAY_UUID}"
-response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST "${API_URL}")
+API_URL="https://127.0.0.1${PORT}/rudder/api/latest"
+response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST "${API_URL}/scaleoutrelay/promote/${RELAY_UUID}")
 code=$?
 
 if [ ${code} -ne 0 ]; then
@@ -69,12 +72,12 @@ if [ "${result_api}" = "error" ]; then
 	echo "Reason: ${error_details}"
 	exit 1
 elif [ ${parse_response} = 4 ];then
-	echo "ERROR: Unknow response format, parsing failed. Code ${parse_response}" 1>&2
+	echo "ERROR: Unknown response format, parsing failed. Code ${parse_response}" 1>&2
 else
 	echo "Done."
 
 	echo -n "INFO: Triggering promises generation..."
-	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" -k "https://localhost/rudder/api/latest/system/reload/techniques"
+	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST -k "${API_URL}/system/reload/techniques"
 	echo " Done."
 
 	echo "Success: all steps completed successfully."

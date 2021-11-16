@@ -40,7 +40,6 @@ package com.normation.plugins.changevalidation
 import com.normation.eventlog.EventActor
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
-import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
