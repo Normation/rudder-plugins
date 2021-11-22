@@ -29,7 +29,7 @@ else
   CERTIFICATE_OPTION="--insecure"
 fi
 
-DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --location --proxy '' --globoff"
+DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --globoff"
 
 usage() {
 	echo "Usage: $0 <UUID of the node to make a relay server>"
@@ -52,7 +52,7 @@ echo "Rudder relay installation script starting, using UUID ${RELAY_UUID}."
 # Scale-out-relay API call (must have the plugin installed)
 API_URL="https://127.0.0.1/rudder/api/latest/scaleoutrelay/promote/${RELAY_UUID}"
 TOKEN_SYSTEM=$(cat /var/rudder/run/api-token)
-response=$(${DOWNLOAD_COMMAND} --header "X-API-Token: ${TOKEN_SYSTEM}" --request POST "${API_URL}")
+response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${TOKEN_SYSTEM}" --request POST "${API_URL}")
 code=$?
 
 if [ ${code} -ne 0 ]; then
