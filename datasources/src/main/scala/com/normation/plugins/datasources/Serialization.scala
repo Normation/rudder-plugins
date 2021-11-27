@@ -39,9 +39,9 @@ package com.normation.plugins.datasources
 
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.plugins.datasources.HttpRequestMode._
-import com.normation.rudder.repository.json.JsonExctractorUtils
-import java.util.concurrent.TimeUnit
+import com.normation.rudder.repository.json.JsonExtractorUtils
 
+import java.util.concurrent.TimeUnit
 import net.liftweb.common.Full
 import net.liftweb.common.Failure
 import net.liftweb.common.Box
@@ -124,7 +124,7 @@ object DataSourceJsonSerializer{
   }
 }
 
-trait DataSourceExtractor[M[_]] extends JsonExctractorUtils[M] {
+trait DataSourceExtractor[M[_]] extends JsonExtractorUtils[M] {
 
   case class DataSourceRunParamWrapper(
       schedule     : M[DataSourceSchedule]
