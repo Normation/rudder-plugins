@@ -18,12 +18,19 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   @component = "Gather packages presence"
   @reporting_logic = "sum"
   {
+    @disable_reporting = true
     package("gdm").present() as gdm_present
+    @disable_reporting = true
     package("ntp").present() as ntp_present
+    @disable_reporting = true
     package("sshd").present() as sshd_present
+    @disable_reporting = true
     package("xinetd").present() as xinetd_present
+    @disable_reporting = true
     package("chrony").present() as chrony_present
+    @disable_reporting = true
     package("rsyslog").present() as rsyslog_present
+    @disable_reporting = true
     package("syslog-ng").present() as syslog_ng_present
   }
 
