@@ -54,7 +54,8 @@ object BrandingConfService {
   def initialValue =
     BrandingConf(
         true
-      , JsonColor(204,0,0,1)
+      // #da291c, from 7.0 color palette
+      , JsonColor(218,41,28,1)
       , true
       , "Production"
       , JsonColor(255,255,255,1)
