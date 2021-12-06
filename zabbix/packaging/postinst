@@ -1,13 +1,20 @@
 #!/bin/bash
-
+  
 CONFFILE="/opt/rudder/etc/zabbix.conf"
+CRONFILE="/etc/cron.d/zabbix-rudder"
 
 mkdir -p /var/rudder/plugin-resources
-echo "0 * * * * /opt/rudder/bin/zabbix-plugin.py update " > /etc/cron.d/zabbix-rudder
+
+# create cron file
+if [ ! -f "${CRONFILE}"]; then
+  cat > "${CRONFILE}" <<EOF
+0 * * * * root /opt/rudder/bin/zabbix-plugin.py update 
+*/2 * * * * root /opt/rudder/bin/zabbix-plugin apply-configuration >/dev/null
+EOF
+fi
 
 # create configuration file
-if [ ! -f "${CONFFILE}" ]
-then
+if [ ! -f "${CONFFILE}" ]; then
   cat > "${CONFFILE}" <<EOF
 [ZABBIX]
 username = YOUR_ZABBIX_USERNAME
@@ -19,4 +26,3 @@ rudderAPIURL = https://localhost/rudder/api/latest
 rudderAPIToken = YOUR_RUDDER_API_TOKEN
 EOF
 fi
-
