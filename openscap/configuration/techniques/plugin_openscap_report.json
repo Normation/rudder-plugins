@@ -1,126 +1,231 @@
 {
-    "bundle_name": "plugin_openscap_policies",
+    "id": "plugin_openscap_policies",
     "description": "## Summary\n\nThis technique triggers an OpenSCAP audit every day, between 2:00 and 8:00 by default, and sends the report to the Rudder Server to be displayed on the Node Details.\n\n## Usage\n\nThis Technique takes 2 parameters:\n\n* *profile*: name of the profile to check (e.g. RHEL6-Default)\n* *scap_file*: XCCDF Checklist file (e.g XCCDF Checklist)\n\nWhen a Directive based on this Technique is applied on a Node, a new tab _OpenSCAP_ is available for this node, displaying a sanitized (no JS, no CSS) version of the reports, plus a link to download the raw version.\n\n## Resource\n\nAn introduction to OpenSCAP is available [here](https://www.open-scap.org/getting-started/) that explains the concepts of profile, and checklist file",
     "name": "plugin_openscap_policies",
     "version": "1.0",
     "category" :"OpenSCAP_Policies_plugin",
     "parameter": [
       {
-        "id": "0bad6c1e-59c9-44ca-a935-210af4188643",
+
         "name": "profile",
         "description": "name of the profile to check (e.g. RHEL7-Default)"
       },
       {
-        "id": "182dffe7-4310-4e01-bdd0-3f7db8272e2f",
         "name": "scap_file",
         "description": "XCCDF Checklist file (e.g. /path/to//U_RHEL_7_V2R7_STIG_SCAP_1-2_Benchmark.xml)"
       }
     ],
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "openscap",
-          "${system_common.agent_run_interval}",
-          "0",
-          "6",
-          "0",
-          "2",
-          "0",
-          "0",
-          "0",
-          "1",
-          "nodups"
+        "reportingLogic": {
+          "type": "focus",
+          "value": "604c3811-c39c-490e-b6c3-f5fbd164f945"
+        },
+        "condition": "",
+        "component": "OpenSCAP packages",
+        "calls": [
+          {
+            "component": "Variable iterator",
+            "id": "5743089d-7094-4fe2-ab5a-efad2a5a6119",
+            "method": "variable_iterator",
+            "condition": "debian10|debian11|ubuntu18|ubuntu20",
+            "parameters": [
+              {
+                "name": "prefix",
+                "value": "openscap"
+              },
+              {
+                "name": "name",
+                "value": "packages"
+              },
+              {
+                "name": "value",
+                "value": "ssg-base,ssg-debderived,ssg-debian,ssg-nondebian,ssg-applications"
+              },
+              {
+                "name": "separator",
+                "value": ","
+              }
+            ],
+            "disableReporting": false
+          },
+          {
+            "component": "Variable iterator",
+            "id": "9cc1d353-555a-410d-ba65-ea293d68d115",
+            "method": "variable_iterator",
+            "condition": "redhat",
+            "parameters": [
+              {
+                "name": "prefix",
+                "value": "openscap"
+              },
+              {
+                "name": "name",
+                "value": "packages"
+              },
+              {
+                "name": "value",
+                "value": "scap-security-guide,openscap-scanner"
+              },
+              {
+                "name": "separator",
+                "value": ","
+              }
+            ],
+            "disableReporting": false
+          },
+          {
+            "component": "Variable iterator",
+            "id": "818d0fbb-12c1-4d0b-87e4-705f2d32e744",
+            "method": "variable_iterator",
+            "condition": "SuSE.!sles_10",
+            "parameters": [
+              {
+                "name": "prefix",
+                "value": "openscap"
+              },
+              {
+                "name": "name",
+                "value": "packages"
+              },
+              {
+                "name": "value",
+                "value": "openscap"
+              },
+              {
+                "name": "separator",
+                "value": ","
+              }
+            ],
+            "disableReporting": false
+          },
+          {
+            "component": "Package present",
+            "id": "604c3811-c39c-490e-b6c3-f5fbd164f945",
+            "method": "package_present",
+            "condition": "",
+            "parameters": [
+              {
+                "name": "name",
+                "value": "${openscap.packages}"
+              },
+              {
+                "name": "version",
+                "value": ""
+              },
+              {
+                "name": "architecture",
+                "value": ""
+              },
+              {
+                "name": "provider",
+                "value": ""
+              }
+            ],
+            "disableReporting": false
+          }
         ],
-        "class_context": "any",
-        "method_name": "schedule_simple",
-        "component": "Schedule Simple"
+        "id": "c3d5296f-bb7b-4f05-8068-e5a128626ba1"
       },
       {
-        "args": [
-          "openscap",
-          "packages",
-          "ssg-base,ssg-debderived,ssg-debian,ssg-nondebian,ssg-applications",
-          ","
+        "component": "Schedule OpenSCAP report between 02:00 and 08:00",
+        "id": "cf4d41dd-fbe0-444b-a4b2-6b126564fb55",
+        "method": "schedule_simple",
+        "condition": "",
+        "parameters": [
+          {
+            "name": "job_id",
+            "value": "openscap"
+          },
+          {
+            "name": "agent_periodicity",
+            "value": "${system_common.agent_run_interval}"
+          },
+          {
+            "name": "max_execution_delay_minutes",
+            "value": "0"
+          },
+          {
+            "name": "max_execution_delay_hours",
+            "value": "6"
+          },
+          {
+            "name": "start_on_minutes",
+            "value": "0"
+          },
+          {
+            "name": "start_on_hours",
+            "value": "2"
+          },
+          {
+            "name": "start_on_day_of_week",
+            "value": "0"
+          },
+          {
+            "name": "periodicity_minutes",
+            "value": "0"
+          },
+          {
+            "name": "periodicity_hours",
+            "value": "0"
+          },
+          {
+            "name": "periodicity_days",
+            "value": "1"
+          },
+          {
+            "name": "mode",
+            "value": "nodups"
+          }
         ],
-        "class_context": "debian_10",
-        "method_name": "variable_iterator",
-        "component": "OpenSCAP packages"
+        "disableReporting": false
       },
       {
-        "args": [
-          "openscap",
-          "packages",
-          "libopenscap8",
-          ","
+        "component": "Run OpenSCAP scan",
+        "id": "0511fa14-657b-4498-99ec-9fa77c326870",
+        "method": "command_execution_result",
+        "condition": "schedule_simple_openscap_repaired",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "oscap xccdf eval --profile ${profile} --report /var/rudder/tmp/openscap_report.html ${scap_file}"
+          },
+          {
+            "name": "kept_codes",
+            "value": "0,2"
+          },
+          {
+            "name": "repaired_codes",
+            "value": "254"
+          }
         ],
-        "class_context": "debian_9",
-        "method_name": "variable_iterator",
-        "component": "OpenSCAP packages"
+        "disableReporting": false
       },
       {
-        "args": [
-          "openscap",
-          "packages",
-          "ssg-base,ssg-debderived,ssg-debian,ssg-nondebian,ssg-applications",
-          ","
+        "component": "Send OpenSCAP report to server",
+        "id": "aad7adcb-eeeb-443b-bdbc-72165c046770",
+        "method": "sharedfile_to_node",
+        "condition": "schedule_simple_openscap_repaired",
+        "parameters": [
+          {
+            "name": "remote_node",
+            "value": "root"
+          },
+          {
+            "name": "file_id",
+            "value": "openscap_report.html"
+          },
+          {
+            "name": "file_path",
+            "value": "/var/rudder/tmp/openscap_report.html"
+          },
+          {
+            "name": "ttl",
+            "value": "1d"
+          }
         ],
-        "class_context": "ubuntu_18",
-        "method_name": "variable_iterator",
-        "component": "OpenSCAP packages"
-      },
-      {
-        "args": [
-          "openscap",
-          "packages",
-          "scap-security-guide,openscap-scanner",
-          ","
-        ],
-        "class_context": "redhat",
-        "method_name": "variable_iterator",
-        "component": "OpenSCAP packages"
-      },
-      {
-        "args": [
-          "openscap",
-          "packages",
-          "openscap",
-          ","
-        ],
-        "class_context": "SUSE.(!sles_10)",
-        "method_name": "variable_iterator",
-        "component": "OpenSCAP packages"
-      },
-      {
-        "args": [
-          "${openscap.packages}",
-          "",
-          "",
-          ""
-        ],
-        "class_context": "any",
-        "method_name": "package_present",
-        "component": "Package present"
-      },
-      {
-        "args": [
-          "oscap xccdf eval --profile ${profile} --report /var/rudder/tmp/openscap_report.html ${scap_file}",
-          "0,2",
-          "254"
-        ],
-        "class_context": "any.(schedule_simple_openscap_repaired)",
-        "method_name": "command_execution_result",
-        "component": "run scan Openscap"
-      },
-      {
-        "args": [
-          "root",
-          "openscap_report.html",
-          "/var/rudder/tmp/openscap_report.html",
-          "1d"
-        ],
-        "class_context": "any.(schedule_simple_openscap_repaired)",
-        "method_name": "sharedfile_to_node",
-        "component": "send report to server"
+        "disableReporting": false
       }
-    ]
+    ],
+    "resources": []
 }
