@@ -1,9 +1,8 @@
 port module Branding exposing (applyCss, defaultSettings, initSettings, main, onKeyDown, subscriptions, update)
 
 import ApiCall
-import Color
+import Color exposing (rgb255)
 import DataTypes exposing (..)
-import Color
 import Html exposing (..)
 import Html.Events exposing (keyCode, on)
 import Json.Decode as Decode
@@ -26,7 +25,8 @@ port applyCss : ( CssObj ) -> Cmd msg
 defaultSettings : Settings
 defaultSettings =
   let
-    bgColor  = Color.red
+    --- #da291c, from 7.0 color palette
+    bgColor  = rgb255 218 41 28
     txtColor = Color.white
   in
     Settings True True "Production" bgColor txtColor (Logo True Nothing Nothing) (Logo True Nothing Nothing) True True "Welcome, please sign in:"
