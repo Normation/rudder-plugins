@@ -16,8 +16,10 @@ centreonWebserviceURL = http://YOUR_CENTREON_SERVER/centreon
 # default poller
 centreonPoller = CENTREON_POLLER
 # Add this template automatically to all hosts added via Rudder
-# For a more fine grained choice, pleas use https://docs.rudder.io/reference/current/reference/generic_methods.html#monitoring_template
+# For a more fine grained choice, please use https://docs.rudder.io/reference/current/reference/generic_methods.html#monitoring_template
 defaultTemplate = generic-active-host-custom
+#Enforce the validity of the Centreon HTTPS certificate. Default to true
+verify=True
 
 [RUDDER]
 # Fill this if the plugin is not installed on the Rudder server
@@ -28,7 +30,7 @@ defaultTemplate = generic-active-host-custom
 #ipBlacklist = 10.0.0.0/8 192.168.0.0/16
 
 [POLLERS]
-# a relay can be given a poller, every node behind theis relay is assigned to this poller
+# a relay can be given a poller, every node behind this relay is assigned to this poller
 #relay1 = poller1
 
 # alternatively, call this script to determine which poller to associate

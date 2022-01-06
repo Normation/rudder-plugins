@@ -81,7 +81,7 @@ If you want to monitor your rudder-nodes
 
 In your rudder interface, you can choose among different available rudder directives
 or create your own technique editor which is a description in code form of what the agent
-has to do on the node and it will be deployed on a rudder-nodes throufh rules.
+has to do on the node and it will be deployed on a rudder-nodes through rules.
 
 Note: Rule is the application of one or more directives to a group of nodes.
 It is the glue between both Asset Management and Configuration Management parts of
