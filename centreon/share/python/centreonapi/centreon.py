@@ -8,11 +8,12 @@ from centreonapi.webservice.configuration.templates import Templates
 
 class Centreon(object):
 
-    def __init__(self, url=None, username=None, password=None):
+    def __init__(self, url=None, username=None, password=None, verify=True):
         Webservice.getInstance(
             url,
             username,
-            password
+            password,
+            verify
         )
 
         self.host = Host()
