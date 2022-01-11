@@ -13,10 +13,9 @@ resource technique_CIS_rhel7_setup_filesystem()
 
 technique_CIS_rhel7_setup_filesystem state technique() {
   let dollar_char = "$$"
-  let space_char = " "
 
   @component = "Gather packages presence"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @disable_reporting = true
     package("gdm").present() as gdm_present
@@ -35,16 +34,16 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   }
 
   @component = "Initial Setup"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Filesystem Configuration"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure mounting of cramfs filesystems is disabled"
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.1.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("cramfs_not_loaded").from_command("lsmod | grep -q cramfs", "1", "0")
         condition("cramfs_disabled").from_command("modprobe -n -v cramfs | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -55,7 +54,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("freevxfs_not_loaded").from_command("lsmod | grep -q freevxfs", "1", "0")
         condition("freevxfs_disabled").from_command("modprobe -n -v freevxfs | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -66,7 +65,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("jffs2_not_loaded").from_command("lsmod | grep -q jffs2", "1", "0")
         condition("jffs2_disabled").from_command("modprobe -n -v jffs2 | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -74,7 +73,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure mounting of hfs filesystems is disabled "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("hfs_not_loaded").from_command("lsmod | grep -q hfs", "1", "0")
         condition("hfs_disabled").from_command("modprobe -n -v hfs | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -82,7 +81,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure mounting of hfsplus filesystems is disabled "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("hfsplus_not_loaded").from_command("lsmod | grep -q hfsplus", "1", "0")
         condition("hfsplus_disabled").from_command("modprobe -n -v hfsplus | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -93,7 +92,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.1.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("squashfs_not_loaded").from_command("lsmod | grep -q squashfs", "1", "0")
         condition("squashfs_disabled").from_command("modprobe -n -v squashfs | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -104,7 +103,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.1.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("udf_not_loaded").from_command("lsmod | grep -q udf", "1", "0")
         condition("udf_disabled").from_command("modprobe -n -v udf | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -115,7 +114,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.1.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("vfat_not_loaded").from_command("lsmod | grep -q vfat", "1", "0")
         condition("vfat_disabled").from_command("modprobe -n -v vfat | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -126,7 +125,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/tmp").check_mounted()
       }
@@ -135,7 +134,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/tmp").check_options("nodev")
       }
@@ -144,7 +143,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/tmp").check_options("nosuid")
       }
@@ -153,7 +152,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/tmp").check_options("noexec")
       }
@@ -162,7 +161,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.1.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var").check_mounted()
       }
@@ -171,7 +170,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.1.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var/tmp").check_mounted()
       }
@@ -180,7 +179,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var/tmp").check_options("nodev")
       }
@@ -189,7 +188,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.9"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var/tmp").check_options("nosuid")
       }
@@ -198,7 +197,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.10"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var/tmp").check_options("noexec")
       }
@@ -207,7 +206,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.1.11"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var/log").check_mounted()
       }
@@ -216,7 +215,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.1.12"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/var/log/audit").check_mounted()
       }
@@ -225,13 +224,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.1.13"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/home").check_mounted()
       }
 
       @component = "Ensure noexec option set on /home partition"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/home").check_options("nodev")
       }
@@ -240,7 +239,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.15"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/dev/shm").check_options("nodev")
       }
@@ -249,7 +248,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.16"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/dev/shm").check_options("nosuid")
       }
@@ -258,25 +257,25 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.17"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         partition("/dev/shm").check_options("noexec")
       }
 
       @component = "Ensure nodev option set on removable media partitions"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure nosuid option set on removable media partitions"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure noexec option set on removable media partitions"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -285,7 +284,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.21"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "missing_sticky_bit").string_from_command("""df --local -P | awk '{if (NR!=1) print ${dollar_char}6}' | xargs -I '{}' find '{}' -xdev -type d \( -perm -0002 -a ! -perm -1000 \)""")
         condition("sticky_bit_correct").from_variable_match("cis_rhel7.missing_sticky_bit", """\s+""")
@@ -296,7 +295,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.1.22"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("autofs").disabled()
         service("autofs").stopped()
@@ -304,10 +303,10 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Configure Software Updates"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure package manager repositories are configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -316,7 +315,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.2.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/yum.conf").key_value_present_in_ini_section("main", "gpgcheck", "1")
         # The grep does return 1 if everything is correct. 0 otherwise.
@@ -325,32 +324,32 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure GPG keys are configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure Red Hat Network or Subscription Manager connection is configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Disable the rhnsd Daemon"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
     }
 
     @component = "Filesystem Integrity Checking"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure AIDE is installed"
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.3.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("aide").present()
       }
@@ -359,7 +358,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.3.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("aide_scheduled").from_command("grep -rq aide /etc/cron.* /etc/crontab", "0", "1")
         report("Ensure gpgcheck is globlly activated").if_condition("aide_scheduled_true")
@@ -367,13 +366,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Secure Boot Settings"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure permissions on bootloader config are configured"
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.4.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/boot/grub2/grub.cfg").type_recursion("600", "root", "root", "all", "0", "all", "0")
       }
@@ -382,26 +381,26 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.4.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure authentication required for single user mode"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
     }
 
     @component = "Additional Process Hardening"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure core dumps are restricted"
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.5.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "core_dump_restriction").string_from_command("grep 'hard core' /etc/security/limits.conf /etc/security/limits.d/*")
         condition("core_dump_restricted").from_variable_match("cis_rhel7.core_dump_restriction", """\*\s+hard\s+core\s+0""")
@@ -413,7 +412,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure XD/NX support is enabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("xd_nx_support_enabled").from_command("dmesg | grep -E 'NX|XD' | grep -q ' active'", "0", "1")
         report("Ensure core dumps are restricted").if_condition("xd_nx_support_enabled_true")
@@ -423,7 +422,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.5.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "aslr").string_from_command("sysctl kernel.randomize_va_space")
         condition("aslr_enabled").from_variable_match("cis_rhel7.aslr", """kernel.randomize_va_space\s+=\s+2""")
@@ -434,20 +433,20 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.5.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("prelink").present()
       }
     }
 
     @component = "Configure SELinux"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure SELinux is not disabled in bootloader configuration"
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.6.1.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("selinux_not_disabled_by_grub").from_command("""grep -qE '(selinux|enforcing)\s*=\s*0\s*)' /etc/default/grub""", "0", "1")
         report("Ensure core dumps are restricted").if_condition("xd_nx_support_enabled_true")
@@ -457,7 +456,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.6.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/selinux/config").key_value_present_option("SELINUX", "enforcing", "=", "lax")
       }
@@ -466,7 +465,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.6.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # Rudder does not have a key_value_in_list method
         condition("selinuxtype_targeted_or_mls").from_command("""grep -qE 'SELINUXTYPE\s*=\s*(targeted|mls)' /etc/selinux/config""", "0", "1")
@@ -476,7 +475,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "Ensure SETroubleshoot is not installed"
       @component = "server_2"
       @component = "1.6.1.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("setroubleshoot").absent("", "", "")
       }
@@ -485,7 +484,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.6.1.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("mcstrans").absent("", "", "")
       }
@@ -494,7 +493,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.6.1.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "unconfined_daemons").string_from_command("""ps -eZ | egrep 'initrc' | egrep -vw 'tr|ps|egrep|bash|awk' | tr ':' ' ' | awk '{ print ${dollar_char}NF }'""")
         condition("unconfined_daemons_found").from_variable_match("cis_rhel7.unconfined_daemons", ".+")
@@ -505,38 +504,38 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "1.6.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("libselinux").present()
       }
     }
 
     @component = "Command Line Warning Banners"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure message of the day is configured properly"
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.7.1.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure local login warning banner is configured properly"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure remote login warning banner is configured properly"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure permissions on /etc/motd are configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/motd").type_recursion("644", "root", "root", "all", "0")
       }
@@ -545,13 +544,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.7.1.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/issue").type_recursion("644", "root", "root", "all", "0")
       }
 
       @component = "Ensure permissions on /etc/issue.net are configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/issue.net").type_recursion("644", "root", "root", "all", "0")
       }
@@ -561,7 +560,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "1.7.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
          file("/etc/dconf/profile/gdm").key_value_present_option("user-db", "user", ":", "strict")
          file("/etc/dconf/profile/gdm").key_value_present_option("system-db", "gdm", ":", "strict")
@@ -574,24 +573,24 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Ensure updates, patches, and additional security software are installed"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
   }
 
   @component = "Services"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "inetd Services"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       if xinetd_present_ok =>
       @component = "Ensure chargen services are not enabled"
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -601,7 +600,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -611,7 +610,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -621,7 +620,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -631,7 +630,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -641,7 +640,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.16"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -651,20 +650,20 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("xinetd").stopped()
         service("xinetd").disabled()
       }
     }
     @component = "Special Purpose Services"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Time Synchronization"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         @component = "Ensure time synchronization is in use"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           report("Ensure time synchronization is in use").if_condition("ntp_present_ok|chrony_present_ok")
         }
@@ -674,7 +673,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
         @component = "workstation_1"
         @component = "server_1"
         @component = "2.2.1.2"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
@@ -684,7 +683,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
         @component = "workstation_1"
         @component = "server_1"
         @component = "2.2.1.3"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
@@ -693,7 +692,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "Ensure X Window System is not installed"
       @component = "server_1"
       @component = "2.2.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("xorg-x11").absent()
       }
@@ -702,7 +701,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("avahi-daemon").stopped()
         service("avahi-daemon").disabled()
@@ -712,7 +711,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("cups").stopped()
         service("cups").disabled()
@@ -722,14 +721,14 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("dhcpd").stopped()
         service("dhcpd").disabled()
       }
 
       @component = "Ensure LDAP server is not enabled "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("slapd").stopped()
         service("slapd").disabled()
@@ -739,7 +738,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("nfs").stopped()
         service("nfs").disabled()
@@ -752,14 +751,14 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("named").stopped()
         service("named").disabled()
       }
 
       @component = "Ensure FTP Server is not enabled "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("vsftpd").stopped()
         service("vsftpd").disabled()
@@ -769,14 +768,14 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.10"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("httpd").stopped()
         service("httpd").disabled()
       }
 
       @component = "Ensure IMAP and POP3 server is not enabled "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("dovecot").stopped()
         service("dovecot").disabled()
@@ -786,7 +785,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.12"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("smb").stopped()
         service("smb").disabled()
@@ -796,7 +795,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.13"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("squid").stopped()
         service("squid").disabled()
@@ -806,7 +805,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.14"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("snmpd").stopped()
         service("snmpd").disabled()
@@ -816,7 +815,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.15"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
         file("/etc/postfix/main.cf").key_value_present_option("inet_interfaces", "localhost", "=", "lax")
@@ -826,7 +825,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.16"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("ypserv").stopped()
         service("ypserv").disabled()
@@ -836,7 +835,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.17"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("rsh.socket").stopped()
         service("rsh.socket").disabled()
@@ -852,7 +851,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.18"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("ntalk").stopped()
         service("ntalk").disabled()
@@ -862,7 +861,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.19"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("telnet.socket").stopped()
         service("telnet.socket").disabled()
@@ -875,7 +874,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.1.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("tftp.socket").stopped()
         service("tftp.socket").disabled()
@@ -885,7 +884,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.2.21"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("rsyncd").stopped()
         service("rsyncd").disabled()
@@ -893,13 +892,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Service Clients"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure NIS Client is not installed"
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.3.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("ypbind").absent()
       }
@@ -908,7 +907,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.3.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("rsh").absent()
       }
@@ -917,7 +916,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.3.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("talk").absent()
       }
@@ -926,7 +925,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.3.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("telnet").absent()
       }
@@ -935,7 +934,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "2.3.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("openldap-clients").absent()
       }
@@ -943,16 +942,16 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   }
 
   @component = "Network Configuration"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Network Parameters (Host Only)"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure IP forwarding is disabled"
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.1.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "disable_ipv4_forward").string_from_command("sysctl net.ipv4.ip_forward")
         condition("ipv4_forward_disabled").from_variable_match("cis_rhel7.disable_ipv4_forward", """net.ipv4.ip_forward\s+=\s+0""")
@@ -965,7 +964,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_conf_all_send_redirects").string_from_command("sysctl net.ipv4.conf.all.send_redirects")
         condition("net_ipv4_conf_all_send_redirects_disabled").from_variable_match("cis_rhel7.net_ipv4_conf_all_send_redirects", """net.ipv4.conf.all.send_redirects\s+=\s+0""")
@@ -983,13 +982,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Network Parameters (Host and Router)"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure source routed packets are not accepted"
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_conf_all_accept_source_route").string_from_command("sysctl net.ipv4.conf.all.accept_source_route")
         condition("net_ipv4_conf_all_accept_source_route_disabled").from_variable_match("cis_rhel7.net.ipv4.conf.all.accept_source_route", """net.ipv4.conf.all.accept_source_route\s+=\s+0""")
@@ -1009,7 +1008,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_conf_all_accept_redirects").string_from_command("sysctl net.ipv4.conf.all.accept_redirects")
         condition("net_ipv4_conf_all_accept_redirects_disabled").from_variable_match("cis_rhel7.net.ipv4.conf.all.accept_redirects", """net.ipv4.conf.all.accept_redirects\s+=\s+0""")
@@ -1029,7 +1028,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_conf_all_secure_redirects").string_from_command("sysctl net.ipv4.conf.all.secure_redirects")
         condition("net_ipv4_conf_all_secure_redirects_disabled").from_variable_match("cis_rhel7.net.ipv4.conf.all.secure_redirects", """net.ipv4.conf.all.secure_redirects\s+=\s+0""")
@@ -1048,7 +1047,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_conf_all_log_martians").string_from_command("sysctl net.ipv4.conf.all.log_martians")
         condition("net_ipv4_conf_all_log_martians_logged").from_variable_match("cis_rhel7.net.ipv4.conf.all.log_martians", """net.ipv4.conf.all.log_martians\s+=\s+1""")
@@ -1068,7 +1067,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_icmp_echo_ignore_broadcasts").string_from_command("sysctl net.ipv4.icmp_echo_ignore_broadcasts")
         condition("net_ipv4_icmp_echo_ignore_broadcasts_enabled").from_variable_match("cis_rhel7.net.ipv4.icmp_echo_ignore_broadcasts", """net.ipv4.icmp_echo_ignore_broadcasts\s+=\s+1""")
@@ -1081,7 +1080,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_icmp_ignore_bogus_error_responses").string_from_command("sysctl net.ipv4.icmp_ignore_bogus_error_responses")
         condition("net_ipv4_icmp_ignore_bogus_error_responses_enabled").from_variable_match("cis_rhel7.net.ipv4.icmp_ignore_bogus_error_responses", """net.ipv4.icmp_ignore_bogus_error_responses\s+=\s+1""")
@@ -1094,7 +1093,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_conf_all_rp_filter").string_from_command("sysctl net.ipv4.conf.all.rp_filter")
         condition("net_ipv4_conf_all_rp_filter_enabled").from_variable_match("cis_rhel7.net.ipv4.conf.all.rp_filter", """net.ipv4.conf.all.rp_filter\s+=\s+1""")
@@ -1114,7 +1113,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.2.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv4_tcp_syncookies").string_from_command("sysctl net.ipv4.tcp_syncookies")
         condition("net_ipv4_tcp_syncookies_enabled").from_variable_match("cis_rhel7.net.ipv4.tcp_syncookies", """net.ipv4.tcp_syncookies\s+=\s+1""")
@@ -1125,13 +1124,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "IPv6"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure IPv6 router advertisements are not accepted"
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.3.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv6_conf_all_accept_ra").string_from_command("sysctl net.ipv6.conf.all.accept_ra")
         condition("net_ipv6_conf_all_accept_ra_disabled").from_variable_match("cis_rhel7.net.ipv6.conf.all.accept_ra", """net.ipv6.conf.all.accept_ra\s+=\s+1""")
@@ -1151,7 +1150,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.3.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "net_ipv6_conf_all_accept_redirects").string_from_command("sysctl net.ipv6.conf.all.accept_redirects")
         condition("net_ipv6_conf_all_accept_redirects_disabled").from_variable_match("cis_rhel7.net.ipv6.conf.all.accept_redirects", """net.ipv6.conf.all.accept_redirects\s+=\s+0""")
@@ -1168,17 +1167,17 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure IPv6 is disabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
     }
 
     @component = "TCP Wrappers"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure TCP Wrappers is installed "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("tcp_wrappers").present()
         package("tcp_wrappers-libs").present()
@@ -1188,7 +1187,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.4.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1197,7 +1196,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.4.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/hosts.deny").content("ALL: ALL", "true")
       }
@@ -1206,7 +1205,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.4.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/hosts.allow").type_recursion("644", "root", "root", "all", "0")
       }
@@ -1215,17 +1214,17 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.4.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/hosts.deny").type_recursion("644", "root", "root", "all", "0")
       }
     }
 
     @component = "Uncommon Network Protocols"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure DCCP is disabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("dccp_not_loaded").from_command("lsmod | grep -q dccp", "1", "0")
         condition("dccp_disabled").from_command("modprobe -n -v dccp | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -1233,7 +1232,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure SCTP is disabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("sctp_not_loaded").from_command("lsmod | grep -q sctp", "1", "0")
         condition("sctp_disabled").from_command("modprobe -n -v sctp | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -1241,7 +1240,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure RDS is disabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("rds_not_loaded").from_command("lsmod | grep -q rds", "1", "0")
         condition("rds_disabled").from_command("modprobe -n -v rds | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -1249,7 +1248,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       }
 
       @component = "Ensure TIPC is disabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         condition("tipc_not_loaded").from_command("lsmod | grep -q tipc", "1", "0")
         condition("tipc_disabled").from_command("modprobe -n -v tipc | grep -qE 'install (/bin/true|/bin/false)'", "0", "1")
@@ -1258,13 +1257,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Firewall Configuration"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure iptables is installed"
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.6.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         package("iptables").present()
       }
@@ -1273,7 +1272,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.6.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1282,13 +1281,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.6.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure outbound and established connections are configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1297,13 +1296,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "3.6.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure wireless interfaces are disabled"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1311,13 +1310,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   }
 
   @component = "Logging and Auditing"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Configure System Accounting (auditd)"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure audit log storage size is configured"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO, define the max log file value
         file("/etc/audit/auditd.conf").key_value_present_option("max_log_file", "", "=", "lax")
@@ -1327,7 +1326,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/audit/auditd.conf").key_value_present_option("space_left_action", "email", "=", "lax")
         file("/etc/audit/auditd.conf").key_value_present_option("action_mail_acct", "root", "=", "lax")
@@ -1338,7 +1337,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/audit/auditd.conf").key_value_present_option("max_log_file_action", "keep_logs", "=", "lax")
       }
@@ -1347,7 +1346,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         service("auditd").disabled()
         service("auditd").stopped()
@@ -1357,7 +1356,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/boot/grub2/grub.cfg").key_value_parameter_present_in_list("GRUB_CMDLINE_LINUX", "=", "audit=1", ",", "\"", "\"")
       }
@@ -1366,7 +1365,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1375,7 +1374,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1384,7 +1383,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1393,7 +1392,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/audit/audit.rules").content("-w /etc/selinux/ -p wa -k MAC-policy", "false")
       }
@@ -1402,7 +1401,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/audit/audit.rules").content("-w /var/log/lastlog -p wa -k logins", "false")
         file("/etc/audit/audit.rules").content("-w /var/run/faillock/ -p wa -k logins", "false")
@@ -1412,7 +1411,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.9"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/audit/audit.rules").content("-w /var/run/utmp -p wa -k session", "false")
         file("/etc/audit/audit.rules").content("-w /var/log/wtmp -p wa -k session", "false")
@@ -1423,11 +1422,11 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.10"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if x86_64 =>
         @component = "x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod", "false")
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod", "false")
@@ -1436,7 +1435,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
 
         if i386|i486|i586|i686 =>
         @component = "non x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod", "false")
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod", "false")
@@ -1448,11 +1447,11 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.11"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if x86_64 =>
         @component = "x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access", "false")
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000  -F auid!=4294967295 -k access", "false")
@@ -1462,7 +1461,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
 
         if i386|i486|i586|i686 =>
         @component = "non x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access", "false")
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access", "false")
@@ -1473,7 +1472,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.12"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -1482,11 +1481,11 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.13"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if x86_64 =>
         @component = "x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts", "false")
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts", "false")
@@ -1494,7 +1493,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
 
         if i386|i486|i586|i686 =>
         @component = "non x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts", "false")
         }
@@ -1504,11 +1503,11 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.14"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if x86_64 =>
         @component = "x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete", "false")
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete", "false")
@@ -1516,7 +1515,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
 
         if i386|i486|i586|i686 =>
         @component = "non x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete", "false")
         }
@@ -1526,7 +1525,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.15"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
          file("/etc/audit/audit.rules").content("-w /etc/sudoers -p wa -k scope", "false")
          file("/etc/audit/audit.rules").content("-w /etc/sudoers.d -p wa -k scope", "false")
@@ -1536,7 +1535,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.16"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         file("/etc/audit/audit.rules").content("-w /var/log/sudo.log -p wa -k actions", "false")
       }
@@ -1545,11 +1544,11 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.17"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if x86_64 =>
         @component = "x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-w /sbin/insmod -p x -k modules", "false")
           file("/etc/audit/audit.rules").content("-w /sbin/rmmod -p x -k modules", "false")
@@ -1558,7 +1557,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
         }
         if i386|i486|i586|i686 =>
         @component = "non x86"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           file("/etc/audit/audit.rules").content("-w /sbin/insmod -p x -k modules", "false")
           file("/etc/audit/audit.rules").content("-w /sbin/rmmod -p x -k modules", "false")
@@ -1571,7 +1570,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_2"
       @component = "server_2"
       @component = "4.1.18"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         variable("cis_rhel7", "audit_configuration_is_immutable").string_from_command("""grep '^\s*[^#]' /etc/audit/audit.rules | tail -1""")
         condition("audit_configuration_is_immutable").from_variable_match("cis_rhel7.core_dump_restriction", """-e\s+2""")
@@ -1580,17 +1579,17 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     }
 
     @component = "Configure Logging"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Configure rsyslog"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if rsyslog_present_ok =>
         @component = "Ensure rsyslog Service is enabled"
         @component = "workstation_1"
         @component = "server_1"
         @component = "4.2.1.1"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           service("rsyslog").enabled()
           service("rsyslog").started()
@@ -1598,7 +1597,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
 
         if rsyslog_present_ok =>
         @component = "Ensure logging is configured"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
@@ -1608,9 +1607,9 @@ technique_CIS_rhel7_setup_filesystem state technique() {
         @component = "workstation_1"
         @component = "server_1"
         @component = "4.2.1.3"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
-          file("/etc/rsyslog.conf").key_value_present_option("${dollar_char}FileCreateMode", "0640", "${space_char}", "strict")
+          file("/etc/rsyslog.conf").key_value_present_option("${dollar_char}FileCreateMode", "0640", "${ncf.const}", "strict")
         }
 
         if rsyslog_present_ok =>
@@ -1618,29 +1617,29 @@ technique_CIS_rhel7_setup_filesystem state technique() {
         @component = "workstation_1"
         @component = "server_1"
         @component = "4.2.1.4"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
 
         if rsyslog_present_ok =>
         @component = "Ensure remote rsyslog messages are only accepted on designated log hosts"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
-          file("/etc/rsyslog.conf").key_value_present_option("${dollar_char}ModLoad", "imtcp.so", "${space_char}", "strict")
-          file("/etc/rsyslog.conf").key_value_present_option("${dollar_char}InputTCPServerRun", "514", "${space_char}", "strict")
+          file("/etc/rsyslog.conf").key_value_present_option("${dollar_char}ModLoad", "imtcp.so", "${ncf.const}", "strict")
+          file("/etc/rsyslog.conf").key_value_present_option("${dollar_char}InputTCPServerRun", "514", "${ncf.const}", "strict")
         }
       }
 
       @component = "Configure syslog-ng"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         if syslog_ng_present_ok =>
         @component = "Ensure syslog-ng service is enabled"
         @component = "workstation_1"
         @component = "server_1"
         @component = "4.2.2.1"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           service("syslog-ng").enabled()
           service("syslog-ng").started()
@@ -1648,7 +1647,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
 
         if syslog_ng_present_ok =>
         @component = "Ensure logging is configured"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
@@ -1658,21 +1657,21 @@ technique_CIS_rhel7_setup_filesystem state technique() {
         @component = "workstation_1"
         @component = "server_1"
         @component = "4.2.2.3"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
 
         if syslog_ng_present_ok =>
         @component = "Ensure syslog-ng is configured to send logs to a remote log host"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
 
         if syslog_ng_present_ok =>
         @component = "Ensure remote syslog-ng messages are only accepted on designated log hosts"
-        @reporting_logic = "sum"
+        @reporting_logic = "weighted"
         {
           # TODO
         }
@@ -1682,7 +1681,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "4.2.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         report("Ensure rsyslog or syslog-ng is installed").if_condition("syslog_ng_present_ok|rsyslog_present_ok")
       }
@@ -1691,23 +1690,23 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "4.2.4"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
     }
 
     @component = "Ensure logrotate is configured"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
     }
   }
 
   @component = "Access, Authentication and Authorization"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Configure cron"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       service("crond").enabled()
       service("crond").started()
@@ -1717,7 +1716,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.2"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/crontab").type_recursion("600", "root", "root", "all", "inf")
     }
@@ -1726,7 +1725,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.3"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/cron.hourly").type_recursion("600", "root", "root", "all", "inf")
     }
@@ -1735,7 +1734,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.4"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/cron.daily").type_recursion("600", "root", "root", "all", "inf")
     }
@@ -1744,7 +1743,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.5"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/cron.weekly").type_recursion("600", "root", "root", "all", "inf")
     }
@@ -1753,7 +1752,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.6"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/cron.monthly").type_recursion("600", "root", "root", "all", "inf")
     }
@@ -1762,7 +1761,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.7"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/cron.d").type_recursion("700", "root", "root", "all", "inf")
     }
@@ -1771,7 +1770,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.1.8"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       file("/etc/cron.deny").absent()
       file("/etc/at.deny").absent()
@@ -1781,13 +1780,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   }
 
   @component = "SSH Server Configuration"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Ensure permissions on /etc/ssh/sshd_config are configured"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.1"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       permissions("/etc/ssh/sshd_config").type_recursion("600", "root", "root", "all", "0")
     }
@@ -1796,34 +1795,34 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.2"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("Protocol", "2", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("Protocol", "2", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH LogLevel is set to INFO"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.3"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("LogLevel", "INFO", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("LogLevel", "INFO", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH X11 forwarding is disabled"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.4"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("X11Forwarding", "no", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("X11Forwarding", "no", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH MaxAuthTries is set to 4 or less"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.5"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -1832,65 +1831,65 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.6"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("IgnoreRhosts", "yes", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("IgnoreRhosts", "yes", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH HostbasedAuthentication is disabled"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.7"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("HostbasedAuthentication", "no", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("HostbasedAuthentication", "no", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH HostbasedAuthentication is disabled"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.7"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("PermitRootLogin", "no", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("PermitRootLogin", "no", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH PermitEmptyPasswords is disabled"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.9"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("PermitEmptyPasswords", "no", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("PermitEmptyPasswords", "no", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH PermitUserEnvironment is disabled"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.10"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("PermitUserEnvironment", "no", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("PermitUserEnvironment", "no", "${ncf.const}", "strict")
     }
 
     @component = "Ensure only approved ciphers are used"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.11"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd").key_value_parameter_present_in_list("Ciphers", "${space_char}", "aes256-ctr", ",", "", "")
-      file("/etc/ssh/sshd").key_value_parameter_present_in_list("Ciphers", "${space_char}", "aes192-ctr", ",", "", "")
-      file("/etc/ssh/sshd").key_value_parameter_present_in_list("Ciphers", "${space_char}", "aes128-ctr", ",", "", "")
+      file("/etc/ssh/sshd").key_value_parameter_present_in_list("Ciphers", "${ncf.const}", "aes256-ctr", ",", "", "")
+      file("/etc/ssh/sshd").key_value_parameter_present_in_list("Ciphers", "${ncf.const}", "aes192-ctr", ",", "", "")
+      file("/etc/ssh/sshd").key_value_parameter_present_in_list("Ciphers", "${ncf.const}", "aes128-ctr", ",", "", "")
 
-      file("/etc/ssh/sshd").key_value_parameter_absent_in_list("Ciphers", "${space_char}", ".*cbc.*", ",", "", "")
+      file("/etc/ssh/sshd").key_value_parameter_absent_in_list("Ciphers", "${ncf.const}", ".*cbc.*", ",", "", "")
     }
 
     @component = "Ensure only approved MAC algorithms are used"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.12"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -1899,26 +1898,26 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.13"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("ClientAliveInterval", "300", "${space_char}", "strict")
-      file("/etc/ssh/sshd_config").key_value_present_option("ClientAliveCountMax", "0", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("ClientAliveInterval", "300", "${ncf.const}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("ClientAliveCountMax", "0", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH LoginGraceTime is set to one minute or less"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.14"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("LoginGraceTime", "60", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("LoginGraceTime", "60", "${ncf.const}", "strict")
     }
 
     @component = "Ensure SSH access is limited"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.15"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -1927,20 +1926,20 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.2.16"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/ssh/sshd_config").key_value_present_option("Banner", "/etc/issue.net", "${space_char}", "strict")
+      file("/etc/ssh/sshd_config").key_value_present_option("Banner", "/etc/issue.net", "${ncf.const}", "strict")
     }
   }
 
   @component = "Configure PAM"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Ensure password creation requirements are configured"
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.3.1"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       file("/etc/pam.d/password-auth").content("password requisite pam_pwquality.so try_first_pass retry=3", "false")
       file("/etc/pam.d/system-auth").content("password requisite pam_pwquality.so try_first_pass retry=3", "false")
@@ -1955,7 +1954,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.3.2"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -1964,7 +1963,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.3.3"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       file("/etc/pam.d/password-auth").content("password sufficient pam_unix.so remember=5", "false")
       file("/etc/pam.d/system-auth").content("password sufficient pam_unix.so remember=5", "false")
@@ -1974,7 +1973,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.3.4"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       file("/etc/pam.d/password-auth").content("password sufficient pam_unix.so sha512", "false")
       file("/etc/pam.d/system-auth").content("password sufficient pam_unix.so sha512", "false")
@@ -1982,10 +1981,10 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   }
 
   @component = "User Accounts and Environment"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "Set Shadow Password Suite Parameters"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -1994,7 +1993,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.4.1.2"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -2003,7 +2002,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.4.1.3"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -2012,7 +2011,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.4.1.4"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -2021,7 +2020,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.4.2"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -2030,7 +2029,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.4.3"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       user("root").uid("0")
     }
@@ -2039,14 +2038,14 @@ technique_CIS_rhel7_setup_filesystem state technique() {
     @component = "workstation_1"
     @component = "server_1"
     @component = "5.4.4"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
-      file("/etc/bashrc").key_value_present_option("umask", "027", "${space_char}", "strict")
-      file("/etc/profile").key_value_present_option("umask", "027", "${space_char}", "strict")
+      file("/etc/bashrc").key_value_present_option("umask", "027", "${ncf.const}", "strict")
+      file("/etc/profile").key_value_present_option("umask", "027", "${ncf.const}", "strict")
     }
 
     @component = "Ensure root login is restricted to system console"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       # TODO
     }
@@ -2062,13 +2061,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
   }
 
   @component = "System Maintenance"
-  @reporting_logic = "sum"
+  @reporting_logic = "weighted"
   {
     @component = "System File Permissions"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Audit system file permissions"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2077,7 +2076,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.2"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/passwd").type_recursion("644", "root", "root", "all", "0")
       }
@@ -2086,13 +2085,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.3"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/shadow").type_recursion("000", "root", "root", "all", "0")
       }
 
       @component = "Ensure permissions on /etc/group are configured "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/group").type_recursion("644", "root", "root", "all", "0")
       }
@@ -2101,7 +2100,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/gshadow").type_recursion("600", "root", "root", "all", "0")
       }
@@ -2110,7 +2109,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/passwd-").type_recursion("600", "root", "root", "all", "0")
       }
@@ -2119,7 +2118,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/shadow-").type_recursion("600", "root", "root", "all", "0")
       }
@@ -2128,7 +2127,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/group-").type_recursion("600", "root", "root", "all", "0")
       }
@@ -2137,7 +2136,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.9"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         permissions("/etc/gshadow-").type_recursion("600", "root", "root", "all", "0")
       }
@@ -2146,7 +2145,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.10"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2155,7 +2154,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.11"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2164,50 +2163,50 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.1.12"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Audit SUID executables"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Audit SGID executables"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
     }
 
     @component = "User and Group Settings"
-    @reporting_logic = "sum"
+    @reporting_logic = "weighted"
     {
       @component = "Ensure password fields are not empty"
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.1"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = """Ensure no legacy "+" entries exist in /etc/passwd"""
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = """Ensure no legacy "+" entries exist in /etc/shadow"""
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = """Ensure no legacy "+" entries exist in /etc/group"""
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2216,7 +2215,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.5"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2225,7 +2224,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.6"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2234,7 +2233,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.7"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2243,7 +2242,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.8"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2252,7 +2251,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.9"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2261,7 +2260,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.10"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2270,7 +2269,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.11"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2279,7 +2278,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.12"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2288,7 +2287,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.13"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2297,13 +2296,13 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.14"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
 
       @component = "Ensure all groups in /etc/passwd exist in /etc/group "
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2312,7 +2311,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.16"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2321,7 +2320,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.17"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2330,7 +2329,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.18"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
@@ -2339,7 +2338,7 @@ technique_CIS_rhel7_setup_filesystem state technique() {
       @component = "workstation_1"
       @component = "server_1"
       @component = "6.2.19"
-      @reporting_logic = "sum"
+      @reporting_logic = "weighted"
       {
         # TODO
       }
