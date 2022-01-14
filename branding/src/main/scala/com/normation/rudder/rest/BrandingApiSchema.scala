@@ -53,8 +53,7 @@ object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
     val z = implicitly[Line].value
     val description = "Get branding plugin configuration"
     val (action, path)  = GET / "branding"
-
-    override def dataContainer: Option[String] = None
+    val dataContainer: Option[String] = None
 
   }
 
@@ -62,16 +61,14 @@ object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
     val z = implicitly[Line].value
     val description = "Update branding plugin configuration"
     val (action, path)  = POST / "branding"
-
-    override def dataContainer: Option[String] = None
+    val dataContainer: Option[String] = None
   }
 
   final case object ReloadBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
     val z = implicitly[Line].value
     val description = "Reload branding plugin configuration from config file"
     val (action, path)  = POST / "branding" / "reload"
-
-    override def dataContainer: Option[String] = None
+    val dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[BrandingApiSchema].toList.sortBy( _.z )
