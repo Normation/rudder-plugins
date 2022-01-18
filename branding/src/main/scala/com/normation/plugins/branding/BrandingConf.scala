@@ -101,8 +101,8 @@ final case class Logo
   , data   : Option[String]
   ){
   def loginLogo = (enable, data) match{
-    case (true , Some(d)) => (<div class="custom-branding-logo" style={"background-image: url("++ d ++");"}></div><div class="rudder-branding-logo"></div>)
-    case (_    , _      ) =>  <img src="/images/logo-rudder-white.svg" data-lift="with-cached-resource" alt="Rudder"/>
+    case (true , Some(d)) => (<div class="custom-branding-logo" style={"background-image: url("++ d ++");"}></div>)
+    case (_    , _      ) =>  <img src="/images/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"/>
   }
 
   def commonWideLogo = (enable, data) match{
