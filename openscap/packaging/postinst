@@ -37,4 +37,4 @@ git commit -m "$CATEGORY installation"
 chmod +x $CONFIGURATION_PATH/remove_configuration
 
 # Import Techniques
- curl --silent -k --header "Content-type: application/json"   --header "X-API-Token: $(cat /var/rudder/run/api-token)" --request PUT https://localhost/rudder/api/latest/internal/techniques --data "@${CONFIGURATION_PATH}/techniques/plugin_openscap_policies.json"
+curl --silent -k --header "Content-type: application/json"   --header "X-API-Token: $(cat /var/rudder/run/api-token)" --request PUT https://localhost/rudder/api/latest/techniques --data "@${CONFIGURATION_PATH}/techniques/plugin_openscap_policies.json"

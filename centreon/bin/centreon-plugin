@@ -7,7 +7,7 @@ Usage:
     centreon-plugin hook (add|rm) <id>
 
 Options:
-    synchronize-hosts   Synchronize node liist between Rudder and Centreon adding or removing them as necessary
+    synchronize-hosts   Synchronize nodes list between Rudder and Centreon adding or removing them as necessary
     apply-configuration Applies the monitoring config (templates and macros) specified in rudder
     hook                Used when automatically called from Rudder hook
 """
@@ -322,7 +322,7 @@ if __name__ == '__main__':
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     try:
-        WSInstance = Webservice.getInstance(conf.get('CENTREON', 'centreonWebserviceURL'), conf.get('CENTREON', 'username'), conf.get('CENTREON', 'password'))
+        WSInstance = Webservice.getInstance(conf.get('CENTREON', 'centreonWebserviceURL'), conf.get('CENTREON', 'username'), conf.get('CENTREON', 'password'), conf.getboolean('CENTREON', 'verify', fallback=True))
         WSInstance.auth()
     except HTTPError:
         print("[!] Unable to connect to Centreon webservice. Check centreon.conf ?")
