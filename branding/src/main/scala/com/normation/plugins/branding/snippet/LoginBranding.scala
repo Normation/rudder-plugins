@@ -100,7 +100,7 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
     val legend =
       <div>
         {customLogo}
-        <span>{version.prefix.replaceAll("-", "")}</span>
+        <span>{version.rudderAbi.toVersionString}</span>
       </div>
     val motd = data match {
       case Full(data) if (data.displayMotd) =>
