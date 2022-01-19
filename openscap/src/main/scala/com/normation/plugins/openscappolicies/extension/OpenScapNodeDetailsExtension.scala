@@ -38,12 +38,21 @@ class OpenScapNodeDetailsExtension(
         case Full(existence) =>
           existence match {
             case false =>
-              <div id="openscap_reports" class="ui-tabs-panel ui-corner-bottom ui-widget-content">
-                <p>That tab gives access to OpenScap reports configured for that node</p>
-                <div class="error">No OpenScap report available for node
-                  {snippet.nodeId.value}
+
+                <div id="openScap" class="inner-portlet">
+                  <h3 class="page-title">OpenSCAP reporting</h3>
+                  <div class="col-xs-12 callout-fade callout-info">
+                    <div class="marker">
+                      <span class="glyphicon glyphicon-info-sign"></span>
+                    </div>
+                    <p>That tab gives access to OpenSCAP report configured for that node.</p>
+                    <br/>
+                    <div class="error">There are no OpenScap report available yet for node
+                      {snippet.nodeId.value}
+                    </div>
+                  </div>
                 </div>
-              </div>
+
             case true =>
               frameContent(snippet.nodeId)(openScapExtensionXml)
           }
@@ -59,13 +68,14 @@ class OpenScapNodeDetailsExtension(
             "#NodeDetailsTabMenu *" #> { (x: NodeSeq) =>
               x ++ (
                 <li>
-                  <a href="#openscap_reports">
+                  <a href="#openscap_reports" class="ui-tabs-panel ui-corner-bottom">
                     {tabTitle}
                   </a>
                 </li>
-                <div id="openscap_reports" class="ui-tabs-panel ui-corner-bottom ui-widget-content">
+                )} &
+              "#node_logs" #> { (x:NodeSeq) => x ++ (<div id="openscap_reports">
                     {content}
-                </div>
+                   </div>
                 )
             }
             ).apply(xml)
@@ -82,23 +92,21 @@ class OpenScapNodeDetailsExtension(
   def frameContent(nodeId : NodeId): CssSel = {
 
         "iframe [src]"      #> s"/secure/api/openscap/report/${nodeId.value}" &
-        "a [href]"      #> s"/secure/api/openscap/report/${nodeId.value}"
+        "a [href]"          #> s"/secure/api/openscap/report/${nodeId.value}"
 
   }
 
   private def openScapExtensionXml =
-      <div>
-        <div class="col-xs-12">
-          <div class="page-title" id="agentPolicyMode">OpenSCAP reporting</div>
-          <div class="col-xs-12 callout-fade callout-info">
-            <div class="marker">
-              <span class="glyphicon glyphicon-info-sign"></span>
-            </div>
-            <p>That tab gives access to OpenSCAP report configured for that node. Below is the raw report as sent by the node.</p>
-            <br/>
-            <p><b><a href="">You can also download this report here</a></b></p>
+      <div id="openScap" class="inner-portlet">
+        <h3 class="page-title">OpenSCAP reporting</h3>
+        <div class="col-xs-12 callout-fade callout-info">
+          <div class="marker">
+            <span class="glyphicon glyphicon-info-sign"></span>
           </div>
-          <iframe width="100%" height="800"></iframe>
+          <p>That tab gives access to OpenSCAP report configured for that node. Below is the raw report as sent by the node.</p>
+          <br/>
+          <p><b><a href="">You can also download this report here</a></b></p>
         </div>
+        <iframe width="100%" height="600"></iframe>
       </div>
 }

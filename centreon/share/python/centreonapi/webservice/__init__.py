@@ -20,9 +20,10 @@ class Webservice(object):
             Webservice.__instance.authuser = None
             Webservice.__instance.authpass = None
             Webservice.__instance.auth_token = None
+            Webservice.__instance.verify = True
         return Webservice.__instance
 
-    def load(self, url, username, password):
+    def load(self, url, username, password, verify):
         """
         Load configuration for webservices
 
@@ -32,10 +33,13 @@ class Webservice(object):
         :type username: String
         :param password: The password for connect to Centreon Web webservices
         :type password: String
+        :param verify: Check Centreon certificate signature (default True)
+        :type verify: Boolean
         """
         self.url = url
         self.authuser = username
         self.authpass = password
+        self.verify = verify
 
     def isLoaded(self):
         """
@@ -57,7 +61,8 @@ class Webservice(object):
             data={
                 'username': self.authuser,
                 'password': self.authpass
-            }
+            },
+            verify=self.verify
         )
         request.raise_for_status()
         data = request.json()
@@ -94,7 +99,8 @@ class Webservice(object):
                 'Content-Type': 'application/json',
                 'centreon-auth-token': self.auth_token
             },
-            data=json.dumps(data)
+            data=json.dumps(data),
+            verify=self.verify
         )
         request.raise_for_status()
         return request.json()
@@ -112,7 +118,8 @@ class Webservice(object):
                 'Content-Type': 'application/json',
                 'centreon-auth-token': self.auth_token
             },
-            data=json.dumps(data)
+            data=json.dumps(data),
+            verify=self.verify
         )
         request.raise_for_status()
         return request
@@ -129,13 +136,14 @@ class Webservice(object):
                 'Content-Type': 'application/json',
                 'centreon-auth-token': self.auth_token
             },
-            data=json.dumps(data)
+            data=json.dumps(data),
+            verify=self.verify
         )
         request.raise_for_status()
         return request
  
     @staticmethod
-    def getInstance(url=None, username=None, password=None):
+    def getInstance(url=None, username=None, password=None, verify=True):
         """
         Get an unique instance of the webservices
 
@@ -145,11 +153,13 @@ class Webservice(object):
         :type username: String
         :param password: The password for connect to Centreon Web webservices
         :type password: String
+        :param verify: Check Centreon certificate signature (default True)
+        :type verify: Boolean
         """
         instance = Webservice()
         if instance.isLoaded():
             return instance
         if url is None or username is None or password is None:
             raise KeyError('Missing parameters to load the Webservice')
-        instance.load(url, username, password)
+        instance.load(url, username, password, verify)
         return instance

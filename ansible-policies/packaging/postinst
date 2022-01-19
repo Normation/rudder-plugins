@@ -37,4 +37,4 @@ git commit -m "$CATEGORY installation"
 chmod +x $CONFIGURATION_PATH/rudder-synchronize $CONFIGURATION_PATH/ansible.sh $CONFIGURATION_PATH/remove_configuration
 
 # Import Techniques
-${CONFIGURATION_PATH}/rudder-synchronize import technique ${CONFIGURATION_PATH}/techniques
+curl --silent -k --header "Content-type: application/json" --header "X-API-Token: $(cat /var/rudder/run/api-token)" --request PUT https://localhost/rudder/api/latest/techniques --data "@${CONFIGURATION_PATH}/techniques/ansible_policies.json"
