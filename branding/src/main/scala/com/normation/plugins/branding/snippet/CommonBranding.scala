@@ -72,6 +72,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
           .content-wrapper, .main-sidebar {{padding-top:80px}}
           #headerBar {{height: 30px; position: fixed; z-index:1050; background-color: #fff; width:100%;}}
           #headerBar > .background {{background-color: {d.barColor.toRgba}; color: {d.labelColor.toRgba }; font-size:20px; font-weight: 700; text-align:center; position: absolute;top: 0;bottom: 0;left: 0;right: 0;}}
+          .skin-yellow #headerBar + .wrapper aside.main-sidebar.fixed {{height: calc(100% - 80px); min-height: calc(100% - 80px); margin-top: 80px;}}
         </style>
       </div>
       case _ => NodeSeq.Empty
@@ -82,8 +83,8 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
         , d.smallLogo.commonSmallLogo
         , {if((d.wideLogo.enable  && d.wideLogo.data.isDefined) || (d.smallLogo.enable && d.smallLogo.data.isDefined)) {
             <a target="_blank" href="https://www.rudder.io/" class="rudder-branding-footer">
-              {if (d.wideLogo.enable && d.wideLogo.data.isDefined) <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-nologo.svg" class="rudder-branding-logo-lg"/> else NodeSeq.Empty}
-              {if (d.smallLogo.enable && d.smallLogo.data.isDefined) <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg" class="rudder-branding-logo-sm"/> else NodeSeq.Empty}
+              {if (d.wideLogo.enable && d.wideLogo.data.isDefined)   <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-white.svg" class="rudder-branding-logo-lg"/> else NodeSeq.Empty}
+              {if (d.smallLogo.enable && d.smallLogo.data.isDefined) <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg"    class="rudder-branding-logo-sm"/> else NodeSeq.Empty}
             </a>
           }else{
             NodeSeq.Empty
@@ -125,7 +126,11 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
         a.rudder-branding-footer .rudder-branding-logo-sm{{
         display: none;
         }}
-        a.rudder-branding-footer .rudder-branding-logo-lg,
+        a.rudder-branding-footer .rudder-branding-logo-lg{{
+          display: block;
+          width: 80%;
+          margin: auto;
+        }}
         .sidebar-collapse a.rudder-branding-footer .rudder-branding-logo-sm{{
         display: block;
         width: 100%;
