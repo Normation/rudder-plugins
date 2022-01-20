@@ -224,7 +224,7 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 If you want to connect with a secure connection to an LDAP or AD, you need to add the
 directory certificate to Rudder's JVM `keystore`. 
 
-Without that, you will see errors in `/var/log/rudder/webapp/XXXXXXX_stderrout.log` files like:app-name: 
+Without that, you will see errors in `/var/log/rudder/webapp/XXXXXXX_stderrout.log` files like:
 
 ```
 WARN  application - Login authentication failed for user 'xxx' from IP '127.0.0.1|X-Forwarded-For:xxx.xxx.xxx.xxx': simple bind failed: xxx.xxx:636; nested exception is javax.naming.CommunicationException: simple bind failed:
