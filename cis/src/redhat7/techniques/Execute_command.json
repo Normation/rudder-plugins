@@ -1,85 +1,103 @@
 {
   "data": {
-    "bundle_args": [
-      "check_command",
-      "expected_match",
-      "remediate"
-    ],
-    "bundle_name": "CIS_redhat7___Execute_command",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "21306b88-44b4-4faf-9c30-c3d3d5588700",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "cis",
-          "command_check_${report_data.canonified_directive_id}",
-          "${check_command}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "variable_string_from_command",
-        "method_name": "variable_string_from_command"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "29cae2f3-2148-4d0e-9934-4ae010cc24f4",
+        "method": "variable_string_from_command",
+        "parameters": [
+          {
+            "name": "prefix",
+            "value": "cis"
+          },
+          {
+            "name": "name",
+            "value": "command_check_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "command",
+            "value": "${check_command}"
+          }
+        ]
       },
       {
-        "args": [
-          "check_command_${report_data.canonified_directive_id}",
-          "cis.command_check_${report_data.canonified_directive_id}",
-          "${expected_match}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "condition_from_variable_match",
-        "method_name": "condition_from_variable_match"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "a9dedf2d-7fe8-4494-a488-10b3372f231c",
+        "method": "condition_from_variable_match",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "check_command_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "cis.command_check_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "expected_match",
+            "value": "${expected_match}"
+          }
+        ]
       },
       {
-        "args": [
-          "${remediate}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
         "component": "command_execution",
-        "method_name": "command_execution"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "690853b6-f551-4b43-9247-01f9a199eb84",
+        "method": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${remediate}"
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Execute_command",
     "name": "CIS redhat7 - Execute command",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
         "name": "check_command"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "f73d12e6-725a-4602-9299-48e33823edcd",
         "name": "expected_match"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
         "name": "remediate"
       }
     ],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }

@@ -1,47 +1,82 @@
 {
   "data": {
-    "bundle_args": [],
-    "bundle_name": "CIS_redhat7___Ensure_gpgcheck_is_globally_activated",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "7a5374af-3790-4afe-803a-0a51ff7a8eba",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "/etc/yum.conf",
-          "gpgcheck",
-          "1",
-          "="
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "file_key_value_present",
-        "method_name": "file_key_value_present"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "d9667d83-2a7e-4f08-8e13-28d83bd280e4",
+        "method": "file_key_value_present",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "/etc/yum.conf"
+          },
+          {
+            "name": "key",
+            "value": "gpgcheck"
+          },
+          {
+            "name": "value",
+            "value": "1"
+          },
+          {
+            "name": "separator",
+            "value": "="
+          }
+        ]
       },
       {
-        "args": [
-          "/etc/yum.repos.d/.*",
-          "gpgcheck",
-          "1",
-          "="
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "file_key_value_present",
-        "method_name": "file_key_value_present"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "5e035cdd-340c-4d72-8af9-1b9e81a15bd9",
+        "method": "file_key_value_present",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "/etc/yum.repos.d/.*"
+          },
+          {
+            "name": "key",
+            "value": "gpgcheck"
+          },
+          {
+            "name": "value",
+            "value": "1"
+          },
+          {
+            "name": "separator",
+            "value": "="
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Ensure_gpgcheck_is_globally_activated",
     "name": "CIS redhat7 - Ensure gpgcheck is globally activated",
     "parameter": [],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }
