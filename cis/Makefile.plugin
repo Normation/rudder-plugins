@@ -10,7 +10,7 @@ redhat7: OS = redhat7
 redhat7: all
 
 ubuntu18-nightly: OS = ubuntu18
-ubuntu18-nightly: nightly 
+ubuntu18-nightly: nightly
 
 debian9-nightly: OS = debian9
 debian9-nightly: nightly
