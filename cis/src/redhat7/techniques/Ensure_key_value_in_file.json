@@ -1,78 +1,78 @@
 {
   "data": {
-    "bundle_args": [
-      "key",
-      "value",
-      "separator",
-      "file"
-    ],
-    "bundle_name": "CIS_redhat7___Ensure_key_value_in_file",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "b1053b65-ed03-45c5-b33a-d98839af37fd",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "${file}",
-          "${key}",
-          "${value}",
-          "${separator}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "File key-value present",
-        "method_name": "file_key_value_present"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "a436b0fc-4a75-4c55-9b07-305296297604",
+        "method": "file_key_value_present",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "${file}"
+          },
+          {
+            "name": "key",
+            "value": "${key}"
+          },
+          {
+            "name": "value",
+            "value": "${value}"
+          },
+          {
+            "name": "separator",
+            "value": "${separator}"
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Ensure_key_value_in_file",
     "name": "CIS redhat7 - Ensure key value in file",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
         "name": "key"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "f73d12e6-725a-4602-9299-48e33823edcd",
         "name": "value"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "8e66bcab-1d35-495a-92fd-7a30cb30f3f9",
         "name": "separator"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "9e79f7f8-3ca6-4376-a510-11e00e134c91",
         "name": "file"
       }
     ],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }

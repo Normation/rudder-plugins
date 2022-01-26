@@ -1,54 +1,68 @@
 {
   "data": {
-    "bundle_args": [
-      "module"
-    ],
-    "bundle_name": "CIS_redhat7___Disable_kernel_module_loading",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "3f51b8e4-ef88-45a6-8246-f91d36ea3c17",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "${module}",
-          "install ${module} /bin/false"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "kernel_module_configuration",
-        "method_name": "kernel_module_configuration"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "4346c5e1-f34c-4dee-9d09-a2bd2537b65c",
+        "method": "kernel_module_configuration",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${module}"
+          },
+          {
+            "name": "configuration",
+            "value": "install ${module} /bin/false"
+          }
+        ]
       },
       {
-        "args": [
-          "${module}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "kernel_module_not_loaded",
-        "method_name": "kernel_module_not_loaded"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "0d3dae03-a30e-4a38-b612-f22fc91a7d45",
+        "method": "kernel_module_not_loaded",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${module}"
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Disable_kernel_module_loading",
     "name": "CIS redhat7 - Disable kernel module loading",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
         "name": "module"
       }
     ],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }

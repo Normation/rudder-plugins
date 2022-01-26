@@ -219,6 +219,45 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 ---- end of add in rudder-web.properties ----
 ```
 
+==== Using a certificate for secure connection to LDAP/AD
+
+If you want to connect with a secure connection to an LDAP or AD, you need to add the
+directory certificate to Rudder's JVM `keystore`. 
+
+Without that, you will see errors in `/var/log/rudder/webapp/XXXXXXX_stderrout.log` files like:
+
+```
+WARN  application - Login authentication failed for user 'xxx' from IP '127.0.0.1|X-Forwarded-For:xxx.xxx.xxx.xxx': simple bind failed: xxx.xxx:636; nested exception is javax.naming.CommunicationException: simple bind failed:
+
+xxx.xxx:636 [Root exception is java.net.SocketException: Connection or outbound has closed]
+```
+
+**Adding certificate to JVM keystore**
+
+```
+# copy the certificate somewhere in /opt/rudder
+
+cd path/to/jdk<in-use-version>/lib/security
+
+keytool -importcert -import -trustcacerts -keystore cacerts -storepass changeit -noprompt -alias "rudder-ldap-certificate" -file <path to certificate>
+```
+
+**Error because certificate is 1024 bits**
+
+Since JVM version 8, certificate of size 1024 or less are forbidden by default. If you still use a certificate with that size, you will get errors
+like:
+
+```
+Root exception is javax.net.ssl.SSLHandshakeException: PKIX path validation failed: java.security.cert.CertPathValidatorException: Algorithm constraints check failed on keysize limits: RSA 1024 bit key used with certificate
+```
+
+
+To correct that problem, you need to remove that restriction (and update your certificates for security):
+
+* edit `path/to/jdk<in-use-version>/conf/security/java.security`
+* remove `RSA keySize < 1024` for property `jdk.certpath.disabledAlgorithms` (or decrease size limit)
+* restart `rudder-jetty`
+
 === Radius backend
 
 Below follow the configuration properties that need to be added in
