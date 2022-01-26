@@ -1,53 +1,64 @@
 {
+  "type": "ncf_technique",
+  "version": "3.0",
   "data": {
-    "bundle_args": [
-      "service"
-    ],
-    "bundle_name": "CIS_debian9___Enable_Service",
-    "category": "CIS_debian9",
-    "description": "",
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "${service}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
-        "component": "service_enabled",
-        "method_name": "service_enabled"
-      },
-      {
-        "args": [
-          "${service}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
-        "component": "service_started",
-        "method_name": "service_started"
-      }
-    ],
+    "id": "CIS_debian9___Enable_Service",
+    "version": "1.0",
     "name": "CIS debian9 - Enable Service",
+    "description": "",
+    "category": "CIS_debian9",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "981a5b9d-b062-4011-8dff-df1810cb2fe6",
-        "name": "service"
+        "name": "service",
+        "description": ""
       }
     ],
-    "version": "1.0"
-  },
-  "tags": [],
-  "type": "ncf_technique",
-  "version": "1"
+    "calls": [
+      {
+        "component": "condition_from_variable_existence",
+        "id": "57042fb3-b948-4565-9cdd-4cc2d9ae8a56",
+        "method": "condition_from_variable_existence",
+        "condition": "",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "service_enabled",
+        "id": "a43f698e-bc13-469e-a176-752f75a7481f",
+        "method": "service_enabled",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${service}"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "service_started",
+        "id": "9102e659-c7e0-4c2a-ba03-f4f11554b11a",
+        "method": "service_started",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${service}"
+          }
+        ],
+        "disableReporting": false
+      }
+    ],
+    "resources": []
+  }
 }

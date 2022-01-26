@@ -1,78 +1,78 @@
 {
   "data": {
-    "bundle_args": [
-      "owner",
-      "group_owner",
-      "mode",
-      "path"
-    ],
-    "bundle_name": "CIS_redhat7___Set_permissions",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "599ee51f-81e1-411e-8dc5-beabf07e03f1",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "${path}",
-          "${mode}",
-          "${owner}",
-          "${group_owner}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "permissions_recursive",
-        "method_name": "permissions_recursive"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "05a9cc5e-d2f0-4df9-b3f5-6525f96f1fc4",
+        "method": "permissions_recursive",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "${path}"
+          },
+          {
+            "name": "mode",
+            "value": "${mode}"
+          },
+          {
+            "name": "owner",
+            "value": "${owner}"
+          },
+          {
+            "name": "group",
+            "value": "${group_owner}"
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Set_permissions",
     "name": "CIS redhat7 - Set permissions",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
         "name": "owner"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "f73d12e6-725a-4602-9299-48e33823edcd",
         "name": "group_owner"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
         "name": "mode"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "586d5935-1730-4266-9d07-9a380d822400",
         "name": "path"
       }
     ],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }

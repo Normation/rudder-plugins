@@ -1,94 +1,136 @@
 {
   "data": {
-    "bundle_args": [
-      "key",
-      "expected_value"
-    ],
-    "bundle_name": "CIS_redhat7___Ensure_sysctl_key_value_IPV4",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "ba07eed2-884a-486e-b857-16451760aece",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "cis",
-          "command_check_${report_data.canonified_directive_id}",
-          "${paths.sysctl} ${key}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "variable_string_from_command",
-        "method_name": "variable_string_from_command"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "9b18ff13-3071-411a-a611-e41d056317c8",
+        "method": "variable_string_from_command",
+        "parameters": [
+          {
+            "name": "prefix",
+            "value": "cis"
+          },
+          {
+            "name": "name",
+            "value": "command_check_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "command",
+            "value": "${paths.sysctl} ${key}"
+          }
+        ]
       },
       {
-        "args": [
-          "check_command_${report_data.canonified_directive_id}",
-          "cis.command_check_${report_data.canonified_directive_id}",
-          ".*${key}\\s*=\\s*${expected_value}.*"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "condition_from_variable_match",
-        "method_name": "condition_from_variable_match"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "06ae0569-ba7e-4101-beae-27e39d2f9d99",
+        "method": "condition_from_variable_match",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "check_command_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "cis.command_check_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "expected_match",
+            "value": ".*${key}\\s*=\\s*${expected_value}.*"
+          }
+        ]
       },
       {
-        "args": [
-          "/etc/sysctl.conf",
-          "${key}",
-          "${expected_value}",
-          "="
-        ],
-        "class_context": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "component": "File key-value present",
-        "method_name": "file_key_value_present"
+        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "fbd96981-f49c-4a74-ad0f-916c82078e9c",
+        "method": "file_key_value_present",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "/etc/sysctl.conf"
+          },
+          {
+            "name": "key",
+            "value": "${key}"
+          },
+          {
+            "name": "value",
+            "value": "${expected_value}"
+          },
+          {
+            "name": "separator",
+            "value": "="
+          }
+        ]
       },
       {
-        "args": [
-          "${paths.sysctl} -w ${key}=${expected_value}"
-        ],
-        "class_context": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "component": "Command execution",
-        "method_name": "command_execution"
+        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "6c9caa55-28b7-4935-bcab-69fac855cb5e",
+        "method": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${paths.sysctl} -w ${key}=${expected_value}"
+          }
+        ]
       },
       {
-        "args": [
-          "${paths.sysctl} -w net.ipv4.route.flush=1"
-        ],
-        "class_context": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "component": "Command execution",
-        "method_name": "command_execution"
+        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "afd014f2-8525-46ff-863e-2dec9351823a",
+        "method": "command_execution",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${paths.sysctl} -w net.ipv4.route.flush=1"
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Ensure_sysctl_key_value_IPV4",
     "name": "CIS redhat7 - Ensure sysctl key value IPV4",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
         "name": "key"
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "f73d12e6-725a-4602-9299-48e33823edcd",
         "name": "expected_value"
       }
     ],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }
