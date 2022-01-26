@@ -1,53 +1,64 @@
 {
   "data": {
-    "bundle_args": [
-      "service"
-    ],
-    "bundle_name": "CIS_redhat7___Enable_Service",
-    "category": "CIS_redhat7",
-    "description": "",
-    "method_calls": [
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "condition": "",
+        "disableReporting": false,
+        "id": "15005bfb-b60e-412a-8fc2-dc6f135bbcfa",
+        "method": "condition_from_variable_existence",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ]
       },
       {
-        "args": [
-          "${service}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "service_enabled",
-        "method_name": "service_enabled"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "22080354-50fa-464e-99aa-528bf8d1f498",
+        "method": "service_enabled",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${service}"
+          }
+        ]
       },
       {
-        "args": [
-          "${service}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "service_started",
-        "method_name": "service_started"
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
+        "id": "becaec77-146f-4729-a40e-f8b12392e939",
+        "method": "service_started",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${service}"
+          }
+        ]
       }
     ],
+    "category": "CIS_redhat7",
+    "description": "",
+    "id": "CIS_redhat7___Enable_Service",
     "name": "CIS redhat7 - Enable Service",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
+        "description": "",
         "id": "981a5b9d-b062-4011-8dff-df1810cb2fe6",
         "name": "service"
       }
     ],
+    "resources": [],
     "version": "1.0"
   },
-  "tags": [],
   "type": "ncf_technique",
-  "version": "1"
+  "version": "3.0"
 }

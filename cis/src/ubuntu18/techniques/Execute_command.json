@@ -1,85 +1,103 @@
 {
+  "type": "ncf_technique",
+  "version": "3.0",
   "data": {
-    "bundle_args": [
-      "check_command",
-      "expected_match",
-      "remediate"
-    ],
-    "bundle_name": "CIS_ubuntu18___Execute_command",
-    "category": "CIS_ubuntu18",
-    "description": "",
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "cis",
-          "command_check_${report_data.canonified_directive_id}",
-          "${check_command}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
-        "component": "variable_string_from_command",
-        "method_name": "variable_string_from_command"
-      },
-      {
-        "args": [
-          "check_command_${report_data.canonified_directive_id}",
-          "cis.command_check_${report_data.canonified_directive_id}",
-          "${expected_match}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
-        "component": "condition_from_variable_match",
-        "method_name": "condition_from_variable_match"
-      },
-      {
-        "args": [
-          "${remediate}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
-        "component": "command_execution",
-        "method_name": "command_execution"
-      }
-    ],
+    "id": "CIS_ubuntu18___Execute_command",
+    "version": "1.0",
     "name": "CIS ubuntu18 - Execute command",
+    "description": "",
+    "category": "CIS_ubuntu18",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
-        "name": "check_command"
+        "name": "check_command",
+        "description": ""
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "f73d12e6-725a-4602-9299-48e33823edcd",
-        "name": "expected_match"
+        "name": "expected_match",
+        "description": ""
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
-        "name": "remediate"
+        "name": "remediate",
+        "description": ""
       }
     ],
-    "version": "1.0"
-  },
-  "tags": [],
-  "type": "ncf_technique",
-  "version": "1"
+    "calls": [
+      {
+        "component": "condition_from_variable_existence",
+        "id": "53db48df-4107-465c-a4cc-05c4f0df3289",
+        "method": "condition_from_variable_existence",
+        "condition": "",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "variable_string_from_command",
+        "id": "4bb9c8fe-8336-4a01-bda3-06335988d94c",
+        "method": "variable_string_from_command",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "prefix",
+            "value": "cis"
+          },
+          {
+            "name": "name",
+            "value": "command_check_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "command",
+            "value": "${check_command}"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "condition_from_variable_match",
+        "id": "5d4a1ca8-65c5-4ea5-b4c7-15a820db6171",
+        "method": "condition_from_variable_match",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "check_command_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "cis.command_check_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "expected_match",
+            "value": "${expected_match}"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "command_execution",
+        "id": "ee02e17f-c7dc-42a2-be51-beff4ec8d97f",
+        "method": "command_execution",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${remediate}"
+          }
+        ],
+        "disableReporting": false
+      }
+    ],
+    "resources": []
+  }
 }

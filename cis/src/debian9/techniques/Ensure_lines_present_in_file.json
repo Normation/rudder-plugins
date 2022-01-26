@@ -1,67 +1,69 @@
 {
+  "type": "ncf_technique",
+  "version": "3.0",
   "data": {
-    "bundle_args": [
-      "lines",
-      "file",
-      "extra_condition"
-    ],
-    "bundle_name": "CIS_debian9___Ensure_lines_present_in_file",
-    "category": "CIS_debian9",
-    "description": "",
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "${file}",
-          "${lines}",
-          "false"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.${extra_condition})",
-        "component": "File content",
-        "method_name": "file_content"
-      }
-    ],
+    "id": "CIS_debian9___Ensure_lines_present_in_file",
+    "version": "1.0",
     "name": "CIS debian9 - Ensure lines present in file",
+    "description": "",
+    "category": "CIS_debian9",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
-        "name": "lines"
+        "name": "lines",
+        "description": ""
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "9e79f7f8-3ca6-4376-a510-11e00e134c91",
-        "name": "file"
+        "name": "file",
+        "description": ""
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "1cf9a017-7fd9-49b8-bdaa-0c22365fa988",
-        "name": "extra_condition"
+        "name": "extra_condition",
+        "description": ""
       }
     ],
-    "version": "1.0"
-  },
-  "tags": [],
-  "type": "ncf_technique",
-  "version": "1"
+    "calls": [
+      {
+        "component": "condition_from_variable_existence",
+        "id": "652a7d58-dcb4-4003-ad34-57b8fdc941fa",
+        "method": "condition_from_variable_existence",
+        "condition": "",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "File content",
+        "id": "7a697d31-31de-464d-9d79-7878842ee366",
+        "method": "file_content",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.${extra_condition})",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "${file}"
+          },
+          {
+            "name": "lines",
+            "value": "${lines}"
+          },
+          {
+            "name": "enforce",
+            "value": "false"
+          }
+        ],
+        "disableReporting": false
+      }
+    ],
+    "resources": []
+  }
 }

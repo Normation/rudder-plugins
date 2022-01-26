@@ -1,66 +1,81 @@
 {
+  "type": "ncf_technique",
+  "version": "3.0",
   "data": {
-    "bundle_args": [
-      "package",
-      "posthook"
-    ],
-    "bundle_name": "CIS_debian9___Ensure_a_package_is_installed",
-    "category": "CIS_debian9",
-    "description": "",
-    "method_calls": [
-      {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
-        "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
-      },
-      {
-        "args": [
-          "${package}",
-          "any",
-          "default",
-          "default"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
-        "component": "package_present",
-        "method_name": "package_present"
-      },
-      {
-        "args": [
-          "${posthook}"
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false.package_present_${package}_repaired)",
-        "component": "command_execution",
-        "method_name": "command_execution"
-      }
-    ],
+    "id": "CIS_debian9___Ensure_a_package_is_installed",
+    "version": "1.0",
     "name": "CIS debian9 - Ensure a package is installed",
+    "description": "",
+    "category": "CIS_debian9",
     "parameter": [
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
-        "name": "package"
+        "name": "package",
+        "description": ""
       },
       {
-        "constraints": {
-          "allow_empty_string": false,
-          "allow_whitespace_string": false,
-          "max_length": 16384
-        },
         "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
-        "name": "posthook"
+        "name": "posthook",
+        "description": ""
       }
     ],
-    "version": "1.0"
-  },
-  "tags": [],
-  "type": "ncf_technique",
-  "version": "1"
+    "calls": [
+      {
+        "component": "condition_from_variable_existence",
+        "id": "f908b33b-eb67-42a3-8896-416bc88ba93d",
+        "method": "condition_from_variable_existence",
+        "condition": "",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "package_present",
+        "id": "94e57506-e8e1-4464-8fe0-3c606b85edd7",
+        "method": "package_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "name",
+            "value": "${package}"
+          },
+          {
+            "name": "version",
+            "value": "any"
+          },
+          {
+            "name": "architecture",
+            "value": "default"
+          },
+          {
+            "name": "provider",
+            "value": "default"
+          }
+        ],
+        "disableReporting": false
+      },
+      {
+        "component": "command_execution",
+        "id": "c9609ec9-754a-4c45-a830-1a07ac75a745",
+        "method": "command_execution",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.package_present_${package}_repaired)",
+        "parameters": [
+          {
+            "name": "command",
+            "value": "${posthook}"
+          }
+        ],
+        "disableReporting": false
+      }
+    ],
+    "resources": []
+  }
 }

@@ -1,47 +1,82 @@
 {
+  "type": "ncf_technique",
+  "version": "3.0",
   "data": {
-    "bundle_args": [],
-    "bundle_name": "CIS_debian9___Ensure_gpgcheck_is_globally_activated",
-    "category": "CIS_debian9",
+    "id": "CIS_debian9___Ensure_gpgcheck_is_globally_activated",
+    "version": "1.0",
+    "name": "CIS debian9 - Ensure gpgcheck is globally activated",
     "description": "",
-    "method_calls": [
+    "category": "CIS_debian9",
+    "parameter": [],
+    "calls": [
       {
-        "args": [
-          "skip_item_${report_data.canonified_directive_id}",
-          "node.properties[skip][${report_data.directive_id}]"
-        ],
-        "class_context": "any",
         "component": "condition_from_variable_existence",
-        "method_name": "condition_from_variable_existence"
+        "id": "33b18f14-2e4a-46a2-a2ab-c81e9679b3ef",
+        "method": "condition_from_variable_existence",
+        "condition": "",
+        "parameters": [
+          {
+            "name": "condition",
+            "value": "skip_item_${report_data.canonified_directive_id}"
+          },
+          {
+            "name": "variable_name",
+            "value": "node.properties[skip][${report_data.directive_id}]"
+          }
+        ],
+        "disableReporting": false
       },
       {
-        "args": [
-          "/etc/yum.conf",
-          "gpgcheck",
-          "1",
-          "="
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "file_key_value_present",
-        "method_name": "file_key_value_present"
+        "id": "43eefba6-1e1d-4cef-b9f2-919559c5f0e0",
+        "method": "file_key_value_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "/etc/yum.conf"
+          },
+          {
+            "name": "key",
+            "value": "gpgcheck"
+          },
+          {
+            "name": "value",
+            "value": "1"
+          },
+          {
+            "name": "separator",
+            "value": "="
+          }
+        ],
+        "disableReporting": false
       },
       {
-        "args": [
-          "/etc/yum.repos.d/.*",
-          "gpgcheck",
-          "1",
-          "="
-        ],
-        "class_context": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "component": "file_key_value_present",
-        "method_name": "file_key_value_present"
+        "id": "f9ec3cf1-ccbf-4a2f-b804-5ce8992b32e1",
+        "method": "file_key_value_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "parameters": [
+          {
+            "name": "path",
+            "value": "/etc/yum.repos.d/.*"
+          },
+          {
+            "name": "key",
+            "value": "gpgcheck"
+          },
+          {
+            "name": "value",
+            "value": "1"
+          },
+          {
+            "name": "separator",
+            "value": "="
+          }
+        ],
+        "disableReporting": false
       }
     ],
-    "name": "CIS debian9 - Ensure gpgcheck is globally activated",
-    "parameter": [],
-    "version": "1.0"
-  },
-  "tags": [],
-  "type": "ncf_technique",
-  "version": "1"
+    "resources": []
+  }
 }

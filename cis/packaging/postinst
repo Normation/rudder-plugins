@@ -29,6 +29,9 @@ do
 done
 git commit -m "CIS plugin installation"
 
+# Import GM
+echo "Reloading methods library"
+curl --silent -k --header "Content-type: application/json"   --header "X-API-Token: $(cat /var/rudder/run/api-token)" --request POST https://localhost/rudder/api/latest/methods/reload | jq '.result'
 
 # Import Techniques
 ${RUDDER_BIN}/rudder_synchronize.py import technique ${CONFIGURATION_PATH}/techniques
