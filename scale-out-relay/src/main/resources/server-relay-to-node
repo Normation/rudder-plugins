@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: CC-BY-SA-2.0
+# SPDX-FileCopyrightText: 2013-2022 Normation SAS
+
+# @description demote a relay to node
+# @man Demote a relay to node by using scale-out-relay plugin API
+# @man +
+# @man *Arguments*:
+# @man +
+# @man *UUID*: relay ID to demote
+
+. "${BASEDIR}/../lib/common.sh"
+
+RUDDER_OPT=/opt/rudder
+RUDDER_VAR=/var/rudder
+RUDDER_JSON="${RUDDER_VAR}/cfengine-community/inputs/rudder.json"
+SYSTEM_TOKEN=$(cat /var/rudder/run/api-token)
+PORT=$(get_https_port)
+
+rudder_json_value() {
+	jq -r ".$1" ${RUDDER_JSON}
+}
+
+if [ -f "${RUDDER_JSON}" ]; then
+  RUDDER_VERIFY_CERTIFICATES=$(rudder_json_value 'RUDDER_VERIFY_CERTIFICATES')
+fi
+
+if [ "${RUDDER_VERIFY_CERTIFICATES}" = "true" ]
+then
+  CERTIFICATE_OPTION=""
+else
+  CERTIFICATE_OPTION="--insecure"
+fi
+
+DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --globoff"
+
+usage() {
+	echo "Usage: $0 <UUID of the relay server to make a node>"
+}
+
+NODE_UUID=$1
+
+# Check arguments
+if [ "${NODE_UUID}" = "" ]; then
+	echo "ERROR: Need the UUID of the Node as an argument, aborting."
+	usage
+	exit 1
+elif [ "${NODE_UUID}" = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeee" ]; then
+	echo "ERROR: Please use a real UUID, not the one supplied in the documentation, aborting."
+	exit 1
+fi
+
+# Scale-out-relay API call (must have the plugin installed)
+API_URL="https://127.0.0.1${PORT}/rudder/api/latest"
+response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST "${API_URL}/scaleoutrelay/demote/${NODE_UUID}")
+code=$?
+
+if [ ${code} -ne 0 ]; then
+	 echo "Failed to demote ${NODE_UUID} to node. Code ${code}" 1>&2
+	 exit 1
+fi
+
+result_api=$(echo "$response" | jq -r '.result')
+parse_response=$?
+
+if [ "${result_api}" = "error" ]; then
+	echo "ERROR: Demote ${NODE_UUID} have failed" 1>&2
+	error_details=$(echo "$response" | jq -r '.errorDetails')
+	echo "Reason: ${error_details}"
+	exit 1
+elif [ ${parse_response} = 4 ];then
+	echo "ERROR: Unknown response format, parsing failed. Code ${parse_response}" 1>&2
+else
+	echo "Done."
+
+	echo -n "INFO: Triggering promises generation..."
+	${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST -k "${API_URL}/system/reload/techniques"
+	echo " Done."
+
+	echo "Success: all steps completed successfully."
+	exit 0
+fi
