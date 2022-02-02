@@ -2,14 +2,14 @@ port module UserManagement exposing (processApiError, update)
 
 import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
-import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), StateInput(..), User, Username, Users)
+import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), Provider(..), StateInput(..), User, Username, Users, toProvider)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, createSuccessNotification, defaultConfig, init, subscriptions)
-import List exposing (all, filter)
 import String exposing (isEmpty)
 import Toasty
 import View exposing (view)
+import List
 
 main =
     Browser.element
@@ -37,10 +37,11 @@ update msg model =
             case result of
                 Ok u ->
                     let
+                        knownProviders = List.filter (\p -> p /= Unknown) (List.map toProvider u.authenticationBackends)
                         recordUser =
                             List.map (\x -> (x.login, (Authorization x.authz  x.role))) u.users
                         newModel =
-                            { model | users = fromList recordUser, digest = u.digest}
+                            { model | users = fromList recordUser, digest = u.digest, providers = knownProviders}
 
                     in
                     ( newModel, getRoleConf model )
@@ -78,21 +79,21 @@ update msg model =
 
         ActivePanelAddUser ->
             if model.panelMode == AddMode then
-                ({model | panelMode = Closed, authzToAddOnSave = []}, Cmd.none)
+                ({model | panelMode = Closed, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
             else
-                ({model | panelMode = AddMode, authzToAddOnSave = []}, Cmd.none)
+                ({model | panelMode = AddMode, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
         ActivePanelSettings user ->
             case model.panelMode of
                 EditMode u ->
                     if u.login == user.login then
-                        ({model | panelMode = Closed, authzToAddOnSave = []}, Cmd.none)
+                        ({model | panelMode = Closed, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
                     else
-                        ({model |authzToAddOnSave = [], panelMode = EditMode user}, Cmd.none)
+                        ({model |authzToAddOnSave = [], password = "", panelMode = EditMode user, userForcePasswdInput = False }, Cmd.none)
                 _          ->
                     ({model | panelMode = EditMode user}, Cmd.none)
 
         DeactivatePanel ->
-            ({model | isValidInput = ValidInputs, panelMode = Closed, authzToAddOnSave = []}, Cmd.none)
+            ({model | isValidInput = ValidInputs, panelMode = Closed, authzToAddOnSave = [], password = "", userForcePasswdInput = False}, Cmd.none)
 
         ComputeRoleCoverage result ->
             case result of
@@ -112,7 +113,7 @@ update msg model =
         DeleteUser result ->
              case result of
                   Ok deletedUser ->
-                       ({model | panelMode = Closed}, postReloadConf model)
+                       ({model | panelMode = Closed, login = "", openDeleteModal = False}, postReloadConf model)
                            |> createSuccessNotification (deletedUser ++ " have been deleted")
                   Err err ->
                        processApiError err model
@@ -130,46 +131,47 @@ update msg model =
             ({model | authzToAddOnSave = r :: model.authzToAddOnSave}, Cmd.none)
         RemoveRole user r ->
             let
-                newRoles = filter (\x -> r /= x) user.role
-                newAuthz = filter (\x -> r /= x) user.authz
+                newRoles = List.filter (\x -> r /= x) user.role
+                newAuthz = List.filter (\x -> r /= x) user.authz
                 newUser = {user | role = newRoles, authz = newAuthz}
             in
-            ({model | panelMode = EditMode newUser}, updateUser model user.login "" newUser)
+            ({model | panelMode = EditMode newUser}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.isHashedPasswd))
         Notification subMsg ->
-               Toasty.update defaultConfig Notification subMsg model
+            Toasty.update defaultConfig Notification subMsg model
 
         Password newPassword ->
             ({model | isValidInput = ValidInputs, password = newPassword}, Cmd.none)
         Login newLogin ->
             ({model | isValidInput = ValidInputs, login = newLogin}, Cmd.none)
         SubmitUpdatedInfos u ->
-            let
-                newLogin =
-                    if isEmpty model.login then
-                        case model.panelMode of
-                            EditMode user ->
-                                user.login
-                            _             ->
-                                "" -- This case shouldn't happen since we must be in EditMod, it will invalidate the user in the file.
-                    else
-                        model.login
-            in
-            ({model | authzToAddOnSave = [], password = "", login = "", panelMode = Closed}, updateUser model u.login model.password { u | login = model.login})
+            ({model | authzToAddOnSave = [], password = "", userForcePasswdInput = False, login = "", panelMode = Closed}, updateUser model u.login (DataTypes.AddUserForm { u | login = model.login} model.password model.isHashedPasswd))
         SubmitNewUser u  ->
-            if (isEmpty u.login && isEmpty model.password) then
-               ({model | isValidInput = InvalidInputs}, Cmd.none)
-            else if (isEmpty u.login) then
-               ({model | isValidInput = InvalidUsername}, Cmd.none)
-            else if (isEmpty model.password) then
-               ({model | isValidInput = InvalidPassword}, Cmd.none)
+            if(isEmpty u.login) then
+              ({model | isValidInput = InvalidUsername}, Cmd.none)
             else
-               ({model | panelMode = Closed, login = "", password = "", hashedPasswd = True, isValidInput = ValidInputs, authzToAddOnSave = []}, addUser model u)
+              ({ model |
+                 panelMode            = Closed
+               , login                = ""
+               , password             = ""
+               , userForcePasswdInput = False
+               , isHashedPasswd         = True
+               , isValidInput         = ValidInputs
+               , authzToAddOnSave     = []
+               }
+               , addUser model (DataTypes.AddUserForm u model.password model.isHashedPasswd)
+               )
 
-        PreHashedPasswd ->
-            if model.hashedPasswd then
-                ({model | password = "",hashedPasswd = False}, Cmd.none)
+        PreHashedPasswd bool ->
+            ({model | password = "",isHashedPasswd = bool}, Cmd.none)
+        AddPasswdAnyway ->
+            if (model.userForcePasswdInput) then
+                ({model | userForcePasswdInput = False, password = ""}, Cmd.none)
             else
-                ({model | password = "", hashedPasswd = True}, Cmd.none)
+                ({model | userForcePasswdInput = True}, Cmd.none)
+        OpenDeleteModal username ->
+            ({model | openDeleteModal = True, login = username}, Cmd.none)
+        CloseDeleteModal ->
+            ({model | openDeleteModal = False, login = ""}, Cmd.none)
 
 processApiError : Error -> Model -> ( Model, Cmd Msg )
 processApiError err model =
