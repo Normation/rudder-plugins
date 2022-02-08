@@ -1,25 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Disable_Service",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Disable Service",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [
-      {
-        "id": "981a5b9d-b062-4011-8dff-df1810cb2fe6",
-        "name": "service",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "a9f76230-2c29-424b-8dc8-fa4aeac5ddf3",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -29,36 +16,49 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "service_disabled",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "7ec42ccd-3cea-4eb2-8bdd-a948adad016f",
         "method": "service_disabled",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
             "value": "${service}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "service_stopped",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "8d7b594d-ef4d-4504-aca9-51c17667e8f1",
         "method": "service_stopped",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
             "value": "${service}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Disable_Service",
+    "name": "CIS ubuntu18 - Disable Service",
+    "parameter": [
+      {
+        "description": "",
+        "id": "981a5b9d-b062-4011-8dff-df1810cb2fe6",
+        "name": "service"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

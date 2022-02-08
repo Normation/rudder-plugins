@@ -1,35 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_debian9___Execute_command",
-    "version": "1.0",
-    "name": "CIS debian9 - Execute command",
-    "description": "",
-    "category": "CIS_debian9",
-    "parameter": [
-      {
-        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
-        "name": "check_command",
-        "description": ""
-      },
-      {
-        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
-        "name": "expected_match",
-        "description": ""
-      },
-      {
-        "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
-        "name": "remediate",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "e2c460cb-3c45-46ab-813a-5851644376fc",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -39,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "variable_string_from_command",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "1c85df0c-8024-4519-87d7-66860a21a65a",
         "method": "variable_string_from_command",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "prefix",
@@ -60,14 +37,14 @@
             "name": "command",
             "value": "${check_command}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "condition_from_variable_match",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "8777cf79-fe16-4fce-9197-1b27572cf591",
         "method": "condition_from_variable_match",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "condition",
@@ -81,23 +58,46 @@
             "name": "expected_match",
             "value": "${expected_match}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "command_execution",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "e660f5d0-acfd-45f3-9afd-4651f821daff",
         "method": "command_execution",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.check_command_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "command",
             "value": "${remediate}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_debian9",
+    "description": "",
+    "id": "CIS_debian9___Execute_command",
+    "name": "CIS debian9 - Execute command",
+    "parameter": [
+      {
+        "description": "",
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "check_command"
+      },
+      {
+        "description": "",
+        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
+        "name": "expected_match"
+      },
+      {
+        "description": "",
+        "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
+        "name": "remediate"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

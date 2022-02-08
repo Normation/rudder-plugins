@@ -184,9 +184,11 @@
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.chuusai</groupId><artifactId>shapeless_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.google.errorprone</groupId><artifactId>error_prone_annotations</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
