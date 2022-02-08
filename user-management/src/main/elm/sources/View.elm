@@ -1,74 +1,160 @@
 module View exposing (..)
 
-------------------------------
--- VIEW --
-------------------------------
-
-
 import ApiCalls exposing (deleteUser)
-
-import DataTypes exposing (PanelMode(..), Model, Msg(..), RoleConf, Roles, StateInput(..), User, Username, Users, UsersConf)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), Provider(..), RoleConf, Roles, StateInput(..), User, Username, Users, UsersConf, providerToString)
 import Dict exposing (keys)
-import Html exposing (Html, a, br, button, div, h2, h3, h4, h5, i, input, p, span, text)
-import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, required, type_, value)
+import Html exposing (..)
+import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, required, style, tabindex, type_)
 import Html.Events exposing (onClick, onInput)
 import Init exposing (defaultConfig)
-import List exposing (all, any, filter, map)
 import String exposing (isEmpty)
 import Toasty
 import Toasty.Defaults
+import List
+
+takeFirstExtProvider: List Provider -> Maybe Provider
+takeFirstExtProvider providers =
+    List.head (List.filter (\p -> p /= Unknown && p /= File) providers)
 
 view : Model -> Html Msg
 view model =
     let
         content =
-           if (isEmpty model.digest) || (List.isEmpty (keys model.users)) then
-               text "Waiting for data from server..."
+            if (isEmpty model.digest) || (List.isEmpty (keys model.users)) then
+                text "Waiting for data from server..."
 
-           else
-               displayUsersConf model model.users
+            else
+                displayUsersConf model model.users
+        deleteModal =
+            if model.openDeleteModal then
+                showDeleteModal model.login
+            else
+                div[][]
     in
     div []
-        [ content
+        [ deleteModal
+        , content
         , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
         ]
 
-hashPasswordMenu : Model -> Html Msg
-hashPasswordMenu model =
+showDeleteModal : String -> Html Msg
+showDeleteModal username =
+                  div [ tabindex -1, class "modal fade in", style "z-index" "1050", style "display" "block" ]
+                  [
+                      div [class "modal-dialog"]
+                      [
+                          div [class "modal-content"]
+                          [
+                              div [class "modal-header"]
+                              [
+                                div [class "close", attribute "data-dismiss" "modal", onClick CloseDeleteModal][i [class "fa fa-times"][]]
+                              , h4 [class "modal-title"][text "Delete a user"]
+                              ]
+                            , div [class "modal-body"]
+                              [
+                                div [class "row"]
+                                [
+                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text " ?"]
+                                ]
+                              ]
+                            , div [class "modal-footer"]
+                              [
+                                button [class "btn btn-default", onClick CloseDeleteModal][text "Cancel"]
+                              , button [class "btn btn-danger", onClick (CallApi ( deleteUser username ))][text "Delete"]
+                              ]
+                          ]
+                      ]
+                  ]
+hashPasswordMenu : Bool -> Html Msg
+hashPasswordMenu isHashedPasswd =
     let
         hashPasswdIsActivate =
-            if (model.hashedPasswd == True) then
-                "active"
+            if (isHashedPasswd == True) then
+                "active "
             else
                 ""
         clearPasswdIsActivate =
-             if (model.hashedPasswd == False) then
-                 "active"
+             if (isHashedPasswd == False) then
+                 "active "
              else
                  ""
     in
-        div [class "btn-group", attribute "role" "group"]
+        div [class ("btn-group"), attribute "role" "group"]
         [
-              a [class ("btn btn-default " ++ hashPasswdIsActivate), onClick PreHashedPasswd][text "Enter pre-hashed value"]
-            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick PreHashedPasswd][text "Password to hash"]
+              a [class ("btn btn-default " ++ hashPasswdIsActivate) , onClick (PreHashedPasswd True)][text "Enter pre-hashed value"]
+            , a [class ("btn btn-default " ++ clearPasswdIsActivate), onClick (PreHashedPasswd False)][text "Password to hash"]
         ]
+
+
+displayPasswordBlock : Model -> Html Msg
+displayPasswordBlock model =
+    let
+        mainProvider =
+            case (List.head (List.filter (\p -> p /= Unknown && p /= File) model.providers)) of
+              Just p  -> providerToString p
+              Nothing -> "unknown_provider"
+        classDeactivatePasswdInput = if isPasswordMandatory then "" else " deactivate-auth-backend  ask-passwd-deactivate "
+        isPasswordMandatory =
+           case (List.head model.providers) of
+             Just p -> p == File
+             Nothing -> True
+        isHidden =
+            if model.isHashedPasswd then
+                "text"
+            else "password"
+        phMsg = if model.isHashedPasswd then "New hashed password" else "This password will be hashed and then stored"
+        passwdRequiredId =
+            if isPasswordMandatory then
+                case model.panelMode of
+                    AddMode ->
+                        if (model.isValidInput == InvalidUsername) then "invalid-password" else "valid-input"
+                    _       ->
+                        "valid-input"
+            else
+                ""
+        passwordInput =
+            [
+                  hashPasswordMenu model.isHashedPasswd
+                , input [id passwdRequiredId, class ("form-control anim-show  " ++ classDeactivatePasswdInput), type_ isHidden, placeholder phMsg, onInput Password, attribute "autocomplete" "new-password"] []
+                , hashType
+            ]
+        hashType =
+            if model.isHashedPasswd then
+                div[class "hash-block"][i[class "fa fa-key hash-icon"][],div[class "hash-type"][text model.digest]]
+            else
+               div[][]
+
+    in
+    if (not isPasswordMandatory) then
+       div[class "msg-providers"]
+       [
+            i [class "fa fa-exclamation-circle info-passwd-icon"][]
+          , text "Since the authentication method used an external provider, no password will be asked for this user."
+          , br[][]
+          , text "If you want to add a password anyway, "
+          , a [class "click-here", onClick AddPasswdAnyway][text "Click here"]
+          , if (model.userForcePasswdInput) then
+                div [class "force-password"] (
+                    div[class "info-force-passwd"]
+                    [
+                      text "The password value won't be use with currently default authentication provider "
+                    , b [style "color" "#2557D6"] [text mainProvider]
+                    , text ", you should let it blank."
+                    ] :: passwordInput
+                )
+            else
+                div [][]
+       ]
+    else
+        div [] (passwordInput)
 
 displayRightPanelAddUser : Model -> Html Msg
 displayRightPanelAddUser model =
    let
-       phMsg = if model.hashedPasswd then "New hashed password" else "This password will be hashed and then stored"
-       isHidden = if model.hashedPasswd then "text" else "password"
        emptyUsername =
            case model.panelMode of
                AddMode ->
-                   if (model.isValidInput == InvalidUsername || model.isValidInput == InvalidInputs) then "invalid-username" else "valid-input"
-               _       ->
-                   "valid-input"
-
-       emptyPassword =
-           case model.panelMode of
-               AddMode ->
-                   if (model.isValidInput == InvalidPassword || model.isValidInput == InvalidInputs) then "invalid-password" else "valid-input"
+                   if (model.isValidInput == InvalidUsername) then "invalid-username" else "valid-input"
                _       ->
                    "valid-input"
    in
@@ -81,8 +167,7 @@ displayRightPanelAddUser model =
            , div []
            [
                  input [id emptyUsername, class "form-control username-input", type_ "text", placeholder "Username", onInput Login, required True] []
-               , hashPasswordMenu model
-               , input [id emptyPassword, class "form-control", type_ isHidden, placeholder phMsg, onInput Password, value model.password , attribute "autocomplete" "new-password", required True] []
+               , displayPasswordBlock model
                , button [class "btn btn-sm btn-success btn-save", onClick (SubmitNewUser (User model.login [] []))] [text "Save"]
            ]
        ]
@@ -93,7 +178,7 @@ getDiffRoles total sample =
     let
         t =  keys total
     in
-        (filter (\r -> (all (\r2 -> r /= r2) sample)) t)
+        (List.filter (\r -> (List.all (\r2 -> r /= r2) sample)) t)
 
 displayDropdownRoleList : List String -> Html Msg
 displayDropdownRoleList roles =
@@ -101,7 +186,6 @@ displayDropdownRoleList roles =
         tokens = List.map (\r -> a [href "#", onClick (AddRole r)][text r]) roles
     in
     div [class "dropdown-content"] tokens
-
 
 displayRightPanel : Model -> Html Msg
 displayRightPanel model =
@@ -115,7 +199,6 @@ displayRightPanel model =
                 button [id "addBtn-disabled", class "addBtn", disabled True][i [class "fa fa-plus"][]]
             else
                 button [class "addBtn"][i [class "fa fa-plus"][]]
-        isHidden = if model.hashedPasswd then "text" else "password"
     in
     div [class "panel-wrap"]
     [
@@ -127,8 +210,7 @@ displayRightPanel model =
               , button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
            ]
            , input [class "form-control username-input", type_ "text", placeholder "New Username", onInput Login] []
-           , hashPasswordMenu model
-           , input [class "form-control", type_ isHidden, placeholder "New Password", onInput Password, attribute "autocomplete" "new-password", value model.password ] []
+           , displayPasswordBlock model
            , h4 [class "role-title"][text "Roles"]
            , div [class "role-management-wrapper"]
            [
@@ -139,7 +221,7 @@ displayRightPanel model =
                     , (displayDropdownRoleList availableRoles)
                 ]
            ]
-           , button [class "btn btn-sm btn-danger btn-delete", onClick (CallApi ( deleteUser user.login))] [text "Delete"]
+           , button [class "btn btn-sm btn-danger btn-delete",onClick (OpenDeleteModal user.login)] [text "Delete"]
            , button [class "btn btn-sm btn-success btn-save", onClick (SubmitUpdatedInfos {user | role = user.role ++ model.authzToAddOnSave})] [text "Save"]
         ]
     ]
@@ -148,7 +230,7 @@ displayUsersConf : Model -> Users -> Html Msg
 displayUsersConf model u =
     let
         users =
-            (map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser user)
+            (List.map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser user)
         newUserMenu =
             if model.panelMode == AddMode then
                 displayRightPanelAddUser model
@@ -156,47 +238,60 @@ displayUsersConf model u =
                 div [] []
         panel =
             case model.panelMode of
-                EditMode user -> displayRightPanel model
+                EditMode _    -> displayRightPanel model
                 _             -> div [][]
+        providers = List.filter (\p -> p /= Unknown && p /= File) model.providers
+        lstOfExtProviders =
+            if (List.isEmpty providers) then
+                div [][]
+            else
+                div [class "provider-list"](List.map (\s -> span [class "providers"][text s]) (List.map providerToString model.providers))
+        msgProvider =
+            if (List.isEmpty providers) then
+                "Default authentication method is used"
+            else
+                "Authentication providers priority: "
     in
     div [ class "row" ]
         [
             div [class "header-plugin"]
             [
-                  button [class "btn btn-sm btn-success new-icon btn-add", onClick ActivePanelAddUser][text "Create"]
-                , button [class "btn btn-box-tool btn-blue btn-sm btn-reload", onClick SendReload]
+                div [id "header-flex"]
                 [
-                      text "Reload"
-                    , span [id "reloadBtn", class "fa fa-refresh"][]
+                    div []
+                    [
+                          h2 [][text "User Management Configuration"]
+                        , div [class"description-plugin"]
+                        [
+                            p [] [text "This page shows you the current Rudder users and their rights."]
+                        ]
+                        , button [class "btn btn-sm btn-success new-icon btn-add", onClick ActivePanelAddUser][text "Create"]
+                        , button [class "btn btn-box-tool btn-blue btn-sm btn-reload", onClick SendReload]
+                        [
+                              text "Reload"
+                            , span [id "reloadBtn", class "fa fa-refresh"][]
+                        ]
+                    ]
+                    , div [ class "callout-fade callout-info" ]
+                    [
+                          div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+                        , text msgProvider
+                        , lstOfExtProviders
+                    ]
                 ]
                 , newUserMenu
                 , panel
-            ]
-            , div [ class "col-xs-4" ]
-            [
-                p [ class "callout-fade callout-info" ]
-                [
-                      div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
-                    , text ("Password encoder: " ++ model.digest)
-                ]
             ]
             , div [ class "col-xs-12 user-list" ][ div [ class "row " ] users ]
         ]
 
 displayUser : User -> Html Msg
 displayUser user =
-    let
-        starAdmin = if (any (\a -> a == "administrator") user.authz ) then  i [class "fa fa-star admin-star"][] else div[][]
-    in
     div [class "user-card-wrapper", onClick (ActivePanelSettings user)]
     [
         div [class "user-card"]
         [
-            div [class "user-card-inner"]
-            [
-                  starAdmin
-                , h3 [id "name"][text user.login]
-            ]
+              div [class "user-card-inner"][h3 [id "name"][text user.login]]
             , displayAuth  user
         ]
     ]

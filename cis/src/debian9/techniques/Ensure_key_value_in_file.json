@@ -1,40 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_debian9___Ensure_key_value_in_file",
-    "version": "1.0",
-    "name": "CIS debian9 - Ensure key value in file",
-    "description": "",
-    "category": "CIS_debian9",
-    "parameter": [
-      {
-        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
-        "name": "key",
-        "description": ""
-      },
-      {
-        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
-        "name": "value",
-        "description": ""
-      },
-      {
-        "id": "8e66bcab-1d35-495a-92fd-7a30cb30f3f9",
-        "name": "separator",
-        "description": ""
-      },
-      {
-        "id": "9e79f7f8-3ca6-4376-a510-11e00e134c91",
-        "name": "file",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "1bbfcf47-19d6-48d9-8356-53c9fc8421af",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -44,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "File key-value present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "a23688e6-2fce-402e-b294-76179bdc0948",
         "method": "file_key_value_present",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -69,10 +41,38 @@
             "name": "separator",
             "value": "${separator}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_debian9",
+    "description": "",
+    "id": "CIS_debian9___Ensure_key_value_in_file",
+    "name": "CIS debian9 - Ensure key value in file",
+    "parameter": [
+      {
+        "description": "",
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "key"
+      },
+      {
+        "description": "",
+        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
+        "name": "value"
+      },
+      {
+        "description": "",
+        "id": "8e66bcab-1d35-495a-92fd-7a30cb30f3f9",
+        "name": "separator"
+      },
+      {
+        "description": "",
+        "id": "9e79f7f8-3ca6-4376-a510-11e00e134c91",
+        "name": "file"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

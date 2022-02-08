@@ -1,9 +1,5 @@
 module Init exposing (..)
 
-------------------------------
--- SUBSCRIPTIONS
-------------------------------
-
 import ApiCalls exposing (getUsersConf)
 import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), StateInput(..))
 import Dict exposing (fromList)
@@ -16,10 +12,6 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
 
-------------------------------
--- Init and main --
-------------------------------
-
 authorizations : Authorization
 authorizations =
     {roles = [], custom = []}
@@ -27,7 +19,7 @@ authorizations =
 init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
-        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] authorizations Toasty.initialState Closed "" "" True ValidInputs []
+        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] authorizations Toasty.initialState Closed "" "" True ValidInputs [] [] False False
     in
     ( initModel
     , getUsersConf initModel
