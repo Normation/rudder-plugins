@@ -1,19 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Ensure_gpgcheck_is_globally_activated",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Ensure gpgcheck is globally activated",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "64ac27c1-03fd-4216-9685-2c71bd85d09b",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -23,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "file_key_value_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "011c1a3d-1724-4635-869d-d61c4b175712",
         "method": "file_key_value_present",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -48,14 +41,14 @@
             "name": "separator",
             "value": "="
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "file_key_value_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "90c323c1-9264-4a47-9822-f30f50ce8af3",
         "method": "file_key_value_present",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -73,10 +66,17 @@
             "name": "separator",
             "value": "="
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Ensure_gpgcheck_is_globally_activated",
+    "name": "CIS ubuntu18 - Ensure gpgcheck is globally activated",
+    "parameter": [],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

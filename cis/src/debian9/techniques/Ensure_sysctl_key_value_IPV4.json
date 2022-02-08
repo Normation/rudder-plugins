@@ -1,30 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_debian9___Ensure_sysctl_key_value_IPV4",
-    "version": "1.0",
-    "name": "CIS debian9 - Ensure sysctl key value IPV4",
-    "description": "",
-    "category": "CIS_debian9",
-    "parameter": [
-      {
-        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
-        "name": "key",
-        "description": ""
-      },
-      {
-        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
-        "name": "expected_value",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "c7cf09bd-56c5-4333-a345-aad7046f15dc",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -34,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "variable_string_from_command",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "cd7a8d5e-4473-4f79-ac7c-87b94fc58473",
         "method": "variable_string_from_command",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "prefix",
@@ -55,14 +37,14 @@
             "name": "command",
             "value": "${paths.sysctl} ${key}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "condition_from_variable_match",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "f5704afb-b4e5-4dbc-b7b8-109e689553cc",
         "method": "condition_from_variable_match",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "condition",
@@ -76,14 +58,14 @@
             "name": "expected_match",
             "value": ".*${key}\\s*=\\s*${expected_value}.*"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "File key-value present",
+        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "2b1b8be0-d515-40b5-bb03-2fdfbb341dad",
         "method": "file_key_value_present",
-        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -101,36 +83,54 @@
             "name": "separator",
             "value": "="
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "Command execution",
+        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "b03360c1-5584-4987-a09c-c02ea4cd482e",
         "method": "command_execution",
-        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "command",
             "value": "${paths.sysctl} -w ${key}=${expected_value}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "Command execution",
+        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "ebd95d91-a993-4657-aea3-f6182a361f87",
         "method": "command_execution",
-        "condition": "any.(check_command_${report_data.canonified_directive_id}_false.skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "command",
             "value": "${paths.sysctl} -w net.ipv4.route.flush=1"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_debian9",
+    "description": "",
+    "id": "CIS_debian9___Ensure_sysctl_key_value_IPV4",
+    "name": "CIS debian9 - Ensure sysctl key value IPV4",
+    "parameter": [
+      {
+        "description": "",
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "key"
+      },
+      {
+        "description": "",
+        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
+        "name": "expected_value"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

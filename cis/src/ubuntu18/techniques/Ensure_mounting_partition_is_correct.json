@@ -1,30 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Ensure_mounting_partition_is_correct",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Ensure mounting partition is correct",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [
-      {
-        "id": "11b7074d-62d8-4437-b5d5-17041bd79ac2",
-        "name": "mount_point",
-        "description": ""
-      },
-      {
-        "id": "488f7662-a59b-4bd1-825d-7a3800fb6208",
-        "name": "mount_options",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "05114f98-825b-4ae3-a379-3c38432cf44b",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -34,27 +16,27 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "partition_check_mounted",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "28c0e3bc-b22d-4de9-8e73-13ba64a5267e",
         "method": "partition_check_mounted",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "mount_point",
             "value": "${mount_point}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "partition_check_options",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "86ecbf43-25a2-4b2d-b626-e1bb1150db99",
         "method": "partition_check_options",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "mount_point",
@@ -64,10 +46,28 @@
             "name": "options",
             "value": "${mount_options}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Ensure_mounting_partition_is_correct",
+    "name": "CIS ubuntu18 - Ensure mounting partition is correct",
+    "parameter": [
+      {
+        "description": "",
+        "id": "11b7074d-62d8-4437-b5d5-17041bd79ac2",
+        "name": "mount_point"
+      },
+      {
+        "description": "",
+        "id": "488f7662-a59b-4bd1-825d-7a3800fb6208",
+        "name": "mount_options"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

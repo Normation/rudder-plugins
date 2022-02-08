@@ -156,7 +156,7 @@ h3 {
   width            : 26px;
   height           : 26px;
   border-radius    : 3px;
-  background-color : #f08004;
+  background-color : #9bc832;
   display          : inline-flex;
   align-items      : center;
   font-size        : 20px;
@@ -200,7 +200,6 @@ h3 {
   bottom        : 0;
   left          : 0;
   right         : 0;
-  color         : #eee;
   overflow      : auto;
   padding       : 1em;
   background    : white;
@@ -301,6 +300,7 @@ h3 {
 
 .description-plugin {
    opacity: 0.5;
+   margin-bottom: 20px;
 }
 
 .btn-reload {
@@ -398,9 +398,10 @@ h3 {
   background-color: grey;
   opacity         : 0.3;
 }
+
 .addBtn {
   margin           : 5px 0 0 10px;
-  background-color : #f08004;
+  background-color : #9bc832;
   color            : white;
   padding          : 2px;
   font-size        : 10;
@@ -445,18 +446,72 @@ h3 {
   display: block;
 }
 
-.dropdown:hover .addBtn {
-  background-color: #9bc832;
-}
-
 .addBtn:hover .dropdown .dropdown-content {
-    display: block;
+  display: block;
 }
 
-.admin-star {
-  position : absolute;
-  top      : 5px;
-  left     : 5px;
-  color    : #f08004;
+.label-msg-ext-auth {
+  font-weight: normal;
+  margin-left : 10px;
 }
 
+.providers {
+  font-size: 12px;
+  background-color: #f6f4f3;
+  border: none;
+  color: black;
+  padding: 5px 12px;
+  text-align: center;
+  text-decoration: none;
+  margin-right: 5px;
+  margin-top: 5px;
+  border-radius: 20px;
+}
+
+.provider-list {
+  margin: 10px 0px;
+}
+
+#header-flex {
+  display: flex;
+}
+
+#header-flex > div:first-child{
+  flex: 2;
+}
+
+#header-flex > div:last-child{
+  flex: 1;
+  margin-top: 20px;
+}
+
+.click-here {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  color: #2557D6;
+}
+
+.info-passwd-icon {
+  color: #2557D6;
+  margin-right: 10px;
+}
+
+.msg-providers {
+  background-color:#eff4ff;
+  padding: 10px;
+  border-radius:3px;
+}
+
+.info-force-passwd {
+  margin-top: 15px;
+}
+.hash-block {
+  margin-top: 3px;
+  margin-left: 3px;
+}
+.hash-icon {
+  margin-right:5px;
+}
+.hash-type {
+  display:inline-block;
+}

@@ -1,30 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Ensure_a_package_is_installed",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Ensure a package is installed",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [
-      {
-        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
-        "name": "package",
-        "description": ""
-      },
-      {
-        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
-        "name": "posthook",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "ba13d2d7-1506-432e-8fcd-937088073282",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -34,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "package_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "4352ea49-7273-4e8b-b915-1f9f164462ed",
         "method": "package_present",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
@@ -59,23 +41,41 @@
             "name": "provider",
             "value": "default"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "command_execution",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.package_present_${package}_repaired)",
+        "disableReporting": false,
         "id": "d0a0e9f0-c23f-4480-b0aa-eefae83e5fc6",
         "method": "command_execution",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.package_present_${package}_repaired)",
         "parameters": [
           {
             "name": "command",
             "value": "${posthook}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Ensure_a_package_is_installed",
+    "name": "CIS ubuntu18 - Ensure a package is installed",
+    "parameter": [
+      {
+        "description": "",
+        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
+        "name": "package"
+      },
+      {
+        "description": "",
+        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
+        "name": "posthook"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }
