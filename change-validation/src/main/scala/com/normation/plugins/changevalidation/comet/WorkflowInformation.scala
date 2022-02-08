@@ -43,7 +43,7 @@ import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceI
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
-import com.normation.rudder.web.model.CurrentUser
+import com.normation.rudder.web.services.CurrentUser
 import net.liftweb.common._
 import net.liftweb.http._
 
