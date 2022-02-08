@@ -1,25 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_debian9___Disable_kernel_module_loading",
-    "version": "1.0",
-    "name": "CIS debian9 - Disable kernel module loading",
-    "description": "",
-    "category": "CIS_debian9",
-    "parameter": [
-      {
-        "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
-        "name": "module",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "d8725152-72cf-437a-b521-042abab8dd23",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -29,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "kernel_module_configuration",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "d9e47c45-ce60-4214-90ea-7f7f69d12181",
         "method": "kernel_module_configuration",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
@@ -46,23 +33,36 @@
             "name": "configuration",
             "value": "install ${module} /bin/false"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "kernel_module_not_loaded",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "e56b18dd-5949-40f0-8196-cd44be854b93",
         "method": "kernel_module_not_loaded",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
             "value": "${module}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_debian9",
+    "description": "",
+    "id": "CIS_debian9___Disable_kernel_module_loading",
+    "name": "CIS debian9 - Disable kernel module loading",
+    "parameter": [
+      {
+        "description": "",
+        "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
+        "name": "module"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

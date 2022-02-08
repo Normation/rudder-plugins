@@ -97,3 +97,13 @@ By default RUDDER uses bcrypt with **2b** as version and the *cost set to 12*. I
 
 
 ===========
+
+== Authentication backend fallback
+
+When you use an external provider for authentication, password will not be asked. However, you can still add a password,
+but it will only be used for the authentication as a fallback.
+
+Please consult the dedicated documentation about the plugin https://docs.rudder.io/reference/6.1/plugins/auth-backends.html[Authentication backends] if you need more details
+
+image::docs/images/ext_auth.png[]
+image::docs/images/ext_auth_clicked.png[]

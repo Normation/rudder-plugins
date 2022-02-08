@@ -1,30 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_debian9___Ensure_mounting_partition_is_correct",
-    "version": "1.0",
-    "name": "CIS debian9 - Ensure mounting partition is correct",
-    "description": "",
-    "category": "CIS_debian9",
-    "parameter": [
-      {
-        "id": "11b7074d-62d8-4437-b5d5-17041bd79ac2",
-        "name": "mount_point",
-        "description": ""
-      },
-      {
-        "id": "488f7662-a59b-4bd1-825d-7a3800fb6208",
-        "name": "mount_options",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "b6282480-4257-4741-8181-078f05099334",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -34,27 +16,27 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "partition_check_mounted",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "fd59bee3-6348-40fc-b14c-b3947d44cb0d",
         "method": "partition_check_mounted",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "mount_point",
             "value": "${mount_point}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "partition_check_options",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "7d0dbc64-9c57-4abd-bbe6-30bdc054cbe7",
         "method": "partition_check_options",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "mount_point",
@@ -64,10 +46,28 @@
             "name": "options",
             "value": "${mount_options}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_debian9",
+    "description": "",
+    "id": "CIS_debian9___Ensure_mounting_partition_is_correct",
+    "name": "CIS debian9 - Ensure mounting partition is correct",
+    "parameter": [
+      {
+        "description": "",
+        "id": "11b7074d-62d8-4437-b5d5-17041bd79ac2",
+        "name": "mount_point"
+      },
+      {
+        "description": "",
+        "id": "488f7662-a59b-4bd1-825d-7a3800fb6208",
+        "name": "mount_options"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

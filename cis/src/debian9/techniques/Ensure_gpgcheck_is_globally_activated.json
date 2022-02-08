@@ -1,19 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_debian9___Ensure_gpgcheck_is_globally_activated",
-    "version": "1.0",
-    "name": "CIS debian9 - Ensure gpgcheck is globally activated",
-    "description": "",
-    "category": "CIS_debian9",
-    "parameter": [],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "33b18f14-2e4a-46a2-a2ab-c81e9679b3ef",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -23,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "file_key_value_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "43eefba6-1e1d-4cef-b9f2-919559c5f0e0",
         "method": "file_key_value_present",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -48,14 +41,14 @@
             "name": "separator",
             "value": "="
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "file_key_value_present",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "f9ec3cf1-ccbf-4a2f-b804-5ce8992b32e1",
         "method": "file_key_value_present",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -73,10 +66,17 @@
             "name": "separator",
             "value": "="
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_debian9",
+    "description": "",
+    "id": "CIS_debian9___Ensure_gpgcheck_is_globally_activated",
+    "name": "CIS debian9 - Ensure gpgcheck is globally activated",
+    "parameter": [],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }
