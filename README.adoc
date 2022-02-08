@@ -98,7 +98,7 @@ In particular, check that `Computed list of providers` entry matches your will.
 =====
 
 
-=== LDAP / AD backend
+== LDAP / AD backend configuration
 
 The configuration properties that need to be added in
 /opt/rudder/etc/rudder-web.properties file to configure the LDAP or AD
@@ -219,7 +219,7 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 ---- end of add in rudder-web.properties ----
 ```
 
-==== Using a certificate for secure connection to LDAP/AD
+=== Using a certificate for secure connection to LDAP/AD
 
 If you want to connect with a secure connection to an LDAP or AD, you need to add the
 directory certificate to Rudder's JVM `keystore`. 
@@ -239,7 +239,7 @@ xxx.xxx:636 [Root exception is java.net.SocketException: Connection or outbound 
 
 cd path/to/jdk<in-use-version>/lib/security
 
-keytool -importcert -import -trustcacerts -keystore cacerts -storepass changeit -noprompt -alias "rudder-ldap-certificate" -file <path to certificate>
+keytool -importcert -trustcacerts -keystore cacerts -storepass changeit -noprompt -alias "rudder-ldap-certificate" -file <path to AD server certificate>
 ```
 
 **Error because certificate is 1024 bits**
@@ -255,10 +255,12 @@ Root exception is javax.net.ssl.SSLHandshakeException: PKIX path validation fail
 To correct that problem, you need to remove that restriction (and update your certificates for security):
 
 * edit `path/to/jdk<in-use-version>/conf/security/java.security`
-* remove `RSA keySize < 1024` for property `jdk.certpath.disabledAlgorithms` (or decrease size limit)
+* check constraints on `RSA keysize` like `RSA keySize < 1024` and change them to match your key size for properties:
+  * `jdk.tls.disabledAlgorithms`
+  * `jdk.certpath.disabledAlgorithms`
 * restart `rudder-jetty`
 
-=== Radius backend
+== Radius backend configuration
 
 Below follow the configuration properties that need to be added in
 `/opt/rudder/etc/rudder-web.properties` file to configure the Radius
