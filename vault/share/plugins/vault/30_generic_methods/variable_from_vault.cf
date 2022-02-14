@@ -19,33 +19,33 @@
 # @name Variable from Vault
 # @description Gets a key-value dictionary from Vault given the secret path
 #
-# @documentation To use the generated variable, you must use the form `${variable_prefix.variable_name}` with each name replaced with the parameters of this method.
+# @documentation To use the generated variable, you must use the form `${prefix.name}` with each name replaced with the parameters of this method.
 #
 # Access to the vault has to be configured on each agent in /var/rudder/plugin-resources/vault.json. A sample config file is provided in /opt/rudder/share/plugins/vault/sample_vault.json
 #
 # This generic method will report as performing a repair when it fetches a key, and an error when it fails to do so.
 #
-# @parameter variable_prefix The prefix of the variable name
-# @parameter variable_name   The variable to define, the full name will be variable_prefix.variable_name
+# @parameter prefix The prefix of the variable name
+# @parameter name   The variable to define, the full name will be prefix.name
 # @parameter path            Vault secret path
 #
 # @class_prefix variable_from_vault
 # @class_parameter path
 
-bundle agent variable_from_vault(variable_prefix, variable_name, path)
+bundle agent variable_from_vault(prefix, name, path)
 {
   vars:
       "old_class_prefix" string => canonify("variable_from_vault_${path}");
       "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
       "class_prefix" string => canonify(join("_", "promisers"));
-      "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
+      "args" slist => {"${prefix}", "${name}", "${path}"};
 
     pass2::
       "vault_apicall_output" string => execresult('${ncf_paths.path[curl]} ${vault.cert} -s -H "X-Vault-Token: ${vault.auth_token}" ${vault.server_addr}/v1/${path}', "noshell");
 
       "vault_test" data => parsejson("${vault_apicall_output}");
 
-      "${variable_prefix}.${variable_name}" data => mergedata("vault_test[data][data]");
+      "${prefix}.${name}" data => mergedata("vault_test[data][data]");
 
   classes:
       "pass3" expression => "pass2";
@@ -53,7 +53,7 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
       "pass1";
 
     pass3::
-      "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");  
+      "variable_defined" expression => isvariable("${prefix}.${name}");
       "config_defined" expression => isvariable("vault.config");
 
   methods:
@@ -78,5 +78,4 @@ bundle agent variable_from_vault(variable_prefix, variable_name, path)
       "failure" usebundle => _classes_failure("${old_class_prefix}");
       "failure" usebundle => _classes_failure("${class_prefix}");
       "report" usebundle => _log("Vault server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
-	
 }
