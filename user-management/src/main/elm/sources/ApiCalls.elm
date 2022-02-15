@@ -6,10 +6,10 @@ module ApiCalls exposing (..)
 -- API call to get the category tree
 
 
-import DataTypes exposing (Authorization, Model, Msg(..), User)
+import DataTypes exposing (AddUserForm, Authorization, Model, Msg(..), User)
 import Http exposing (emptyBody, expectJson, jsonBody, request, send)
 import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiRoleCoverage, decodeApiUpdateUserResult, decodeGetRoleApiResult)
-import JsonEncoder exposing (encodeAddUser, encodeAuthorization, encodeUser)
+import JsonEncoder exposing (encodeAddUser, encodeAuthorization)
 
 getUrl: DataTypes.Model -> String -> String
 getUrl m url =
@@ -64,15 +64,15 @@ computeRoleCoverage model authorizations =
     in
     send ComputeRoleCoverage req
 
-addUser : Model -> User -> Cmd Msg
-addUser model user =
+addUser : Model -> AddUserForm -> Cmd Msg
+addUser model userForm =
     let
         req =
             request
                 { method          = "POST"
                 , headers         = []
                 , url             = getUrl model "/usermanagement"
-                , body            = jsonBody (encodeAddUser (user, model.password, model.hashedPasswd))
+                , body            = jsonBody (encodeAddUser userForm)
                 , expect          = expectJson decodeApiAddUserResult
                 , timeout         = Nothing
                 , withCredentials = False
@@ -96,15 +96,15 @@ deleteUser  username model =
     in
     send DeleteUser req
 
-updateUser : Model -> String -> String -> User -> Cmd Msg
-updateUser model toUpdate password user =
+updateUser : Model -> String -> AddUserForm -> Cmd Msg
+updateUser model toUpdate userForm =
     let
         req =
             request
                 { method          = "POST"
                 , headers         = []
                 , url             = getUrl model ("/usermanagement/update/" ++ toUpdate)
-                , body            = jsonBody (encodeAddUser (user, password, model.hashedPasswd))
+                , body            = jsonBody (encodeAddUser userForm)
                 , expect          = expectJson decodeApiUpdateUserResult
                 , timeout         = Nothing
                 , withCredentials = False

@@ -22,6 +22,7 @@ decodeCurrentUsersConf : Decoder UsersConf
 decodeCurrentUsersConf =
     D.succeed UsersConf
         |> required "digest" D.string
+        |> required "authenticationBackends" (D.list <| D.string)
         |> required "users" (D.list <| decodeUser)
 
 decodeUser : Decoder User
