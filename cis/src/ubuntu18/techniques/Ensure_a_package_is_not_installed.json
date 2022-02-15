@@ -1,40 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Ensure_a_package_is_not_installed",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Ensure a package is not installed",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [
-      {
-        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
-        "name": "package",
-        "description": ""
-      },
-      {
-        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
-        "name": "posthook",
-        "description": ""
-      },
-      {
-        "id": "f2da3dff-0634-48b0-8a8e-8c27393388cb",
-        "name": "prerm",
-        "description": ""
-      },
-      {
-        "id": "529b1f1a-0db6-4244-b84a-7abf0216da39",
-        "name": "check_command",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "e4aee9e2-7b4c-4a53-a49c-46ce1424b20d",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -44,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "Condition from command",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "c4a307bc-24d5-47c7-81da-09a0730ffa91",
         "method": "condition_from_command",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "condition",
@@ -69,27 +41,27 @@
             "name": "false_codes",
             "value": "999"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "command_execution",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.cis_check_command_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "843bbf8b-5f93-49e5-a56c-f63973b1aa64",
         "method": "command_execution",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.cis_check_command_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "command",
             "value": "${prerm}"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "package_absent",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "e3a3d6bf-c5ba-4219-b3b3-e52588d389f5",
         "method": "package_absent",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
@@ -107,23 +79,51 @@
             "name": "provider",
             "value": "default"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "command_execution",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.package_absent_${package}_repaired)",
+        "disableReporting": false,
         "id": "0ed49318-0fcd-4120-b2f2-3a673a93b612",
         "method": "command_execution",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false.package_absent_${package}_repaired)",
         "parameters": [
           {
             "name": "command",
             "value": "${posthook}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Ensure_a_package_is_not_installed",
+    "name": "CIS ubuntu18 - Ensure a package is not installed",
+    "parameter": [
+      {
+        "description": "",
+        "id": "a1b9e560-a2c8-4759-9f93-99f05d48b14f",
+        "name": "package"
+      },
+      {
+        "description": "",
+        "id": "3dc0eb13-0fd2-426a-9965-84e35aa3f51b",
+        "name": "posthook"
+      },
+      {
+        "description": "",
+        "id": "f2da3dff-0634-48b0-8a8e-8c27393388cb",
+        "name": "prerm"
+      },
+      {
+        "description": "",
+        "id": "529b1f1a-0db6-4244-b84a-7abf0216da39",
+        "name": "check_command"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

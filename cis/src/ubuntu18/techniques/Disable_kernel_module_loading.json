@@ -1,25 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Disable_kernel_module_loading",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Disable kernel module loading",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [
-      {
-        "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
-        "name": "module",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "80660868-5007-4d06-a681-192838756fcb",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -29,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "kernel_module_configuration",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "264d7313-a66c-48a5-804c-1ae08e67885b",
         "method": "kernel_module_configuration",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
@@ -46,23 +33,36 @@
             "name": "configuration",
             "value": "install ${module} /bin/false"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "kernel_module_not_loaded",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "63b69d55-c4fa-4ea5-aeea-52878fbab921",
         "method": "kernel_module_not_loaded",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "name",
             "value": "${module}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Disable_kernel_module_loading",
+    "name": "CIS ubuntu18 - Disable kernel module loading",
+    "parameter": [
+      {
+        "description": "",
+        "id": "ef3a3cc4-ce02-44b0-a280-d1b90876506a",
+        "name": "module"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }

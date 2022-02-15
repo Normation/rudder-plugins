@@ -1,40 +1,12 @@
 {
-  "type": "ncf_technique",
-  "version": "3.0",
   "data": {
-    "id": "CIS_ubuntu18___Set_permissions",
-    "version": "1.0",
-    "name": "CIS ubuntu18 - Set permissions",
-    "description": "",
-    "category": "CIS_ubuntu18",
-    "parameter": [
-      {
-        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
-        "name": "owner",
-        "description": ""
-      },
-      {
-        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
-        "name": "group_owner",
-        "description": ""
-      },
-      {
-        "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
-        "name": "mode",
-        "description": ""
-      },
-      {
-        "id": "586d5935-1730-4266-9d07-9a380d822400",
-        "name": "path",
-        "description": ""
-      }
-    ],
     "calls": [
       {
         "component": "condition_from_variable_existence",
+        "condition": "",
+        "disableReporting": false,
         "id": "9da16eeb-cba5-4ad5-bbc5-c6a291a93d65",
         "method": "condition_from_variable_existence",
-        "condition": "",
         "parameters": [
           {
             "name": "condition",
@@ -44,14 +16,14 @@
             "name": "variable_name",
             "value": "node.properties[skip][${report_data.directive_id}]"
           }
-        ],
-        "disableReporting": false
+        ]
       },
       {
         "component": "permissions_recursive",
+        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
+        "disableReporting": false,
         "id": "d57e661c-1535-4ac4-9e65-e89fbf937126",
         "method": "permissions_recursive",
-        "condition": "any.(skip_item_${report_data.canonified_directive_id}_false)",
         "parameters": [
           {
             "name": "path",
@@ -69,10 +41,38 @@
             "name": "group",
             "value": "${group_owner}"
           }
-        ],
-        "disableReporting": false
+        ]
       }
     ],
-    "resources": []
-  }
+    "category": "CIS_ubuntu18",
+    "description": "",
+    "id": "CIS_ubuntu18___Set_permissions",
+    "name": "CIS ubuntu18 - Set permissions",
+    "parameter": [
+      {
+        "description": "",
+        "id": "7e9a3aa5-a697-4f88-8d3d-a02e27e1b5f8",
+        "name": "owner"
+      },
+      {
+        "description": "",
+        "id": "f73d12e6-725a-4602-9299-48e33823edcd",
+        "name": "group_owner"
+      },
+      {
+        "description": "",
+        "id": "7abe8ffe-7456-4fd1-a084-859d071b5b8f",
+        "name": "mode"
+      },
+      {
+        "description": "",
+        "id": "586d5935-1730-4266-9d07-9a380d822400",
+        "name": "path"
+      }
+    ],
+    "resources": [],
+    "version": "1.0"
+  },
+  "type": "ncf_technique",
+  "version": "3.0"
 }
