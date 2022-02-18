@@ -38,10 +38,12 @@
 package com.normation.plugins.datasources.api
 
 import com.normation.plugins.datasources._
+import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTest
 
 import java.util.concurrent.TimeUnit.SECONDS
 import com.normation.rudder.rest.RestTestSetUp
+import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -61,7 +63,6 @@ import com.normation.zio._
 class RestDataSourceTest extends Specification with Loggable {
 
   val restTestSetUp = RestTestSetUp.newEnv
-  val restTest = new RestTest(restTestSetUp)
 
   def extractDataFromResponse (response : LiftResponse, kind : String) : Box[List[JValue]] = {
     response match {
@@ -87,6 +88,10 @@ class RestDataSourceTest extends Specification with Loggable {
     , null
     , restTestSetUp.uuidGen
   )
+
+  val apiVersions = ApiVersion(13 , true) :: ApiVersion(14 , false) :: Nil
+  val liftRules = TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, apiVersions, None)
+  val restTest = new RestTest(liftRules._2)
   restTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
 
   val baseSourceType = DataSourceType.HTTP("", Map(), HttpMethod.GET, Map(), false, "", DataSourceType.HTTP.defaultMaxParallelRequest, HttpRequestMode.OneRequestByNode, DataSource.defaultDuration, MissingNodeBehavior.Delete)
