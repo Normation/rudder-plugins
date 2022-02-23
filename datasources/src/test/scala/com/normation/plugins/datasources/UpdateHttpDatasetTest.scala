@@ -68,8 +68,6 @@ import org.specs2.runner.JUnitRunner
 
 import scala.concurrent.ExecutionContext
 import scala.util.Random
-import com.normation.rudder.domain.queries.CriterionComposition
-import com.normation.rudder.domain.queries.NodeInfoMatcher
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
@@ -371,13 +369,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getAllSystemNodeIds()                 = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfoPure(nodeId: NodeId)    = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
-    def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) = throw new IllegalAccessException("Thou shall not used that method here")
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfos(nodeIds: Set[NodeId])    = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfoPure(nodeId: NodeId)       = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfoPure(nodeId: NodeId)= throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")
+
+    override def getAllNodeInfos(): IOResult[Seq[NodeInfo]] = ???
 
     override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
 
