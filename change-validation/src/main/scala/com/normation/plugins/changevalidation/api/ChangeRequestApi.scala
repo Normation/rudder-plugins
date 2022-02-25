@@ -81,7 +81,7 @@ import net.liftweb.json.JsonAST.JArray
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.JsonDSL._
 import com.normation.rudder.rest.EndpointSchema.syntax._
-import com.normation.rudder.web.model.CurrentUser
+import com.normation.rudder.web.services.CurrentUser
 import net.liftweb.common.Box
 import sourcecode.Line
 
