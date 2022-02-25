@@ -1,4 +1,4 @@
-port module ApiAuthorizations exposing (AccessControl, Api, ApiCategory, Model, Msg(..), Token, apiSelect, displayApi, displayCategory, giveAcl, init, main, setAcl, subscriptions, update, view)
+port module ApiAuthorizations exposing (..)
 
 import Html exposing (..)
 import Browser
@@ -6,7 +6,8 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import List.Extra exposing (uniqueBy)
 import String
-
+import Json.Decode exposing (..)
+import Json.Decode.Pipeline as D exposing (..)
 
 main =
     Browser.element
@@ -21,28 +22,20 @@ main =
 -- MODEL
 -- ACLs for a token
 -- from Angularjs, we get acl: [ {"path": "string/to/api", "verb": "get" } ... }
-
-
 type alias AccessControl =
     { path : String
     , verb : String
     }
 
 
-
 -- for the token we only keep the id (for log) and ACL
-
-
 type alias Token =
     { id : String
     , acl : List AccessControl
     }
 
-
-
 -- Rudder APIs (the whole list)
 -- [ {"category": "name", "apis": [ { "name": string, "description": string, "path": string, "verb": string }, ... ]}, ... ]
-
 
 type alias Api =
     { name : String
@@ -51,23 +44,22 @@ type alias Api =
     , verb : String
     }
 
-
 type alias ApiCategory =
     { category : String
-    , apis : List Api
+    , apis     : List Api
     }
 
 
 type alias Model =
     { rudderApis : List ApiCategory
-    , token : Token
-    , newAcl : String -- the list of updated acl to use
+    , token      : Token
+    , newAcl     : List AccessControl -- the list of updated acl to use
     }
-
 
 type Msg
     = SetAc AccessControl Bool -- set that AC to status (ie remove it if false, add it if true
     | SetAcl (List AccessControl) Bool -- set a list of access control to given status
+    | GetToken (Result Error (Token))
 
 
 
@@ -75,19 +67,16 @@ type Msg
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
-
-
+  getToken (GetToken << decodeValue (decodeToken))
 
 -- sending out new acl
-
-
 port giveAcl : List AccessControl -> Cmd msg
+port getToken : (Json.Decode.Value -> msg) -> Sub msg
 
 
 init : { token : Token, rudderApis : List ApiCategory } -> ( Model, Cmd Msg )
 init flags =
-    ( Model flags.rudderApis flags.token "", Cmd.none )
+  ( Model flags.rudderApis flags.token [], Cmd.none )
 
 
 
@@ -100,34 +89,38 @@ makeAcComparable ac =
 
 setAcl : Model -> List AccessControl -> Bool -> ( Model, Cmd Msg )
 setAcl model acl status =
-    let
-        newAcl =
-            if status then
-                -- add AC into list
-                List.append acl model.token.acl
-                    |> uniqueBy makeAcComparable
-                -- uniqueBy requires comparable and does work with structural equality, which it a pity. toString should be ok in all case for AccessControl, but it was not necessary.
+  let
+    newAcl =
+      if status then
+        -- add AC into list
+        List.append acl model.token.acl
+          |> uniqueBy makeAcComparable
+          -- uniqueBy requires comparable and does work with structural equality, which it a pity. toString should be ok in all case for AccessControl, but it was not necessary.
+      else
+        List.filter (\a -> not (List.member a acl)) model.token.acl
+    token = model.token
+    newToken = {token | acl = newAcl}
 
-            else
-                List.filter (\a -> not (List.member a acl)) model.token.acl
-
-        newToken =
-            Token model.token.id newAcl
-    in
+  in
     ( { model | token = newToken }, giveAcl newAcl )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        -- set/unset a list of access control
-        SetAcl acl status ->
-            setAcl model acl status
+  case msg of
+    -- set/unset a list of access control
+    SetAcl acl status ->
+      setAcl model acl status
 
-        -- set/unset one access control
-        SetAc ac status ->
-            setAcl model [ ac ] status
+    -- set/unset one access control
+    SetAc ac status ->
+      setAcl model [ ac ] status
 
+    GetToken (Ok token) ->
+      ({model | token = token}, Cmd.none)
+
+    GetToken (Err e) ->
+      (model, Cmd.none)
 
 
 -- VIEW
@@ -135,21 +128,18 @@ update msg model =
 -- or not of the corresponding AccessControl
 
 
-apiSelect : List AccessControl -> String -> String -> Html Msg
-apiSelect acl path verb =
-    let
-        ac =
-            AccessControl path verb
-
-        status =
-            List.member ac acl
-    in
-    label [ class "col-xs-1" ] [ input [ type_ "checkbox", checked status, onClick (SetAc ac (not status)) ] [] ]
+apiSelect : List AccessControl -> Api -> Html Msg
+apiSelect listAcl api =
+  let
+    acl = AccessControl api.path api.verb
+    status = List.member acl listAcl
+  in
+    label [  ] [ input [ type_ "checkbox", checked status, onClick (SetAc acl (not status)) ] [] ]
 
 
 displayApi : Api -> Html Msg
 displayApi api =
-    div [ class "col-xs-11" ]
+    div [  ]
         [ h4 []
             [ b [ class api.verb ] [ text api.verb ]
             , text (" " ++ api.path)
@@ -161,21 +151,30 @@ displayApi api =
 displayCategory : List AccessControl -> ApiCategory -> Html Msg
 displayCategory acl cat =
     let
-        catAcl =
-            cat.apis |> List.map (\api -> AccessControl api.path api.verb)
+      catAcl   = cat.apis |> List.map (\api -> AccessControl api.path api.verb)
+      toggleId = "toggle-" ++ cat.category
+      nbSelected = catAcl
+        |> List.Extra.count (\a -> List.member a acl)
     in
-    div []
-        [ h3 [] [ text cat.category ]
-        , div []
-            [ span [ onClick (SetAcl catAcl True), class "btn btn-success pull-right small", style "margin-left" "2px", style "color" "#fff" ] [ text "all" ]
-            , span [ onClick (SetAcl catAcl False), class "btn btn-danger pull-right small", style "margin-right" "2px", style "color" "#fff" ] [ text "none" ]
+    div [class "acl-category"]
+        [ input[type_ "checkbox", id toggleId, class "toggle-checkbox", checked True][]
+        , label[class "category-header", for toggleId]
+          [ i [class "fa fa-caret-down"][]
+          , h3 []
+            [ text cat.category
+            , span [class ("badge badge-secondary " ++ if nbSelected <= 0 then "empty" else "")][text (String.fromInt nbSelected)]
             ]
-        , div []
+          , div []
+            [ span [ onClick (SetAcl catAcl False), class "btn btn-default small" ] [ text "None" ]
+            , span [ onClick (SetAcl catAcl True) , class "btn btn-primary small" ] [ text "All"  ]
+            ]
+          ]
+        , div [class "category-body"]
             (cat.apis
                 |> List.map
                     (\api ->
                         label [ class "label-acl" ]
-                            [ apiSelect acl api.path api.verb
+                            [ apiSelect acl api
                             , displayApi api
                             ]
                     )
@@ -195,3 +194,16 @@ view model =
                     )
             )
         ]
+
+
+decodeToken : Decoder Token
+decodeToken =
+  succeed Token
+    |> D.required "id"  string
+    |> D.required "acl" (Json.Decode.list decodeAcl)
+
+decodeAcl : Decoder AccessControl
+decodeAcl =
+  succeed AccessControl
+    |> D.required "path" string
+    |> D.required "verb" string
