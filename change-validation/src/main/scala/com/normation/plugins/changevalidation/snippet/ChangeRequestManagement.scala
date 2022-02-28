@@ -45,7 +45,7 @@ import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.domain.workflows._
 import com.normation.utils.DateFormaterService
-import com.normation.rudder.web.services.CurrentUser
+import com.normation.rudder.web.model.CurrentUser
 import com.normation.rudder.web.services.JsTableData
 import com.normation.rudder.web.services.JsTableLine
 import net.liftweb.common._
