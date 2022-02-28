@@ -42,8 +42,6 @@ import com.normation.rudder.ActionType
 import com.normation.rudder.domain.workflows._
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model._
-import com.normation.rudder.web.services.CurrentUser
-
 import net.liftweb.common._
 import net.liftweb.http._
 import net.liftweb.http.js.JsCmds._
