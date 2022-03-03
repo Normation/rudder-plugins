@@ -388,6 +388,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
 
     def updateNodeKeyInfo(nodeId: NodeId, agentKey: Option[SecurityToken], agentKeyStatus: Option[KeyStatus], modId: ModificationId, actor:EventActor, reason:Option[String])                   = throw new IllegalAccessException("Thou shall not used that method here")
+
+    def getAllNodeInfos(): IOResult[Seq[NodeInfo]] = ???
   }
 
   val root = NodeConfigData.root
