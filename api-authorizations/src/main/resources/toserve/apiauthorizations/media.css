@@ -61,34 +61,36 @@
   justify-content: space-between;
   align-items: center;
   position: relative;
-  padding: 4px 0 4px 40px;
   border-bottom: 1px solid #E5E5E5;
   margin: 15px 0 0 0;
   cursor: pointer;
 }
-.acl-category .toggle-checkbox:checked + .category-header{
+.acl-category .toggle-checkbox:not(:checked) + .category-header{
   margin-bottom: 8px;
 }
-.acl-category .category-header h3{
+.acl-category .category-header label{
   margin: 0;
   text-transform: capitalize;
   font-size: 22px;
+  font-weight: normal;
+  flex: 1;
+  padding: 4px 0 4px 40px;
+  cursor: pointer;
 }
-.acl-category .category-header h3 .badge.badge-secondary{
+.acl-category .category-header > label .badge.badge-secondary{
   padding: 4px 8px;
   border-radius: 4px !important;
 }
-.acl-category .category-header h3 .badge.badge-secondary.empty{
+.acl-category .category-header > label .badge.badge-secondary.empty{
   opacity: .4;
 }
-.acl-category .category-header .btn{
+.acl-category .category-header .btn.btn-sm{
   margin-left: 6px;
+  margin-top: -2px;
   min-width: 56px;
+  font-size: inherit;
 }
 
-.acl-category .category-body{
-
-}
 .acl-category .label-acl{
   display: flex;
   border-radius: 4px;
