@@ -37,8 +37,8 @@
 
 package com.normation.plugins.changevalidation
 
-import bootstrap.liftweb.Boot
-import bootstrap.liftweb.Boot.redirection
+import bootstrap.liftweb.{Boot, MenuUtils}
+import bootstrap.liftweb.Boot.{redirection, userIsAllowed}
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType
@@ -60,6 +60,8 @@ import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
+
+import scala.xml.NodeSeq
 
 class ChangeValidationPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
@@ -119,11 +121,18 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
 
   override def pluginMenuEntry: Option[Menu] = {
     Some(
-      Menu("changeValidationManagement", <span>Change validation</span>) /
+      Menu("770-changeValidationManagement", <span>Change validation</span>) /
       "secure" / "plugins" / "changeValidationManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", AuthorizationType.Administration.Read))
       >> Template(() => ClasspathTemplates("template" :: "ChangeValidationManagement" :: Nil ) openOr <div>Template not found</div>)
+    )
+  }
+
+  override def pluginMenuParent: Option[Menu] = {
+    Some(Menu(MenuUtils.administrationMenu, <span>Administration</span> : NodeSeq) /
+      "secure" / "administration" / "index" >> TestAccess ( ()
+    => userIsAllowed("/secure/index",AuthorizationType.Administration.Read, AuthorizationType.Technique.Read) )
     )
   }
 
