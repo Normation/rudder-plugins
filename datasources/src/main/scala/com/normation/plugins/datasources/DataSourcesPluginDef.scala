@@ -37,7 +37,7 @@
 
 package com.normation.plugins.datasources
 
-import bootstrap.liftweb.Boot
+import bootstrap.liftweb.{Boot, MenuUtils}
 import bootstrap.rudder.plugin.DatasourcesConf
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.plugins._
@@ -48,10 +48,11 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import com.normation.plugins.PluginStatus
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-
 import com.normation.zio._
+
 
 class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
@@ -69,7 +70,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
   val configFiles = Seq()
 
   override def pluginMenuEntry : Option[Menu] = {
-    Some(Menu("dataSourceManagement", <span>Data sources</span>) /
+    Some(Menu("150-dataSourceManagement", <span>Data sources</span>) /
       "secure" / "plugins" / "dataSourceManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read) )
@@ -77,4 +78,10 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
     )
   }
 
+  override def pluginMenuParent: Option[Menu] = {
+    Some(Menu(MenuUtils.nodeManagementMenu, <span>Node management</span>) /
+      "secure" / "nodeManager" / "index"  >> TestAccess( ()
+      => Boot.userIsAllowed("/secure/index", AuthorizationType.Node.Read) )
+    )
+  }
 }

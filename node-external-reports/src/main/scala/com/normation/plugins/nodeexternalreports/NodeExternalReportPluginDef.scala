@@ -36,13 +36,14 @@
 
 package com.normation.plugins.nodeexternalreports
 
+import com.normation.rudder.AuthorizationType
 import com.normation.plugins._
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
-import bootstrap.liftweb.ClassPathResource
+import bootstrap.liftweb.{Boot, ClassPathResource, MenuUtils}
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.http.LiftRules
-import net.liftweb.sitemap.Loc.{LocGroup, Template}
+import net.liftweb.sitemap.Loc.{LocGroup, Template, TestAccess}
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import com.normation.plugins.PluginStatus
 import net.liftweb.sitemap.Menu
@@ -60,7 +61,7 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
   def oneTimeInit : Unit = {}
 
   override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
+    Some(Menu("160-nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
       LocGroup("pluginsGroup") >>
       Template(() =>
         ClasspathTemplates( "nodeExternalReports" :: Nil ) openOr
@@ -68,4 +69,10 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
     )
   }
 
+  override def pluginMenuParent: Option[Menu] = {
+    Some(Menu(MenuUtils.nodeManagementMenu, <span>Node management</span>) /
+      "secure" / "nodeManager" / "index"  >> TestAccess(()
+    => Boot.userIsAllowed("/secure/index", AuthorizationType.Node.Read) )
+    )
+  }
 }
