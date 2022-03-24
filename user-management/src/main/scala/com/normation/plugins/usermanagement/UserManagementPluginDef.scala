@@ -37,9 +37,11 @@
 
 package com.normation.plugins.usermanagement
 
-import bootstrap.liftweb.Boot
+import bootstrap.liftweb.Boot.userIsAllowed
+import bootstrap.liftweb.{Boot, MenuUtils}
 import bootstrap.rudder.plugin.UserManagementConf
 import com.normation.plugins._
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -49,6 +51,8 @@ import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
+
+import scala.xml.NodeSeq
 
 class UserManagementPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
@@ -63,7 +67,7 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
 
 
   override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("userManagement", <span>User management</span>) /
+    Some(Menu("760-userManagement", <span>User management</span>) /
       "secure" / "plugins" / "UserManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
@@ -71,4 +75,11 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
     )
   }
 
+
+  override def pluginMenuParent: Option[Menu] = {
+    Some(Menu(MenuUtils.administrationMenu, <span>Administration</span> : NodeSeq) /
+      "secure" / "administration" / "index" >> TestAccess ( ()
+      => userIsAllowed("/secure/index",AuthorizationType.Administration.Read, AuthorizationType.Technique.Read) )
+    )
+  }
 }
