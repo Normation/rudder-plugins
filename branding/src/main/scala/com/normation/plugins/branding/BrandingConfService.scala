@@ -55,10 +55,10 @@ object BrandingConfService {
     BrandingConf(
         true
       // #da291c, from 7.0 color palette
-      , JsonColor(218,41,28,1)
+      , JsonColor(0.85,0.16,0.11,1)
       , true
       , "Production"
-      , JsonColor(255,255,255,1)
+      , JsonColor(2.55,2.55,2.55,1)
       , Logo
         ( true
         , None
