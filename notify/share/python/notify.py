@@ -18,7 +18,7 @@ class NotifyWorker:
         except OSError as e:
             if str(e).find("File exists") < 0:
                 raise
-    
+
     # This function reads non-compliance data from a pipe.
     # It is meant to be used with the Rudder server non-compliance hooks.
     def run(self):
@@ -49,8 +49,8 @@ class NotifyWorker:
         return None
       except:
         return None
-  
-    
+
+
     def handle_non_compliance(self, msg_str):
       try:
         self.nodeFilter = self.getFilters("nodeFilter")
@@ -69,7 +69,7 @@ class NotifyWorker:
           if self.conf["GLPI"]["on"] == "true":
             self.notify_glpi(msg)
       except Exception as e:
-        logging.error("Something went wrong while parsing the ticket:" + str(e))
+        logging.error("Something went wrong while parsing the ticket: " + str(e))
 
 
     def notify_slack(self, msg):
@@ -109,7 +109,7 @@ class NotifyWorker:
         if self.conf["MAIL"]["nospam"] == "true" and time.time() - self.timestamp < self.get_mail_batch_period():
             return
             # The code above is enabling batch mail-sending by checking if the configured period has elapsed since last mail
-        
+
         tmp_mailfile = "/tmp/rudder-notify-mail.txt"
         with open(tmp_mailfile, 'a') as out:
             out.write(str(len(self.notif_queue)) + " notification" + ('s' if len(self.notif_queue) > 1 else '') + " from Rudder :\n")
@@ -131,13 +131,13 @@ class NotifyWorker:
           if msg.data['node_uuid'] in self.nodeFilter:
             return True
         return False
-      
+
     def filterByDirective(self, msg):
         if isinstance(self.directiveFilter, list):
           if msg.data['directive_uuid'] in self.directiveFilter:
             return True
         return False
-      
+
     def filterByRule(self, msg):
         if isinstance(self.ruleFilter, list):
           if msg.data['rule_uuid'] in self.ruleFilter:
@@ -162,9 +162,8 @@ class NotifyWorker:
         return False
 
 class Message:
-
     def __init__(self, msg):
-        regex = re.compile("^\[(?P<Date>[^\]]+)\] N: (?P<NodeUUID>[^ ]+) \[(?P<NodeFQDN>[^\]]+)\] S: \[(?P<Result>[^\]]+)\] R: (?P<RuleUUID>[^ ]+) \[(?P<RuleName>[^\]]+)\] D: (?P<DirectiveUUID>[^ ]+) \[(?P<DirectiveName>[^\]]+)\] T: (?P<TechniqueName>[^/]+)/(?P<TechniqueVersion>[^ ]+) C: \[(?P<ComponentName>[^\]]+)\] V: \[(?P<ComponentKey>[^\]]+)\] (?P<Message>.+)$")
+        regex = re.compile(r"^\[(?P<Date>[^\]]+)\] N: (?P<NodeUUID>[^ ]+) \[(?P<NodeFQDN>[^\]]+)\] S: \[(?P<Result>[^\]]+)\] R: (?P<RuleUUID>[^ ]+) \[(?P<RuleName>[^\]]+)\] D: (?P<DirectiveUUID>[^ ]+) \[(?P<DirectiveName>[^\]]+)\] T: (?P<TechniqueName>[^/]+)/(?P<TechniqueVersion>[^ ]+) C: \[(?P<ComponentName>[^\]]+)\] V: \[(?P<ComponentKey>[^\]]+)\] (?P<Message>.+)$")
         groups = regex.search(msg).groups()
         self.data = {
                     "date": groups[0],
