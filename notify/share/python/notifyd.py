@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys, os, time, atexit, signal, configparser, logging
 sys.path.insert(0, "/opt/rudder/share/python")
 import notify

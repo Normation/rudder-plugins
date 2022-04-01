@@ -5,8 +5,7 @@
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
   "depends": {
-    "python": [ "python-configparser"
-              , "python-requests"
+    "python": [ "python3-requests"
               ]
   },
   "content": {
