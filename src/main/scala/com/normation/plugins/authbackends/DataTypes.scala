@@ -37,6 +37,7 @@
 
 package com.normation.plugins.authbackends
 
+import com.normation.NamedZioLogger
 import net.liftweb.common.Logger
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.Extraction
@@ -50,6 +51,9 @@ object AuthBackendsLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("auth-backends")
 }
 
+object AuthBackendsLoggerPure extends NamedZioLogger {
+  override def loggerName: String = "auth-backends"
+}
 
 /*
  * The Json ADT to present information to client side
@@ -64,8 +68,6 @@ object AuthBackendsLogger extends Logger {
  * the long run. But that suppose to have for each back-ends a schema of
  * its properties and some meta-data like human name, description, etc.
  * This is well beyond the scope of that version.
- *
- *
  */
 final case class JsonAuthConfiguration(
     declaredProviders: String // order in config file as it is, without any parsing
@@ -129,4 +131,24 @@ final object JsonSerialization {
       Extraction.decompose(config)
     }
   }
+}
+
+
+/*
+ * A data type to know what to do with the login form:
+ * - show (default): as usual,
+ * - hide: hide it behind a toggle button. What you want if you use an SSO but still want to
+ *         have access to regular form for emergencies (admin account for ex)
+ * - remove: completely remove the HTML for the form
+ */
+sealed trait LoginFormRendering { def name: String }
+object LoginFormRendering {
+  final case object Show   extends LoginFormRendering { val name = "show" }
+  final case object Hide   extends LoginFormRendering { val name = "hide" }
+  final case object Remove extends LoginFormRendering { val name = "remove" }
+
+  def all = ca.mrvisser.sealerate.values[LoginFormRendering]
+  def parse(s: String): Either[String, LoginFormRendering] = all.find(_.name == s.toLowerCase).toRight(
+    s"Value '${s}' is not a known option for login form rendering. Accepted values: ${all.map(_.name).toList.sorted}"
+  )
 }
