@@ -19,6 +19,12 @@ pipeline {
                     ).trim().split(' ')
                     stage('prepare') {
                         sh script: 'make clean generate-all-pom-nightly', label: "generate pom.xml"
+                        withMaven(maven: "latest",
+                                  globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                                  options: [artifactsPublisher(disabled: true)]
+                                ) {
+                                  sh script: 'mvn clean install', label: "install nightly pom"
+                                }
                     }
                     SCALA_PLUGINS.each {
                         stage("${it}") {
