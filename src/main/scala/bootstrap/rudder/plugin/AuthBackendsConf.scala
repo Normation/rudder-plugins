@@ -50,9 +50,11 @@ import com.normation.rudder.domain.logger.PluginLogger
 import com.normation.rudder.web.services.RudderUserDetail
 
 import bootstrap.liftweb.AuthBackendsProvider
+import bootstrap.liftweb.AuthenticationMethods
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
+import bootstrap.liftweb.RudderProperties.config
 import com.typesafe.config.ConfigException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -115,6 +117,7 @@ object AuthBackendsConf extends RudderPluginModule {
   }
 
 
+
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
@@ -128,12 +131,22 @@ object AuthBackendsConf extends RudderPluginModule {
     }
   }
 
+  val oauthBackendNames = Set("oauth2", "oidc")
   RudderConfig.authenticationProviders.addProvider(authBackendsProvider)
   RudderConfig.authenticationProviders.addProvider(new AuthBackendsProvider() {
-    override def authenticationBackends: Set[String] = Set("oauth2", "oidc")
+    override def authenticationBackends: Set[String] = oauthBackendNames
     override def name: String = s"Oauth2 and OpenID Connect authentication backends provider: '${authenticationBackends.mkString("','")}"
     override def allowedToUseBackend(name: String): Boolean = pluginStatusService.isEnabled
   })
+
+  lazy val isOauthConfiguredByUser = {
+    // We need to know if we have to initialize oauth/oicd specific code and snippet.
+    // For that, we need to look in config file directly, because initialisation is complicated and we have no way to
+    // know what part of auth is initialized before what other. It duplicates parsing, but it seems to be the price
+    // of having plugins & spring. We let the full init be done in rudder itself.
+    val configuredAuthProviders = AuthenticationMethods.getForConfig(RudderProperties.config).map(_.name)
+    configuredAuthProviders.find(a => oauthBackendNames.contains(a)).isDefined
+  }
 
   lazy val oauth2registrations = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
 
@@ -156,7 +169,10 @@ object AuthBackendsConf extends RudderPluginModule {
   }
 
   // oauth2 button on login page
-  RudderConfig.snippetExtensionRegister.register(new Oauth2LoginBanner(pluginStatusService, pluginDef.version, oauth2registrations))
+  if(isOauthConfiguredByUser) {
+    PluginLogger.info(s"Oauthv2 or OIDC authentication backend is enabled, updating login form")
+    RudderConfig.snippetExtensionRegister.register(new Oauth2LoginBanner(pluginStatusService, pluginDef.version, oauth2registrations))
+  }
 
 }
 
@@ -180,48 +196,46 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
    * - hi-jack the main security filter, declared in applicationContext-security.xml, update the list of filters,
    *   and put it back into spring.
    */
-  var appContext: ApplicationContext = null
   override def setApplicationContext(applicationContext: ApplicationContext): Unit = {
-    // create the two OAUTH2 filters that are going to be added in the filter chain.
-    // logic copy/pasted from OAuth2LoginConfigurer init and configure methods
-    def createFilters(rudderUserDetailsService: RudderInMemoryUserDetailsService) = {
-      val authenticationFilter: OAuth2LoginAuthenticationFilter = new OAuth2LoginAuthenticationFilter(
-        clientRegistrationRepository, authorizedClientRepository, loginProcessingUrl
-      )
+    if(AuthBackendsConf.isOauthConfiguredByUser) {
+      // create the two OAUTH2 filters that are going to be added in the filter chain.
+      // logic copy/pasted from OAuth2LoginConfigurer init and configure methods
+      def createFilters(rudderUserDetailsService: RudderInMemoryUserDetailsService) = {
+        val authenticationFilter: OAuth2LoginAuthenticationFilter = new OAuth2LoginAuthenticationFilter(
+          clientRegistrationRepository, authorizedClientRepository, loginProcessingUrl
+        )
 
-      val authorizationRequestFilter = new OAuth2AuthorizationRequestRedirectFilter(authorizationRequestResolver)
-      authorizationRequestFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
-      // request cache ?
-      // authorizationRequestFilter.setRequestCache( ??? )
+        val authorizationRequestFilter = new OAuth2AuthorizationRequestRedirectFilter(authorizationRequestResolver)
+        authorizationRequestFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
+        // request cache ?
+        // authorizationRequestFilter.setRequestCache( ??? )
 
-      authenticationFilter.setFilterProcessesUrl(loginProcessingUrl)
-      authenticationFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
-      authenticationFilter.setAuthenticationSuccessHandler(rudderOauth2AuthSuccessHandler)
+        authenticationFilter.setFilterProcessesUrl(loginProcessingUrl)
+        authenticationFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
+        authenticationFilter.setAuthenticationSuccessHandler(rudderOauth2AuthSuccessHandler)
 
-      (authorizationRequestFilter, authenticationFilter)
+        (authorizationRequestFilter, authenticationFilter)
+      }
+
+      val http = applicationContext.getBean("mainHttpSecurityFilters", classOf[DefaultSecurityFilterChain])
+
+      val rudderUserService = applicationContext.getBean("rudderUserDetailsService", classOf[RudderInMemoryUserDetailsService])
+      val (oAuth2AuthorizationRequestRedirectFilter, oAuth2LoginAuthenticationFilter) = createFilters(rudderUserService)
+
+      // add authentication providers to rudder list
+
+      RudderConfig.authenticationProviders.addSpringAuthenticationProvider("oauth2", oauth2AuthenticationProvider(rudderUserService))
+      RudderConfig.authenticationProviders.addSpringAuthenticationProvider("oidc", oidcAuthenticationProvider(rudderUserService))
+      val manager = applicationContext.getBean("org.springframework.security.authenticationManager", classOf[AuthenticationManager])
+      oAuth2LoginAuthenticationFilter.setAuthenticationManager(manager)
+
+      val filters = http.getFilters
+      filters.add(3, oAuth2AuthorizationRequestRedirectFilter)
+      filters.add(4, oAuth2LoginAuthenticationFilter)
+      val newSecurityChain = new DefaultSecurityFilterChain(http.getRequestMatcher, filters)
+
+      applicationContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "mainHttpSecurityFilters")
     }
-
-
-    appContext = applicationContext
-
-    val http = appContext.getBean("mainHttpSecurityFilters", classOf[DefaultSecurityFilterChain])
-
-    val rudderUserService = appContext.getBean("rudderUserDetailsService", classOf[RudderInMemoryUserDetailsService])
-    val (oAuth2AuthorizationRequestRedirectFilter, oAuth2LoginAuthenticationFilter) = createFilters(rudderUserService)
-
-    // add authentication providers to rudder list
-
-    RudderConfig.authenticationProviders.addSpringAuthenticationProvider("oauth2", oauth2AuthenticationProvider(rudderUserService))
-    RudderConfig.authenticationProviders.addSpringAuthenticationProvider("oidc", oidcAuthenticationProvider(rudderUserService))
-    val manager = appContext.getBean("org.springframework.security.authenticationManager", classOf[AuthenticationManager])
-    oAuth2LoginAuthenticationFilter.setAuthenticationManager(manager)
-
-    val filters = http.getFilters
-    filters.add(3, oAuth2AuthorizationRequestRedirectFilter)
-    filters.add(4, oAuth2LoginAuthenticationFilter)
-    val newSecurityChain = new DefaultSecurityFilterChain(http.getRequestMatcher, filters)
-
-    appContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "mainHttpSecurityFilters")
   }
 
 
