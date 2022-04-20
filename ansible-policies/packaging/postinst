@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -xe
 PLUGIN_FULL_NAME="rudder-plugin-ansible-policies"
 PRETTY_NAME="Ansible Policies"
 CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
