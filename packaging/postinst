@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -xe
 # add post-installation script, like:
 
 # psql -U rudder -h localhost -d rudder -f /opt/rudder/share/plugins/authbackends/AuthBackends-schema.sql
