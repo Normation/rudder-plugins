@@ -175,14 +175,14 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
         var res = response;
         delete $scope.selectedDatasource.isNew;
         $scope.datasources.push($scope.selectedDatasource);
-        $('#successModal').bsModal('show');
+        createSuccessNotification("The data source '" + $scope.selectedDatasource.name + "' has been successfully created")
       });
     }else{
       $http.post(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id, $scope.selectedDatasource).then(function(response){
         var res = response;
         var index = $scope.getDatasource($scope.selectedDatasource.id, true);
         $scope.datasources[index] = jQuery.extend(true, {}, $scope.selectedDatasource);
-        $('#successModal').bsModal('show');
+        createSuccessNotification()
       });
     }
   }
