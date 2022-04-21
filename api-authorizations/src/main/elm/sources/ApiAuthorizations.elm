@@ -156,30 +156,29 @@ displayCategory acl cat =
       nbSelected = catAcl
         |> List.Extra.count (\a -> List.member a acl)
     in
-    div [class "acl-category"]
-        [ input[type_ "checkbox", id toggleId, class "toggle-checkbox", checked True][]
-        , label[class "category-header", for toggleId]
-          [ i [class "fa fa-caret-down"][]
-          , h3 []
-            [ text cat.category
-            , span [class ("badge badge-secondary " ++ if nbSelected <= 0 then "empty" else "")][text (String.fromInt nbSelected)]
-            ]
-          , div []
-            [ span [ onClick (SetAcl catAcl False), class "btn btn-default small" ] [ text "None" ]
-            , span [ onClick (SetAcl catAcl True) , class "btn btn-primary small" ] [ text "All"  ]
-            ]
+      div [class "acl-category"]
+      [ input[type_ "checkbox", id toggleId, class "toggle-checkbox"][]
+      , div[class "category-header"]
+        [ i [class "fa fa-caret-down"][]
+        , label [for toggleId]
+          [ text cat.category
+          , span [class ("badge badge-secondary " ++ if nbSelected <= 0 then "empty" else "")][text (String.fromInt nbSelected)]
           ]
-        , div [class "category-body"]
-            (cat.apis
-                |> List.map
-                    (\api ->
-                        label [ class "label-acl" ]
-                            [ apiSelect acl api
-                            , displayApi api
-                            ]
-                    )
-            )
+        , div []
+          [ button [type_ "button", onClick (SetAcl catAcl False), class "btn btn-default btn-sm" ] [ text "None" ]
+          , button [type_ "button", onClick (SetAcl catAcl True ), class "btn btn-primary btn-sm" ] [ text "All"  ]
+          ]
         ]
+      , div [class "category-body"]
+        (cat.apis
+          |> List.map (\api ->
+            label [ class "label-acl" ]
+            [ apiSelect acl api
+            , displayApi api
+            ]
+          )
+        )
+      ]
 
 
 view : Model -> Html Msg
