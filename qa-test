@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -xe
 
 test_shell()
 {
@@ -44,12 +44,33 @@ test_typos()
   typos --exclude '*.css' --exclude '*-6a9f-4865-a837-95a6a0c49f04.json'
 }
 
+test_scripts()
+{
+  # plugin packaging scripts (postinst, etc...) must have the set -xe enabled
+  RESULT=0
+  find . -name "packaging" -type d -not -path "./src/*"|
+    while IFS="" read -r directory
+    do
+      for file in $directory/*; do
+        if sed -n '1p' $file | grep -q "#\!/bin/bash"; then
+          if ! grep -q "set -xe" "$file"; then
+            echo "$file does not seem to contain mandatory 'set -xe' line"
+            RESULT=1
+          fi
+        fi
+      done
+    done
+  exit $RESULT
+}
+
 if [ "$1" = "--python" ]; then
   test_python_error
 elif [ "$1" = "--typos" ]; then
   test_typos
 elif [ "$1" = "--shell" ]; then
   test_shell
+elif [ "$1" = "--scripts" ]; then
+  test_scripts
 else
   test_shell_error
   test_python_error
