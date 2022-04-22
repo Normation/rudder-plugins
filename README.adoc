@@ -30,6 +30,10 @@ Possible values are:
 * `hide`: hide the login form below a toggle button. This is a good option if you want to let your user only see SSO links by default, but still have access to the login form for special cases (like, typically, for emergency admin access when the SSO or network to it is down)
 * `remove`: completly remove Rudder login form.
 
+For example, with an OpenID Connect service configured and the `hide` value chosen, your login form will be updated to look like:
+
+image:docs/images/oauth2-oidc-login-form.png[]
+
 == Configure enabled backends
 
 By default, both authentication and authorization are handle in the `rudder-users.xml`
@@ -291,6 +295,14 @@ These protocols delegate the actual authentication to an identity provider (IdP)
 
 Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
 
+To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAUTHv2` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider. 
+
+As always, you can have several back-ends configured for fall-back authentication. For example, to use `OIDC` with a fall-back to the Rudder file based authentication, use:
+
+```
+rudder.auth.provider = oidc, file
+```
+
 You can configure several providers at the same time.
 The are defined by an identifier in a comma-separated list in the following property:
 
@@ -304,9 +316,23 @@ Each provider needs to then have a bunch of properties defined for it. They are 
 In the next below description, we use `okta` as a provider. We chose this one because OAUTHv2/OpenID Connect configuration can be a bit complicated and full of jargon, and so having a real, well documented reference is helpful - and https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#next-steps[Okta provides that].
 
 ```
-# The provider name as it will be displayed in Rudder authentication page (and logs)
+# Authentication provider id in rudder.auth.provider:
+# - OAUTHv2       : oauth2
+# - OpenID Connect: oidc
+
+# Configure the list of Identity provider services. Here, you choose 
+# an identifier for each service as a comma separated list. 
+# Identifier should be lower case ascii, -, _. For example, if 
+# your company uses both "Okta" and "Google", you can choose "okta" and 
+# "google" (how original) identifiers: 
+rudder.auth.oauth2.provider.registrations=okta,google
+
+# Now, configure Okta related properties. You will need to do
+# the same for each provider with an identifier.
+
+# The identity service provider name as it will be displayed in Rudder
 rudder.auth.oauth2.provider.okta.name=Okta
-# A more detailed explanation message displayed near the provider name in authentication page.
+# A more detailed explanation message displayed in authentication page.
 rudder.auth.oauth2.provider.okta.ui.infoMessage=OpenID Connect SSO (Okta)
 
 # In Oauth2/OIDC, a client (ie, Rudder) is identifier by a pair of credentials:
