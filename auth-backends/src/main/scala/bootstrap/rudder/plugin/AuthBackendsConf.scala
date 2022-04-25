@@ -90,6 +90,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority
 import org.springframework.security.web.DefaultSecurityFilterChain
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 
@@ -213,7 +214,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         authenticationFilter.setFilterProcessesUrl(loginProcessingUrl)
         authenticationFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
         authenticationFilter.setAuthenticationSuccessHandler(rudderOauth2AuthSuccessHandler)
-
+        authenticationFilter.setAuthenticationFailureHandler(applicationContext.getBean("rudderWebAuthenticationFailureHandler").asInstanceOf[AuthenticationFailureHandler])
         (authorizationRequestFilter, authenticationFilter)
       }
 
