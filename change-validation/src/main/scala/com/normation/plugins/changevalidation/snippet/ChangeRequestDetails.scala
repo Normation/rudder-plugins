@@ -151,19 +151,6 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         }
       )
 
-    // Add action buttons
-    case "actions" =>
-      ( _ =>
-        changeRequest match {
-          case eb:EmptyBox => NodeSeq.Empty
-          case Full(cr) =>
-            step match {
-              case eb:EmptyBox =>  NodeSeq.Empty
-              case Full(step) => <div id="workflowActionButtons" style="margin: 0 40px">{displayActionButton(cr,step)}</div>
-            }
-        }
-      )
-
     case "warnUnmergeable" => ( _ =>
       changeRequest match {
         case eb:EmptyBox => NodeSeq.Empty
@@ -248,7 +235,9 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     ( "#backButton [href]" #> "/secure/plugins/changes/changeRequests" &
       "#nameTitle *" #> s"CR #${cr.id}: ${cr.info.name}" &
       "#CRStatus *" #> workflowService.findStep(cr.id).map(x => Text(x.value)).openOr(<div class="error">Cannot find the status of this change request</div>) &
-      "#CRLastAction *" #> s"${ last }"
+      "#CRLastAction *" #> s"${ last }" &
+      "#actionBtns *" #> workflowService.findStep(cr.id).map(x => displayActionButton(cr,x)).openOr(NodeSeq.Empty)
+
     ) (header)
 
   }

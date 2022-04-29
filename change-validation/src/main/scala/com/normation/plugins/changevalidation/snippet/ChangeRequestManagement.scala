@@ -204,17 +204,17 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
           }"""
     val onChange = ("onchange" -> JsRaw(filterFunction))
 
-    def filterForm (select:Elem,link:String, transform: String => NodeSeq) = {
+    def filterForm (select:Elem, btnClass:String, transform: String => NodeSeq) = {
       val submit =
-          SHtml.a(Text(link),JsRaw(s"$$('.expand').click();"), ("style"," float:right;font-size:9px;margin-top:12px; margin-left: 5px;")) ++
+          SHtml.a(Text(""),JsRaw(s"$$('.expand').click();"), ("class",s"btn btn-default btn-expand btn-${btnClass}")) ++
           SHtml.ajaxSubmit(
-              link
+              ""
             , () => SetHtml("actualFilter",transform(value))
             , ("class","expand hide")
          )
 
       SHtml.ajaxForm(
-        <b style="float:left; margin: 5px 10px">Status:</b> ++
+        <label for="select-status">Status:</label> ++
         select % onChange  ++ submit
     )
     }
@@ -224,11 +224,18 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
           (multipleValues ::: selectValues).map{ case (a,b) => SelectableOption(a,b)}
         , Full(default)
         , list => value = list
-        , ("style","width:auto;")
+        , ( "class", "form-control"  )
+        , ( "id"   , "select-status" )
       )
       (s"value='${default}' [selected]" #> "selected").apply(
-              ("select *" #> {<optgroup label="Multiple" style="margin-bottom:10px" value="" >{multipleValues.map{case (value,label) => <option value={value} style="margin-left:10px">{label}</option>}}</optgroup>++
-               <optgroup label="Single">{selectValues.map{case (value,label) => <option value={value} style="margin-left:10px">{label}</option>}}</optgroup> }  ).apply(
+              ("select *" #> {
+                <optgroup label="Multiple" style="margin-bottom:10px" value="" >
+                  {multipleValues.map{case (value,label) => <option value={value} style="margin-left:10px">{label}</option>}}
+                </optgroup>++
+                <optgroup label="Single">
+                  {selectValues.map{case (value,label) => <option value={value} style="margin-left:10px">{label}</option>}}
+                </optgroup>
+              } ).apply(
       filterForm(select,"more",expandedFilter)))
   }
 
@@ -254,7 +261,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
             selectValues
           , extendedDefault
           , list => value = computeDefault(list)
-          , ("style","width:auto;padding-right:3px;")
+          , ("class", "form-control")
         )
       filterForm(multiSelect,"less",unexpandedFilter)
     }
