@@ -323,7 +323,7 @@ class ChangeRequestChangesForm(
     <div>
       <h4>Directive overview:</h4>
       <ul class="evlogviewpad">
-        <li style="padding-bottom : 10px;"><b>Directive:&nbsp;</b><value id="directiveID"/></li>
+        <li><b>Directive:&nbsp;</b><value id="directiveID"/></li>
         <li><b>Name:&nbsp;</b><value id="directiveName"/></li>
         <li><b>Short description:&nbsp;</b><value id="shortDescription"/></li>
         <li><b>Technique name:&nbsp;</b><value id="techniqueName"/></li>
@@ -341,7 +341,7 @@ class ChangeRequestChangesForm(
     <div>
       <h4>Rule overview:</h4>
       <ul class="evlogviewpad">
-        <li style="padding-bottom : 10px;"><b>Rule:&nbsp;</b><value id="ruleID"/></li>
+        <li><b>Rule:&nbsp;</b><value id="ruleID"/></li>
         <li><b>Name:&nbsp;</b><value id="ruleName"/></li>
         <li><b>Category:&nbsp;</b><value id="category"/></li>
         <li><b>Short description:&nbsp;</b><value id="shortDescription"/></li>
@@ -406,7 +406,7 @@ class ChangeRequestChangesForm(
     <div>
       <h4>Group overview:</h4>
       <ul class="evlogviewpad">
-        <li style="padding-bottom : 10px;"><b>Group:&nbsp;</b><value id="groupID"/></li>
+        <li><b>Group:&nbsp;</b><value id="groupID"/></li>
         <li><b>Name:&nbsp;</b><value id="groupName"/></li>
         <li><b>Description:&nbsp;</b><value id="shortDescription"/></li>
         <li><b>Enabled:&nbsp;</b><value id="isEnabled"/></li>
@@ -651,7 +651,7 @@ class ChangeRequestChangesForm(
     <div>
       <h4>Global Parameter overview:</h4>
       <ul class="evlogviewpad">
-        <li style="padding-bottom : 10px;"><b>Global Parameter:&nbsp;</b><value id="paramName"/></li>
+        <li><b>Global Parameter:&nbsp;</b><value id="paramName"/></li>
         <li><b>Name:&nbsp;</b><value id="name"/></li>
         <li><b>Value:&nbsp;</b><value id="value"/></li>
         <li><b>Description:&nbsp;</b><value id="description"/></li>
