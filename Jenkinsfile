@@ -3,7 +3,7 @@ import org.gradiant.jenkins.slack.SlackNotifier
 
 pipeline {
     agent none
-    
+
     stages {
         stage('shell') {
             agent { label 'script' }
@@ -18,7 +18,7 @@ pipeline {
                     script {
                         new SlackNotifier().notifyResult("shell-team")
                     }
-                }   
+                }
             }
         }
 
@@ -40,6 +40,20 @@ pipeline {
             agent { label 'script' }
             steps {
                 sh script: './qa-test --typos', label: 'check typos'
+            }
+            post {
+                always {
+                    script {
+                        new SlackNotifier().notifyResult("shell-team")
+                    }
+                }
+            }
+        }
+
+        stage('scripts') {
+            agent { label 'script' }
+            steps {
+                sh script: './qa-test --scripts', label: 'packaging scripts must exit on error'
             }
             post {
                 always {
