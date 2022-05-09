@@ -54,7 +54,6 @@ import bootstrap.liftweb.AuthenticationMethods
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
-import bootstrap.liftweb.RudderProperties.config
 import com.typesafe.config.ConfigException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -116,8 +115,6 @@ object AuthBackendsConf extends RudderPluginModule {
   if(log.getLevel == null) {
     log.setLevel(ch.qos.logback.classic.Level.ERROR)
   }
-
-
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
