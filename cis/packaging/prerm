@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -xe
 NAME="{plugin-id}"
 PLUGIN_FOLDER="/var/rudder/packages/rudder-plugin-${NAME}"
 
