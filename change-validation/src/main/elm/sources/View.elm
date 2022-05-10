@@ -259,7 +259,7 @@ displayLeftCol model =
         div  [class "box-users-content"]
         [
           if isEmpty model.validatedUsers then
-            div []
+            div [style "text-align" "center"]
             [
               if model.editMod == Off then
                 i [class "fa fa-user-times empty-validated-user", style "margin-bottom" "10px"]

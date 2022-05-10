@@ -34,6 +34,112 @@
 *
 *************************************************************************************
 */
+/* === OVERRIDE RUDDER TEMPLATE === */
+.rudder-template > .one-col{
+  flex: 1;
+}
+.template-main{
+  flex-basis : initial !important;
+  flex: auto !important;
+}
+.template-sidebar.sidebar-left{
+  box-shadow : none !important;
+  flex-basis : initial !important;
+  flex: initial !important;
+}
+.rudder-template .one-col .template-main .main-details {
+  padding-bottom: 0px;
+}
+/* ========= */
+ul.clipboard-list > li {
+  padding: 6px 12px;
+  border: 1px solid #d0d0d0;
+  border-bottom: none;
+}
+ul.clipboard-list > li:hover {
+  background-color: #f2f8ff;
+}
+ul.clipboard-list > li:first-child{
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+ul.clipboard-list > li:last-child{
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  border-bottom: 1px solid #d0d0d0;
+}
+
+
+#actualFilter > form{
+  display: flex;
+  align-items: flex-start;
+}
+#actualFilter > form select.form-control{
+  width: auto;
+  display: inline-block;
+  margin: 0px 0px 20px 10px;
+  min-width: 185px;
+  font-size: 14px;
+}
+#actualFilter > form select.form-control[multiple]{
+  height: auto;
+}
+#actualFilter > form select.form-control[multiple] option{
+  padding: 2px 0;
+}
+#actualFilter > form label{
+  padding: 6px 0;
+  margin-bottom: 0;
+}
+#actualFilter > form select + .btn.btn-expand{
+  height: 34px;
+  width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+#actualFilter > form select + .btn.btn-expand:after {
+  font-family: "Font Awesome 5 Free";
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+  font-weight: 900;
+  color: #738195;
+}
+#actualFilter > form select + .btn.btn-less:after {
+  content: "\f068";
+}
+#actualFilter > form select + .btn.btn-more:after {
+  content: "\f067";
+}
+#detailsForm form{
+  margin: 0 -15px;
+}
+#changesContainer{
+  border: 2px solid #E5E5E5;
+  margin-top: 20px;
+  display: flex;
+}
+#changesContainer > div:first-child{
+  width: 250px;
+}
+#changesContainer > div:last-child{
+  flex: 1;
+  border-left: 2px solid #E5E5E5;
+}
+#diff {
+  padding: 10px;
+}
+.evlogviewpad > li {
+  margin-bottom: 4px;
+}
+.modal .modal-dialog {
+  margin-top: 110px;
+}
 
 .expand .ui-button-text{
   padding:1px;
@@ -136,7 +242,7 @@
   display: block;
   position: relative;
   padding: 10px 15px 10px 42px;
-  color: #555;
+  color: #36474E;
   transition-duration: .2s;
 }
 
@@ -241,15 +347,17 @@
 }
 
 #supervised-targets-app .list-group .list-group-item .node-name{
-  padding: 10px 15px 2px 42px;
+  padding: 6px 15px 2px 42px;
   position: relative;
   font-size: 16px;
-  color: #555;
+  color: #36474E;
   transition-duration: .2s;
+  display: flex;
+  align-items: center;
 }
 
 #supervised-targets-app .list-group .list-group-item .node-desc{
-  padding: 2px 15px 10px 42px;
+  padding: 2px 15px 6px 42px;
   font-size: 12px;
   color: #999;
   font-weight: normal;
@@ -303,6 +411,59 @@
 }
 body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
   width: calc(100% - 50px);
+}
+
+#CRLastAction {
+  font-size: 15px;
+  margin-bottom:5px;
+  font-style:italic;
+  color: #777;
+}
+#backButton > span{
+  margin-right: 5px;
+  position: relative;
+}
+#backButton:hover{
+  color: #23527c;
+}
+#backButton:hover > span{
+  -webkit-animation: bounceH .8s ease infinite;
+  -moz-animation:    bounceH .8s ease infinite;
+  -o-animation:      bounceH .8s ease infinite;
+  animation:         bounceH .8s ease infinite;
+}
+
+#changeRequestHeader .header-title > div > #CRStatus {
+  background-color: #eeeeee;
+  min-width: 160px;
+  line-height: 50px;
+  min-height: 50px;
+  color: #36474E;
+  float: right;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: default;
+  text-align: center;
+  position: relative;
+  margin-top: -15px;
+  margin-right: 20px;
+}
+#changeRequestHeader .header-title > div > #CRStatus:before {
+  position: absolute;
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 80px solid transparent;
+  border-right: 80px solid transparent;
+  border-top: 20px solid #eeeeee;
+  left: 0;
+  top: 50px;
+}
+#CRSave{
+  margin-top: 10px;
+}
+#changeRequestDetails .alert.alert-danger {
+  margin-bottom: 0px;
 }
 
 /********************************
@@ -478,7 +639,7 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
   width            : 36px;
   height           : 36px;
   border-radius    : 80px;
-  background-color : #f08004;
+  background-color : #3c8dbc;
   text-align       : center;
   overflow         : hidden;
   padding          : 3px;
@@ -516,7 +677,7 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
 
 .empty-validated-user {
   color          : #cdcdcd;
-  font-size      : 50px;
+  font-size      : 40px;
   display        : inline-block;
   text-align     : center;
   vertical-align : bottom;
@@ -525,5 +686,6 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
 
 .empty-box-msg {
   font-family : 'PT Sans', sans-serif;
-  font-size   : 33px;
+  font-size   : 20px;
+  margin-top: 16px;
 }
