@@ -59,6 +59,14 @@ import com.normation.zio._
 
 class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, registrations: RudderPropertyBasedOAuth2RegistrationDefinition)(implicit val ttag: ClassTag[Login]) extends PluginExtensionPoint[Login] {
 
+  def css = <style>
+    #oauth2providers {{
+        background-color: #fff;
+        border-radius: 20px;
+        padding: 46px 60px 16px 60px;
+        box-shadow: 0 40px 40px 20px #dce3ef63;
+    }}
+  </style>
 
   /*
    * The url on which we need to redirect to get the authentication by oauth2 be triggered
@@ -76,12 +84,11 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
     val rgs = registrations.registrations.get.runNow
 
     val oauth2providers = if(rgs.nonEmpty) {
-      <div class="col-xs-12">
+      <div id="oauth2providers">
         <h4 class="welcome col-xs-12">Log using OAUTH2 provider:</h4>
         {
            rgs.map { case (id, r) =>
-            <div class="form-group col-xs-12">
-             <label for="valid" class="sr-only">Sign in with Okta provider</label>
+            <div class="form-group">
              <div class="input-group col-xs-12">
                <a class="btn btn-warning-rudder col-xs-12" href={ redirectUrl(id) } role="button">{ r.infoMsg }</a>
              </div>
@@ -98,18 +105,21 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
     }
 
     /*
-     * The form can be
+     * The form displaying is based on property `rudder.auth.displayLoginForm`:
+     * - hide (default) means hide form but let it available with a toggle
+     * - remove means actually remove HTML for form
+     * - show means let things as they are by default.
      */
     val selector = (
-      "#contact"     #> ((x:NodeSeq) =>  AuthBackendsConf.loginFormRendering match {
+      ".plugin-info" #> ((x:NodeSeq) => x ++ css ++ oauth2providers) &
+      "#login-form"     #> ((x:NodeSeq) =>  (AuthBackendsConf.loginFormRendering match {
                           case LoginFormRendering.Show   => x
                           case LoginFormRendering.Hide   =>  // indentation is strange because need to be saw as one xml
                             Script(OnLoad(JsRaw(""" $ ("#toggleLoginFormButton").click(function() {{ $("#toggleLoginForm").toggle(); }}); """))) ++
                             <button id="toggleLoginFormButton" class="btn btn-default btn-xs">show non-SSO login form
                             </button><div id="toggleLoginForm" style="display: none">{x}</div>
                           case LoginFormRendering.Remove => NodeSeq.Empty
-                        }) &
-      ".form-footer" #> ((x:NodeSeq) =>  oauth2providers++ x)
+                        }))
     )
 
     selector(xml)
