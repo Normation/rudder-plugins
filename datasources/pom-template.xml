@@ -74,22 +74,16 @@
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
-      <version>1.17</version>
+      <version>${snakeyaml-version}</version>
       <scope>test</scope>
     </dependency>
 
 
     <!-- Tests: a rest server -->
     <dependency>
-      <groupId>org.http4s</groupId>
-      <artifactId>http4s-dsl_${scala-binary-version}</artifactId>
-      <version>${http4s-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.http4s</groupId>
-      <artifactId>http4s-blaze-server_${scala-binary-version}</artifactId>
-      <version>${http4s-version}</version>
+      <groupId>io.d11</groupId>
+      <artifactId>zhttp_${scala-binary-version}</artifactId>
+      <version>${zhttp-version}</version>
       <scope>test</scope>
     </dependency>
 

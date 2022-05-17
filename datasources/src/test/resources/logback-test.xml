@@ -37,11 +37,9 @@ along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
       <Pattern>%d{[yyyy-MM-dd HH:mm:ss]} %-5level %logger - %msg%n%xEx{0}</Pattern>
     </encoder>
   </appender>
-  
+
   <root level="warn">
     <appender-ref ref="STDOUT" />
   </root>
-  
-  <logger name="org.http4s.blaze.channel.ServerChannelGroup" level="warn" />
- 
+
 </configuration>
