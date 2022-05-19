@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xe
 
 CONFFILE="/opt/rudder/etc/notify.conf"
 
@@ -47,7 +48,7 @@ User=root
 WorkingDirectory=/opt/rudder/share/python
 
 Restart=on-failure
-ExecStart=/usr/bin/python /opt/rudder/share/python/notifyd.py
+ExecStart=/usr/bin/python3 /opt/rudder/share/python/notifyd.py
 
 [Install]
 WantedBy=multi-user.target

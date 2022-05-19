@@ -1,4 +1,4 @@
 #!/bin/bash
-
+set -xe
 # add post-installation script, like:
 

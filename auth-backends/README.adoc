@@ -12,7 +12,27 @@ other general information.
 
 = Authentication backends
 
-This plugins allows to use alternative authentication backends for Rudder: LDAP/AD and radius.
+This plugins allows to use alternative authentication backends for Rudder: SAMLv2/OpenID Connect, LDAP/AD and radius (DEPRECATED).
+
+Each authentication method is detailed below. Users are expected to know how an authentication system works independently from Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
+
+== Configure login form rendering
+
+By default, the standard Rudder login form is displayed. SSO backends like OpenID Connect ones add links to the relevant SSO own login page below that Rudder login form. When you use such an authentication method, you want to hide or totaly remove Rudder own login form to avoid to confuse you user. For that, you can use the following property:
+
+```
+rudder.auth.displayLoginForm=show
+```
+
+Possible values are:
+
+* `show` [default]: show Rudder login form as usual
+* `hide`: hide the login form below a toggle button. This is a good option if you want to let your user only see SSO links by default, but still have access to the login form for special cases (like, typically, for emergency admin access when the SSO or network to it is down)
+* `remove`: completly remove Rudder login form.
+
+For example, with an OpenID Connect service configured and the `hide` value chosen, your login form will be updated to look like:
+
+image:docs/images/oauth2-oidc-login-form.png[]
 
 == Configure enabled backends
 
@@ -60,7 +80,7 @@ systemctl restart rudder-jetty
 =====
 
 
-For example, to use first and `ldap` authentication, and then in case the user is not found
+For example, to use first an `ldap` authentication, and then in case the user is not found
 in `ldap`, fall-back in file authentication, you will specify:
 
 
@@ -82,6 +102,13 @@ For example, that `rudder-users.xml` file will configure "admin" by file access,
 ======
 
 Be careful to have only one `rudder.auth.provider` property in your file!
+
+======
+
+[WARNING]
+======
+
+If an error happened in one of the authentication modules, the following in the provider sequence won't be tried.
 
 ======
 
@@ -260,7 +287,120 @@ To correct that problem, you need to remove that restriction (and update your ce
   * `jdk.certpath.disabledAlgorithms`
 * restart `rudder-jetty`
 
-== Radius backend configuration
+=== OAUTHv2 / OpenID Connect
+
+https://openid.net/connect/[OpenID Connect] (OIDC) is a very common SSO protocol to authenticate and manage authorizations of users in a decentralized, multi-tenant set-up (ie, typically web applications nowadays). It's built on top of `OAUTHv2` and replace it in most new cases.
+
+These protocols delegate the actual authentication to an identity provider (IdP) that in turns send the relevant authentication information to the client, i.e. to Rudder in our case. These `IdP` can be public providers, like https://google.com[Google], deployed and managed internally in a company, like ForgeRock's open source https://forgerock.github.io/openam-community-edition/[OpenAM], or used as SaaS, like https://okta.com[Okta] - and often, providers do a mix of these things.
+
+Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
+
+To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAUTHv2` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider. 
+
+As always, you can have several back-ends configured for fall-back authentication. For example, to use `OIDC` with a fall-back to the Rudder file based authentication, use:
+
+```
+rudder.auth.provider = oidc, file
+```
+
+You can configure several providers at the same time.
+The are defined by an identifier in a comma-separated list in the following property:
+
+```
+rudder.auth.oauth2.provider.registrations=okta,google
+```
+
+
+Each provider needs to then have a bunch of properties defined for it. They are listed below and all follow the pattern `rudder.auth.oauth2.provider.${providerID}.${subPath} where `providerId` is the ID in the previous list, and `subPath` is the remaining name of the property.
+
+In the next below description, we use `okta` as a provider. We chose this one because OAUTHv2/OpenID Connect configuration can be a bit complicated and full of jargon, and so having a real, well documented reference is helpful - and https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#next-steps[Okta provides that].
+
+```
+# Authentication provider id in rudder.auth.provider:
+# - OAUTHv2       : oauth2
+# - OpenID Connect: oidc
+
+# Configure the list of Identity provider services. Here, you choose 
+# an identifier for each service as a comma separated list. 
+# Identifier should be lower case ascii, -, _. For example, if 
+# your company uses both "Okta" and "Google", you can choose "okta" and 
+# "google" (how original) identifiers: 
+rudder.auth.oauth2.provider.registrations=okta,google
+
+# Now, configure Okta related properties. You will need to do
+# the same for each provider with an identifier.
+
+# The identity service provider name as it will be displayed in Rudder
+rudder.auth.oauth2.provider.okta.name=Okta
+# A more detailed explanation message displayed in authentication page.
+rudder.auth.oauth2.provider.okta.ui.infoMessage=OpenID Connect SSO (Okta)
+
+# In Oauth2/OIDC, a client (ie, Rudder) is identifier by a pair of credentials:
+# - 1/ an id,
+# - 2/ a corresponding secret key.
+#
+# 1/ Identifier of the application you created in your IdP for Rudder.
+#    In Okta, it will be listed under https://xxxx-admin.okta.com/admin/apps/active
+#    once you created it with "Create App Integration". If you click on your application,
+#    it's located in "Client Credential > Client ID".
+#
+rudder.auth.oauth2.provider.okta.client.id=0oa3snkopsIRIIHb35d7
+#
+# 2/ The corresponding "client secret", available when you click on your application
+#    in https://xxxx-admin.okta.com/admin/apps/active in "Client Credential > Client Secret"
+rudder.auth.oauth2.provider.okta.client.secret=-0Q5jGbdvV5WkfGNJwHfkOP0FdZ5vhqPYav7icYb
+#
+# Names the OAUTHv2 "realm" that should be included in the identity token once
+# authentication is done. These information should be documented by your IdP documentation.
+# Rudder only need to have at least the attribute that will be used for `userId` (see next
+# property)
+rudder.auth.oauth2.provider.okta.scope=openid, email, profile
+#
+# The attribute that will be used for `userId` (generally, it's either a login or email).
+# The value of that attribute will be used to retrieved Rudder internal user, its rights, etc.
+rudder.auth.oauth2.provider.okta.userNameAttributeName=email
+#
+# The next 4 URLs are the redirection URLs towards the IdP and which correspdonds to
+# each step of the authentication process (yes, the protocol does a lot of redirection):
+# - `uri.auth`: first URL, Rudder ask for a code request. User is then redirected by
+#    the IdP towards its own login form. It then redirect to Rudder with a code to process.
+#    If you need to use extra information like an `acr_values` property, just happen it to that URL
+# - `uri.token`: Rudder returned the code processed with its client secret. The IdP process it
+     and return an authentication token to Rudder.
+# - `uri.userInfo`: Rudder uses the authentication token to get user information on that URL
+# - `uri.jwkSet`: in the case of OIDC, the token is a signed JWT token. That last url is the
+#   URL where Rudder can get the IdP public key to sign the token.
+rudder.auth.oauth2.provider.okta.uri.auth=https://xxxx.okta.com/oauth2/v1/authorize
+# With an acr_values:
+#rudder.auth.oauth2.provider.okta.uri.auth=https://xxxx.okta.com/oauth2/v1/authorize?acr_values=strongAuthRequired
+rudder.auth.oauth2.provider.okta.uri.token=https://xxxx.okta.com/oauth2/v1/token
+rudder.auth.oauth2.provider.okta.uri.userInfo=https://xxxx.okta.com/oauth2/v1/userinfo
+rudder.auth.oauth2.provider.okta.uri.jwkSet=https://xxxx.okta.com/oauth2/v1/keys
+#
+# The following properties are necessary for each provider configuration but should not be modified.
+#
+# The protocol scheme used for authentication - Rudder only supports with authorisation code.
+rudder.auth.oauth2.provider.okta.grantType=authorization_code
+# Rudder URL towards which the identity provider redirects
+rudder.auth.oauth2.provider.okta.client.redirect=https://my-external-rudder-hostname/rudder/login/oauth2/code/{registrationId}
+# Authentication type - Rudder only supports basic.
+rudder.auth.oauth2.provider.okta.authMethod=basic
+```
+
+
+=== Radius backend
+
+[WARNING]
+=====
+
+Radius backend is deprecated as of Rudder 7.0. It will be removed in a 
+next version of Rudder. 
+You should try to replace it with an other backend. In case that backend is
+a must have for you, please contact Rudder company for discussing how to help
+you migrate away of Radius of get specific support for it.
+
+=====
+
 
 Below follow the configuration properties that need to be added in
 `/opt/rudder/etc/rudder-web.properties` file to configure the Radius

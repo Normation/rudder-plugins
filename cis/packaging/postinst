@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xe
 CONFIG_REPO=/var/rudder/configuration-repository
 CATEGORY="{category}"
 C_CATEGORY=$(echo $CATEGORY | sed "s/[^a-zA-Z0-9_]/_/g")
