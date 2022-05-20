@@ -37,8 +37,8 @@
 
 package com.normation.plugins.datasources
 
-import java.util.concurrent.Executors
 import com.normation.plugins.PluginEnableImpl
+
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
 import com.normation.eventlog.EventActor
@@ -56,6 +56,7 @@ import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
+
 import net.liftweb.common._
 import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
@@ -64,38 +65,38 @@ import org.specs2.mutable._
 import org.specs2.specification.AfterAll
 import org.specs2.runner.JUnitRunner
 
-import scala.concurrent.ExecutionContext
 import scala.util.Random
 import com.normation.rudder.domain.queries.CriterionComposition
 import com.normation.rudder.domain.queries.NodeInfoMatcher
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
-import org.http4s._
-import org.http4s.dsl.io._
-import org.http4s.implicits._
-import cats.effect._
-import cats.effect.concurrent.Ref
-import com.github.ghik.silencer.silent
+
 import com.normation.zio.ZioRuntime
-import org.http4s.server.Router
-import org.http4s.server.blaze.BlazeServerBuilder
 import zio.syntax._
-import zio.{IO => _, _}
+import zio._
 import com.normation.errors._
 import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty._
 import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
+
 import zio.test.environment._
 import zio.duration._
 import org.specs2.specification.core.Fragment
+
 import com.normation.zio._
 import zio.test.Annotations
 import com.normation.box._
-import org.typelevel.ci.CIString
+import java.nio.charset.StandardCharsets
+import zhttp.http._
+import zhttp.http.Method._
+import zhttp.service.server.ServerChannelFactory
+import zhttp.service.{EventLoopGroup, Server}
+import zio._
 
 object TheSpaced {
 
@@ -141,12 +142,167 @@ object TheSpaced {
   }
 }
 
+  //create a rest server for test
+  object NodeDataset {
+    import Data._
+
+    //for debugging - of course works correctly only if sequential
+    val counterError   = zio.Ref.make(0).runNow
+    val counterSuccess = zio.Ref.make(0).runNow
+    val maxPar = zio.Ref.make(0).runNow
+
+    // a delay methods that use the scheduler
+    def delayResponse[V,E](resp: ZIO[V, E, Response]): ZIO[V & clock.Clock, E, Response] = {
+      resp.delay(Random.nextInt(1000).millis)
+    }
+
+
+    def reset(): Unit = {
+      counterError.set(0).runNow
+      counterSuccess.set(0).runNow
+    }
+
+    def service[R]: HttpApp[R with clock.Clock, Throwable] =  Http.collectZIO[Request] {
+      case _ -> !! =>
+        ZIO.fail(new IllegalArgumentException("You cannot access root in test"))
+
+      case GET -> !! / "single_node1" =>
+        ZIO.succeed {
+          counterSuccess.update(_+1).runNow
+          Response.text(booksJson)
+        }
+
+      case GET -> !! / "testarray" / x =>
+        ZIO.succeed{
+          counterSuccess.update(_+1).runNow
+          Response.text(testArray(x.toInt)._1)
+        }
+
+
+      case GET -> !! / "single_node2" =>
+        ZIO.succeed{
+          counterSuccess.update(_+1).runNow
+          Response.text("""{"foo":"bar"}""")
+        }
+
+      case GET -> !! / "server" =>
+        ZIO.succeed{
+          counterSuccess.update(_+1).runNow
+          Response.text("""{"hostname":"server.rudder.local"}""")
+        }
+      case GET -> !! / "hostnameJson" =>
+        ZIO.succeed{
+          counterSuccess.update(_+1).runNow
+          Response.text(hostnameJson)
+        }
+
+      case GET -> !! / "404" =>
+        ZIO.succeed(Response.status(Status.NotFound))
+
+      case GET -> !! / x =>
+        ZIO.succeed {
+          counterSuccess.update(_+1).runNow
+          Response.text(nodeJson(x))
+        }
+
+      case r @ GET -> !! / "delay" / x =>
+        r.headers.toList.toMap.get("nodeId") match {
+          case Some(`x`) =>
+            delayResponse(ZIO.succeed {
+              counterSuccess.update(_+1).runNow
+              Response.text(nodeJson(x))
+            })
+
+          case _ =>
+            ZIO.succeed {
+              counterError.update(_+1).runNow
+              Response.html("node id was not found in the 'nodeid' header", Status.Forbidden)
+            }
+        }
+
+      case r @ POST -> !! / "delay" =>
+
+        val headerId = r.headers.toList.toMap.get("nodeId")
+
+        for {
+          body   <- r.data.toByteBuf.map(_.toString(StandardCharsets.UTF_8)) // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
+          formId <- (body.split('=').toList match {
+                      case _ :: nodeId :: Nil => ZIO.succeed(Some(nodeId))
+                      case _ => ZIO.fail(throw new IllegalArgumentException(s"Error, can't decode POST form data body: ${body}"))
+                    })
+          res     <- (headerId, formId) match {
+                      case (Some(x), Some(y)) if x == y =>
+                        delayResponse( ZIO.succeed {
+                            counterSuccess.update(_+1).runNow
+                            Response.text(nodeJson("plop"))
+                        })
+
+                      case _ =>
+                        ZIO.succeed {
+                          counterError.update(_+1).runNow
+                          Response.html(s"node id was not found in post form (key=nodeId)[\n  headers: ${r.headers.toList}\n  body:${body}]", Status.Forbidden)
+                        }
+                    }
+        } yield res
+
+      case GET -> !! / "faileven" / x =>
+        // x === "nodeXX" or root
+        if(x != "root" && x.replaceAll("node", "").toInt % 2 == 0) {
+          ZIO.succeed {
+            counterError.update(_+1).runNow
+            Response.html("Not authorized", Status.Forbidden)
+          }
+        } else {
+          ZIO.succeed {
+            counterSuccess.update(_+1).runNow
+            Response.text(nodeJson(x))
+          }
+        }
+    }
+
+    def ioCountService = {
+      for {
+        currentConcurrent <- Ref.make(0)
+        maxConcurrent     <- Ref.make(0)
+      } yield Http.collectZIO[Request] {
+         case GET -> !! / x =>
+           for {
+             - <- currentConcurrent.update(_ + 1)
+             c <- currentConcurrent.get
+             _ <- maxConcurrent.update(m => if(c > m) c else { maxPar.set(m).runNow ; m})
+             m <- maxConcurrent.get
+             x <- ZIO.succeed { Response.text(nodeJson(x)) }
+             _ <- currentConcurrent.update(_ - 1)
+           } yield x
+       }
+    }
+
+    val serverPort = 49999 // should be random
+    //start server on a free port
+    //@silent // deprecation warning
+    val serverR = (
+      for {
+        count  <- ioCountService
+      } yield {
+        val router =  Http.collectHttp[Request] {
+                        case _ -> "datasources" /: "parallel" /: path =>
+                          count.contramap[Request](_.setPath(path))
+                        case _ -> "datasources" /: path =>
+                          service.contramap[Request](_.setPath(path))
+                      }
+        Server.port(serverPort) ++  // Setup port - should be next available
+        Server.app(router)          // Setup the Http app
+      }
+    )
+  }
+
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
+  import Data._
   val makeTestClock = TestClock.default.build
 
-  implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
-  implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
+//  implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+//  implicit val cs: ContextShift[IO] = IO.contextShift(blockingExecutionContext)
   implicit class ForceGet(json: String) {
     def forceParse = GenericProperty.parseValue(json) match {
       case Right(value) => value
@@ -170,159 +326,25 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   }
 
   // a timer
-  implicit val timer: Timer[IO] = cats.effect.IO.timer(blockingExecutionContext)
+ // implicit val timer: Timer[IO] = cats.effect.IO.timer(blockingExecutionContext)
 
 
-  //create a rest server for test
-  object NodeDataset {
+  // start server
+  val nThreads: Int = 10
 
-    //for debugging - of course works correctly only if sequential
-    val counterError   = zio.Ref.make(0).runNow
-    val counterSuccess = zio.Ref.make(0).runNow
-    val maxPar = zio.Ref.make(0).runNow
+  // Create a new server
+  Runtime.default.unsafeRun(NodeDataset.serverR.flatMap(server =>
+    server.make
+      .use(start =>
+        // Waiting for the server to start
+        console.putStrLn(s"Server started on port ${start.port}")
 
-    // a delay methods that use the scheduler
-    def delayResponse(resp: IO[Response[IO]]): IO[Response[IO]] = {
-      timer.sleep(Random.nextInt(1000).millis.toScala).flatMap(_ =>
-        resp
+        // Ensures the server doesn't die after printing
+        *> ZIO.never
       )
-    }
-
-
-    def reset(): Unit = {
-      counterError.set(0).runNow
-      counterSuccess.set(0).runNow
-    }
-
-
-    def service=  HttpRoutes.of[IO] {
-      case _ -> Root =>
-        IO.pure(Response(MethodNotAllowed))
-
-      case GET -> Root / "single_node1" =>
-        Ok{
-          counterSuccess.update(_+1).runNow
-          booksJson
-        }
-
-      case GET -> Root / "testarray" / x =>
-        Ok{
-          counterSuccess.update(_+1).runNow
-          testArray(x.toInt)._1
-        }
-
-
-      case GET -> Root / "single_node2" =>
-        Ok{
-          counterSuccess.update(_+1).runNow
-          """{"foo":"bar"}"""
-        }
-
-      case GET -> Root / "server" =>
-        Ok{
-          counterSuccess.update(_+1).runNow
-          """{"hostname":"server.rudder.local"}"""
-        }
-      case GET -> Root / "hostnameJson" =>
-        Ok{
-          counterSuccess.update(_+1).runNow
-          hostnameJson
-        }
-
-      case GET -> Root / "404" =>
-        NotFound {}
-
-      case GET -> Root / x =>
-        Ok {
-          counterSuccess.update(_+1).runNow
-          nodeJson(x)
-        }
-
-      case r @ GET -> Root / "delay" / x =>
-        r.headers.get(CIString("nodeId")).map( _.value) match {
-          case Some(`x`) =>
-            delayResponse(Ok {
-              counterSuccess.update(_+1).runNow
-              nodeJson(x)
-            })
-
-          case _ =>
-            Forbidden {
-              counterError.update(_+1).runNow
-              "node id was not found in the 'nodeid' header"
-            }
-        }
-
-      case r @ POST -> Root / "delay" =>
-
-        val headerId = r.headers.get(CIString("nodeId")).map( _.value)
-
-        r.decode[UrlForm] { data =>
-          val formId = data.values.get("nodeId").flatMap(_.headOption)
-
-          (headerId, formId) match {
-            case (Some(x), Some(y)) if x == y =>
-              delayResponse( Ok {
-                  counterSuccess.update(_+1).runNow
-                  nodeJson("plop")
-              })
-
-            case _ =>
-              Forbidden {
-                counterError.update(_+1).runNow
-                "node id was not found in post form (key=nodeId)"
-              }
-          }
-        }
-
-      case GET -> Root / "faileven" / x =>
-        // x === "nodeXX" or root
-        if(x != "root" && x.replaceAll("node", "").toInt % 2 == 0) {
-          Forbidden {
-            counterError.update(_+1).runNow
-            "Not authorized"
-          }
-        } else {
-          Ok {
-            counterSuccess.update(_+1).runNow
-            nodeJson(x)
-          }
-        }
-    }
-
-    def ioCountService(implicit F: cats.effect.Async[IO]): IO[HttpRoutes[IO]] = {
-      for {
-        currentConcurrent <- Ref.of[IO, Int](0)
-        maxConcurrent     <- Ref.of[IO, Int](0)
-        service           <- IO.pure( HttpRoutes.of[IO] {
-                               case GET -> Root / x =>
-                                 for {
-                                   - <- currentConcurrent.update(_ + 1)
-                                   c <- currentConcurrent.get
-                                   _ <- maxConcurrent.update(m => if(c > m) c else { maxPar.set(m).runNow ; m})
-                                   m <- maxConcurrent.get
-                                   x <- Ok { nodeJson(x) }
-                                   _ <- currentConcurrent.update(_ - 1)
-                                 } yield x
-                             } )
-      } yield service
-    }
-
-  }
-
-  //start server on a free port
-  @silent // deprecation warning
-  val serverR =
-    (for {
-      count  <- NodeDataset.ioCountService
-      httpApp = Router("/datasources" -> NodeDataset.service, "/datasources/parallel" -> count).orNotFound
-      server = BlazeServerBuilder[IO].withExecutionContext(blockingExecutionContext).bindAny()
-        .withConnectorPoolSize(1) //to make the server slow and validate that it still works
-        .withHttpApp(httpApp)
-    } yield {
-      server.resource
-    }).unsafeRunSync()
-
+      .provideCustomLayer(ServerChannelFactory.auto ++ EventLoopGroup.auto(nThreads))
+      .exitCode
+  ).forkDaemon)
 
 
   override def afterAll(): Unit = {
@@ -464,25 +486,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   object Enabled extends PluginEnableImpl
 
-  import org.specs2.specification.core.Fragments
-  def withResource[A](r: Resource[IO, A])(fs: A => Fragments): Fragments =
-    r match {
-      case Resource.Allocate(alloc) =>
-        alloc
-          .map {
-            case (a, release) =>
-              fs(a).append(step(release(ExitCase.Completed).unsafeRunSync()))
-          }
-          .unsafeRunSync()
-      case Resource.Bind(r, f) =>
-        withResource(r)(a => withResource(f(a))(fs))
-      case Resource.Suspend(r) =>
-        withResource(r.unsafeRunSync() /* ouch */ )(fs)
-    }
 
-  withResource(serverR) { server =>
 
-  val REST_SERVER_URL = s"http://${server.address.getHostString}:${server.address.getPort}/datasources"
+  val REST_SERVER_URL = s"http://localhost:${NodeDataset.serverPort}/datasources"
 
   def nodeUpdatedMatcher(nodeIds: Set[NodeId]): EqualityMatcher[Set[NodeUpdateResult]] = {
     ===(nodeIds.map(n => NodeUpdateResult.Updated(n)))
@@ -737,7 +743,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
 
     "comply with the limit of parallel queries" in {
-      // Max paraallel is the minimum of 2 and the available thread on the machine
+      // Max parallel is the minimum of 2 and the available thread on the machine
       // So tests don't fait if the build machine has one core
       val MAX_PARALLEL = Math.min(2, java.lang.Runtime.getRuntime.availableProcessors)
       val ds = maxParDataSource(MAX_PARALLEL)
@@ -984,8 +990,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       }
     }
   }
+
 }
 
+
+object Data {
 
  /*
   * Array rules:
