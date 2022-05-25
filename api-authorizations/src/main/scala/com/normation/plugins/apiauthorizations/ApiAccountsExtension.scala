@@ -104,7 +104,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
       <div>
         <head_merge>
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
-          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/api-authorizations.js"></script>
+          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/rudder-apiauthorizations.js"></script>
         </head_merge>
         <div id="acl-configuration" ng-if="myNewAccount.authorizationType === 'acl'">
           <!-- load elm app -->
