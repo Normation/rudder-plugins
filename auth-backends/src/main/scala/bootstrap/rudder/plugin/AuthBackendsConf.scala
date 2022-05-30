@@ -54,7 +54,6 @@ import bootstrap.liftweb.AuthenticationMethods
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
-import bootstrap.liftweb.RudderProperties.config
 import com.typesafe.config.ConfigException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -90,6 +89,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority
 import org.springframework.security.web.DefaultSecurityFilterChain
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 
@@ -115,8 +115,6 @@ object AuthBackendsConf extends RudderPluginModule {
   if(log.getLevel == null) {
     log.setLevel(ch.qos.logback.classic.Level.ERROR)
   }
-
-
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
@@ -213,7 +211,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         authenticationFilter.setFilterProcessesUrl(loginProcessingUrl)
         authenticationFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
         authenticationFilter.setAuthenticationSuccessHandler(rudderOauth2AuthSuccessHandler)
-
+        authenticationFilter.setAuthenticationFailureHandler(applicationContext.getBean("rudderWebAuthenticationFailureHandler").asInstanceOf[AuthenticationFailureHandler])
         (authorizationRequestFilter, authenticationFilter)
       }
 

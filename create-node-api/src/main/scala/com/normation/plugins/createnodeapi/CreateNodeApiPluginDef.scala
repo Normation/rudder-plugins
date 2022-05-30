@@ -63,14 +63,4 @@ class CreateNodeApiPluginDef(override val status: PluginStatus) extends DefaultP
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = {
     Some(CreatenodeapiConf.api)
   }
-
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("createNodeApi", <span>Create node API</span>) /
-      "secure" / "plugins" / "CreateNodeAPI"
-      >> LocGroup("pluginsGroup")
-      >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
-      >> Template(() => ClasspathTemplates("template" :: "CreateNodeApiManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-  }
-
 }
