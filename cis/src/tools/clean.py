@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 """
     Clean all json found and try to "clean" them in order to remove all
     build-dependant key-values in them

@@ -6,6 +6,8 @@ import com.normation.plugins.helloworld.HelloWorldPluginDef
 import com.normation.plugins.helloworld.CheckRudderPluginEnableImpl
 import com.normation.plugins.helloworld.extension.{CreateRuleEditFormExtension, CreateRuleExtension}
 import com.normation.plugins.helloworld.service.LogAccessInDb
+import com.normation.utils.ParseVersion
+
 import bootstrap.liftweb.RudderConfig
 import net.liftweb.common.Loggable
 
@@ -44,7 +46,8 @@ object Module1 extends Loggable with RudderPluginModule {
     val status = new PluginEnableImpl(){}
     val name = PluginName("rudder-plugin-module1")
     val shortName = "module1"
-    val version = PluginVersion(0,0,1)
+    // version parsing error are not handled
+    val version = PluginVersion(ParseVersion.parse("7.0.0").getOrElse(???), ParseVersion.parse("0.0.1").getOrElse(???))
     val versionInfo = None
     val basePackage = "com.normation.plugins.helloworld"
     val description : NodeSeq  = Text {
