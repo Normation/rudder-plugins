@@ -33,13 +33,16 @@ RUDDER_BUILD_VERSION = $(RUDDER_VERSION)-SNAPSHOT
 endif
 
 # if you want to add maven command line parameter, add them with MVN_PARAMS
-MVN_CMD = mvn $(MVN_PARAMS) --batch-mode 
+MVN_CMD = mvn $(MVN_PARAMS) --batch-mode
+
+RANDOM := $(shell bash -c 'echo $$RANDOM')
 
 generate-pom:
-	cp pom-template.xml pom.xml
-	sed -i -e "s/\$${plugin-version}/${PLUGIN_POM_VERSION}/" pom.xml
-	sed -i -e "s/\$${parent-version}/${RUDDER_VERSION}-${COMMON_VERSION}/" pom.xml
-	sed -i -e "s/\$${private-version}/${RUDDER_VERSION}-${PRIVATE_VERSION}/" pom.xml
-	sed -i -e "s/\$${rudder-version}/$(RUDDER_VERSION)/" pom.xml
-	sed -i -e "s/\$${rudder-build-version}/$(RUDDER_BUILD_VERSION)/" pom.xml
-
+	# avoid race condition in plugins-common when building plugin in parallel
+	cp pom-template.xml pom.xml.$(RANDOM)
+	sed -i -e "s/\$${plugin-version}/${PLUGIN_POM_VERSION}/" pom.xml.$(RANDOM)
+	sed -i -e "s/\$${parent-version}/${RUDDER_VERSION}-${COMMON_VERSION}/" pom.xml.$(RANDOM)
+	sed -i -e "s/\$${private-version}/${RUDDER_VERSION}-${PRIVATE_VERSION}/" pom.xml.$(RANDOM)
+	sed -i -e "s/\$${rudder-version}/$(RUDDER_VERSION)/" pom.xml.$(RANDOM)
+	sed -i -e "s/\$${rudder-build-version}/$(RUDDER_BUILD_VERSION)/" pom.xml.$(RANDOM)
+	mv pom.xml.$(RANDOM) pom.xml
