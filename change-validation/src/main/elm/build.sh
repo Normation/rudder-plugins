@@ -4,5 +4,5 @@
 # whatever the path from which this script is called
 export ELM_DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-. ../../../../plugins-common/elm.sh SupervisedTargets "$@"
-. ../../../../plugins-common/elm.sh WorkflowUsers "$@"
+. "${ELM_DIR}/../../../../plugins-common/elm.sh" SupervisedTargets "$@"
+. "${ELM_DIR}/../../../../plugins-common/elm.sh" WorkflowUsers "$@"

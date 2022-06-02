@@ -48,7 +48,7 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
       <ul id="userApiTokenManagement" class="dropdown-menu">
         <head_merge>
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
-          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/user-api-token.js"></script>
+          <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/rudder-userapitoken.js"></script>
         </head_merge>
         <li id="user-token-app">
           <div id="user-token-main">

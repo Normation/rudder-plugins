@@ -4,4 +4,4 @@
 # whatever the path from which this script is called
 export ELM_DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-exec ../../../../plugins-common/elm.sh UserManagement "$@"
+exec "${ELM_DIR}/../../../../plugins-common/elm.sh" UserManagement "$@"

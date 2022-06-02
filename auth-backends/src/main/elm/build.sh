@@ -4,4 +4,4 @@
 # whatever the path from which this script is called
 export ELM_DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-. ../../../../plugins-common/elm.sh AuthBackends "$@"
+. "${ELM_DIR}/../../../../plugins-common/elm.sh" AuthBackends "$@"
