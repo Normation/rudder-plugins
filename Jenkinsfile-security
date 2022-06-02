@@ -9,7 +9,7 @@ pipeline {
 
     stages {
         stage('deps-plugins') {
-            when { not { changeRequest() } }
+            //when { not { changeRequest() } }
             agent {
                 dockerfile {
                     filename 'ci/dep-check.Dockerfile'
@@ -24,26 +24,13 @@ pipeline {
                         script: 'make scala-plugins-list',
                         returnStdout: true
                     ).trim().split(' ')
-                    stage('prepare') {
-                        sh script: 'make clean generate-all-pom-nightly', label: "generate pom.xml"
-                        withMaven(maven: "latest",
-                                  globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
-                                  options: [artifactsPublisher(disabled: true)]
-                                ) {
-                                  sh script: 'mvn clean install', label: "install nightly pom"
-                                }
-                    }
                     SCALA_PLUGINS.each {
                         stage("${it}") {
+                            sh script: 'make clean generate-all-pom-nightly', label: "generate pom.xml"
+                            sh script: 'mvn clean install', label: "install nightly pom"
                             dir("${it}") {
-                                withMaven(maven: "latest",
-                                    globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
-                                    // don't archive jars
-                                    options: [artifactsPublisher(disabled: true)]
-                                ) {
-                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=11 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
-                                    sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
-                                }
+                                sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=11 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                             }
                         }
                     }
