@@ -10,7 +10,14 @@ pipeline {
     stages {
         stage('deps-plugins') {
             when { not { changeRequest() } }
-            agent { label 'scala' }
+            agent {
+                dockerfile {
+                    filename 'ci/dep-check.Dockerfile'
+                    additionalBuildArgs "--build-arg USER_ID=${JENKINS_UID}"
+                    // and share maven cache
+                    args '-v /srv/cache/maven:/home/jenkins/.m2'
+                }
+            }
             steps {
                 script {
                     SCALA_PLUGINS = sh (
