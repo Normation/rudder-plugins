@@ -41,6 +41,9 @@ doc: doc-assets doc-pages
 scala-plugins-list:
 	@echo $(SCALA_PLUGINS)
 
+plugins-list:
+	@echo $(PLUGINS)
+
 clean: 
 	rm -f pom.xml
 	rm -rf doc
