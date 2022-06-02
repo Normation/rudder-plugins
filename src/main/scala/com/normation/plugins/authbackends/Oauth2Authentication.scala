@@ -34,11 +34,14 @@
 
 package com.normation.plugins.authbackends
 
+import cats.data.NonEmptyList
+
 import com.normation.errors._
 import com.typesafe.config.Config
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
+
 import zio._
 import zio.syntax._
 
@@ -104,7 +107,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       A_NAME            -> "human readable name to use in the button 'login with XXXX'"
     , A_CLIENT_ID       -> "id generated in the Oauth2 service provider to identify rudder as a client app"
     , A_CLIENT_SECRET   -> "the corresponding secret key"
-    , A_CLIENT_REDIRECT -> "rudder URL to redirect to once authentication is done on the provider (must be resolvable from user bowser)"
+    , A_CLIENT_REDIRECT -> "rudder URL to redirect to once authentication is done on the provider (must be resolvable from user browser)"
     , A_AUTH_METHOD     -> s"authentication method to use (${authMethods.map(_.getValue).mkString(",")})"
     , A_GRANT_TYPE      -> s"authorization grant type to use (${grantTypes.map(_.getValue).mkString(",")}"
     , A_INFO_MESSAGE    -> "message displayed in the login form, for example to tell the user what login he must use"
@@ -119,7 +122,14 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
 
   def parseAuthenticationMethod(method: String): PureResult[ClientAuthenticationMethod] = {
     authMethods.find( _.getValue.equalsIgnoreCase(method)) match {
-      case None    => Left(Inconsistency(s"Requested OAUTh2 authentication methods '${method}' is not recognized, please use one of: ${authMethods.map(_.getValue).mkString("'","','","'")}"))
+      case None    =>
+        // spring change the name between the version we use in 6.2 and 7.0. We want to provide compatibility
+        // and only document the most recent ones.
+        method.toLowerCase match {
+          case "post" | "client_secret_post"  => Right(ClientAuthenticationMethod.POST)
+          case "basic"| "client_secret_basic" => Right(ClientAuthenticationMethod.BASIC)
+          case _ => Left(Inconsistency(s"Requested OAUTh2 authentication methods '${method}' is not recognized, please use one of: ${authMethods.map(_.getValue).mkString("'","','","'")}"))
+        }
       case Some(m) => Right(m)
     }
   }
@@ -128,6 +138,34 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     grantTypes.find( _.getValue.equalsIgnoreCase(grant)) match {
       case None    => Left(Inconsistency(s"Requested OAUTh2 authorization grant type '${grant}' is not recognized, please use one of: ${grantTypes.map(_.getValue).mkString("'","','","'")}"))
       case Some(m) => Right(m)
+    }
+  }
+
+  /*
+   * In a first release of the plugin, scope were comma separated, which is inconsistent with OIDC spec
+   * https://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
+   * `Multiple scope values MAY be used by creating a space delimited, case sensitive list of ASCII scope values.`
+   * It is not documented anymore and will only support an handful of early adopters.
+   * Compatibility can be removed at some point in the future (timeline: rudder 7.2)
+   */
+  def parseScope(scopes: String): IOResult[List[String]] = {
+    // it seems that only the given list of email, phone etc is supported, even if the speak of "case sensitive", let be
+    // a bit more broad, the protocol lib will check more thoroughly.
+    val ascii = """\w""".r
+    def checkScope(s: String) = {
+      if(ascii.matches(s)) Inconsistency(s"Only ascii [a-zA-Z0-9_] is authorized in scope definition but '${s}' doesn't matches it").fail
+      else s.succeed
+    }
+    val s = (
+      if(scopes.contains(",")) scopes.split(",")
+      else scopes.split("""\s+""")
+    ).toList.map(_.trim)
+
+    ZIO.partition(s)(checkScope).flatMap { case (errs, oks) =>
+      errs.toList match {
+        case Nil     => oks.toList.succeed
+        case h::tail => Accumulated(NonEmptyList.of(h,tail:_*)).fail
+      }
     }
   }
 
@@ -149,7 +187,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       authMethod     <- read(A_AUTH_METHOD).flatMap(parseAuthenticationMethod(_).toIO)
       grantTypes     <- read(A_GRANT_TYPE).flatMap(parseAuthorizationGrantType(_).toIO)
       infoMessage    <- read(A_INFO_MESSAGE)
-      scopes         <- read(A_SCOPE).map(_.split(",").map(_.trim))
+      scopes         <- read(A_SCOPE).flatMap(parseScope(_))
       uriAuth        <- read(A_URI_AUTH)
       uriToken       <- read(A_URI_TOKEN)
       uriUserInfo    <- read(A_URI_USER_INFO)

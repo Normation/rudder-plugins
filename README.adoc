@@ -249,7 +249,7 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 === Using a certificate for secure connection to LDAP/AD
 
 If you want to connect with a secure connection to an LDAP or AD, you need to add the
-directory certificate to Rudder's JVM `keystore`. 
+directory certificate to Rudder's JVM `keystore`.
 
 Without that, you will see errors in `/var/log/rudder/webapp/XXXXXXX_stderrout.log` files like:
 
@@ -295,7 +295,7 @@ These protocols delegate the actual authentication to an identity provider (IdP)
 
 Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
 
-To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAUTHv2` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider. 
+To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAUTHv2` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider.
 
 As always, you can have several back-ends configured for fall-back authentication. For example, to use `OIDC` with a fall-back to the Rudder file based authentication, use:
 
@@ -320,11 +320,11 @@ In the next below description, we use `okta` as a provider. We chose this one be
 # - OAUTHv2       : oauth2
 # - OpenID Connect: oidc
 
-# Configure the list of Identity provider services. Here, you choose 
-# an identifier for each service as a comma separated list. 
-# Identifier should be lower case ascii, -, _. For example, if 
-# your company uses both "Okta" and "Google", you can choose "okta" and 
-# "google" (how original) identifiers: 
+# Configure the list of Identity provider services. Here, you choose
+# an identifier for each service as a comma separated list.
+# Identifier should be lower case ascii, -, _. For example, if
+# your company uses both "Okta" and "Google", you can choose "okta" and
+# "google" (how original) identifiers:
 rudder.auth.oauth2.provider.registrations=okta,google
 
 # Now, configure Okta related properties. You will need to do
@@ -346,17 +346,19 @@ rudder.auth.oauth2.provider.okta.ui.infoMessage=OpenID Connect SSO (Okta)
 #
 rudder.auth.oauth2.provider.okta.client.id=0oa3snkopsIRIIHb35d7
 #
-# 2/ The corresponding "client secret", available when you click on your application
-#    in https://xxxx-admin.okta.com/admin/apps/active in "Client Credential > Client Secret"
+# 2/ The corresponding "client secret", provided by your Identity Provider.
+#    For Okta, it's available when you click on your application in
+#    https://xxxx-admin.okta.com/admin/apps/active in "Client Credential > Client Secret"
 rudder.auth.oauth2.provider.okta.client.secret=-0Q5jGbdvV5WkfGNJwHfkOP0FdZ5vhqPYav7icYb
 #
-# Names the OAUTHv2 "realm" that should be included in the identity token once
-# authentication is done. These information should be documented by your IdP documentation.
-# Rudder only need to have at least the attribute that will be used for `userId` (see next
-# property)
-rudder.auth.oauth2.provider.okta.scope=openid, email, profile
+# Space separated list of OAUTHv2 "scope" for claims that should be included in the identity
+# token once authentication is done. These values should be documented by your IdP documentation.
+# Rudder only need to have at least scope which provides the attribute that will be used for
+# `userId` (see next property)
+rudder.auth.oauth2.provider.okta.scope=openid  email profile
 #
-# The attribute that will be used for `userId` (generally, it's either a login or email).
+# The attribute that will be used for `userId` and login matching with rudder users
+# (generally, it's a login or email ; OIDC always provides at least `sub` attribute)
 # The value of that attribute will be used to retrieved Rudder internal user, its rights, etc.
 rudder.auth.oauth2.provider.okta.userNameAttributeName=email
 #
@@ -374,26 +376,39 @@ rudder.auth.oauth2.provider.okta.uri.token=https://xxxx.okta.com/oauth2/v1/token
 rudder.auth.oauth2.provider.okta.uri.userInfo=https://xxxx.okta.com/oauth2/v1/userinfo
 rudder.auth.oauth2.provider.okta.uri.jwkSet=https://xxxx.okta.com/oauth2/v1/keys
 #
+# Rudder URL towards which the identity provider redirects, ie the URL seen by the IdP
+# for Rudder. Apart if directed to do differently, you should keep the
+# part after `rudder`, ie: `/login/oauth2/code/{registrationId}` part.
+rudder.auth.oauth2.provider.okta.client.redirect=https://my-external-rudder-hostname/rudder/login/oauth2/code/{registrationId}
+#
+#
 # The following properties are necessary for each provider configuration but should not be modified.
 #
 # The protocol scheme used for authentication - Rudder only supports with authorisation code.
 rudder.auth.oauth2.provider.okta.grantType=authorization_code
-# Rudder URL towards which the identity provider redirects
-rudder.auth.oauth2.provider.okta.client.redirect={baseUrl}/login/oauth2/code/{registrationId}
-# Authentication type - Rudder only supports basic.
-rudder.auth.oauth2.provider.okta.authMethod=basic
+# Authentication type - Rudder only supports client_secret_basic and client_secret_post.
+rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
 ```
 
+
+==== Log information
+
+OIDC and OAuth2 protocols may become complicated to configure, especially for the scopes part, when you
+need to match an attribute with Rudder login base.
+You can use the log level for `auth-backends` in `/opt/rudder/etc/lockback.xml`:
+
+- `debug` to see which attributes are actually returned into the user info token,
+- and `trace` to also see their values.
 
 === Radius backend
 
 [WARNING]
 =====
 
-Radius backend is deprecated as of Rudder 7.0. It will be removed in a 
-next version of Rudder. 
-You should try to replace it with an other backend. In case that backend is
-a must have for you, please contact Rudder company for discussing how to help
+Radius backend is deprecated as of Rudder 7.0. It will be removed in a
+next version of Rudder.
+You should try to replace it with another backend. In case that backend is
+a must-have for you, please contact Rudder company for discussing how to help
 you migrate away of Radius of get specific support for it.
 
 =====

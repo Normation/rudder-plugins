@@ -83,7 +83,7 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
             <div class="form-group col-xs-12">
              <label for="valid" class="sr-only">Sign in with Okta provider</label>
              <div class="input-group col-xs-12">
-               <a class="btn btn-warning-rudder col-xs-12" href={ redirectUrl(id) } role="button">{ r.infoMsg }</a>
+               <a class="btn btn-warning-rudder col-xs-12" href={ redirectUrl(id) } role="button">{ s"${r.infoMsg} (${r.registration.getClientName})" }</a>
              </div>
            </div>
            }
@@ -109,7 +109,7 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
                             </button><div id="toggleLoginForm" style="display: none">{x}</div>
                           case LoginFormRendering.Remove => NodeSeq.Empty
                         }) &
-      ".form-footer" #> ((x:NodeSeq) =>  oauth2providers++ x)
+      ".form-footer" #> ((x:NodeSeq) => oauth2providers ++ x)
     )
 
     selector(xml)
