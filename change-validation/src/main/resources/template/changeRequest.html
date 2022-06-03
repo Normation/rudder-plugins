@@ -1,34 +1,39 @@
 <lift:surround with="common-layout" at="content">
 
 <head_merge>
-	<title>Rudder :: Change Validation</title>
+	<title>Rudder - Change Validation</title>
 	<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
 	<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
 </head_merge>
 
-<div class="portlet">
-  <div class="portlet-content">
-    <div id="changeRequestHeader">
+<div class="rudder-template">
+  <div class="one-col">
+    <div id="changeRequestHeader" class="main-header">
       <div class="lift:ChangeRequestDetails.header"></div>
     </div>
-    <div id="changeRequestDetails">
-      <div class="lift:ChangeRequestDetails.details"></div>
-    </div>
+    <div class="one-col-main">
+      <div class="template-main">
+        <div class="main-container">
+          <div class="main-details">
 
-    <div id="warnOnUnmergeable">
-      <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
-    </div>
+            <div id="changeRequestDetails">
+              <div class="lift:ChangeRequestDetails.details"></div>
+            </div>
 
-    <div class="lift:ChangeRequestDetails.changes">
-    </div>
-     <hr class="spacer"/>
-    <div class="lift:ChangeRequestDetails.actions" >
+            <div id="warnOnUnmergeable">
+              <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
+            </div>
+
+            <div class="lift:ChangeRequestDetails.changes"></div>
+
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div>
     <div id="successWorkflow" class="modal fade" data-keyboard="true" tabindex="-1">
-        <div class="modal-backdrop fade in" style="height: 100%;"></div>
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">

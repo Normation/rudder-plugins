@@ -54,13 +54,17 @@ import bootstrap.liftweb.AuthenticationMethods
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
-import bootstrap.liftweb.RudderProperties.config
 import com.typesafe.config.ConfigException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.ParameterizedTypeReference
+import org.springframework.core.convert.converter.Converter
+import org.springframework.http.RequestEntity
+import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper
@@ -68,6 +72,7 @@ import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider
 import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler
 import org.springframework.security.oauth2.client.oidc.authentication.OidcAuthorizationCodeAuthenticationProvider
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
@@ -76,26 +81,43 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequestEntityConverter
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
 import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository
 import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter
+import org.springframework.security.oauth2.core.OAuth2AccessToken
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException
+import org.springframework.security.oauth2.core.OAuth2AuthorizationException
+import org.springframework.security.oauth2.core.OAuth2Error
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority
 import org.springframework.security.web.DefaultSecurityFilterChain
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
+import org.springframework.util.StringUtils
+import org.springframework.web.client.RestClientException
+import org.springframework.web.client.RestOperations
+import org.springframework.web.client.RestTemplate
+import org.springframework.web.client.UnknownContentTypeException
 
 import java.util
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 import com.normation.zio._
+import scala.jdk.CollectionConverters._
 
 
 /*
@@ -115,8 +137,6 @@ object AuthBackendsConf extends RudderPluginModule {
   if(log.getLevel == null) {
     log.setLevel(ch.qos.logback.classic.Level.ERROR)
   }
-
-
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService =  new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
@@ -157,11 +177,12 @@ object AuthBackendsConf extends RudderPluginModule {
     , new AuthBackendsRepository(RudderConfig.authenticationProviders, RudderProperties.config)
   )
 
-  lazy val loginFormRendering = try {
+  lazy val loginFormRendering: LoginFormRendering = try {
     LoginFormRendering.parse(RudderProperties.config.getString(DISPLAY_LOGIN_FORM_PROP)) match {
       case Right(v)  => v
       case Left(err) =>
         PluginLogger.warn(s"Error for property '${DISPLAY_LOGIN_FORM_PROP}': ${err}")
+        LoginFormRendering.Show
     }
   } catch {
     case ex: ConfigException => // if not defined, default to "show"
@@ -203,7 +224,13 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       def createFilters(rudderUserDetailsService: RudderInMemoryUserDetailsService) = {
         val authenticationFilter: OAuth2LoginAuthenticationFilter = new OAuth2LoginAuthenticationFilter(
           clientRegistrationRepository, authorizedClientRepository, loginProcessingUrl
-        )
+        ) {
+          override def attemptAuthentication(request: HttpServletRequest, response: HttpServletResponse): Authentication = {
+            AuthBackendsLogger.debug(s"Processing OAuth2/OIDC authorisation validation and starting authentication request")
+            val auth = super.attemptAuthentication(request, response)
+            auth
+          }
+        }
 
         val authorizationRequestFilter = new OAuth2AuthorizationRequestRedirectFilter(authorizationRequestResolver)
         authorizationRequestFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
@@ -213,7 +240,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         authenticationFilter.setFilterProcessesUrl(loginProcessingUrl)
         authenticationFilter.setAuthorizationRequestRepository(authorizationRequestRepository)
         authenticationFilter.setAuthenticationSuccessHandler(rudderOauth2AuthSuccessHandler)
-
+        authenticationFilter.setAuthenticationFailureHandler(applicationContext.getBean("rudderWebAuthenticationFailureHandler").asInstanceOf[AuthenticationFailureHandler])
         (authorizationRequestFilter, authenticationFilter)
       }
 
@@ -273,7 +300,6 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
    * alway map user to role `ROLE_USER`
    */
   @Bean def userAuthoritiesMapper = {
-    import scala.jdk.CollectionConverters._
 
     new GrantedAuthoritiesMapper {
       override def mapAuthorities(authorities: util.Collection[_ <: GrantedAuthority]): util.Collection[_ <: GrantedAuthority] = {
@@ -292,31 +318,11 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
    *  Create an hybride Oidc/Rudder UserDetails.
    */
   @Bean def oidcUserService(rudderUserDetailsService: RudderInMemoryUserDetailsService): OidcUserService = {
-    new OidcUserService() {
-      override def loadUser(userRequest: OidcUserRequest): OidcUser = {
-        val user = super.loadUser(userRequest)
-
-        // check that we know that user in our DB
-        val rudderUser = rudderUserDetailsService.loadUserByUsername(user.getUserInfo.getPreferredUsername)
-
-        new RudderOidcDetails(user, rudderUser)
-      }
-    }
+    new RudderOidcUserService(rudderUserDetailsService)
   }
 
   @Bean def oauth2UserService(rudderUserDetailsService: RudderInMemoryUserDetailsService): OAuth2UserService[OAuth2UserRequest, OAuth2User] = {
-    val defaultUserService = new DefaultOAuth2UserService()
-
-    new OAuth2UserService[OAuth2UserRequest, OAuth2User]() {
-      override def loadUser(userRequest: OAuth2UserRequest): OAuth2User = {
-        val user = defaultUserService.loadUser(userRequest)
-
-        // check that we know that user in our DB
-        val rudderUser = rudderUserDetailsService.loadUserByUsername(user.getName)
-
-        new RudderOauth2Details(user, rudderUser)
-      }
-    }
+    new RudderOAuth2UserService(rudderUserDetailsService)
   }
 
   // following beans are the detault one provided by spring security for oauth2 logic
@@ -324,7 +330,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   val authorizationRequestBaseUri = "/oauth2/authorization"
   val loginProcessingUrl = "/login/oauth2/code/*"
 
-  @Bean def authorizationRequestResolver = new DefaultOAuth2AuthorizationRequestResolver(
+  @Bean def authorizationRequestResolver = new RudderDefaultOAuth2AuthorizationRequestResolver(
     clientRegistrationRepository, authorizationRequestBaseUri
   )
 
@@ -373,3 +379,193 @@ final class RudderOauth2Details(oauth2: OAuth2User, rudder: RudderUserDetail) ex
   override def getAttributes: util.Map[String, AnyRef] = oauth2.getAttributes
   override def getName: String = oauth2.getName
 }
+
+
+/*
+ * We need to reimplement these methods because we need to correctly manage errors without having horrible
+ * stack traces in logs. Classes below are reimplementation or extension of the corresponding Spring classes
+ * with these features.
+ */
+
+class RudderDefaultOAuth2AuthorizationRequestResolver(
+    clientRegistrationRepository: ClientRegistrationRepository
+  , authorizationRequestBaseUri : String
+) extends OAuth2AuthorizationRequestResolver {
+  val resolver = new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, authorizationRequestBaseUri)
+
+  def cleanResolve(request: HttpServletRequest, registrationId: Option[String]) = {
+    val authzRequest =
+      try {
+        registrationId match {
+          case None     => resolver.resolve(request)
+          case Some(id) => resolver.resolve(request, id)
+        }
+      } catch {
+        case ex: Exception =>
+          val err = new OAuth2Error("authorization_request_build_error", ex.getMessage, null)
+          throw new OAuth2AuthenticationException(err, err.toString, ex)
+      }
+    if(null != authzRequest && AuthBackendsLogger.isDebugEnabled) {
+      AuthBackendsLogger.debug(s"Processing OAuth2/OIDC authorization to: ${authzRequest.getAuthorizationUri}")
+      if(AuthBackendsLogger.isTraceEnabled) {
+        val traceReq = s"\n  - authorization URI: ${authzRequest.getAuthorizationUri}" +
+                       s"\n  - grant type: ${authzRequest.getGrantType.getValue}" +
+                       s"\n  - response type: ${authzRequest.getResponseType.getValue}" +
+                       s"\n  - client ID: ${authzRequest.getClientId}" +
+                       s"\n  - redirect URI: ${authzRequest.getRedirectUri}" +
+                       s"\n  - scopes: ${authzRequest.getScopes.asScala.mkString(" ")}" +
+                       s"\n  - state: ${authzRequest.getState}" +
+                       s"\n  - additional parameters: ${authzRequest.getAdditionalParameters.asScala.toList.mkString("; ")}" +
+                       s"\n  - authorization request URI: ${authzRequest.getAuthorizationRequestUri}" +
+                       s"\n  - attributes: ${authzRequest.getAttributes.asScala.toList.mkString("; ")}"
+        AuthBackendsLogger.trace(s"  authorization request details: ${traceReq}")
+      }
+    }
+    authzRequest
+  }
+
+  override def resolve(request: HttpServletRequest): OAuth2AuthorizationRequest = {
+    cleanResolve(request, None)
+  }
+
+  override def resolve(request: HttpServletRequest, registrationId: String): OAuth2AuthorizationRequest = {
+    cleanResolve(request, Some(registrationId))
+  }
+
+}
+
+
+trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: RudderUserDetail with U] {
+
+  def mapRudderUser(protocolName: String, delegateLoadUser: R => U, rudderUserDetailsService: RudderInMemoryUserDetailsService, userRequest: R, userBuilder: (U, RudderUserDetail) => T): T = {
+    val user = delegateLoadUser(userRequest)
+    val sub = user.getAttributes.get("sub").toString
+    AuthBackendsLogger.debug(s"Identifying ${protocolName} user info with sub: '${sub}' on rudder user base using login: '${user.getName}'")
+
+    // check that we know that user in our DB
+    val rudderUser = rudderUserDetailsService.loadUserByUsername(user.getName)
+
+    userBuilder(user, rudderUser)
+  }
+
+}
+
+class RudderOidcUserService(rudderUserDetailsService: RudderInMemoryUserDetailsService) extends OidcUserService with RudderUserServerMapping[OidcUserRequest, OidcUser, RudderUserDetail with OidcUser] {
+  // we need to use our copy of DefaultOAuth2UserService to log/manage errors
+  super.setOauth2UserService(new RudderDefaultOAuth2UserService())
+
+  override def loadUser(userRequest: OidcUserRequest): OidcUser = {
+    mapRudderUser("OIDC", super.loadUser(_), rudderUserDetailsService, userRequest, new RudderOidcDetails(_,_))
+  }
+}
+
+class RudderOAuth2UserService(rudderUserDetailsService: RudderInMemoryUserDetailsService) extends OAuth2UserService[OAuth2UserRequest, OAuth2User] with RudderUserServerMapping[OAuth2UserRequest, OAuth2User, RudderUserDetail with OAuth2User] {
+  val defaultUserService = new RudderDefaultOAuth2UserService()
+
+  override def loadUser(userRequest: OAuth2UserRequest): OAuth2User = {
+    mapRudderUser("Oauth2", defaultUserService.loadUser(_), rudderUserDetailsService, userRequest, new RudderOauth2Details(_,_))
+  }
+}
+
+
+class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
+
+  /*
+   * this is a copy of parent method with more logs/error management
+   */
+  private val MISSING_USER_INFO_URI_ERROR_CODE: String = "oauth2:missing_user_info_uri"
+
+  private val MISSING_USER_NAME_ATTRIBUTE_ERROR_CODE: String = "oauth2:missing_user_name_attribute"
+
+  private val INVALID_USER_INFO_RESPONSE_ERROR_CODE: String = "oauth2:invalid_user_info_response"
+
+  private val PARAMETERIZED_RESPONSE_TYPE: ParameterizedTypeReference[java.util.Map[String, AnyRef]] = new ParameterizedTypeReference[java.util.Map[String, AnyRef]]() {}
+
+  private val requestEntityConverter: Converter[OAuth2UserRequest, RequestEntity[_]] = new OAuth2UserRequestEntityConverter
+
+  private val restOperations: RestOperations = {
+    val restTemplate = new RestTemplate
+    restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler)
+    restTemplate
+  }
+
+  import scala.jdk.CollectionConverters._
+
+  @throws[OAuth2AuthenticationException]
+  override def loadUser(userRequest: OAuth2UserRequest): OAuth2User = {
+    if (!(StringUtils.hasText(userRequest.getClientRegistration.getProviderDetails.getUserInfoEndpoint.getUri))) {
+      val oauth2Error: OAuth2Error = new OAuth2Error(
+        MISSING_USER_INFO_URI_ERROR_CODE,
+        "Missing required UserInfo Uri in UserInfoEndpoint for Client Registration: " + userRequest.getClientRegistration.getRegistrationId,
+        null
+      )
+      throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString)
+    }
+    val userNameAttributeName: String = userRequest.getClientRegistration.getProviderDetails.getUserInfoEndpoint.getUserNameAttributeName
+    if (!(StringUtils.hasText(userNameAttributeName))) {
+      val oauth2Error: OAuth2Error = new OAuth2Error(
+        MISSING_USER_NAME_ATTRIBUTE_ERROR_CODE,
+        "Missing required \"user name\" attribute name in UserInfoEndpoint for Client Registration: " + userRequest.getClientRegistration.getRegistrationId,
+        null
+      )
+      throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString)
+    }
+    val request       : RequestEntity[_]                    = this.requestEntityConverter.convert(userRequest)
+    val response      : ResponseEntity[java.util.Map[String, AnyRef]] = getResponse(userRequest, request)
+
+    AuthBackendsLogger.debug(s"OAuth2/OIDC user info request with scopes [${userRequest.getClientRegistration.getScopes.asScala.toList.sorted.mkString(" ")}] " +
+                             s"returned attributes: ${response.getBody.asScala.keySet.toList.sorted.mkString(", ")}")
+    AuthBackendsLogger.trace(s"  user info attribute values: ${response.getBody.asScala.toList.sortBy(_._1).map{ case (k,v) => s"$k: $v"}.mkString("\n  - ","\n  - ","")} ")
+
+    val userAttributes: java.util.Map[String, AnyRef]       = response.getBody
+    val authorities   : java.util.Set[GrantedAuthority]     = new java.util.LinkedHashSet[GrantedAuthority]()
+    authorities.add(new OAuth2UserAuthority(userAttributes))
+    val token: OAuth2AccessToken = userRequest.getAccessToken
+    token.getScopes.asScala.foreach { authority =>
+      authorities.add(new SimpleGrantedAuthority("SCOPE_" + authority))
+    }
+    try {
+      new DefaultOAuth2User(authorities, userAttributes, userNameAttributeName)
+    } catch {
+      case ex: Exception =>
+        val oauth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE, ex.getMessage, null)
+        throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString)
+    }
+  }
+
+  private def getResponse(userRequest: OAuth2UserRequest, request: RequestEntity[_]): ResponseEntity[java.util.Map[String, AnyRef]] = {
+    try {
+      return this.restOperations.exchange(request, PARAMETERIZED_RESPONSE_TYPE)
+    } catch {
+      case ex: OAuth2AuthorizationException =>
+        var oauth2Error : OAuth2Error   = ex.getError
+        val errorDetails: StringBuilder = new StringBuilder
+        errorDetails.append("Error details: [")
+        errorDetails.append("UserInfo Uri: ").append(userRequest.getClientRegistration.getProviderDetails.getUserInfoEndpoint.getUri)
+        errorDetails.append(", Error Code: ").append(oauth2Error.getErrorCode)
+        if (oauth2Error.getDescription != null) {
+          errorDetails.append(", Error Description: ").append(oauth2Error.getDescription)
+        }
+        errorDetails.append("]")
+        oauth2Error = new OAuth2Error(
+          INVALID_USER_INFO_RESPONSE_ERROR_CODE,
+          "An error occurred while attempting to retrieve the UserInfo Resource: " + errorDetails.toString,
+          null
+        )
+        throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString, ex)
+      case ex: UnknownContentTypeException  =>
+        val errorMessage: String      = "An error occurred while attempting to retrieve the UserInfo Resource from '" + userRequest.getClientRegistration.getProviderDetails.getUserInfoEndpoint.getUri + "': response contains invalid content type '" + ex.getContentType.toString + "'. " + "The UserInfo Response should return a JSON object (content type 'application/json') " + "that contains a collection of name and value pairs of the claims about the authenticated End-User. " + "Please ensure the UserInfo Uri in UserInfoEndpoint for Client Registration '" + userRequest.getClientRegistration.getRegistrationId + "' conforms to the UserInfo Endpoint, " + "as defined in OpenID Connect 1.0: 'https://openid.net/specs/openid-connect-core-1_0.html#UserInfo'"
+        val oauth2Error : OAuth2Error = new OAuth2Error(INVALID_USER_INFO_RESPONSE_ERROR_CODE, errorMessage, null)
+        throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString, ex)
+      case ex: RestClientException          =>
+        val oauth2Error: OAuth2Error = new OAuth2Error(
+          INVALID_USER_INFO_RESPONSE_ERROR_CODE,
+          "An error occurred while attempting to retrieve the UserInfo Resource: " + ex.getMessage,
+          null
+        )
+        throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString, ex)
+    }
+  }
+}
+
+
