@@ -66,6 +66,11 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
         padding: 46px 60px 16px 60px;
         box-shadow: 0 40px 40px 20px #dce3ef63;
     }}
+    .warning-info {{
+      display: none;
+      color: #da2a1d;
+      font-size: .9em;
+    }}
   </style>
 
   /*
@@ -90,11 +95,12 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
            rgs.map { case (id, r) =>
             <div class="form-group">
              <div class="input-group col-xs-12">
-               <a class="btn btn-warning-rudder col-xs-12" href={ redirectUrl(id) } role="button">{ r.infoMsg }</a>
+               <a class="btn btn-warning-rudder col-xs-12" href={ redirectUrl(id) } role="button">{ s"${r.infoMsg} (${r.registration.getClientName})" }</a>
              </div>
            </div>
            }
         }
+        <span id="errorInfoSSO" class="warning-info"><i class="fa fa-warning"></i> Login error, please try again.</span>
       </div>
     } else {
       <div id="oauth2providers">
@@ -112,16 +118,20 @@ class Oauth2LoginBanner(val status: PluginStatus, version: PluginVersion, regist
      */
     val selector = (
       ".plugin-info" #> ((x:NodeSeq) => x ++ css ++ oauth2providers) &
-      "#login-form"     #> ((x:NodeSeq) =>  (AuthBackendsConf.loginFormRendering match {
+      "#login-form"  #> ((x:NodeSeq) =>  (AuthBackendsConf.loginFormRendering match {
                           case LoginFormRendering.Show   => x
                           case LoginFormRendering.Hide   =>  // indentation is strange because need to be saw as one xml
-                            Script(OnLoad(JsRaw(""" $ ("#toggleLoginFormButton").click(function() {{ $("#toggleLoginForm").toggle(); }}); """))) ++
+                            Script(OnLoad(JsRaw(""" $ ("#toggleLoginFormButton").click(function() {{ $("#toggleLoginForm").toggle(); }});
+                                                  | let urlVars = new URLSearchParams(window.location.search);
+                                                  | if(urlVars.get('login_error')) {{
+                                                  |   $('#errorInfoSSO').toggle(true);
+                                                  | }}
+                                                  |""".stripMargin))) ++
                             <button id="toggleLoginFormButton" class="btn btn-default btn-xs">show non-SSO login form
                             </button><div id="toggleLoginForm" style="display: none">{x}</div>
                           case LoginFormRendering.Remove => NodeSeq.Empty
                         }))
     )
-
     selector(xml)
   }
 }
