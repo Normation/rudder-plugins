@@ -226,10 +226,10 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
    * Read the whole set of providers with their registrations.
    * We return a list to keep the order provided in the config file.
    */
-  def readAllRegistrations(config: Config): UIO[List[(String, RudderClientRegistration)]] = {
+  def readAllRegistrations(config: Config): IOResult[List[(String, RudderClientRegistration)]] = {
     for {
       // we don't want to fail if the list of provider is missing, just log it as a warning
-      providers     <- readProviders(config).catchAll(err => AuthBackendsLoggerPure.warn(err.fullMsg) *> Nil.succeed)
+      providers     <- readProviders(config)
       // we don't want to fail if one of the registration is not ok, just log it
       _             <- AuthBackendsLoggerPure.info(s"List of configured providers for oauth2/OpenIDConnect: ${providers.mkString(", ")}")
       registrations <- ZIO.foreach(providers) { p =>
@@ -263,7 +263,7 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
   /*
    * read information from config and update internal cache
    */
-  def updateRegistration(config: Config): UIO[Unit] = {
+  def updateRegistration(config: Config): IOResult[Unit] = {
     for {
       newOnes <- readAllRegistrations(config)
       _       <- registrations.set(newOnes)

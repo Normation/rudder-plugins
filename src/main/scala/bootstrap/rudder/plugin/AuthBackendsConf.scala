@@ -39,10 +39,12 @@ package bootstrap.rudder.plugin
 
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.authbackends.AuthBackendsLogger
+import com.normation.plugins.authbackends.AuthBackendsLoggerPure
 import com.normation.plugins.authbackends.AuthBackendsPluginDef
 import com.normation.plugins.authbackends.AuthBackendsRepository
 import com.normation.plugins.authbackends.CheckRudderPluginEnableImpl
 import com.normation.plugins.authbackends.LoginFormRendering
+import com.normation.plugins.authbackends.RudderClientRegistration
 import com.normation.plugins.authbackends.RudderPropertyBasedOAuth2RegistrationDefinition
 import com.normation.plugins.authbackends.api.AuthBackendsApiImpl
 import com.normation.plugins.authbackends.snippet.Oauth2LoginBanner
@@ -116,6 +118,7 @@ import java.util
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+import zio.syntax._
 import com.normation.zio._
 import scala.jdk.CollectionConverters._
 
@@ -274,15 +277,21 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
    * The format is defined in
    */
   @Bean def clientRegistrationRepository: ClientRegistrationRepository = {
-    val registrations = (for {
+    val registrations = (
+      for {
         _ <- AuthBackendsConf.oauth2registrations.updateRegistration(RudderProperties.config)
         r <- AuthBackendsConf.oauth2registrations.registrations.get
       } yield {
         r.toMap
-      }).runNow
-    if(registrations.isEmpty) {
-      AuthBackendsLogger.error(s"No registration configured, please disable OAUTH2 provider or correct registration")
-    }
+      }
+    ).foldM(
+      err => (if(AuthBackendsConf.isOauthConfiguredByUser) {
+               AuthBackendsLoggerPure.error(err.fullMsg)
+             } else {
+               AuthBackendsLoggerPure.debug(err.fullMsg)
+             }) *> Map.empty[String, RudderClientRegistration].succeed
+    , ok  => ok.succeed
+    ).runNow
 
     new ClientRegistrationRepository {
       val map = registrations
