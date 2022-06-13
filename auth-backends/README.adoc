@@ -91,7 +91,7 @@ rudder.auth.provider=ldap,file
 For example, that `rudder-users.xml` file will configure "admin" by file access, and "joe" by LDAP:
 
 ```
-<authentication hash="sha512">
+<authentication hash="sha512" case-sensitivity="true">
   <user name="admin" password="ab7f...b8a538dc69dd8de907ec" role="administrator" />
   <user name="joe" password="LDAP" role="administrator" />
 </authentication>

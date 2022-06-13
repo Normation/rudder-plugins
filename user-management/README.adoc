@@ -79,7 +79,7 @@ The credentials of a user are defined in the XML file
 
 ----
 
-<authentication hash="bcrypt">
+<authentication hash="bcrypt" case-sensitivity="true">
   <user name="Jane Doe"  password="xxxxxxx" role="inventory,compliance,rule_only"/>
   <user name="admin"    password="xxxxxxx" role="administrator"/>
   <user name="John Doe" password="xxxxxxx" role="no_rights"/>
