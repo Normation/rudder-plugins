@@ -113,8 +113,8 @@ class RoChangeRequestJdbcRepository(
   override def getByNodeGroup(id : NodeGroupId, onlyPending:Boolean) : Box[Vector[ChangeRequest]] = {
     getChangeRequestsByXpathContent(
         "/changeRequest/groups/group/@id"
-      , id.value
-      , s"could not fetch change request for group with id ${id.value}"
+      , id.serialize
+      , s"could not fetch change request for group with id ${id.serialize}"
       , onlyPending
     )
   }

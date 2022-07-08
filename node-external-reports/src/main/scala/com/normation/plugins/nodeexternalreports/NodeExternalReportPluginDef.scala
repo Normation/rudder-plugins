@@ -60,19 +60,12 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
 
   def oneTimeInit : Unit = {}
 
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("160-nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
+  override def pluginMenuEntry: List[(Menu, Option[String])] = {
+    ((Menu("160-nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
       LocGroup("pluginsGroup") >>
       Template(() =>
         ClasspathTemplates( "nodeExternalReports" :: Nil ) openOr
         <div>Template not found</div>)
-    )
-  }
-
-  override def pluginMenuParent: Option[Menu] = {
-    Some(Menu(MenuUtils.nodeManagementMenu, <span>Node management</span>) /
-      "secure" / "nodeManager" / "index"  >> TestAccess(()
-    => Boot.userIsAllowed("/secure/index", AuthorizationType.Node.Read) )
-    )
+    ).toMenu, Some(MenuUtils.nodeManagementMenu)) :: Nil
   }
 }

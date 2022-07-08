@@ -46,7 +46,6 @@ import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.DefaultPluginDef
-import com.normation.rudder.AuthorizationType
 import com.normation.rudder.AuthorizationType.Administration
 
 import scala.xml.NodeSeq
@@ -61,16 +60,12 @@ class BrandingPluginDef(override val status: PluginStatus) extends DefaultPlugin
 
   val configFiles = Seq()
 
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("640-brandingManagement", <span>Branding</span>) /
+  override def pluginMenuEntry: List[(Menu, Option[String])] = {
+    ((Menu("640-brandingManagement", <span>Branding</span>) /
         "secure" / "administration" / "brandingManagement"
         >> LocGroup("administrationGroup")
         >> TestAccess ( () => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read) )
         >> Template(() => ClasspathTemplates( "template" :: "brandingManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-  }
-
-  override def pluginMenuParent: Option[Menu] = {
-    Some(Menu(MenuUtils.utilitiesMenu, <i class="fa fa-wrench"></i> ++ <span>Utilities</span>: NodeSeq) / "secure" / "utilities" / "index" )
+    ).toMenu, Some(MenuUtils.utilitiesMenu)) :: Nil
   }
 }

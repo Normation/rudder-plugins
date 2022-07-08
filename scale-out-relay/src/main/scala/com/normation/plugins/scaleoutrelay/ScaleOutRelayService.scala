@@ -146,7 +146,7 @@ class ScaleOutRelayService(
     )
     val groups = objects.groups.map(g =>
       woLDAPNodeGroupRepository.delete(g.id, modId, actor, reason)
-        .chainError(s"Demote relay failed : removing node group '${g.id.value}' failed").unit
+        .chainError(s"Demote relay failed : removing node group '${g.id.serialize}' failed").unit
     )
     val directives = objects.directives.toList.map(d =>
       woDirectiveRepository.deleteSystemDirective(d._2.id.uid, modId, actor, reason)

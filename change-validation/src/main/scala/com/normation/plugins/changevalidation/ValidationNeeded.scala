@@ -175,11 +175,11 @@ class NodeGroupValidationNeeded(
 
       // we want to let the log knows why the change request need validation
       exists.foreach { nodeId =>
-        ChangeValidationLogger.debug(s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.value}]")
+        ChangeValidationLogger.debug(s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.serialize}]")
       }
       exists.nonEmpty
     }
-    ChangeValidationLogger.Metrics.debug(s"Check group '${change.newGroup.name}' [${change.newGroup.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check group '${change.newGroup.name}' [${change.newGroup.id.serialize}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 
@@ -200,7 +200,7 @@ class NodeGroupValidationNeeded(
     } yield {
       checkNodeTargetByRule(groups, nodeInfo, monitored, (rules++newRules).toSet)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.serialize}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 

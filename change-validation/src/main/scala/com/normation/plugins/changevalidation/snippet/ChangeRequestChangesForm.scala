@@ -574,7 +574,7 @@ class ChangeRequestChangesForm(
                   case Some(initialGroup) =>
                     val diff = diffService.diffNodeGroup(initialGroup, group)
                    displayGroupDiff(diff,group)
-                  case None =>  val msg = s"Could not display diff for ${group.name} (${group.id.value})"
+                  case None =>  val msg = s"Could not display diff for ${group.name} (${group.id.serialize})"
                   logger.error(msg)
                   <div>msg</div>
 

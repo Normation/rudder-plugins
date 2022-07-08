@@ -69,19 +69,12 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
 
   val configFiles = Seq()
 
-  override def pluginMenuEntry : Option[Menu] = {
-    Some(Menu("150-dataSourceManagement", <span>Data sources</span>) /
+  override def pluginMenuEntry : List[(Menu, Option[String])] = {
+    ((Menu("150-dataSourceManagement", <span>Data sources</span>) /
       "secure" / "plugins" / "dataSourceManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read) )
       >> Template(() => ClasspathTemplates( "template" :: "dataSourceManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-  }
-
-  override def pluginMenuParent: Option[Menu] = {
-    Some(Menu(MenuUtils.nodeManagementMenu, <span>Node management</span>) /
-      "secure" / "nodeManager" / "index"  >> TestAccess( ()
-      => Boot.userIsAllowed("/secure/index", AuthorizationType.Node.Read) )
-    )
+    ).toMenu, Some(MenuUtils.nodeManagementMenu)) :: Nil
   }
 }

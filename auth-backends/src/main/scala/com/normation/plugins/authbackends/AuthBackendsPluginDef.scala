@@ -64,12 +64,12 @@ class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPl
 
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(AuthBackendsConf.api)
 
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("authBackensdManagement", <span>Authentication backends</span>) /
+  override def pluginMenuEntry: List[(Menu, Option[String])] = {
+    ((Menu("authBackensdManagement", <span>Authentication backends</span>) /
       "secure" / "plugins" / "authBackendsManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
       >> Template(() => ClasspathTemplates("template" :: "AuthBackendsManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
+    ).toMenu, None) :: Nil
   }
 }

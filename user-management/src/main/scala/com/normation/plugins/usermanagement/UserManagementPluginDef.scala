@@ -66,20 +66,12 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(UserManagementConf.api)
 
 
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("760-userManagement", <span>User management</span>) /
+  override def pluginMenuEntry: List[(Menu, Option[String])] = {
+    ((Menu("760-userManagement", <span>User management</span>) /
       "secure" / "plugins" / "UserManagement"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
       >> Template(() => ClasspathTemplates("template" :: "UserManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
-  }
-
-
-  override def pluginMenuParent: Option[Menu] = {
-    Some(Menu(MenuUtils.administrationMenu, <span>Administration</span> : NodeSeq) /
-      "secure" / "administration" / "index" >> TestAccess ( ()
-      => userIsAllowed("/secure/index",AuthorizationType.Administration.Read, AuthorizationType.Technique.Read) )
-    )
+    ).toMenu, Some(MenuUtils.administrationMenu)) :: Nil
   }
 }
