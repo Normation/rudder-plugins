@@ -25,13 +25,13 @@ class HelloWorldPluginDef(dbService:LogAccessInDb, override val status: PluginSt
 
   def oneTimeInit : Unit = {}
 
-  override def pluginMenuEntry: Option[Menu] = {
-    Some( Menu("HelloPluginConfig") / "secure" / "plugins" / "helloplugin" >>
+  override def pluginMenuEntry: List[(Menu, Option[String])] = {
+    (( Menu("HelloPluginConfig") / "secure" / "plugins" / "helloplugin" >>
       Title( x => <span>HelloPlugin</span>) >>
       LocGroup("administrationGroup") >>
       Template(() =>
         ClasspathTemplates( "helloPlugin" :: Nil ) openOr
         <div>Template not found</div>)
-    )
+    ).toMenu, None) :: Nil
   }
 }

@@ -40,6 +40,7 @@ package com.normation.plugins.datasources.api
 import com.normation.plugins.datasources._
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTest
+import com.normation.rudder.rest.JsonResponsePrettify
 
 import java.util.concurrent.TimeUnit.SECONDS
 import com.normation.rudder.rest.RestTestSetUp
@@ -48,7 +49,6 @@ import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
-import net.liftweb.http.JsonResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.json.JValue
 import net.liftweb.json.JsonAST._
@@ -66,16 +66,12 @@ class RestDataSourceTest extends Specification with Loggable {
 
   def extractDataFromResponse (response : LiftResponse, kind : String) : Box[List[JValue]] = {
     response match {
-      case JsonResponse(data,_,_,200) =>
-        net.liftweb.json.parseOpt(data.toJsCmd) match {
-          case None => Failure("malformed json in answer")
-          case Some(json) =>
-            json \ "data" \ kind match {
-              case JArray(data) => Full(data)
-              case _ => Failure(json.toString())
-            }
+      case JsonResponsePrettify(json,_,_,200,_) =>
+        json \ "data" \ kind match {
+          case JArray(data) => Full(data)
+          case _ => Failure(json.toString())
         }
-      case _ => Failure(response.toString())
+      case _ => ???
     }
   }
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks

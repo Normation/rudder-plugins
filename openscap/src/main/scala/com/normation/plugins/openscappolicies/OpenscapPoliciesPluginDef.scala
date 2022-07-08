@@ -65,12 +65,12 @@ class OpenscapPoliciesPluginDef(override val status: PluginStatus) extends Defau
   val configFiles = Seq()
 
 
-  override def pluginMenuEntry: Option[Menu] = {
-    Some(Menu("openScapPolicies", <span>OpenSCAP policies</span>) /
+  override def pluginMenuEntry: List[(Menu, Option[String])] = {
+    ((Menu("openScapPolicies", <span>OpenSCAP policies</span>) /
       "secure" / "plugins" / "OpenScapPolicies"
       >> LocGroup("pluginsGroup")
       >> TestAccess ( () => Boot.userIsAllowed("/secure/index", Administration.Read))
       >> Template(() => ClasspathTemplates("template" :: "OpenScapPoliciesManagement" :: Nil ) openOr <div>Template not found</div>)
-    )
+    ).toMenu, None) :: Nil
   }
 }
