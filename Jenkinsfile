@@ -99,7 +99,7 @@ pipeline {
                             stage("test ${p}") {
                                 dir("${p}") {
                                     // enough to run the mvn tests and package the plugin
-                                    sh script: 'make', label: "build ${p} plugin"
+                                    sh script: 'MVN_PARAMS="-U" make', label: "build ${p} plugin"
                                 }
                             }
                         }
