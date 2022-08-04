@@ -11,6 +11,8 @@ pipeline {
     environment {
         // TODO: automate
         RUDDER_VERSION = "7.1"
+        // we want it everywhere for plugins
+        MAVEN_ARGS = "--update-snapshots"
     }
 
     stages {
@@ -99,7 +101,7 @@ pipeline {
                             stage("test ${p}") {
                                 dir("${p}") {
                                     // enough to run the mvn tests and package the plugin
-                                    sh script: 'MVN_PARAMS="-U" make', label: "build ${p} plugin"
+                                    sh script: 'make', label: "build ${p} plugin"
                                 }
                             }
                         }
