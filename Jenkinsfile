@@ -78,7 +78,8 @@ pipeline {
             }
         }
         stage('Tests plugins') {
-            when { changeRequest() }
+            // Build disabled, test everything
+            //when { changeRequest() }
 
             agent {
                 dockerfile {
