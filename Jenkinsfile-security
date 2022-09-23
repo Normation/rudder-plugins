@@ -27,6 +27,7 @@ pipeline {
                     SCALA_PLUGINS.each {
                         stage("${it}") {
                             dir("${it}") {
+                                sh script: 'make generate-pom', label: 'generate pom.xml'
                                 sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=11 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
                                 sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                             }
