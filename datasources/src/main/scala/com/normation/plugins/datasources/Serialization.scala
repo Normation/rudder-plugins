@@ -53,7 +53,7 @@ import cats._
 import cats.implicits._
 import com.normation.rudder.domain.properties.GenericProperty._
 import com.typesafe.config.ConfigRenderOptions
-import zio.duration.Duration
+import zio._
 
 object Translate {
   implicit class DurationToScala(d: Duration) {

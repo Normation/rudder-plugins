@@ -48,7 +48,6 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 import com.normation.plugins.PluginStatus
-import com.normation.rudder.AuthorizationType
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.zio._

@@ -117,7 +117,7 @@ class ScaleOutRelayService(
                         actionLogger.saveDemoteToNode(modId, actor, nodeInfo, reason)
                       } else {
                         ScaleOutRelayLoggerPure.debug(s"Node '${nodeId.value}' is already a simple node, nothing to do.") *>
-                        UIO.unit
+                        ZIO.unit
                       }
     } yield {
       asyncDeploymentAgent ! AutomaticStartDeployment(modId, actor)

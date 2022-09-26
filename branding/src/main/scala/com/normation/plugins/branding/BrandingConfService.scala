@@ -87,11 +87,11 @@ class BrandingConfService(configFilePath: String) {
 
   private def reloadCacheInternal(init: Boolean, ref: Ref[Either[RudderError, BrandingConf]]) : IOResult[BrandingConf] = {
     (for {
-      path   <- IOResult.effect(Paths.get(configFilePath))
-      exists <- IOResult.effect(Files.exists(path))
+      path   <- IOResult.attempt(Paths.get(configFilePath))
+      exists <- IOResult.attempt(Files.exists(path))
       res    <- if(exists) {
                   for {
-                    content <- IOResult.effect(s"Error when trying to read file: ${configFilePath}")(
+                    content <- IOResult.attempt(s"Error when trying to read file: ${configFilePath}")(
                                  File(configFilePath).contentAsString(StandardCharsets.UTF_8)
                                )
                     json    <- parseOpt(content).notOptional("Could nor parse correctly Branding plugin configuration file")
@@ -130,7 +130,7 @@ class BrandingConfService(configFilePath: String) {
     import net.liftweb.json.prettyRender
     val content = prettyRender(BrandingConf.serialize(newConf))
     (for {
-      _ <- IOResult.effect {
+      _ <- IOResult.attempt {
              val path = Paths.get(configFilePath)
              if (!Files.exists(path)) {
                Files.createDirectories(path.getParent)

@@ -38,7 +38,7 @@
 package com.normation.plugins.changevalidation
 
 import bootstrap.liftweb.{Boot, MenuUtils}
-import bootstrap.liftweb.Boot.{redirection, userIsAllowed}
+import bootstrap.liftweb.Boot.redirection
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins._
 import com.normation.rudder.AuthorizationType
@@ -61,7 +61,6 @@ import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 
-import scala.xml.NodeSeq
 
 class ChangeValidationPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 

@@ -49,7 +49,6 @@ import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.plugins.datasources.api.DataSourceApiImpl
 import com.normation.rudder.batch.AsyncDeploymentActor
-import com.normation.zio.ZioRuntime
 import com.normation.errors._
 import com.normation.zio._
 import com.normation.box._
@@ -60,7 +59,7 @@ import com.normation.box._
 class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentActor) {
   def hook(updatedNodeIds: Set[NodeId], cause: UpdateCause): IOResult[Unit] = {
     // we don't trigger a new update if the update cause was during a generation
-    IOResult.effect(if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
+    IOResult.attempt(if(!cause.triggeredByGeneration && updatedNodeIds.nonEmpty) {
       regenerate ! AutomaticStartDeployment(cause.modId, RudderEventActor)
     })
   }
@@ -81,7 +80,6 @@ object DatasourcesConf extends RudderPluginModule {
 
   lazy val dataSourceRepository = new DataSourceRepoImpl(
       new DataSourceJdbcRepository(Cfg.doobie)
-    , ZioRuntime.environment
     , new HttpQueryDataSourceService(
           Cfg.nodeInfoService
         , Cfg.roLDAPParameterRepository
@@ -89,7 +87,6 @@ object DatasourcesConf extends RudderPluginModule {
         , Cfg.interpolationCompiler
         , regenerationHook.hook _
         , () => Cfg.configService.rudder_global_policy_mode()
-        , ZioRuntime.environment
       )
     , Cfg.stringUuidGenerator
     , pluginStatusService

@@ -189,7 +189,6 @@
     <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.scopt</groupId><artifactId>scopt_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
@@ -221,6 +220,7 @@
     <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect-thirdparty-boopickle-shaded_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-internal-macros_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-interop-cats_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-json_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_${scala-binary-version}</artifactId><scope>provided</scope></dependency>

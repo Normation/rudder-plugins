@@ -48,8 +48,6 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.DefaultPluginDef
 import com.normation.rudder.AuthorizationType.Administration
 
-import scala.xml.NodeSeq
-
 class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.branding"

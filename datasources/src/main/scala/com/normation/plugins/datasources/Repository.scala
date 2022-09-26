@@ -50,15 +50,12 @@ import com.normation.utils.StringUuidGenerator
 import doobie._
 import doobie.implicits._
 import org.joda.time.DateTime
-import zio.duration._
 import com.normation.plugins.PluginStatus
 import com.normation.errors._
 import com.normation.zio._
 import zio._
-import zio.clock.Clock
 import zio.syntax._
 import com.normation.rudder.domain.properties.GlobalParameter
-import zio.console.Console
 import zio.interop.catz._
 
 
@@ -120,18 +117,18 @@ trait DataSourceUpdateCallbacks {
 }
 
 trait NoopDataSourceCallbacks extends DataSourceUpdateCallbacks {
-  def onNewNode(node: NodeId): IOResult[Unit] = UIO.unit
-  def onGenerationStarted(generationTimeStamp: DateTime): IOResult[Unit] = UIO.unit
-  def onUserAskUpdateAllNodes(actor: EventActor): IOResult[Unit] = UIO.unit
-  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): IOResult[Unit] = UIO.unit
-  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): IOResult[Unit] = UIO.unit
-  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): IOResult[Unit] = UIO.unit
-  def startAll(): IOResult[Unit] = UIO.unit
-  def initialize(): IOResult[Unit] = UIO.unit
+  def onNewNode(node: NodeId): IOResult[Unit] = ZIO.unit
+  def onGenerationStarted(generationTimeStamp: DateTime): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateAllNodes(actor: EventActor): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): IOResult[Unit] = ZIO.unit
+  def startAll(): IOResult[Unit] = ZIO.unit
+  def initialize(): IOResult[Unit] = ZIO.unit
 }
 
 class MemoryDataSourceRepository extends DataSourceRepository {
-  def print(s: String) = ZIO.accessM[Console](_.get.putStrLn(s)).provide(ZioRuntime.environment)
+  def print(s: String) = ZIO.consoleWith(_.printLine(s))
 
   private[this] val sourcesRef = zio.Ref.make(Map[DataSourceId, DataSource]()).runNow
 
@@ -160,7 +157,6 @@ class MemoryDataSourceRepository extends DataSourceRepository {
  */
 class DataSourceRepoImpl(
     backend     : DataSourceRepository
-  , clock       : Clock
   , fetch       : QueryDataSourceService
   , uuidGen     : StringUuidGenerator
   , pluginStatus: PluginStatus
@@ -173,7 +169,7 @@ class DataSourceRepoImpl(
    */
   private[this] object datasources extends AnyRef {
     private[this] val semaphore = Semaphore.make(1).runNow
-    private[this] var internalRef = Ref.make(Map[DataSourceId, DataSourceScheduler]()).runNow
+    private[this] val internalRef = Ref.make(Map[DataSourceId, DataSourceScheduler]()).runNow
 
     // utility methods on datasources
     // stop a datasource - must be called when the datasource still in "datasources"
@@ -201,7 +197,7 @@ class DataSourceRepoImpl(
   def initialize(): IOResult[Unit] = {
     getAll.flatMap(sources =>
         ZIO.foreach(sources.toList) { case (_, source) =>
-          updateDataSourceScheduler(clock, source, Some(source.runParam.schedule.duration))
+          updateDataSourceScheduler(source, Some(source.runParam.schedule.duration))
         }.unit
     ).chainError("Error when initializing datasources")
   }
@@ -217,11 +213,10 @@ class DataSourceRepoImpl(
     }).unit
   }
 
-  private[this] def updateDataSourceScheduler(clock: Clock, source: DataSource, delay: Option[Duration]): IOResult[Unit] = {
+  private[this] def updateDataSourceScheduler(source: DataSource, delay: Option[Duration]): IOResult[Unit] = {
     // create live instance
     val dss = new DataSourceScheduler(
           source
-        , clock
         , pluginStatus
         , () => ModificationId(uuidGen.newUuid)
         , (cause: UpdateCause) => fetch.queryAll(source, cause).unit
@@ -271,11 +266,11 @@ class DataSourceRepoImpl(
   override def save(source : DataSource) : IOResult[DataSource] = dataSourcesLock.withPermit {
     //only create/update the "live" instance if the backend succeed
     for {
-      _ <- backend.save(source).chainError(s"Error when saving data source '${source.name.value}' (${source.id.value})").foldM(
+      _ <- backend.save(source).chainError(s"Error when saving data source '${source.name.value}' (${source.id.value})").foldZIO(
                err => DataSourceLoggerPure.error(err.fullMsg)
              , ok  => ok.succeed
            )
-      _ <- updateDataSourceScheduler(clock, source, delay = None)
+      _ <- updateDataSourceScheduler(source, delay = None)
       _ <- DataSourceLoggerPure.debug(s"Data source '${source.name.value}' (${source.id.value}) updated")
     } yield {
       source

@@ -54,12 +54,12 @@ import scalaj.http.HttpOptions
 import zio._
 import zio.syntax._
 import com.normation.errors._
+import com.normation.zio._
 import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty._
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.typesafe.config.ConfigValue
-import zio.duration._
 import com.softwaremill.quicklens._
 import net.minidev.json.JSONStyle
 import net.minidev.json.JSONValue
@@ -123,9 +123,10 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
       path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
-      time_0     <- UIO.effectTotal(System.currentTimeMillis)
+      time_0     <- currentTimeMillis
       body       <- QueryHttp.QUERY(datasource.httpMethod, url, headers, httpParams, datasource.sslCheck, connectionTimeout, readTimeOut).chainError(s"Error when fetching data from ${url}")
-      _          <- DataSourceLoggerPure.Timing.trace(s"[${System.currentTimeMillis - time_0} ms] node '${node.id.value}': GET ${headers.map{case(k,v) => s"$k=$v"}.mkString("[","|","]")} ${url} // ${path}")
+      time_1     <- currentTimeMillis
+      _          <- DataSourceLoggerPure.Timing.trace(s"[${time_1 - time_0} ms] node '${node.id.value}': GET ${headers.map{case(k,v) => s"$k=$v"}.mkString("[","|","]")} ${url} // ${path}")
       optJson    <- body match {
                       case Some(body) => JsonSelect.fromPath(path, body).map(x => Some(x)).chainError(s"Error when extracting sub-json at path ${path} from ${body}")
                       // this mean we got a 404 => choose behavior based on onMissing value
@@ -180,7 +181,7 @@ object QueryHttp {
     }
 
     for {
-      response <- IOResult.effect(client.asString)
+      response <- IOResult.attempt(client.asString)
       result   <- if(response.isSuccess) {
                     Some(response.body).succeed
                   } else {
@@ -273,7 +274,7 @@ object JsonSelect {
   ///                                                       ///
 
   protected[datasources] def parse(json: String): IOResult[DocumentContext] = {
-    IOResult.effect(JsonPath.using(config).parse(json))
+    IOResult.attempt(JsonPath.using(config).parse(json))
   }
 
   /*
@@ -284,7 +285,7 @@ object JsonSelect {
    */
   protected[datasources] def compilePath(path: String): IOResult[JsonPath] = {
     val effectivePath = if (path.isEmpty()) "$" else path
-    IOResult.effect(JsonPath.compile(effectivePath))
+    IOResult.attempt(JsonPath.compile(effectivePath))
   }
 
   /*
@@ -310,7 +311,7 @@ object JsonSelect {
     }
 
     for {
-      jsonValue <- IOResult.effectM(try {
+      jsonValue <- IOResult.attemptZIO(try {
                      json.read[JSONAware](path).succeed
                    } catch {
                      case _: ClassCastException =>

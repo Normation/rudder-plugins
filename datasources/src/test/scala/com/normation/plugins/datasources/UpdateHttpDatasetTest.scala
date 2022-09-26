@@ -79,225 +79,344 @@ import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty._
 import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
 
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import org.specs2.matcher.EqualityMatcher
-
-import zio.test.environment._
-import zio.duration._
 import org.specs2.specification.core.Fragment
 
 import com.normation.zio._
 import zio.test.Annotations
 import com.normation.box._
-import java.nio.charset.StandardCharsets
 import zhttp.http._
 import zhttp.http.Method._
 import zhttp.service.server.ServerChannelFactory
 import zhttp.service.{EventLoopGroup, Server}
-import zio._
 
-object TheSpaced {
+import zio.{System => _, _}
+import zio.test.TestClock
 
-  val makeTestClock = TestClock.default.build
 
-  val prog = makeTestClock.use(testClock =>
-    for {
-      queue <- Queue.unbounded[Unit]
-      tc = testClock.get[TestClock.Service]
-      f <- (UIO(println("Hello!")) *> queue.offer(())).repeat(Schedule.fixed(5.minutes)).provide(testClock).forkDaemon
-      _ <- UIO(println("set to 0 min")) *> tc.adjust(0.nano) *> queue.take
-      _ <- UIO(println("set to 1 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 2 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 3 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 4 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 5 min")) *> tc.adjust(1.minute) *> queue.take
-      _ <- UIO(println("set to 6 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 7 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 8 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 9 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 10 min")) *> tc.adjust(1.minute) *> queue.take
-      _ <- UIO(println("set to 11 min")) *> tc.adjust(1.minute)
-      _ <- UIO(println("set to 25 min")) *> tc.adjust(10.minute)
-      _ <- f.join
-    } yield ()
-  ).provideLayer(testEnvironment)
+/**
+ *  This is just an example test server to run by hand and see how things work.
+ */
+object TestingZioHttpServer {
 
-  val prog2 = makeTestClock.use(testClock => for {
-    q <- Queue.unbounded[Unit]
-    _ <- (q.offer(()).delay(60.minutes)).forever.provide(testClock).forkDaemon
-    a <- q.poll.map(_.isEmpty)
-    _ <- testClock.get[TestClock.Service].adjust(60.minutes)
-    x <- q.poll.map(_.nonEmpty)
-    b <- q.take.as(true)
-    c <- q.poll.map(_.isEmpty)
-    _ <- testClock.get[TestClock.Service].adjust(60.minutes)
-    d <- q.take.as(true)
-    e <- q.poll.map(_.isEmpty)
-  } yield a && b && c && d && e && x).provideLayer(testEnvironment)
+  def testService[R]: HttpApp[R, Throwable] = Http.collectZIO[Request] {
+    case _ -> !! =>
+      ZIO.fail(new IllegalArgumentException("You cannot access root in test"))
+
+    case _ -> !! / "status" =>
+      Response.text("datasources:ok").succeed
+
+    case _ -> other =>
+      ZIO.succeed(Response.text(s"service didn't handle: '${other.segments.map(_.toString).mkString("';'")}'"))
+  }
+
+  val serverPort = 49999
+  val router =  Http.collectHttp[Request] {
+                    case GET -> !! / "status" =>
+                      Http.collectZIO[Request] {
+                        case _ => ZIO.succeed(Response.text("ok"))
+                      }
+
+                    case _ -> "" /: "datasources" /: path =>
+                      testService.contramap[Request](_.setPath(Path.root.concat(path)))
+
+                    case _ -> other =>
+                      Http.collectZIO[Request] {
+                        case _ => ZIO.succeed(Response.text(s"rooter didn't handle: '${other}'"))
+                      }
+                  }
+
+  val server = Server.port(serverPort) ++ Server.app(router)
 
   def main(args: Array[String]): Unit = {
-    println(ZioRuntime.unsafeRun(prog))
+    val fib = Unsafe.unsafe(implicit unsafe =>
+      Runtime.default.unsafe.run(
+        server.make
+          .flatMap(start =>
+            ZIO.consoleWith(_.printLine(s"server started on port ${start.port}"))
+            *> ZIO.never
+          )
+        .provideSomeLayer(ServerChannelFactory.auto ++ EventLoopGroup.auto(1) ++ Scope.default)
+        .exitCode
+        .forkDaemon
+      ).getOrThrowFiberFailure()
+    )
+
+    println(s"wait for start...")
+    Thread.sleep(1000)
+
+    val res1 = QueryHttp.QUERY(HttpMethod.GET, s"http://localhost:49999/status", Map(), Map(), false, 1.second, 1.seconds).runNow
+    println(s"res1: ${res1}")
+    val res2 = QueryHttp.QUERY(HttpMethod.GET, s"http://localhost:49999/datasources/status", Map(), Map(), false, 1.second, 1.seconds).runNow
+    println(s"res2: ${res2}")
+
+    Unsafe.unsafe(implicit unsafe => Runtime.default.unsafe.run(fib.interrupt))
   }
 }
 
-  //create a rest server for test
-  object NodeDataset {
-    import Data._
+/**
+ * This is just a test program to see how test clock works
+ */
+@silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
+object TestingSpacedClock {
 
-    //for debugging - of course works correctly only if sequential
-    val counterError   = zio.Ref.make(0).runNow
-    val counterSuccess = zio.Ref.make(0).runNow
-    val maxPar = zio.Ref.make(0).runNow
+  val makeTestClock = TestClock.default.build
 
-    // a delay methods that use the scheduler
-    def delayResponse[V,E](resp: ZIO[V, E, Response]): ZIO[V & clock.Clock, E, Response] = {
-      resp.delay(Random.nextInt(1000).millis)
-    }
+  val prog = ZIO.scoped(makeTestClock.flatMap(testClock =>
+    for {
+      queue <- Queue.unbounded[Unit]
+      tc = testClock.get[TestClock]
+      f <- (ZIO.attempt(println("Hello!")) *> queue.offer(())).repeat(Schedule.fixed(5.minutes)).forkDaemon
+      _ <- ZIO.attempt(println("set to 0 min")) *> tc.adjust(0.nano) *> queue.take
+      _ <- ZIO.attempt(println("set to 1 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 2 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 3 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 4 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 5 min")) *> tc.adjust(1.minute) *> queue.take
+      _ <- ZIO.attempt(println("set to 6 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 7 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 8 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 9 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 10 min")) *> tc.adjust(1.minute) *> queue.take
+      _ <- ZIO.attempt(println("set to 11 min")) *> tc.adjust(1.minute)
+      _ <- ZIO.attempt(println("set to 25 min")) *> tc.adjust(10.minute)
+      _ <- f.join
+    } yield ())
+  )
 
+  val prog2 = ZIO.scoped(makeTestClock.flatMap(testClock => for {
+    q <- Queue.unbounded[Unit]
+    _ <- ZIO.consoleWith(_.printLine("1"))
+    _ <- (q.offer(()).delay(60.minutes)).forever.forkDaemon
+    _ <- ZIO.consoleWith(_.printLine("2"))
+    a <- q.poll.map(_.isEmpty)
+    _ <- ZIO.consoleWith(_.printLine(s"3:$a"))
+    _ <- testClock.get[TestClock].adjust(60.minutes)
+    _ <- ZIO.consoleWith(_.printLine("4"))
+    b <- q.take.as(true)
+    _ <- ZIO.consoleWith(_.printLine(s"6:b"))
+    c <- q.poll.map(_.isEmpty)
+    _ <- ZIO.consoleWith(_.printLine(s"7:c"))
+    _ <- testClock.get[TestClock].adjust(60.minutes)
+    _ <- ZIO.consoleWith(_.printLine("8"))
+    d <- q.take.as(true)
+    _ <- ZIO.consoleWith(_.printLine(s"9:$d"))
+    e <- q.poll.map(_.isEmpty)
+    _ <- ZIO.consoleWith(_.printLine(s"0:$e"))
+  } yield a && b && c && d && e))
 
-    def reset(): Unit = {
-      counterError.set(0).runNow
-      counterSuccess.set(0).runNow
-    }
+  def main(args: Array[String]): Unit = {
+    val res = ZioRuntime.unsafeRun(prog2.provideLayer(zio.test.testEnvironment))
+    println(res)
+  }
+}
 
-    def service[R]: HttpApp[R with clock.Clock, Throwable] =  Http.collectZIO[Request] {
-      case _ -> !! =>
-        ZIO.fail(new IllegalArgumentException("You cannot access root in test"))
+object CmdbServerStarted {
 
-      case GET -> !! / "single_node1" =>
-        ZIO.succeed {
-          counterSuccess.update(_+1).runNow
-          Response.text(booksJson)
-        }
+  val isStarted = Promise.make[Nothing, Unit].runNow
 
-      case GET -> !! / "testarray" / x =>
-        ZIO.succeed{
-          counterSuccess.update(_+1).runNow
-          Response.text(testArray(x.toInt)._1)
-        }
+}
 
+/*
+ * Create a test server that will act as the datasource endpoint.
+ * The server answers to three main URLs set:
+ * - /status: just to check server is up
+ * - /datasources/...: test json query, expected answers, what happens on 404, special cases with arrays, etc
+ * - /datasources/parallel: test that datasource parallel limits are well set and respected
+ */
+object CmdbServer {
+  import com.normation.plugins.datasources.Data._
 
-      case GET -> !! / "single_node2" =>
-        ZIO.succeed{
-          counterSuccess.update(_+1).runNow
-          Response.text("""{"foo":"bar"}""")
-        }
+  //for debugging - of course works correctly only if sequential
+  val counterError   = zio.Ref.make(0).runNow
+  val counterSuccess = zio.Ref.make(0).runNow
+  val maxPar = zio.Ref.make(0).runNow
 
-      case GET -> !! / "server" =>
-        ZIO.succeed{
-          counterSuccess.update(_+1).runNow
-          Response.text("""{"hostname":"server.rudder.local"}""")
-        }
-      case GET -> !! / "hostnameJson" =>
-        ZIO.succeed{
-          counterSuccess.update(_+1).runNow
-          Response.text(hostnameJson)
-        }
-
-      case GET -> !! / "404" =>
-        ZIO.succeed(Response.status(Status.NotFound))
-
-      case GET -> !! / x =>
-        ZIO.succeed {
-          counterSuccess.update(_+1).runNow
-          Response.text(nodeJson(x))
-        }
-
-      case r @ GET -> !! / "delay" / x =>
-        r.headers.toList.toMap.get("nodeId") match {
-          case Some(`x`) =>
-            delayResponse(ZIO.succeed {
-              counterSuccess.update(_+1).runNow
-              Response.text(nodeJson(x))
-            })
-
-          case _ =>
-            ZIO.succeed {
-              counterError.update(_+1).runNow
-              Response.html("node id was not found in the 'nodeid' header", Status.Forbidden)
-            }
-        }
-
-      case r @ POST -> !! / "delay" =>
-
-        val headerId = r.headers.toList.toMap.get("nodeId")
-
-        for {
-          body   <- r.data.toByteBuf.map(_.toString(StandardCharsets.UTF_8)) // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
-          formId <- (body.split('=').toList match {
-                      case _ :: nodeId :: Nil => ZIO.succeed(Some(nodeId))
-                      case _ => ZIO.fail(throw new IllegalArgumentException(s"Error, can't decode POST form data body: ${body}"))
-                    })
-          res     <- (headerId, formId) match {
-                      case (Some(x), Some(y)) if x == y =>
-                        delayResponse( ZIO.succeed {
-                            counterSuccess.update(_+1).runNow
-                            Response.text(nodeJson("plop"))
-                        })
-
-                      case _ =>
-                        ZIO.succeed {
-                          counterError.update(_+1).runNow
-                          Response.html(s"node id was not found in post form (key=nodeId)[\n  headers: ${r.headers.toList}\n  body:${body}]", Status.Forbidden)
-                        }
-                    }
-        } yield res
-
-      case GET -> !! / "faileven" / x =>
-        // x === "nodeXX" or root
-        if(x != "root" && x.replaceAll("node", "").toInt % 2 == 0) {
-          ZIO.succeed {
-            counterError.update(_+1).runNow
-            Response.html("Not authorized", Status.Forbidden)
-          }
-        } else {
-          ZIO.succeed {
-            counterSuccess.update(_+1).runNow
-            Response.text(nodeJson(x))
-          }
-        }
-    }
-
-    def ioCountService = {
-      for {
-        currentConcurrent <- Ref.make(0)
-        maxConcurrent     <- Ref.make(0)
-      } yield Http.collectZIO[Request] {
-         case GET -> !! / x =>
-           for {
-             - <- currentConcurrent.update(_ + 1)
-             c <- currentConcurrent.get
-             _ <- maxConcurrent.update(m => if(c > m) c else { maxPar.set(m).runNow ; m})
-             m <- maxConcurrent.get
-             x <- ZIO.succeed { Response.text(nodeJson(x)) }
-             _ <- currentConcurrent.update(_ - 1)
-           } yield x
-       }
-    }
-
-    val serverPort = 49999 // should be random
-    //start server on a free port
-    //@silent // deprecation warning
-    val serverR = (
-      for {
-        count  <- ioCountService
-      } yield {
-        val router =  Http.collectHttp[Request] {
-                        case _ -> "datasources" /: "parallel" /: path =>
-                          count.contramap[Request](_.setPath(path))
-                        case _ -> "datasources" /: path =>
-                          service.contramap[Request](_.setPath(path))
-                      }
-        Server.port(serverPort) ++  // Setup port - should be next available
-        Server.app(router)          // Setup the Http app
-      }
-    )
+  // a delay methods that use the scheduler
+  def delayResponse[V,E](resp: ZIO[V, E, Response]): ZIO[V, E, Response] = {
+    resp.delay(Random.nextInt(1000).millis)
   }
 
+
+  def reset(): Unit = {
+    (
+      counterError.set(0) *>
+      counterSuccess.set(0)
+    ).runNow
+  }
+
+  /*
+   * datasource services
+   */
+  def service[R]: HttpApp[R, Throwable] =  Http.collectZIO[Request] {
+    case _ -> !! =>
+      ZIO.fail(new IllegalArgumentException("You cannot access root in test"))
+
+    case _ -> !! / "status" =>
+      Response.text("datasources:ok").succeed
+
+    case GET -> !! / "single_node1" =>
+      counterSuccess.update(_+1) *>
+      ZIO.succeed {
+        Response.text(booksJson)
+      }
+
+    case GET -> !! / "testarray" / x =>
+      counterSuccess.update(_+1) *>
+      ZIO.succeed{
+        Response.text(testArray(x.toInt)._1)
+      }
+
+    case GET -> !! / "single_node2" =>
+      counterSuccess.update(_+1) *>
+      ZIO.succeed{
+        Response.text("""{"foo":"bar"}""")
+      }
+
+    case GET -> !! / "server" =>
+      counterSuccess.update(_+1) *>
+      ZIO.succeed{
+        Response.text("""{"hostname":"server.rudder.local"}""")
+      }
+    case GET -> !! / "hostnameJson" =>
+      counterSuccess.update(_+1) *>
+      ZIO.succeed{
+        Response.text(hostnameJson)
+      }
+
+    case GET -> !! / "404" =>
+      ZIO.succeed(Response.status(Status.NotFound))
+
+    case GET -> !! / "faileven" / x =>
+      // x === "nodeXX" or root
+      counterSuccess.update(_+1) *>
+      (if (x != "root" && x.replaceAll("node", "").toInt % 2 == 0) {
+        ZIO.succeed {
+          Response.html("Not authorized", Status.Forbidden)
+        }
+      } else {
+        ZIO.succeed {
+          Response.text(nodeJson(x))
+        }
+      })
+
+    case r @ GET -> !! / "delay" / x =>
+      r.headers.toList.toMap.get("nodeId") match {
+        case Some(`x`) =>
+          delayResponse(
+            counterSuccess.update(_+1) *>
+            ZIO.succeed {
+              Response.text(nodeJson(x))
+            }
+          )
+
+        case _ =>
+          counterSuccess.update(_+1) *>
+          ZIO.succeed {
+            Response.html("node id was not found in the 'nodeid' header", Status.Forbidden)
+          }
+      }
+
+    case GET -> !! / x =>
+      counterSuccess.update(_+1) *>
+      ZIO.succeed {
+        Response.text(nodeJson(x))
+      }
+
+    case r @ POST -> !! / "delay" =>
+
+      val headerId = r.headers.toList.toMap.get("nodeId")
+
+      for {
+        body   <- r.body.asString // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
+        formId <- (body.split('=').toList match {
+                    case _ :: nodeId :: Nil => ZIO.succeed(Some(nodeId))
+                    case _ => ZIO.fail(throw new IllegalArgumentException(s"Error, can't decode POST form data body: ${body}"))
+                  })
+        res     <- (headerId, formId) match {
+                    case (Some(x), Some(y)) if x == y =>
+                      delayResponse(
+                        counterSuccess.update(_+1) *>
+                        ZIO.succeed {
+                          Response.text(nodeJson("plop"))
+                        }
+                      )
+
+                    case _ =>
+                      counterSuccess.update(_+1) *>
+                      ZIO.succeed {
+                        Response.html(s"node id was not found in post form (key=nodeId)[\n  headers: ${r.headers.toList}\n  body:${body}]", Status.Forbidden)
+                      }
+                  }
+      } yield res
+  }
+
+  /*
+   * Service that counts the max number of parallel request we get.
+   * For that,
+   */
+  def ioCountService = {
+    for {
+      currentConcurrent <- Ref.make(0)
+      maxConcurrent     <- Ref.Synchronized.make(0)
+    } yield Http.collectZIO[Request] {
+       case GET -> !! / x =>
+         for {
+           c <- currentConcurrent.updateAndGet(_ + 1)
+           _ <- maxConcurrent.updateZIO { m =>
+                 val max = if(c > m) c else m
+                 maxPar.set(max) *>
+                 max.succeed
+               }
+           x <- ZIO.succeed { Response.text(nodeJson(x)) }
+           _ <- currentConcurrent.update(_ - 1)
+         } yield x
+     }
+  }
+
+  val serverPort = 49999 // should be random
+  //start server on a free port
+  //@silent // deprecation warning
+  val serverR = (
+    for {
+      count  <- ioCountService
+    } yield {
+
+      // in zio-http 2.0.x, root segment must be explicitly pattern matched in left extraction and
+      // set explicitly in the extracted path.
+
+      val router =  Http.collectHttp[Request] {
+                      case GET -> !! / "status" =>
+                        Http.collectZIO[Request] {
+                          case _ => Response.text("ok").succeed
+                        }
+                      case _ -> "" /: "datasources" /: "parallel" /: path =>
+                        count.contramap[Request](_.setPath(Path.root.concat(path)))
+
+                      case _ -> "" /: "datasources" /: path =>
+                        service.contramap[Request](_.setPath(Path.root.concat(path)))
+
+                      case _ -> other =>
+                        Http.collectZIO[Request] {
+                          case _ => Console.printLine(s"I didn't handle: '${other}'") *> Response.status(Status.Forbidden).succeed
+                        }
+                    }
+      Server.port(serverPort) ++ // Setup port - should be next available
+      Server.app(router)         // Setup the Http app
+    }
+  )
+}
+
+
+
+
+@silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
-  import Data._
+  import com.normation.plugins.datasources.Data._
   val makeTestClock = TestClock.default.build
 
 //  implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
@@ -320,28 +439,28 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     compactRender(parse(json))
   }
 
-  implicit class RunNowTimeout[A](effect: ZIO[Live with Annotations, RudderError, A]) {
-    def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provideLayer(testEnvironment).runNow
+  implicit class RunNowTimeout[A](effect: ZIO[Annotations with zio.test.Live, RudderError, A]) {
+    def runTimeout(d: Duration) = effect.timeout(d).notOptional(s"The test timed-out after ${d}").provideLayer(zio.test.testEnvironment).runNow
   }
 
   // a timer
- // implicit val timer: Timer[IO] = cats.effect.IO.timer(blockingExecutionContext)
+ // implicit val timer: Timer[IO] = cats.attempt.IO.timer(blockingExecutionContext)
 
 
   // start server
   val nThreads: Int = 10
 
   // Create a new server
-  Runtime.default.unsafeRun(NodeDataset.serverR.flatMap(server =>
+  ZioRuntime.unsafeRun(CmdbServer.serverR.flatMap(server =>
     server.make
-      .use(start =>
+      .flatMap(start =>
         // Waiting for the server to start
-        console.putStrLn(s"Server started on port ${start.port}")
-
+        ZIO.consoleWith(_.printLine(s"Server started on port ${start.port}")) *>
+        com.normation.plugins.datasources.CmdbServerStarted.isStarted.complete(ZIO.unit) *>
         // Ensures the server doesn't die after printing
-        *> ZIO.never
+        ZIO.never
       )
-      .provideCustomLayer(ServerChannelFactory.auto ++ EventLoopGroup.auto(nThreads))
+      .provideSomeLayer(ServerChannelFactory.auto ++ EventLoopGroup.auto(nThreads) ++ Scope.default)
       .exitCode
   ).forkDaemon)
 
@@ -376,7 +495,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]) = {
       semaphore.withPermit(for {
         existing <- nodes.get(node.id).notOptional(s"Missing node with key ${node.id.value}")
-        _        <- IOResult.effect {
+        _        <- IOResult.attempt {
                       this.updates += (node.id -> (1 + updates.getOrElse(node.id, 0) ) )
                       this.nodes = (nodes + (node.id -> existing.copy(node = node) ) )
                     }
@@ -464,7 +583,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
   }
 
-  val noPostHook = (nodeIds: Set[NodeId], cause: UpdateCause) => UIO.unit
+  val noPostHook = (nodeIds: Set[NodeId], cause: UpdateCause) => ZIO.unit
 
   val alwaysEnforce = GlobalPolicyMode(PolicyMode.Enforce, PolicyModeOverrides.Always)
 
@@ -479,7 +598,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , interpolation
       , noPostHook
       , () => alwaysEnforce.succeed
-      , realClock // this one need a real clock to be able to do the requests
+   //   , realClock // this one need a real clock to be able to do the requests
     )
     val uuidGen = new StringUuidGeneratorImpl()
   }
@@ -488,7 +607,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
 
 
-  val REST_SERVER_URL = s"http://localhost:${NodeDataset.serverPort}/datasources"
+  val REST_SERVER_URL_ROOT = s"http://localhost:${CmdbServer.serverPort}"
+  val REST_SERVER_URL = s"${REST_SERVER_URL_ROOT}/datasources"
 
   def nodeUpdatedMatcher(nodeIds: Set[NodeId]): EqualityMatcher[Set[NodeUpdateResult]] = {
     ===(nodeIds.map(n => NodeUpdateResult.Updated(n)))
@@ -504,6 +624,18 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   // must be sequential!
   sequential
 
+  // wait for server to be started
+  CmdbServerStarted.isStarted.await.runNow
+
+  "Check that the server is up and running fine" >> {
+
+    val res1 = QueryHttp.QUERY(HttpMethod.GET, REST_SERVER_URL_ROOT + "/status", Map(), Map(), false, 1.second, 1.seconds).runNow
+    val res2 = QueryHttp.QUERY(HttpMethod.GET, REST_SERVER_URL + "/status", Map(), Map(), false, 1.second, 1.seconds).runNow
+
+    (res1 === Some("ok") ) && (res2 === Some("datasources:ok"))
+
+  }
+
   "Array validation with [*]" >> {
     Fragment.foreach(0 until testArray.size) { i =>
       s"for case: ${testArray(i)._1} -> ${testArray(i)._2}" >> {
@@ -514,7 +646,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         )
 
         val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-        val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
+        val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
         val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
         infos.updates.clear()
         val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
@@ -539,7 +671,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         )
 
         val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-        val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
+        val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
         val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
         infos.updates.clear()
         val res = http.queryAll(datasource, UpdateCause(modId, actor, None))
@@ -565,7 +697,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val action = (c: UpdateCause) => {
       // here we need to give him the default scheduler, not the test one,
       // to actually have the fetch logic done
-      IOResult.effect(MyDatasource.http.queryAll(datasource, c).either.runNow match {
+      IOResult.attempt(MyDatasource.http.queryAll(datasource, c).either.runNow match {
         case Right(_)  => //nothing
         case Left(err) => logger.error(s"oh no! Got a $err")
       })
@@ -575,45 +707,43 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     val testAction = (q: Queue[Unit]) => (c: UpdateCause) => action(c) *> q.offer(()).unit
 
     "does nothing if scheduler is disabled" in {
-      val (total_0, total_1d) : (Int,Int) = makeTestClock.use { testClock =>
+      val (total_0, total_1d) : (Int,Int) = ZIO.scoped(makeTestClock.flatMap { testClock =>
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
             datasource.copy(enabled = false)
-          , testClock
           , Enabled
           , () => ModificationId(MyDatasource.uuidGen.newUuid)
           , testAction(queue)
        )
 
         //reset counter
-        NodeDataset.reset()
+        CmdbServer.reset()
         // before start, nothing is done
         for {
-          ce_0    <- NodeDataset.counterError.get
-          cs_0    <- NodeDataset.counterSuccess.get
+          ce_0    <- CmdbServer.counterError.get
+          cs_0    <- CmdbServer.counterSuccess.get
           total_0 =  ce_0 + cs_0
           _       <- dss.restartScheduleTask()
                      //then, event after days, nothing is done
-          _       <- testClock.get[TestClock.Service].adjust(1 day)
-          ce_1d   <- NodeDataset.counterError.get
-          cs_1d   <- NodeDataset.counterSuccess.get
+          _       <- testClock.get[TestClock].adjust(1 day)
+          ce_1d   <- CmdbServer.counterError.get
+          cs_1d   <- CmdbServer.counterSuccess.get
         } yield {
           (total_0, ce_1d + cs_1d)
         }
-      }.runTimeout(1 minute)
+      }).runTimeout(1 minute)
 
       (total_0, total_1d) must beEqualTo(
       (0      , 0       ))
     }
 
     "allows interactive updates with disabled scheduler (but not data source)" in {
-      val (total_0, total_1d, total_postGen) = makeTestClock.use { testClock =>
+      val (total_0, total_1d, total_postGen) = ZIO.scoped(makeTestClock.flatMap { testClock =>
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
             datasource.copy(runParam = datasource.runParam.copy(schedule = NoSchedule(1.second)))
-          , testClock
           , Enabled
           , () => ModificationId(MyDatasource.uuidGen.newUuid)
           , testAction(queue)
@@ -622,29 +752,29 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
        val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
        logger.setLevel(Level.TRACE)
         //reset counter
-        NodeDataset.reset()
+        CmdbServer.reset()
         // before start, nothing is done
         for {
           _       <- queue.failIfNonEmpty
-          ce_0    <- NodeDataset.counterError.get
-          cs_0    <- NodeDataset.counterSuccess.get
+          ce_0    <- CmdbServer.counterError.get
+          cs_0    <- CmdbServer.counterSuccess.get
           total_0 =  ce_0 + cs_0
           _       <- dss.restartScheduleTask()
                      //then, event after days, nothing is done
-          _       <- testClock.get[TestClock.Service].adjust(1 day)
+          _       <- testClock.get[TestClock].adjust(1 day)
           _       <- queue.failIfNonEmpty
-          ce_1    <- NodeDataset.counterError.get
-          cs_1    <- NodeDataset.counterSuccess.get
+          ce_1    <- CmdbServer.counterError.get
+          cs_1    <- CmdbServer.counterSuccess.get
           total_1 =  ce_1 + cs_1
           //but asking for a direct update do the queries immediately - task need at least 1ms to notice it should run
           _       <- dss.doActionAndSchedule(action(UpdateCause(ModificationId("plop"), RudderEventActor, None)))
-          _       <- testClock.get[TestClock.Service].adjust(1.second)
+          _       <- testClock.get[TestClock].adjust(1.second)
           _       <- queue.failIfNonEmpty
-          ce_2    <- NodeDataset.counterError.get
-          cs_2    <- NodeDataset.counterSuccess.get
+          ce_2    <- CmdbServer.counterError.get
+          cs_2    <- CmdbServer.counterSuccess.get
           total_2 =  ce_2 + cs_2
         } yield (total_0, total_1, total_2)
-      }.runTimeout(1 minute)
+      }).runTimeout(1 minute)
 
 
        val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
@@ -655,60 +785,59 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "create a new schedule from data source information" in {
-      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = makeTestClock.use { testClock =>
+      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO.scoped(makeTestClock.flatMap { testClock =>
         // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
         val queue = Queue.unbounded[Unit].runNow
 
         val dss = new DataSourceScheduler(
             datasource.copy(name = DataSourceName("create a new schedule"))
-          , testClock
           , Enabled
           , () => ModificationId(MyDatasource.uuidGen.newUuid)
           , testAction(queue)
         )
 
         //reset counter
-        NodeDataset.reset()
+        CmdbServer.reset()
         for {
           // before start, nothing is done
           _        <- queue.failIfNonEmpty
-          ce_0     <- NodeDataset.counterError.get
-          cs_0     <- NodeDataset.counterSuccess.get
+          ce_0     <- CmdbServer.counterError.get
+          cs_0     <- CmdbServer.counterSuccess.get
           total_0  =  ce_0 + cs_0
           _        <- dss.restartScheduleTask()
           //then just after, we have the first exec - it still need at least a ms to tick
           //still nothing here
-          _        <- testClock.get[TestClock.Service].adjust(1.second)
+          _        <- testClock.get[TestClock].adjust(1.second)
           //here we have results
           _        <- queue.take
-          ce_0s    <- NodeDataset.counterError.get
-          cs_0s    <- NodeDataset.counterSuccess.get
+          ce_0s    <- CmdbServer.counterError.get
+          cs_0s    <- CmdbServer.counterSuccess.get
           total_0s =  ce_0s + cs_0s
           //then nothing happens before 5 minutes
-          _        <- testClock.get[TestClock.Service].adjust(1.second)
+          _        <- testClock.get[TestClock].adjust(1.second)
           _        <- queue.failIfNonEmpty
-          ce_1s    <- NodeDataset.counterError.get
-          cs_1s    <- NodeDataset.counterSuccess.get
+          ce_1s    <- CmdbServer.counterError.get
+          cs_1s    <- CmdbServer.counterSuccess.get
           total_1s =  ce_1s + cs_1s
-          _        <- testClock.get[TestClock.Service].adjust(4 minutes)
+          _        <- testClock.get[TestClock].adjust(4 minutes)
           _        <- queue.failIfNonEmpty
-          ce_4m    <- NodeDataset.counterError.get
-          cs_4m    <- NodeDataset.counterSuccess.get
+          ce_4m    <- CmdbServer.counterError.get
+          cs_4m    <- CmdbServer.counterSuccess.get
           total_4m =  ce_4m + cs_4m
           //then all the nodes gets their info
-          _        <- testClock.get[TestClock.Service].adjust(1 minutes) // 5 minutes
+          _        <- testClock.get[TestClock].adjust(1 minutes) // 5 minutes
           _        <- queue.take
-          ce_5m    <- NodeDataset.counterError.get
-          cs_5m    <- NodeDataset.counterSuccess.get
+          ce_5m    <- CmdbServer.counterError.get
+          cs_5m    <- CmdbServer.counterSuccess.get
           total_5m =  ce_5m + cs_5m
           //then nothing happen anymore
-          _        <- testClock.get[TestClock.Service].adjust(3 minutes) //8 minutes
+          _        <- testClock.get[TestClock].adjust(3 minutes) //8 minutes
           _        <- queue.failIfNonEmpty
-          ce_8m    <- NodeDataset.counterError.get
-          cs_8m    <- NodeDataset.counterSuccess.get
+          ce_8m    <- CmdbServer.counterError.get
+          cs_8m    <- CmdbServer.counterSuccess.get
           total_8m =  ce_8m + cs_8m
         } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m)
-      }.runTimeout(1 minute)
+      }).runTimeout(1 minute)
 
       val size = NodeConfigData.allNodesInfo.size
       (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo(
@@ -731,7 +860,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       , interpolation
       , noPostHook
       , () => alwaysEnforce.succeed
-      , realClock
+
     )
 
     def maxParDataSource(n: Int) = NewDataSource(
@@ -750,12 +879,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       //all node updated one time
       infos.updates.clear()
-      NodeDataset.reset()
+      CmdbServer.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
-        NodeDataset.counterError.get.runNow must_===  0
-      ) and (NodeDataset.maxPar.get.runNow must_===  MAX_PARALLEL)
+        CmdbServer.counterError.get.runNow must_===  0
+      ) and (CmdbServer.maxPar.get.runNow must_===  MAX_PARALLEL)
     }
 
     "work even if nodes don't reply at same speed with GET" in {
@@ -768,12 +897,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       //all node updated one time
       infos.updates.clear()
-      NodeDataset.reset()
+      CmdbServer.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
-      ) and (NodeDataset.counterError.get.runNow must_=== 0) and (NodeDataset.counterSuccess.get.runNow must_=== nodeIds.size)
+      ) and (CmdbServer.counterError.get.runNow must_=== 0) and (CmdbServer.counterSuccess.get.runNow must_=== nodeIds.size)
     }
 
     "work even if nodes don't reply at same speed with POST" in {
@@ -788,12 +917,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
       //all node updated one time
       infos.updates.clear()
-      NodeDataset.reset()
+      CmdbServer.reset()
       val res = http.queryAll(ds, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
         infos.updates.toMap must havePairs( nodeIds.map(x => (x, 1) ).toSeq:_* )
-      ) and (NodeDataset.counterError.get.runNow must_=== 0) and (NodeDataset.counterSuccess.get.runNow must_=== nodeIds.size)
+      ) and (CmdbServer.counterError.get.runNow must_=== 0) and (CmdbServer.counterSuccess.get.runNow must_=== nodeIds.size)
     }
 
     "work for odd node even if even nodes fail" in {
@@ -857,7 +986,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     )
 
     val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
+    val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
 
 
     "correctly update all nodes" in {
@@ -938,7 +1067,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     type PROPS = Map[NodeId, Option[ConfigValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(finalStateCond: PROPS => MatchResult[PROPS]): MatchResult[Any] = {
       val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed, realClock)
+      val http = new HttpQueryDataSourceService(infos, parameterRepo, infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
       val datasource = NewDataSource(propName, url  = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
       val nodes = infos.getAll().toBox.openOrThrowException("test shall not throw")
@@ -1114,3 +1243,4 @@ object Data {
   """
 
 }
+

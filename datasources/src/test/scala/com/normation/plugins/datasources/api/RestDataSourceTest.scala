@@ -57,7 +57,7 @@ import net.liftweb.json.JsonParser
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
-import zio.duration._
+import zio._
 import com.normation.zio._
 
 
@@ -87,8 +87,7 @@ class RestDataSourceTest extends Specification with Loggable {
     , restTestSetUp.uuidGen
   )
 
-  val apiVersions = ApiVersion(13 , true) :: ApiVersion(14 , false) :: Nil
-  val liftRules = TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, apiVersions, None)
+  val liftRules = TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, restTestSetUp.apiVersions, Some(restTestSetUp.userService))
   val restTest = new RestTest(liftRules._2)
   restTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
 

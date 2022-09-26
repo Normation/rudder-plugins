@@ -36,14 +36,13 @@
 
 package com.normation.plugins.nodeexternalreports
 
-import com.normation.rudder.AuthorizationType
 import com.normation.plugins._
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
-import bootstrap.liftweb.{Boot, ClassPathResource, MenuUtils}
+import bootstrap.liftweb.{ClassPathResource, MenuUtils}
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.http.LiftRules
-import net.liftweb.sitemap.Loc.{LocGroup, Template, TestAccess}
+import net.liftweb.sitemap.Loc.{LocGroup, Template}
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import com.normation.plugins.PluginStatus
 import net.liftweb.sitemap.Menu

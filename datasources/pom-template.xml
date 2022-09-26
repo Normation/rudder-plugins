@@ -83,7 +83,7 @@
     <dependency>
       <groupId>io.d11</groupId>
       <artifactId>zhttp_${scala-binary-version}</artifactId>
-      <version>${zhttp-version}</version>
+      <version>${zio-http-version}</version>
       <scope>test</scope>
     </dependency>
 

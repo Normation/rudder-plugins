@@ -37,11 +37,9 @@
 
 package com.normation.plugins.usermanagement
 
-import bootstrap.liftweb.Boot.userIsAllowed
 import bootstrap.liftweb.{Boot, MenuUtils}
 import bootstrap.rudder.plugin.UserManagementConf
 import com.normation.plugins._
-import com.normation.rudder.AuthorizationType
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -51,8 +49,6 @@ import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
-
-import scala.xml.NodeSeq
 
 class UserManagementPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 

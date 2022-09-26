@@ -50,9 +50,7 @@ import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.errors._
 import com.normation.rudder.domain.properties.GlobalParameter
 import zio._
-import zio.clock.Clock
 import zio.syntax._
-import zio.duration.DurationOps
 
 /*
  * This file contain the high level logic to update
@@ -97,7 +95,6 @@ class HttpQueryDataSourceService(
   , interpolCompiler: InterpolatedValueCompiler
   , onUpdatedHook   : (Set[NodeId], UpdateCause) => IOResult[Unit]
   , globalPolicyMode: () => IOResult[GlobalPolicyMode]
-  , clock           : Clock
 ) extends QueryDataSourceService {
 
   val getHttp = new GetDataset(interpolCompiler)
@@ -153,10 +150,10 @@ class HttpQueryDataSourceService(
                   })(t)
               }).timed
       _   <- DataSourceLoggerPure.Timing.debug(s"[${res._1.toMillis} ms] '${actionName}' for data source '${datasource.name.value}' (${datasource.id.value})")
-    } yield res._2).foldM(
+    } yield res._2).foldZIO(
         err => DataSourceLoggerPure.error(Chained(errorMsg, err).fullMsg) *> err.fail
       , ok  => DataSourceLoggerPure.trace(successMsg) *> ok.succeed
-    ).provide(clock)
+    )
   }
 
   private[this] def buildOneNodeTask(
@@ -217,12 +214,12 @@ class HttpQueryDataSourceService(
        * do hundreds of simultaneous requests to the output server (and that make tests on macos
        * fail, see: http://www.rudder-project.org/redmine/issues/10341)
        */
-      ZIO.foreachParN(datasource.maxParallelRequest)( nodes.values.toList) { nodeInfo =>
+      ZIO.foreachPar( nodes.values.toList) { nodeInfo =>
         buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, globalPolicyMode, parameters, cause).either
-      }
+      }.withParallelism(datasource.maxParallelRequest)
     }
 
-    // transfor a List[Either[RudderError, A]] into a ZIO[R, Accumulated, Set[A]]
+    // transform a List[Either[RudderError, A]] into a ZIO[R, Accumulated, Set[A]]
     def accumulateErrors(inputs: List[Either[RudderError, NodeUpdateResult]]): ZIO[Any, Accumulated[RudderError], Set[NodeUpdateResult]] = {
       val (errors, success) = inputs.foldLeft((List.empty[RudderError], Set.empty[NodeUpdateResult])) { case ((errors, success), current) => current match {
         case Right(s) => (errors, success + s)
@@ -243,8 +240,8 @@ class HttpQueryDataSourceService(
 
     for {
       mode          <- globalPolicyMode()
-      updated       <- tasks(nodes, info.policyServers, mode, info.parameters).timeout(timeout).provide(clock).notOptional(
-                         s"Timeout error after ${zio.duration.Duration.fromJava(timeout).render}"
+      updated       <- tasks(nodes, info.policyServers, mode, info.parameters).timeout(timeout).notOptional(
+                         s"Timeout error after ${zio.Duration.fromJava(timeout).render}"
                        )
                        // execute hooks
       _             <- onUpdatedHook(updated.collect { case Right(NodeUpdateResult.Updated(id)) => id }.toSet, cause)
@@ -273,7 +270,7 @@ class HttpQueryDataSourceService(
       policyServers =  allNodes.filter( _._1 == node.policyServerId)
       parameters    <- parameterRepo.getAllGlobalParameters().map( _.toSet )
       updated       <- buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause)
-                         .timeout(datasource.requestTimeOut).provide(clock).notOptional(s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'")
+                         .timeout(datasource.requestTimeOut).notOptional(s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'")
                        //post update hooks
       _             <- updated match {
                          case NodeUpdateResult.Updated(id) => onUpdatedHook(Set(id), cause)

@@ -284,7 +284,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       } yield {
         r.toMap
       }
-    ).foldM(
+    ).foldZIO(
       err => (if(AuthBackendsConf.isOauthConfiguredByUser) {
                AuthBackendsLoggerPure.error(err.fullMsg)
              } else {

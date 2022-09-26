@@ -56,7 +56,7 @@ import com.normation.utils.StringUuidGenerator
 import net.liftweb.common._
 import com.normation.box._
 import com.normation.errors._
-import zio.UIO
+import zio._
 
 
 
@@ -322,7 +322,7 @@ class TwoValidationStepsWorkflowServiceImpl(
                     notificationService.sendNotification(Deployed, cr)
                   case _ =>
                     ChangeValidationLoggerPure.debug(s"Not sending email for update from '${from.id.value}' to '${to.id.value}''") *>
-                    UIO.unit
+                    ZIO.unit
                 }
     } yield ()
   }

@@ -16,7 +16,7 @@ class ReportSanitizer(policyFile: String) {
     val cr = as.scan(input.content, policy)
 
     for {
-      report <- IOResult.effect (xml.XML.loadString(cr.getCleanHTML))
+      report <- IOResult.attempt (xml.XML.loadString(cr.getCleanHTML))
     } yield {
       report
     }

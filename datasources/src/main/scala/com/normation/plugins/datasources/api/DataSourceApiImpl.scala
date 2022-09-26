@@ -80,8 +80,8 @@ import com.normation.plugins.datasources.api.{DataSourceApi => API}
 import com.normation.box._
 import com.normation.rudder.domain.properties.GenericProperty._
 import net.liftweb.json.JsonAST.JArray
-import zio.duration.Duration
 import com.normation.zio._
+import zio._
 
 class DataSourceApiImpl (
     extractor         : RestExtractorService

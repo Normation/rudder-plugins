@@ -43,11 +43,12 @@ import com.normation.eventlog.ModificationId
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
 import com.normation.plugins.PluginStatus
+
+import com.github.ghik.silencer.silent
+
 import zio._
 import zio.syntax._
 import com.normation.zio._
-import zio.clock.Clock
-import zio.duration._
 
 final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String], triggeredByGeneration: Boolean = false)
 
@@ -64,7 +65,6 @@ final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Opt
  */
 class DataSourceScheduler(
     val datasource  : DataSource
-  ,     clock       : Clock
   ,     pluginStatus: PluginStatus
   ,     newUuid     : ()          => ModificationId
   ,     updateAll   : UpdateCause => IOResult[Unit]
@@ -81,14 +81,15 @@ class DataSourceScheduler(
 
   //for that datasource, this is the timer
   private[this] val source : UIO[Unit] = {
-    val never: Schedule[Any, Any, Nothing] = Schedule((_, _) => UIO.never)
+    val never = Schedule.stop
 
     val schedule = datasource.runParam.schedule match {
       case Scheduled(d)  =>
         if(datasource.enabled) {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes") *>
           // This historical semantic is "do a sync immediately and then one spaced every 'd'"
-          Schedule.once.andThen(Schedule.spaced(d)).succeed
+          Schedule.once.andThen(Schedule.spaced(d)).succeed : @silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
+
         } else {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
           never.succeed
@@ -109,7 +110,7 @@ class DataSourceScheduler(
 
     for {
       s <- schedule
-      p <- prog.schedule(s).provide(clock).unit
+      p <- prog.schedule(s).unit
     } yield {
       p
     }
@@ -127,7 +128,7 @@ class DataSourceScheduler(
    */
   def startWithDelay(delay: Duration): IOResult[Unit] = {
     // don't forget to fork is you don't want to block for "delay"!
-    restartScheduleTask().delay(delay).provide(clock).forkDaemon.unit
+    restartScheduleTask().delay(delay).forkDaemon.unit
   }
 
   /*
@@ -176,7 +177,7 @@ class DataSourceScheduler(
   def doActionAndSchedule(action: IOResult[Unit]): IOResult[Unit] = {
     cancel() *> action *> (datasource.runParam.schedule match {
         case Scheduled(p)  => startWithDelay(p)
-        case NoSchedule(_) => UIO.unit//nothing
+        case NoSchedule(_) => ZIO.unit//nothing
       })
   }
 }

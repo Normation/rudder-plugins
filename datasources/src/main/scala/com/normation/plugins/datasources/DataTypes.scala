@@ -45,7 +45,7 @@ import com.typesafe.config.ConfigValue
 import net.liftweb.common.Logger
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import zio.duration._
+import zio._
 
 /**
  * Applicative log of interest for Rudder ops.

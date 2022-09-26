@@ -74,7 +74,7 @@ class EmailNotificationService {
     prop.put("mail.smtp.starttls.enable", "true")
 
     for {
-      session <- IOResult.effect("Error when creating SMTP session")(
+      session <- IOResult.attempt("Error when creating SMTP session")(
                    (conf.login, conf.password) match {
                      case (Some(l), Some(p)) =>
                        prop.put("mail.smtp.auth", "true");
@@ -87,24 +87,24 @@ class EmailNotificationService {
                        Session.getInstance(prop, null)
                    }
                  )
-      message <- IOResult.effect("Error when creating SMTP message envelop")(new MimeMessage(session))
-      _       <- IOResult.effect(s"Error with 'from' address [${conf.email.value}] of email")(message.setFrom(new InternetAddress(conf.email.value)))
-      _       <- IOResult.effect(s"Error when setting 'to' address(es) in email")(
+      message <- IOResult.attempt("Error when creating SMTP message envelop")(new MimeMessage(session))
+      _       <- IOResult.attempt(s"Error with 'from' address [${conf.email.value}] of email")(message.setFrom(new InternetAddress(conf.email.value)))
+      _       <- IOResult.attempt(s"Error when setting 'to' address(es) in email")(
                   message.setRecipients(
                     Message.RecipientType.TO,
                     envelop.to.map(_.value).mkString(",")
                   ))
-      _       <- IOResult.effect(s"Error when setting 'replyTo' address(es) in email") {
+      _       <- IOResult.attempt(s"Error when setting 'replyTo' address(es) in email") {
                    val replyTo = envelop.replyTo.map(e => new InternetAddress(e.value)).toArray[Address]
                    if(replyTo.nonEmpty) {
                      message.setReplyTo(replyTo)
                    }
                  }
-      _       <- IOResult.effect(s"Error when setting 'bcc' address(es) in email")(message.addRecipients(Message.RecipientType.BCC, envelop.bcc.map(_.value).mkString(",")))
-      _       <- IOResult.effect(s"Error when setting 'cc' address(es) in email")(message.addRecipients(Message.RecipientType.CC, envelop.cc.map(_.value).mkString(",")))
-      _       <- IOResult.effect(s"Error when setting email subject")(message.setSubject(envelop.subject))
-      _       <- IOResult.effect(s"Error when setting email content")(message.setContent(envelop.body, "text/html; charset=utf-8"))
-      _       <- IOResult.effect(s"Error when sending email")(Transport.send(message))
+      _       <- IOResult.attempt(s"Error when setting 'bcc' address(es) in email")(message.addRecipients(Message.RecipientType.BCC, envelop.bcc.map(_.value).mkString(",")))
+      _       <- IOResult.attempt(s"Error when setting 'cc' address(es) in email")(message.addRecipients(Message.RecipientType.CC, envelop.cc.map(_.value).mkString(",")))
+      _       <- IOResult.attempt(s"Error when setting email subject")(message.setSubject(envelop.subject))
+      _       <- IOResult.attempt(s"Error when setting email content")(message.setContent(envelop.body, "text/html; charset=utf-8"))
+      _       <- IOResult.attempt(s"Error when sending email")(Transport.send(message))
     } yield ()
   }
 }
@@ -163,7 +163,7 @@ class NotificationService(
 
   protected[changevalidation] def getConfig(path: String): IOResult[Config] = {
     val file           = new File(path)
-    IOResult.effectM {
+    IOResult.attemptZIO {
       for {
         configResource <- if (file.exists && file.canRead) {
                             FileSystemResource(file).succeed
@@ -179,7 +179,7 @@ class NotificationService(
   protected[changevalidation] def getRudderBaseUrl(path: String): IOResult[String] = {
     for {
       config        <- getConfig(path)
-      rudderBaseUrl <- IOResult.effect(s"An error occurs while parsing RUDDER base url in ${path}"){
+      rudderBaseUrl <- IOResult.attempt(s"An error occurs while parsing RUDDER base url in ${path}"){
                          config.getTrimmedString("rudder.base.url")
                        }
     } yield rudderBaseUrl
@@ -188,7 +188,7 @@ class NotificationService(
   protected[changevalidation] def getSMTPConf(path: String): IOResult[SMTPConf] = {
     for {
       config <- getConfig(path)
-      smtp   <- IOResult.effect(s"An error occurs while parsing SMTP conf in ${path}") {
+      smtp   <- IOResult.attempt(s"An error occurs while parsing SMTP conf in ${path}") {
                   val hostServer = config.getTrimmedString("smtp.hostServer")
                   val port       = config.getInt("smtp.port")
                   val email      = config.getTrimmedString("smtp.email")
@@ -221,7 +221,7 @@ class NotificationService(
                     case Deployed   => "deployed".succeed
                     case e          => Inconsistency(s"Step ${e} is not part of workflow validation").fail
                  }
-      envelope <- IOResult.effect{
+      envelope <- IOResult.attempt{
                     val to       = config.getEmails(s"${s}.to")
                     val replyTo  = config.getEmails(s"${s}.replyTo")
                     val cc       = config.getEmails(s"${s}.cc")
@@ -241,14 +241,14 @@ class NotificationService(
   }
 
   protected[changevalidation] def getContentFromTemplate(mf: MustacheFactory, emailConf: EmailConf, param: Map[String, String]): IOResult[String] = {
-    IOResult.effect(s"Error when getting `${emailConf.template}` template configuration"){
+    IOResult.attempt(s"Error when getting `${emailConf.template}` template configuration"){
       val mustache = mf.compile(new FileReader(emailConf.template), emailConf.template)
       mustache.execute(new StringWriter(), param.asJava).toString
     }
   }
 
   protected[changevalidation] def getSubjectFromTemplate(mf: MustacheFactory, subject: String, param: Map[String, String]): IOResult[String] = {
-    IOResult.effect(s"Error when expanding variables in email Subject"){
+    IOResult.attempt(s"Error when expanding variables in email Subject"){
       val mustache = mf.compile(new StringReader(subject), subject)
       mustache.execute(new StringWriter(), param.asJava).toString
     }
