@@ -183,7 +183,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     // not found.
     def read(key: String): IOResult[String] = {
       val path = baseProperty + "." + id + "." + key
-      IOResult.effect(s"Missing key '${path}' for OAUTH2 registration '${id}' (${registrationAttributes(key)})")(
+      IOResult.attempt(s"Missing key '${path}' for OAUTH2 registration '${id}' (${registrationAttributes(key)})")(
         config.getString(path)
       )
     }
@@ -225,7 +225,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
 
   def readProviders(config: Config): IOResult[List[String]] = {
     val path = baseProperty + ".registrations"
-    IOResult.effect(s"Missing property '${path}' which define the comma separated list of provider registration to use for OAUTH2.")(
+    IOResult.attempt(s"Missing property '${path}' which define the comma separated list of provider registration to use for OAUTH2.")(
       config.getString(path).split(",").map(_.trim).toList
     )
   }
@@ -241,7 +241,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       // we don't want to fail if one of the registration is not ok, just log it
       _             <- AuthBackendsLoggerPure.info(s"List of configured providers for oauth2/OpenIDConnect: ${providers.mkString(", ")}")
       registrations <- ZIO.foreach(providers) { p =>
-                         readOneRegistration(p, config).foldM(
+                         readOneRegistration(p, config).foldZIO(
                              err =>
                                AuthBackendsLoggerPure.error(s"Error when reading OAUTH2 configuration for registration to '${p}' provider: ${err.fullMsg}'") *>
                                None.succeed
