@@ -397,6 +397,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getNode(nodeId: NodeId)               = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfo(nodeId: NodeId)           = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfos(nodeIds: Set[NodeId])    = throw new IllegalAccessException("Thou shall not used that method here")
+    def getNodeInfosSeq(nodeIds: Seq[NodeId]) = throw new IllegalAccessException("Thou shall not used that method here")
     def getNodeInfoPure(nodeId: NodeId)       = throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfoPure(nodeId: NodeId)= throw new IllegalAccessException("Thou shall not used that method here")
     def getPendingNodeInfos()                 = throw new IllegalAccessException("Thou shall not used that method here")

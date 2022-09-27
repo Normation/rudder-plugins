@@ -11,6 +11,8 @@ pipeline {
     environment {
         // TODO: automate
         RUDDER_VERSION = "7.1"
+        // we want it everywhere for plugins
+        MAVEN_ARGS = "--update-snapshots"
     }
 
     stages {
@@ -76,7 +78,8 @@ pipeline {
             }
         }
         stage('Tests plugins') {
-            when { changeRequest() }
+            // Build disabled, test everything
+            //when { changeRequest() }
 
             agent {
                 dockerfile {
@@ -120,6 +123,8 @@ pipeline {
             when {
                 allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
                 not { changeRequest() } }
+                // Disabled
+                expression { return false }
             }
 
             agent {
