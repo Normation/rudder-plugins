@@ -65,8 +65,16 @@ import zio.syntax._
 
 /*
  * Data container class to add our properties to spring ClientRegistration ones
+ * We never want to print the secret in logs, so override it.
  */
-final case class RudderClientRegistration(registration: ClientRegistration, infoMsg: String)
+final case class RudderClientRegistration(registration: ClientRegistration, infoMsg: String) {
+  override def toString: String = {
+    toDebugStringWithSecret.replaceFirst("""clientSecret='([^']+?)'""", "clientSecret='*****'")
+  }
+
+  // avoid that in logs etc, use only for interactive debugging sessions
+  def toDebugStringWithSecret = s"""{${registration.toString}}, '${infoMsg}'"""
+}
 
 /*
  * Client registration definition based on rudder property file:
