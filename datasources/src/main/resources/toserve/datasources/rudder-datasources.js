@@ -63,7 +63,7 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
   $scope.treeId = "#datasources-tree";
   /* Get data sources */
   $scope.getDataSources = function(){
-    return $http.get(contextPath + datasourceUrl).then(function(response){
+    return $http.get(contextPath + datasourceUrl).then(function successCallback(response){
       var res = response.data.data.datasources;
       $scope.propertyName = 'name';
       $scope.reverse = false;
@@ -84,6 +84,9 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
           $scope.datasources[i].type.parameters.onMissing.value = JSON.stringify($scope.datasources[i].type.parameters.onMissing.value)
         }
       }
+    }
+    , function errorCallback(response) {
+        createErrorNotification("Error while getting list of data source: " + response.data.errorDetails);
     });
   }
   $scope.getDataSources();
@@ -159,10 +162,20 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     $scope.selectedDatasource.enabled = !$scope.selectedDatasource.enabled;
     var temp = jQuery.extend(true, {}, $scope.getDatasource($scope.selectedDatasource.id));
     temp.enabled = $scope.selectedDatasource.enabled;
-    $http.post(contextPath + datasourceUrl + '/' + temp.id, temp).then(function(response){
+    var statusStr = ""
+    if($scope.selectedDatasource.enabled) {
+      statusStr = "enabled";
+    } else {
+      statusStr = "disabled";
+    }
+    $http.post(contextPath + datasourceUrl + '/' + temp.id, temp).then(function successCallback(response){
       var res = response;
       var index = $scope.getDatasource($scope.selectedDatasource.id, true);
       $scope.datasources[index] = jQuery.extend(true, {}, $scope.selectedDatasource);
+      createSuccessNotification("The data source " + $scope.selectedDatasource.name + " has been successfully" + statusStr);
+    }
+    , function errorCallback(response){
+        createErrorNotification("Error while trying to " + statusStr.slice(0, -1) + " '" + $scope.selectedDatasource.name + "': " + response.data.errorDetails);
     });
   }
   $scope.saveDatasource = function(){
@@ -171,18 +184,24 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     $scope.selectedDatasource.updateTimeout = convertToSecond($scope.selectedDatasource.modifiedTimes.updateTimeout);
     $scope.selectedDatasource.type.parameters.requestTimeout = convertToSecond($scope.selectedDatasource.modifiedTimes.requestTimeout);
     if($scope.selectedDatasource.isNew){
-      $http.put(contextPath + datasourceUrl, $scope.selectedDatasource).then(function(response){
+      $http.put(contextPath + datasourceUrl, $scope.selectedDatasource).then(function successCallback(response){
         var res = response;
         delete $scope.selectedDatasource.isNew;
         $scope.datasources.push($scope.selectedDatasource);
-        createSuccessNotification("The data source '" + $scope.selectedDatasource.name + "' has been successfully created")
+        createSuccessNotification("The data source '" + $scope.selectedDatasource.name + "' has been successfully created");
+      }
+      , function errorCallback(response) {
+          createErrorNotification("Error while trying to save '" + $scope.selectedDatasource.name + "': " + response.data.errorDetails);
       });
-    }else{
-      $http.post(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id, $scope.selectedDatasource).then(function(response){
+    } else {
+      $http.post(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id, $scope.selectedDatasource).then(function successCallback(response){
         var res = response;
         var index = $scope.getDatasource($scope.selectedDatasource.id, true);
         $scope.datasources[index] = jQuery.extend(true, {}, $scope.selectedDatasource);
-        createSuccessNotification()
+        createSuccessNotification("The data source '" + $scope.selectedDatasource.name + "' has been successfully updated");
+      }
+      , function errorCallback(response) {
+          createErrorNotification("Error while trying to delete data source '" + $scope.selectedDatasource.name + "': " + response.data.errorDetails);
       });
     }
   }
@@ -201,11 +220,15 @@ app.controller("datasourceCtrl", ['$scope', '$timeout', 'orderByFilter','$http',
     $('#deleteModal').bsModal('show');
   }
   $scope.confirmDeleteDatasource = function(){
-    $http.delete(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id).then(function(response){
+    $http.delete(contextPath + datasourceUrl + '/' + $scope.selectedDatasource.id).then(function successCallback(response){
       $('#deleteModal').bsModal('hide');
       var index = $scope.getDatasource($scope.selectedDatasource.id, true);
       $scope.datasources.splice(index, 1);
       $scope.selectedDatasource = null;
+      createSuccessNotification("The data source '" + $scope.selectedDatasource.name + "' has been successfully deleted")
+    }
+    , function errorCallback(response) {
+        createErrorNotification("Error while trying to delete data source '" + $scope.selectedDatasource.name + "': " + response.data.errorDetails);
     });
   }
   // HEADERS

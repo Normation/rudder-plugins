@@ -39,6 +39,7 @@ package com.normation.plugins.datasources.api
 
 import com.normation.plugins.datasources._
 import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.domain.properties.GenericProperty.fromJsonValue
 import com.normation.rudder.rest.RestTest
 import com.normation.rudder.rest.JsonResponsePrettify
 
@@ -58,6 +59,7 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import zio.duration._
 import com.normation.zio._
+
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {
@@ -132,6 +134,22 @@ class RestDataSourceTest extends Specification with Loggable {
     )
   }
 
+  val sourceType = DataSourceType.HTTP(
+    "http://jsonplaceholder.typicode.com/posts/1000"
+    , Map("Accept" -> "application/json")
+    , HttpMethod.GET
+    , Map()
+    , false
+    , "result.environment"
+    , DataSourceType.HTTP.defaultMaxParallelRequest
+    , HttpRequestMode.OneRequestByNode
+    , Duration(194, SECONDS)
+    , MissingNodeBehavior.Delete
+  )
+
+  val datasourceMissingDefaultValue = datasource1.copy(sourceType = sourceType.copy(missingNodeBehavior = MissingNodeBehavior.DefaultValue(fromJsonValue(JString("{\"%}hel;lo\"!\"\""))) ))
+  val dsgDefaultValueJson = DataSourceJsonSerializer.serialize(datasourceMissingDefaultValue)
+
 
   ///// the actual tests /////
 
@@ -142,22 +160,15 @@ class RestDataSourceTest extends Specification with Loggable {
     "be isomorphic" in {
       DataSourceExtractor.CompleteJson.extractDataSource(datasource1.id, d1Json) must_===( Full(datasource1))
     }
+
+    "be isomorphic with 'default value' missing behavior" in {
+      DataSourceExtractor.CompleteJson.extractDataSource(datasourceMissingDefaultValue.id, dsgDefaultValueJson) must_===( Full(datasourceMissingDefaultValue))
+    }
+
   }
 
   "Deserialization" should {
 
-    val sourceType = DataSourceType.HTTP(
-        "http://jsonplaceholder.typicode.com/posts/1000"
-      , Map("Accept" -> "application/json")
-      , HttpMethod.GET
-      , Map()
-      , false
-      , "result.environment"
-      , DataSourceType.HTTP.defaultMaxParallelRequest
-      , HttpRequestMode.OneRequestByNode
-      , Duration(194, SECONDS)
-      , MissingNodeBehavior.Delete
-    )
     val source =  DataSource(
         DataSourceId( "source")
       , DataSourceName("source")
@@ -173,7 +184,7 @@ class RestDataSourceTest extends Specification with Loggable {
     )
 
 
-    def getJson(moreParam: String) = s"""{
+    def getJson(moreParam: String, missingBehavior: String) = s"""{
               "name":"source"
             , "id":"source"
             , "description":""
@@ -189,7 +200,7 @@ class RestDataSourceTest extends Specification with Loggable {
                 , "requestTimeout":194
                 , "requestMethod":"GET"
                 , "requestMode":{"name":"byNode"}
-                , "onMissing":{"name":"delete"}
+                $missingBehavior
                 }
               }
             , "runParameters":{
@@ -203,19 +214,53 @@ class RestDataSourceTest extends Specification with Loggable {
             }"""
 
     "accept datasource without a max number of parallel request" in {
-      val json = getJson("")
+      val json = getJson("", "")
 
       DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(source) )
-
     }
 
     "accept datasource with a max number of parallel request" in {
-      val json = getJson(""", "maxParallelReq":42 """)
+      val json = getJson(""", "maxParallelReq":42 """, "")
       val expected = source.copy(sourceType = sourceType.copy(maxParallelRequest = 42))
 
       DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(expected) )
-
     }
+
+    "accept datasource with 'delete' missing behavior" in {
+      val json = getJson("", """, "onMissing":{"name":"delete"} """)
+      val datasourceMissingDelete   = source.copy(sourceType = sourceType.copy(missingNodeBehavior = MissingNodeBehavior.Delete))
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(datasourceMissingDelete) )
+    }
+
+    "accept datasource with 'no change' missing behavior" in {
+      val json = getJson("", """, "onMissing":{"name":"noChange"} """)
+      val datasourceMissingNoChange = source.copy(sourceType = sourceType.copy(missingNodeBehavior = MissingNodeBehavior.NoChange ))
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(datasourceMissingNoChange) )
+    }
+
+    "accept datasource with 'default value' missing behavior" in {
+      val json = getJson("", """, "onMissing":{"name":"defaultValue", "value":"toto"} """)
+      val datasourceMissingValue    = source.copy(sourceType = sourceType.copy(missingNodeBehavior = MissingNodeBehavior.DefaultValue(fromJsonValue(JString("toto"))) ))
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(datasourceMissingValue) )
+    }
+
+    "accept datasource with 'default value' escaped in missing behavior" in {
+      val json = getJson("", """, "onMissing":{"name":"defaultValue", "value":"\"toto\""} """)
+      val datasourceMissingValue = source.copy(sourceType = sourceType.copy(missingNodeBehavior = MissingNodeBehavior.DefaultValue(fromJsonValue(JString("\"toto\""))) ))
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(datasourceMissingValue) )
+    }
+
+    "accept datasource with 'default value' special characters in missing behavior" in {
+      val json = getJson("", """, "onMissing":{"name":"defaultValue", "value":"{\"%}hel;lo\"!\"\""} """)
+      val datasourceMissingValue = source.copy(sourceType = sourceType.copy(missingNodeBehavior = MissingNodeBehavior.DefaultValue(fromJsonValue(JString("{\"%}hel;lo\"!\"\""))) ))
+
+      DataSourceExtractor.CompleteJson.extractDataSource(DataSourceId("source"), JsonParser.parse(json)) must_===( Full(datasourceMissingValue) )
+    }
+
 
   }
 

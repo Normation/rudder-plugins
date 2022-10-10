@@ -52,6 +52,7 @@ import scala.concurrent.duration.FiniteDuration
 import cats._
 import cats.implicits._
 import com.normation.rudder.domain.properties.GenericProperty._
+import com.typesafe.config.ConfigRenderOptions
 import zio.duration.Duration
 
 object Translate {
@@ -100,7 +101,7 @@ object DataSourceJsonSerializer{
                       case MissingNodeBehavior.Delete              =>  ("name"  -> MissingNodeBehavior.Delete.name):JObject
                       case MissingNodeBehavior.NoChange            =>  ("name"  -> MissingNodeBehavior.NoChange.name):JObject
                       case MissingNodeBehavior.DefaultValue(value) => (("name"  -> MissingNodeBehavior.DefaultValue.name) ~
-                                                                       ("value" -> parse(serializeToJson(value)))):JObject
+                                                                       ("value" -> parse(value.render(ConfigRenderOptions.concise())))):JObject
                     })
                   )
                 )
