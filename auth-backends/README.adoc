@@ -389,15 +389,8 @@ rudder.auth.oauth2.provider.okta.client.redirect=https://my-external-rudder-host
 #
 # The protocol scheme used for authentication - Rudder only supports with authorisation code.
 rudder.auth.oauth2.provider.okta.grantType=authorization_code
-<<<<<<< HEAD
-# Rudder URL towards which the identity provider redirects
-rudder.auth.oauth2.provider.okta.client.redirect=https://my-external-rudder-hostname/rudder/login/oauth2/code/{registrationId}
-# Authentication type - Rudder only supports basic.
-rudder.auth.oauth2.provider.okta.authMethod=basic
-=======
 # Authentication type - Rudder only supports client_secret_basic and client_secret_post.
 rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
->>>>>>> branches/rudder/6.2
 ```
 
 
@@ -405,7 +398,7 @@ rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
 
 OIDC and OAuth2 protocols may become complicated to configure, especially for the scopes part, when you
 need to match an attribute with Rudder login base.
-You can use the log level for `auth-backends` in `/opt/rudder/etc/lockback.xml`:
+You can use the log level for `auth-backends` in `/opt/rudder/etc/logback.xml`:
 
 - `debug` to see which attributes are actually returned into the user info token,
 - and `trace` to also see their values.
