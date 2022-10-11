@@ -398,7 +398,7 @@ rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
 
 OIDC and OAuth2 protocols may become complicated to configure, especially for the scopes part, when you
 need to match an attribute with Rudder login base.
-You can use the log level for `auth-backends` in `/opt/rudder/etc/lockback.xml`:
+You can use the log level for `auth-backends` in `/opt/rudder/etc/logback.xml`:
 
 - `debug` to see which attributes are actually returned into the user info token,
 - and `trace` to also see their values.
