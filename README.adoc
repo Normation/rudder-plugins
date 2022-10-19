@@ -403,6 +403,113 @@ You can use the log level for `auth-backends` in `/opt/rudder/etc/logback.xml`:
 - `debug` to see which attributes are actually returned into the user info token,
 - and `trace` to also see their values.
 
+==== Common Oauth2/OIDC error cases
+
+It can be a bit challenging to understand what is not correct in a Oauth2 or OIDC configuration.
+Here are some guide lines to help address possible configuration problems.
+
+*I don't see the list of Identity Provider in login form*
+
+Check that you correctly updated parameter `rudder.auth.provider` to include `oidc` or `oauth2` in
+the list, that you have at least one key defined in `rudder.auth.oauth2.provider.registrations`, and
+that you have Rudder webapp logs (`/var/log/rudder/webapp/YYYY_mm_dd.stderrout.log`) lines like:
+
+----
+[timestamp] INFO  application - Configured authentication provider(s): [rootAdmin, oidc, file]
+[timestamp] INFO  application - Add backend providers 'Oauth2 and OpenID Connect authentication backends provider: 'oauth2','oidc'
+[timestamp] INFO  application.plugin - Oauthv2 or OIDC authentication backend is enabled, updating login form
+----
+
+*I get a 404 page not found on Identity Provider*
+
+Check with your Identity Provider Manager that the URL for `rudder.auth.oauth2.provider.${registrationKey}.uri.auth` is correct.
+
+*I get a 400 bad request on Identity Provider*
+
+If when you click in Rudder login page to the IdP link and that you get an error 400 "bad request",
+the application code for Rudder is not correct, and so Rudder identity is not recognized by the IdP.
+Check with your IdP provider the application code for Rudder and check that that value is correctly
+set for property `rudder.auth.oauth2.provider.${registrationKey}.client.id`
+
+*After login on Identity Provider, I get a "login error" message in Rudder login page*
+
+This can have several cause and we will need to analyse Rudder log to understand what happened.
+
+**Bad token URL**
+
+In the log, you see (exact error code or ID may vary, check `invalid_token_response` and `The endpoint does not support the provided HTTP method`):
+
+----
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorization to: https://identity-provider-url/oauth2/v1/authorize
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorisation validation and starting authentication request
+[timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': [invalid_token_response] An error occurred while attempting to retrieve the OAuth 2.0 Access Token Response: 405 Method Not Allowed: "{"errorCode":"E0000022","errorSummary":"The endpoint does not support the provided HTTP method","errorLink":"E0000022","errorId":"oaeLqoJpDbwTzOTAJhp9TbVig","errorCauses":[]}"
+----
+
+Check with you Identity Provider Manager the value for `rudder.auth.oauth2.provider.${registrationKey}.uri.token`.
+
+**Bad user info URL**
+
+In the log, you see (exact error code or ID may vary, check `invalid_user_info_response` and `The endpoint does not support the provided HTTP method`):
+
+----
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorization to: https://identity-provider-url/oauth2/v1/authorize
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorisation validation and starting authentication request
+[timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': [oauth2:invalid_user_info_response] An error occurred while attempting to retrieve the UserInfo Resource: 405 Method Not Allowed: "{"errorCode":"E0000022","errorSummary":"The endpoint does not support the provided HTTP method","errorLink":"E0000022","errorId":"oae1TIF6av1QOiox05xkUSkww","errorCauses":[]}"
+----
+
+**Bad JWK (keys) URL**
+
+In the log, you see (exact error code or ID may vary, check `invalid_id_token` and `The endpoint does not support the provided HTTP method`):
+
+----
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorization to: https://identity-provider-url/oauth2/v1/authorize
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorisation validation and starting authentication request
+[timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': [invalid_id_token] An error occurred while attempting to decode the Jwt: Couldn't retrieve remote JWK set: org.springframework.web.client.HttpClientErrorException$MethodNotAllowed: 405 Method Not Allowed: "{"errorCode":"E0000022","errorSummary":"The endpoint does not support the provided HTTP method","errorLink":"E0000022","errorId":"oae6_QrhU-UTWeykOHgyHqbuA","errorCauses":[]}"
+----
+
+**Bad application secret or method**
+
+In the log, you see:
+
+----
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorization to: https://identity-provider-url/oauth2/v1/authorize
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorisation validation and starting authentication request
+[timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': [invalid_token_response] An error occurred while attempting to retrieve the OAuth 2.0 Access Token Response: 401 Unauthorized: [no body]
+----
+
+This likely means that the value of `rudder.auth.oauth2.provider.${registrationKey}.client.secret` is incorrect. Please check with your Identity Provider manager to get the correct one.
+
+It could also mean that your Identity Provider only support the `client_secret_post` authentication
+method. You can try to change `rudder.auth.oauth2.provider.okta.authMethod` to that value.
+
+**User attribute unknown**
+
+In the log, you see:
+
+----
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorization to: https://identity-provider-url/oauth2/v1/authorize
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorisation validation and starting authentication request
+[timestamp] DEBUG auth-backends - OAuth2/OIDC user info request with scopes [email openid profile] returned attributes: email, email_verified, family_name, given_name, locale, name, nickname, preferred_username, sub, updated_at, zoneinfo
+[timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': [oauth2:invalid_user_info_response] Missing attribute 'foo' in attributes
+----
+
+You used an attribute for value `rudder.auth.oauth2.provider.${registrationKey}.userNameAttributeName` that is not returned with the user profile.
+Please check `rudder.auth.oauth2.provider.okta.scope` with your Identity Provider Manager to ensure that the list of scope is correct, and check that the `userNameAttributeName` value is in the list of `returned attributes`.
+
+**Incorrect user attribute**
+
+In the log, you see:
+
+----
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorization to: https://identity-provider-url/oauth2/v1/authorize
+[timestamp] DEBUG auth-backends - Processing OAuth2/OIDC authorisation validation and starting authentication request
+[timestamp] DEBUG auth-backends - OAuth2/OIDC user info request with scopes [email openid profile] returned attributes: email, email_verified, family_name, given_name, locale, name, nickname, preferred_username, sub, updated_at, zoneinfo
+[timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': User with username 'foo' was not found
+----
+
+It means that the value used for `rudder.auth.oauth2.provider.${registrationKey}.userNameAttributeName` was correctly returned in the profile list for the authenticated user, but that value was not found in Rudder user configuration files `/opt/rudder/etc/rudder-users.xml`.
+Check that one of the entries in that file has the corresponding value for its `name` attribute.
+
 === Radius backend
 
 [WARNING]
