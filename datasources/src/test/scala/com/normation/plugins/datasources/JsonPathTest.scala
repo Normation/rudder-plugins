@@ -1,69 +1,68 @@
 /*
-*************************************************************************************
-* Copyright 2016 Normation SAS
-*************************************************************************************
-*
-* This file is part of Rudder.
-*
-* Rudder is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU General Public License version 3, the copyright holders add
-* the following Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
-* Public License version 3, when you create a Related Module, this
-* Related Module is not considered as a part of the work and may be
-* distributed under the license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* Rudder is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+ *************************************************************************************
+ * Copyright 2016 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
-*
-*************************************************************************************
-*/
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.datasources
 
 import com.normation.BoxSpecMatcher
 import com.normation.rudder.domain.properties.GenericProperty
+import com.normation.zio._
 import net.liftweb.common._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
-import com.normation.zio._
 
 @RunWith(classOf[JUnitRunner])
 class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
-   implicit class ForceGet(json: String) {
-     def forceParse = GenericProperty.parseValue(json) match {
-       case Right(value) => value
-       case Left(err)    => throw new IllegalArgumentException(s"Error in parsing value: ${err.fullMsg}")
-     }
-   }
+  implicit class ForceGet(json: String) {
+    def forceParse = GenericProperty.parseValue(json) match {
+      case Right(value) => value
+      case Left(err)    => throw new IllegalArgumentException(s"Error in parsing value: ${err.fullMsg}")
+    }
+  }
 
   sequential
 
   "These path are valid" should {
 
-    "just an identifier" in  {
-      JsonSelect.compilePath("foo").map( _.getPath ).either.runNow must beRight( "$['foo']" )
+    "just an identifier" in {
+      JsonSelect.compilePath("foo").map(_.getPath).either.runNow must beRight("$['foo']")
     }
   }
-
 
   "The selection" should {
     "fail if source is not a json" in {
@@ -75,7 +74,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
     }
 
     "retrieve first" in {
-      val res = JsonSelect.fromPath("$.store.book[:1]", json).either.runNow
+      val res         = JsonSelect.fromPath("$.store.book[:1]", json).either.runNow
       val expectedVal = """
             {
                 "category": "@reference",
@@ -84,42 +83,42 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
                 "price": 8.95
             }
         """.forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
 
     "retrieve all" in {
-      val res = JsonSelect.fromPath("$", json).either.runNow
+      val res         = JsonSelect.fromPath("$", json).either.runNow
       val expectedVal = json.forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
 
     "works on empty top level array" in {
-      val res = JsonSelect.fromPath("$", arrayEmpty).either.runNow
+      val res         = JsonSelect.fromPath("$", arrayEmpty).either.runNow
       val expectedVal = "".forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
 
     "works top level array of size 1 (but directly get the object)" in {
-      val res = JsonSelect.fromPath("$", arrayOfObjects1).either.runNow
+      val res         = JsonSelect.fromPath("$", arrayOfObjects1).either.runNow
       val expectedVal = """ {"id":"@one"} """.forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
     "works top level array of size 1 when access the first child" in {
-      val res = JsonSelect.fromPath("$.[0]", arrayOfObjects1).either.runNow
+      val res         = JsonSelect.fromPath("$.[0]", arrayOfObjects1).either.runNow
       val expectedVal = """ {"id":"@one"} """.forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
 
     "works on top level array of size n" in {
-      val res = JsonSelect.fromPath("$", arrayOfObjects2).either.runNow
+      val res         = JsonSelect.fromPath("$", arrayOfObjects2).either.runNow
       val expectedVal = arrayOfObjects2.forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
 
     "works top level array of size n when access the first child" in {
-      val res = JsonSelect.fromPath("$.[0]", arrayOfObjects2).either.runNow
+      val res         = JsonSelect.fromPath("$.[0]", arrayOfObjects2).either.runNow
       val expectedVal = """ {"id":"@one"} """.forceParse
-      res must beRight (expectedVal)
+      res must beRight(expectedVal)
     }
   }
 
@@ -127,8 +126,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
 
   "get childrens" should {
     "retrieve JSON childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*]", json).either.runNow must beRight(
-          """[
+      JsonSelect.fromPath("$.store.book[*]", json).either.runNow must beRight("""[
              {
                 "category": "@reference",
                 "author": "Nigel Rees",
@@ -160,7 +158,9 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
       JsonSelect.fromPath("$.store.book[*].price", json).either.runNow must beRight("""[8.95, 12.99, 8.99, 22.99]""".forceParse)
     }
     "retrieve STRING childrens forming an array" in {
-      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight("""["@reference", "@fiction", "@\"quote\"horror\"", "@fiction"]""".forceParse)
+      JsonSelect.fromPath("$.store.book[*].category", json).either.runNow must beRight(
+        """["@reference", "@fiction", "@\"quote\"horror\"", "@fiction"]""".forceParse
+      )
     }
     "retrieve JSON childrens (one)" in {
       JsonSelect.fromPath("$.store.bicycle", json).either.runNow must beRight("""{"color":"red","price":19.95}""".forceParse)
@@ -193,12 +193,7 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
       )
     }
 
-
   }
-
-
-
-
 
   lazy val hostnames = """
   { "nodes": [
@@ -231,12 +226,12 @@ class JsonPathTest extends Specification with BoxSpecMatcher with Loggable {
   """
 
   lazy val arrayOfObjects1 =
-  """[
+    """[
      {"id":"@one"}
   ]"""
 
   lazy val arrayOfObjects2 =
-  """[
+    """[
      {"id":"@one"}
    , {"id":"@two"}
   ]"""
