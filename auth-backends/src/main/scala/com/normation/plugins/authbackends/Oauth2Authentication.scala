@@ -1,47 +1,45 @@
 /*
-*************************************************************************************
-* Copyright 2021 Normation SAS
-*************************************************************************************
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU Affero General Public License as
-* published by the Free Software Foundation, either version 3 of the
-* License, or (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU Affero GPL v3, the copyright holders add the following
-* Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU Affero GPL v3
-* licence, when you create a Related Module, this Related Module is
-* not considered as a part of the work and may be distributed under the
-* license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU Affero General Public License for more details.
-*
-* You should have received a copy of the GNU Affero General Public License
-* along with this program. If not, see <http://www.gnu.org/licenses/agpl.html>.
-*
-*************************************************************************************
-*/
+ *************************************************************************************
+ * Copyright 2021 Normation SAS
+ *************************************************************************************
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU Affero GPL v3, the copyright holders add the following
+ * Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU Affero GPL v3
+ * licence, when you create a Related Module, this Related Module is
+ * not considered as a part of the work and may be distributed under the
+ * license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/agpl.html>.
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.authbackends
 
 import cats.data.NonEmptyList
-
 import com.normation.errors._
 import com.typesafe.config.Config
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
-
 import zio._
 import zio.syntax._
 
@@ -112,39 +110,48 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   val baseProperty = "rudder.auth.oauth2.provider"
 
   val registrationAttributes = Map(
-      A_NAME            -> "human readable name to use in the button 'login with XXXX'"
-    , A_CLIENT_ID       -> "id generated in the Oauth2 service provider to identify rudder as a client app"
-    , A_CLIENT_SECRET   -> "the corresponding secret key"
-    , A_CLIENT_REDIRECT -> "rudder URL to redirect to once authentication is done on the provider (must be resolvable from user browser)"
-    , A_AUTH_METHOD     -> s"authentication method to use (${authMethods.map(_.getValue).mkString(",")})"
-    , A_GRANT_TYPE      -> s"authorization grant type to use (${grantTypes.map(_.getValue).mkString(",")}"
-    , A_INFO_MESSAGE    -> "message displayed in the login form, for example to tell the user what login he must use"
-    , A_SCOPE           -> "data scope to request access to"
-    , A_URI_AUTH        -> "provider URL to contact for main authentication (see provider documentation)"
-    , A_URI_TOKEN       -> "provider URL to contact for token verification (see provider documentation)"
-    , A_URI_USER_INFO   -> "provider URL to contact to get user information (see provider documentation)"
-    , A_URI_JWK_SET     -> "provider URL to check signature of JWT token (see provider documentation)"
-    , A_PIVOT_ATTR      -> "the attribute used to find local app user"
+    A_NAME            -> "human readable name to use in the button 'login with XXXX'",
+    A_CLIENT_ID       -> "id generated in the Oauth2 service provider to identify rudder as a client app",
+    A_CLIENT_SECRET   -> "the corresponding secret key",
+    A_CLIENT_REDIRECT -> "rudder URL to redirect to once authentication is done on the provider (must be resolvable from user browser)",
+    A_AUTH_METHOD     -> s"authentication method to use (${authMethods.map(_.getValue).mkString(",")})",
+    A_GRANT_TYPE      -> s"authorization grant type to use (${grantTypes.map(_.getValue).mkString(",")}",
+    A_INFO_MESSAGE    -> "message displayed in the login form, for example to tell the user what login he must use",
+    A_SCOPE           -> "data scope to request access to",
+    A_URI_AUTH        -> "provider URL to contact for main authentication (see provider documentation)",
+    A_URI_TOKEN       -> "provider URL to contact for token verification (see provider documentation)",
+    A_URI_USER_INFO   -> "provider URL to contact to get user information (see provider documentation)",
+    A_URI_JWK_SET     -> "provider URL to check signature of JWT token (see provider documentation)",
+    A_PIVOT_ATTR      -> "the attribute used to find local app user"
   )
 
-
   def parseAuthenticationMethod(method: String): PureResult[ClientAuthenticationMethod] = {
-    authMethods.find( _.getValue.equalsIgnoreCase(method)) match {
+    authMethods.find(_.getValue.equalsIgnoreCase(method)) match {
       case None    =>
         // spring change the name between the version we use in 6.2 and 7.0. We want to provide compatibility
         // and only document the most recent ones.
         method.toLowerCase match {
-          case "post" | "client_secret_post"  => Right(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-          case "basic"| "client_secret_basic" => Right(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-          case _ => Left(Inconsistency(s"Requested OAUTh2 authentication methods '${method}' is not recognized, please use one of: ${authMethods.map(_.getValue).mkString("'","','","'")}"))
+          case "post" | "client_secret_post"   => Right(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+          case "basic" | "client_secret_basic" => Right(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+          case _                               =>
+            Left(
+              Inconsistency(
+                s"Requested OAUTh2 authentication methods '${method}' is not recognized, please use one of: ${authMethods.map(_.getValue).mkString("'", "','", "'")}"
+              )
+            )
         }
       case Some(m) => Right(m)
     }
   }
 
   def parseAuthorizationGrantType(grant: String): PureResult[AuthorizationGrantType] = {
-    grantTypes.find( _.getValue.equalsIgnoreCase(grant)) match {
-      case None    => Left(Inconsistency(s"Requested OAUTh2 authorization grant type '${grant}' is not recognized, please use one of: ${grantTypes.map(_.getValue).mkString("'","','","'")}"))
+    grantTypes.find(_.getValue.equalsIgnoreCase(grant)) match {
+      case None    =>
+        Left(
+          Inconsistency(
+            s"Requested OAUTh2 authorization grant type '${grant}' is not recognized, please use one of: ${grantTypes.map(_.getValue).mkString("'", "','", "'")}"
+          )
+        )
       case Some(m) => Right(m)
     }
   }
@@ -159,21 +166,23 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   def parseScope(scopes: String): IOResult[List[String]] = {
     // it seems that only the given list of email, phone etc is supported, even if the speak of "case sensitive", let be
     // a bit more broad, the protocol lib will check more thoroughly.
-    val ascii = """\w""".r
+    val ascii                 = """\w""".r
     def checkScope(s: String) = {
-      if(ascii.matches(s)) Inconsistency(s"Only ascii [a-zA-Z0-9_] is authorized in scope definition but '${s}' doesn't matches it").fail
+      if (ascii.matches(s))
+        Inconsistency(s"Only ascii [a-zA-Z0-9_] is authorized in scope definition but '${s}' doesn't matches it").fail
       else s.succeed
     }
-    val s = (
-      if(scopes.contains(",")) scopes.split(",")
+    val s                     = (
+      if (scopes.contains(",")) scopes.split(",")
       else scopes.split("""\s+""")
     ).toList.map(_.trim)
 
-    ZIO.partition(s)(checkScope).flatMap { case (errs, oks) =>
-      errs.toList match {
-        case Nil     => oks.toList.succeed
-        case h::tail => Accumulated(NonEmptyList.of(h,tail:_*)).fail
-      }
+    ZIO.partition(s)(checkScope).flatMap {
+      case (errs, oks) =>
+        errs.toList match {
+          case Nil       => oks.toList.succeed
+          case h :: tail => Accumulated(NonEmptyList.of(h, tail: _*)).fail
+        }
     }
   }
 
@@ -210,22 +219,24 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
           .clientAuthenticationMethod(authMethod)
           .authorizationGrantType(grantTypes)
           .redirectUri(clientRedirect)
-          .scope(scopes:_*)
+          .scope(scopes: _*)
           .authorizationUri(uriAuth)
           .tokenUri(uriToken)
           .userInfoUri(uriUserInfo)
           .userNameAttributeName(pivotAttr)
           .clientName(name)
           .jwkSetUri(jwkSetUri)
-          .build()
-        , infoMessage
+          .build(),
+        infoMessage
       )
     }
   }
 
   def readProviders(config: Config): IOResult[List[String]] = {
     val path = baseProperty + ".registrations"
-    IOResult.attempt(s"Missing property '${path}' which define the comma separated list of provider registration to use for OAUTH2.")(
+    IOResult.attempt(
+      s"Missing property '${path}' which define the comma separated list of provider registration to use for OAUTH2."
+    )(
       config.getString(path).split(",").map(_.trim).toList
     )
   }
@@ -242,17 +253,19 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       _             <- AuthBackendsLoggerPure.info(s"List of configured providers for oauth2/OpenIDConnect: ${providers.mkString(", ")}")
       registrations <- ZIO.foreach(providers) { p =>
                          readOneRegistration(p, config).foldZIO(
-                             err =>
-                               AuthBackendsLoggerPure.error(s"Error when reading OAUTH2 configuration for registration to '${p}' provider: ${err.fullMsg}'") *>
-                               None.succeed
-                           , res =>
-                               AuthBackendsLoggerPure.debug(s"New registration for provider '${p}': ${res} ") *>
-                               Some((p, res)).succeed
+                           err =>
+                             AuthBackendsLoggerPure.error(
+                               s"Error when reading OAUTH2 configuration for registration to '${p}' provider: ${err.fullMsg}'"
+                             ) *>
+                             None.succeed,
+                           res => {
+                             AuthBackendsLoggerPure.debug(s"New registration for provider '${p}': ${res} ") *>
+                             Some((p, res)).succeed
+                           }
                          )
                        }
     } yield registrations.flatten
   }
-
 
   def make(): IOResult[RudderPropertyBasedOAuth2RegistrationDefinition] = {
     for {
@@ -267,7 +280,6 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
 class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[List[(String, RudderClientRegistration)]]) {
   import RudderPropertyBasedOAuth2RegistrationDefinition._
 
-
   /*
    * read information from config and update internal cache
    */
@@ -279,4 +291,3 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
   }
 
 }
-

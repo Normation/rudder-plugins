@@ -1,9 +1,11 @@
 package com.normation.plugins.usermanagement
 
 import com.normation.plugins.usermanagement.UserManagementService.computeRoleCoverage
+import com.normation.rudder.AuthorizationType
+import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
+import com.normation.rudder.RoleToRights
 import com.normation.rudder.RoleToRights.parseRole
-import com.normation.rudder.{AuthorizationType, Role, RoleToRights}
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
@@ -31,9 +33,9 @@ class RoleComputationTest extends Specification {
         case Some(r) =>
           r.head match {
             case Custom(_) => success
-            case knowRole => failure(s"Unexpected role : ${knowRole.name}")
+            case knowRole  => failure(s"Unexpected role : ${knowRole.name}")
           }
-        case None => success
+        case None    => success
       }
     }
 
@@ -44,57 +46,58 @@ class RoleComputationTest extends Specification {
       computeRoleCoverage(
         RoleToRights.parseRole(role).toSet
         //        role
-        , Set(AuthorizationType.Compliance.Read) ++ Role.Inventory.rights.authorizationTypes
+        ,
+        Set(AuthorizationType.Compliance.Read) ++ Role.Inventory.rights.authorizationTypes
       ) match {
         case Some(rs) =>
           val rolesName = rs.map(_.name.toLowerCase)
           if (rolesName.contains("inventory") && rolesName.contains("custom")) {
             rs.find {
               case Custom(_) => true
-              case _ => false
+              case _         => false
             } match {
               case Some(r) =>
                 if (r.rights.displayAuthorizations == "compliance_read")
                   success
                 else
                   failure(s"wrong rights")
-              case None => failure(s"Missing role : $rs")
+              case None    => failure(s"Missing role : $rs")
             }
-          }
-          else
+          } else {
             failure(s"Missing role : $rs")
-        case None => failure("No roles found")
+          }
+        case None     => failure("No roles found")
       }
     }
 
     "only detect 'Inventory' role" in {
       val role = parseRole(Seq("inventory")).toSet
       computeRoleCoverage(
-        role
-        , Role.Inventory.rights.authorizationTypes
+        role,
+        Role.Inventory.rights.authorizationTypes
       ) match {
         case Some(rs) =>
           val rolesName = rs.map(_.name.toLowerCase)
           if (rolesName.size == 1) {
             rs.head match {
               case r if r.name == "inventory" => success
-              case r => failure(s"Wrong role : ${r.name}")
+              case r                          => failure(s"Wrong role : ${r.name}")
             }
-          }
-          else
+          } else {
             failure(s"Excepted 1 custom role, instead : ${rolesName.size} role(s)")
-        case None => failure("No roles found")
+          }
+        case None     => failure("No roles found")
       }
     }
 
     "only detect one custom role" in {
       val role = parseRole(Seq("inventory", "user")).toSet
       computeRoleCoverage(
-        role
-        , Set(
-            AuthorizationType.UserAccount.Read
-          , AuthorizationType.UserAccount.Write
-          , AuthorizationType.UserAccount.Edit
+        role,
+        Set(
+          AuthorizationType.UserAccount.Read,
+          AuthorizationType.UserAccount.Write,
+          AuthorizationType.UserAccount.Edit
         )
       ) match {
         case Some(rs) =>
@@ -102,35 +105,35 @@ class RoleComputationTest extends Specification {
           if (rolesName.size == 1) {
             rs.head match {
               case Custom(_) => success
-              case r => failure(s"Unexpected role : ${r.name}")
+              case r         => failure(s"Unexpected role : ${r.name}")
             }
-          }
-          else
+          } else {
             failure(s"Excepted 1 custom role, instead : ${rolesName.size} role(s)")
-        case None => failure("No roles found")
+          }
+        case None     => failure("No roles found")
       }
     }
 
     "return administrator " in {
       val role = Role.values.map(_.name).toSeq
       computeRoleCoverage(
-        RoleToRights.parseRole(role).toSet
-        , AuthorizationType.allKind
+        RoleToRights.parseRole(role).toSet,
+        AuthorizationType.allKind
       ) match {
         case Some(rs) =>
-          if(rs.size ==  1 && rs.head.name == "administrator")
+          if (rs.size == 1 && rs.head.name == "administrator")
             success
           else
             failure("Excepted only administrator role")
-        case _ => failure("Nothing returned")
+        case _        => failure("Nothing returned")
       }
     }
 
     "allows intersection between know roles" in {
       val role = parseRole(Seq("inventory", "user")).toSet
       computeRoleCoverage(
-        role
-        , Role.User.rights.authorizationTypes ++ Role.Inventory.rights.authorizationTypes
+        role,
+        Role.User.rights.authorizationTypes ++ Role.Inventory.rights.authorizationTypes
       ) match {
         case Some(rs) =>
           val rolesName = rs.map(_.name.toLowerCase)
@@ -138,27 +141,27 @@ class RoleComputationTest extends Specification {
             success
           else
             failure(s"Excepted inventory and user role, instead : ${rolesName.mkString(",")}")
-        case None => failure("No roles found")
+        case None     => failure("No roles found")
       }
     }
 
     "ignore NoRights role" in {
       val role = parseRole(Seq("no_rights", "user")).toSet
       computeRoleCoverage(
-        role
-        , Role.User.rights.authorizationTypes
+        role,
+        Role.User.rights.authorizationTypes
       ) match {
         case Some(rs) =>
           val rolesName = rs.map(_.name.toLowerCase)
           if (rolesName.size == 1) {
             rs.head match {
               case r if r.name == "user" => success
-              case r => failure(s"Wrong role : ${r.name}")
+              case r                     => failure(s"Wrong role : ${r.name}")
             }
-          }
-          else
+          } else {
             failure(s"Excepted 'User' role, instead : ${rolesName.mkString(",")}")
-        case None => failure("No roles found")
+          }
+        case None     => failure("No roles found")
       }
     }
   }

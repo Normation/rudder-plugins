@@ -1,39 +1,39 @@
 /*
-*************************************************************************************
-* Copyright 2016 Normation SAS
-*************************************************************************************
-*
-* This file is part of Rudder.
-*
-* Rudder is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU General Public License version 3, the copyright holders add
-* the following Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
-* Public License version 3, when you create a Related Module, this
-* Related Module is not considered as a part of the work and may be
-* distributed under the license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* Rudder is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+ *************************************************************************************
+ * Copyright 2016 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
-*
-*************************************************************************************
-*/
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.datasources
 
@@ -60,7 +60,7 @@ object DataSourceLoggerPure extends NamedZioLogger {
   object Scheduler extends NamedZioLogger {
     override def loggerName: String = "datasources.scheduler"
   }
-  object Timing extends NamedZioLogger {
+  object Timing    extends NamedZioLogger {
     override def loggerName: String = "datasources.timing"
   }
 }
@@ -75,9 +75,8 @@ final object DataSource {
    * API, that must not be used as id.
    */
   val reservedIds = Map(
-      DataSourceId("reload") -> "That id would conflict with API path for reloading datasources"
+    DataSourceId("reload") -> "That id would conflict with API path for reloading datasources"
   )
-
 
   /**
    * A node property with the correct DataSource metadata
@@ -86,7 +85,7 @@ final object DataSource {
 }
 
 sealed trait DataSourceType {
-  def name : String
+  def name: String
 }
 
 /*
@@ -105,21 +104,23 @@ final object HttpMethod {
 final object DataSourceType {
 
   final object HTTP {
-    val name = "HTTP"
+    val name                      = "HTTP"
     val defaultMaxParallelRequest = 10
   }
 
-  final case class HTTP (
-      url                : String
-    , headers            : Map[String,String]
-    , httpMethod         : HttpMethod
-    , params             : Map[String, String] // query params for GET, form params for POST
-    , sslCheck           : Boolean
-    , path               : String
-    , maxParallelRequest : Int                 // maximum number of output parallel requests
-    , requestMode        : HttpRequestMode
-    , requestTimeOut     : Duration
-    , missingNodeBehavior: MissingNodeBehavior
+  final case class HTTP(
+      url:                 String,
+      headers:             Map[String, String],
+      httpMethod:          HttpMethod,
+      params:              Map[String, String] // query params for GET, form params for POST
+      ,
+      sslCheck:            Boolean,
+      path:                String,
+      maxParallelRequest:  Int                 // maximum number of output parallel requests
+      ,
+      requestMode:         HttpRequestMode,
+      requestTimeOut:      Duration,
+      missingNodeBehavior: MissingNodeBehavior
   ) extends DataSourceType {
     val name = HTTP.name
   }
@@ -130,7 +131,7 @@ final object DataSourceType {
  * - do one request for each known nodes?
  * - do one request for all node in one go?
  */
-sealed trait HttpRequestMode { def name : String }
+sealed trait HttpRequestMode { def name: String }
 
 final object HttpRequestMode {
   final case object OneRequestByNode extends HttpRequestMode {
@@ -142,8 +143,8 @@ final object HttpRequestMode {
   }
 
   final case class OneRequestAllNodes(
-      matchingPath  : String
-    , nodeAttribute : String
+      matchingPath:  String,
+      nodeAttribute: String
   ) extends HttpRequestMode {
     val name = OneRequestAllNodes.name
   }
@@ -159,72 +160,72 @@ sealed trait MissingNodeBehavior { def name: String }
 
 final object MissingNodeBehavior {
   // delete is the default behavior is not specified
-  final case object Delete                      extends MissingNodeBehavior { val name = "delete"       }
-  final case object NoChange                    extends MissingNodeBehavior { val name = "noChange"     }
+  final case object Delete   extends MissingNodeBehavior { val name = "delete"   }
+  final case object NoChange extends MissingNodeBehavior { val name = "noChange" }
   final object DefaultValue { val name = "defaultValue" }
-  final case class  DefaultValue(value: ConfigValue) extends MissingNodeBehavior { val name = DefaultValue.name }
+  final case class DefaultValue(value: ConfigValue) extends MissingNodeBehavior { val name = DefaultValue.name }
 }
 
-final case class DataSourceName(value : String)
-final case class DataSourceId  (value : String)
+final case class DataSourceName(value: String)
+final case class DataSourceId(value: String)
 
 sealed trait DataSourceSchedule {
-  def duration : Duration
+  def duration: Duration
 }
 
 final object DataSourceSchedule {
   final case class NoSchedule(
-    savedDuration : Duration
+      savedDuration: Duration
   ) extends DataSourceSchedule {
     val duration = savedDuration
   }
 
   final case class Scheduled(
-    duration : Duration
+      duration: Duration
   ) extends DataSourceSchedule
 }
 
-final case class DataSourceRunParameters (
-    schedule     : DataSourceSchedule
-  , onGeneration : Boolean
-  , onNewNode    : Boolean
+final case class DataSourceRunParameters(
+    schedule:     DataSourceSchedule,
+    onGeneration: Boolean,
+    onNewNode:    Boolean
 )
 
-final case class DataSourceStatus (
-    lastRunDate : Option[DateTime]
-  , nodesStatus : Map[NodeId, DataSourceUpdateStatus]
+final case class DataSourceStatus(
+    lastRunDate: Option[DateTime],
+    nodesStatus: Map[NodeId, DataSourceUpdateStatus]
 )
 
-sealed trait DataSourceUpdateStatus{
-  def state       : String
-  def lastRunDate : DateTime
+sealed trait DataSourceUpdateStatus {
+  def state:       String
+  def lastRunDate: DateTime
 }
 
 final case object DataSourceUpdateStatus {
 
   final case class Success(
-    lastRunDate : DateTime
+      lastRunDate: DateTime
   ) extends DataSourceUpdateStatus {
     val state = "success"
   }
 
   final case class Failure(
-      lastRunDate     : DateTime
-    , message         : String
-    , lastSuccessDate : Option[String]
+      lastRunDate:     DateTime,
+      message:         String,
+      lastSuccessDate: Option[String]
   ) extends DataSourceUpdateStatus {
     val state = "failure"
   }
 }
 
-final case class DataSource (
-    id            : DataSourceId
-  , name          : DataSourceName
-  , sourceType    : DataSourceType
-  , runParam      : DataSourceRunParameters
-  , description   : String
-  , enabled       : Boolean
-  , updateTimeOut : Duration
+final case class DataSource(
+    id:            DataSourceId,
+    name:          DataSourceName,
+    sourceType:    DataSourceType,
+    runParam:      DataSourceRunParameters,
+    description:   String,
+    enabled:       Boolean,
+    updateTimeOut: Duration
 ) {
   val scope = "all"
 }
@@ -240,7 +241,7 @@ final object NodeUpdateResult {
 
   // there was a difference between the saved value and the one available
   // on the remote data source
-  final case class Updated  (nodeId: NodeId) extends NodeUpdateResult
+  final case class Updated(nodeId: NodeId) extends NodeUpdateResult
 
   // the property value was up-to-date.
   final case class Unchanged(nodeId: NodeId) extends NodeUpdateResult
