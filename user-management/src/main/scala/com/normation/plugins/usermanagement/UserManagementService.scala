@@ -18,7 +18,6 @@ import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.util.Helpers.tryo
 import org.springframework.core.io.{ClassPathResource => CPResource}
-
 import scala.xml.Elem
 import scala.xml.Node
 import scala.xml.NodeSeq
@@ -30,15 +29,15 @@ case class UserFileInfo(userOrigin: List[UserOrigin], digest: String)
 case class UserOrigin(user: User, hashValidHash: Boolean)
 
 case class User(username: String, password: String, role: Set[String]) {
-  def toNode: Node = <user name={ username } password={ password } role={ role.mkString(",") } />
+  def toNode: Node = <user name={username} password={password} role={role.mkString(",")} />
 }
 
 object UserOrigin {
   def verifyHash(hashType: String, hash: String) = {
-    //$2[aby]$[cost]$[22 character salt][31 character hash]
+    // $2[aby]$[cost]$[22 character salt][31 character hash]
     val bcryptReg = "^\\$2[aby]?\\$[\\d]+\\$[./A-Za-z0-9]{53}$".r
     hashType.toLowerCase match {
-      case "sha"    | "sha1"    => hash.matches("^[a-fA-F0-9]{40}$")
+      case "sha" | "sha1"       => hash.matches("^[a-fA-F0-9]{40}$")
       case "sha256" | "sha-256" => hash.matches("^[a-fA-F0-9]{64}$")
       case "sha512" | "sha-512" => hash.matches("^[a-fA-F0-9]{128}$")
       case "md5"                => hash.matches("^[a-fA-F0-9]{32}$")
@@ -52,11 +51,11 @@ object UserManagementIO {
 
   def replaceXml(currentXml: NodeSeq, newXml: Node, file: File): Box[File] = {
 
-    if (!file.isWritable)
+    if (!file.isWritable) {
       Failure(s"${file.path} is not writable")
-    else if (!file.isReadable)
+    } else if (!file.isReadable) {
       Failure(s"${file.path} is not readable")
-    else {
+    } else {
       val p = new RudderPrettyPrinter(300, 4)
       file.clear()
       currentXml.foreach { x =>
@@ -104,9 +103,9 @@ object UserManagementService {
   def computeRoleCoverage(roles: Set[Role], authzs: Set[AuthorizationType]): Option[Set[Role]] = {
 
     def compareRights(r: Role): Option[Role] = {
-      if (r.name == "no_rights")
+      if (r.name == "no_rights") {
         None
-      else {
+      } else {
         val authzNames     = authzs.map(_.id)
         val roleAuthzNames = r.rights.authorizationTypes.map(_.id)
         val commonRights   = roleAuthzNames.intersect(authzNames)
@@ -115,9 +114,9 @@ object UserManagementService {
           case cr if cr == roleAuthzNames => Some(r)
           case cr if cr.nonEmpty          =>
             val test = cr.flatMap(RoleToRights.parseAuthz)
-            if (test.isEmpty)
+            if (test.isEmpty) {
               None
-            else {
+            } else {
               val c = Custom(new Rights(test.toSeq: _*))
               Some(c)
             }
@@ -126,17 +125,18 @@ object UserManagementService {
       }
     }
 
-    if(authzs.isEmpty || roles.isEmpty || authzs.exists(_.id == "no_rights"))
+    if (authzs.isEmpty || roles.isEmpty || authzs.exists(_.id == "no_rights")) {
       None
-    else {
-      val (rs, custom) = roles.flatMap(compareRights).partition {
+    } else {
+      val (rs, custom)    = roles.flatMap(compareRights).partition {
         case Custom(_) => false
         case _         => true
       }
       val customAuthz     = custom.flatMap(_.rights.authorizationTypes.map(_.id))
       // remove authzs taken by a role in custom's rights
       val minCustomAuthz  = customAuthz.diff(rs.flatMap(_.rights.authorizationTypes.map(_.id)))
-      val leftoversRights = authzs.diff(rs.flatMap(_.rights.authorizationTypes).union(minCustomAuthz.flatMap(RoleToRights.parseAuthz)))
+      val leftoversRights =
+        authzs.diff(rs.flatMap(_.rights.authorizationTypes).union(minCustomAuthz.flatMap(RoleToRights.parseAuthz)))
       val leftoversCustom: Option[Role] = {
         if (leftoversRights.nonEmpty)
           Some(Custom(new Rights(leftoversRights.toSeq: _*)))
@@ -144,11 +144,11 @@ object UserManagementService {
           None
       }
       val data = {
-        if (minCustomAuthz.nonEmpty)
+        if (minCustomAuthz.nonEmpty) {
           Some(rs + Custom(new Rights(minCustomAuthz.flatMap(RoleToRights.parseAuthz).toSeq: _*)))
-        else if (rs == Role.values.diff(Set(Role.NoRights)))
+        } else if (rs == Role.values.diff(Set(Role.NoRights))) {
           Some(RoleToRights.parseRole(Seq("administrator")).toSet)
-        else if(rs.nonEmpty)
+        } else if (rs.nonEmpty)
           Some(rs)
         else
           None
@@ -173,11 +173,17 @@ object UserManagementService {
           val userXML = parsedFile.document().children
           (userXML \\ "authentication").head match {
             case e: Elem =>
-              val newXml =
-                if (isPreHashed)
+              val newXml = {
+                if (isPreHashed) {
                   e.copy(child = e.child ++ newUser.toNode)
-                else
-                  e.copy(child = e.child ++ newUser.copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)).toNode)
+                } else {
+                  e.copy(child = {
+                    e.child ++ newUser
+                      .copy(password = getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password))
+                      .toNode
+                  })
+                }
+              }
               UserManagementIO.replaceXml(userXML, newXml, file)
               Full(newUser)
             case _ =>
@@ -189,13 +195,13 @@ object UserManagementService {
 
   def remove(toDelete: String): Box[File] = {
     getUserFilePath match {
-      case Left(err) =>
+      case Left(err)   =>
         Failure(err.msg)
       case Right(file) =>
         tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap { parsedFile =>
-          val userXML = parsedFile.document().children
+          val userXML  = parsedFile.document().children
           val toUpdate = (userXML \\ "authentication").head
-          val newXml = new RuleTransformer(new RewriteRule {
+          val newXml   = new RuleTransformer(new RewriteRule {
             override def transform(n: Node): NodeSeq = n match {
               case user: Elem if (user \ "@name").text == toDelete => NodeSeq.Empty
               case other => other
@@ -208,23 +214,23 @@ object UserManagementService {
 
   def update(currentUser: String, newUser: User, isPreHashed: Boolean): Box[File] = {
     getUserFilePath match {
-      case Left(err) =>
+      case Left(err)   =>
         Failure(err.msg)
       case Right(file) =>
-        tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap{ parsedFile =>
-          val userXML = parsedFile.document().children
+        tryo(ConstructingParser.fromFile(file.toJava, preserveWS = true)).flatMap { parsedFile =>
+          val userXML  = parsedFile.document().children
           val toUpdate = (userXML \\ "authentication").head
-          val newXml = new RuleTransformer(new RewriteRule {
+          val newXml   = new RuleTransformer(new RewriteRule {
             override def transform(n: Node): NodeSeq = n match {
               case user: Elem if (user \ "@name").text == currentUser =>
-
                 // for each user's parameters, if a new user's parameter is empty we decide to keep the original one
                 val newRoles    = if (newUser.role.isEmpty) (user \ "@role").text.split(",").toSet else newUser.role
                 val newUsername = if (newUser.username.isEmpty) currentUser else newUser.username
                 val newPassword = if (newUser.password.isEmpty) {
                   (user \ "@password").text
                 } else {
-                  if (isPreHashed) newUser.password else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
+                  if (isPreHashed) newUser.password
+                  else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
                 }
 
                 User(newUsername, newPassword, newRoles).toNode
@@ -247,12 +253,14 @@ object UserManagementService {
           (userXML \\ "authentication").head match {
             case e: Elem =>
               val digest = (userXML \\ "authentication" \ "@hash").text.toUpperCase
-              val users = e.map(u => {
-                val password = (u \ "@password").text
-                val user = User((u \ "@name").text, (u \ "@password").text, (u \ "@role").map(_.text).toSet)
-                val hasValidHash = UserOrigin.verifyHash(digest, password)
-                UserOrigin(user, hasValidHash)
-              }).toList
+              val users  = e
+                .map(u => {
+                  val password     = (u \ "@password").text
+                  val user         = User((u \ "@name").text, (u \ "@password").text, (u \ "@role").map(_.text).toSet)
+                  val hasValidHash = UserOrigin.verifyHash(digest, password)
+                  UserOrigin(user, hasValidHash)
+                })
+                .toList
               Full(UserFileInfo(users, digest))
             case _ =>
               Failure(s"Wrong formatting : ${file.path}")
