@@ -108,7 +108,6 @@ pipeline {
                     }
                     parallel parallelStages
                 }
-            steps {
                 script {
                     def parallelStages = [:]
                     PLUGINS = sh (
