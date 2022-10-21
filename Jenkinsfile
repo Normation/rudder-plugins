@@ -94,6 +94,24 @@ pipeline {
                 script {
                     def parallelStages = [:]
                     PLUGINS = sh (
+                        script: 'scala-plugins-list',
+                        returnStdout: true
+                    ).trim().split(' ')
+                    PLUGINS.each { p ->
+                        parallelStages[p] = {
+                            stage("test ${p} format") {
+                                dir("${p}") {
+                                    sh script: 'mvn spotless:check --batch-mode', label: "scala format test for ${p} plugin"
+                                }
+                            }
+                        }
+                    }
+                    parallel parallelStages
+                }
+            steps {
+                script {
+                    def parallelStages = [:]
+                    PLUGINS = sh (
                         script: 'make plugins-list',
                         returnStdout: true
                     ).trim().split(' ')
