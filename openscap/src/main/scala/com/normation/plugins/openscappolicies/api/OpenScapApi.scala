@@ -7,15 +7,15 @@ import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
-import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest._
+import com.normation.rudder.rest.ApiModuleProvider
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.GeneralApi
+import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.rest.ApiModuleProvider
-import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.GeneralApi
-import com.normation.rudder.rest.SortIndex
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
@@ -27,10 +27,10 @@ import net.liftweb.json.NoTypeHints
 import sourcecode.Line
 
 sealed trait OpenScapApi extends EndpointSchema with GeneralApi with SortIndex
-object OpenScapApi extends ApiModuleProvider[OpenScapApi] {
+object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
 
   final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
-    val z = implicitly[Line].value
+    val z              = implicitly[Line].value
     val description    = "Get OpenScap report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
 
@@ -38,21 +38,20 @@ object OpenScapApi extends ApiModuleProvider[OpenScapApi] {
   }
 
   final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
-    val z = implicitly[Line].value
+    val z              = implicitly[Line].value
     val description    = "Get sanitized OpenScap report for a node"
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
 
     override def dataContainer: Option[String] = Some("openscap")
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy( _.z )
+  def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy(_.z)
 }
 
-
 class OpenScapApiImpl(
-    restExtractorService: RestExtractorService
-  , openScapReportReader: OpenScapReportReader
-  , reportSanitizer      : ReportSanitizer
+    restExtractorService: RestExtractorService,
+    openScapReportReader: OpenScapReportReader,
+    reportSanitizer:      ReportSanitizer
 ) extends LiftApiModuleProvider[OpenScapApi] {
   api =>
 
@@ -63,21 +62,33 @@ class OpenScapApiImpl(
   def schemas = OpenScapApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    OpenScapApi.endpoints.map { case e => e match {
-      case OpenScapApi.GetOpenScapReport => GetOpenScapReport
-      case OpenScapApi.GetSanitizedOpenScapReport => GetSanitizedOpenScapReport
-    }}.toList
+    OpenScapApi.endpoints.map {
+      case e =>
+        e match {
+          case OpenScapApi.GetOpenScapReport          => GetOpenScapReport
+          case OpenScapApi.GetSanitizedOpenScapReport => GetSanitizedOpenScapReport
+        }
+    }.toList
   }
 
-  def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String], dataName : String)(implicit action: String): LiftResponse = {
+  def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String], dataName: String)(implicit
+      action:            String
+  ): LiftResponse = {
     RestUtils.response(restExtractorService, dataName, id)(function, req, errorMessage)
   }
 
   object GetOpenScapReport extends LiftApiModule {
-    val schema = OpenScapApi.GetOpenScapReport
+    val schema        = OpenScapApi.GetOpenScapReport
     val restExtractor = api.restExtractorService
 
-    def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        nodeId:     String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
       (for {
         report <- openScapReportReader.getOpenScapReport(NodeId(nodeId))
       } yield {
@@ -87,40 +98,45 @@ class OpenScapApiImpl(
         case Full(Some(report)) =>
           logger.trace("doing in memory response")
           InMemoryResponse(
-              report.content.getBytes()
-            , ("Content-Type", "text/html") :: ("Content-Disposition", "inline")  :: Nil
-            , Nil
-            , 200)
-        case Full(None) =>
+            report.content.getBytes(),
+            ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
+            Nil,
+            200
+          )
+        case Full(None)         =>
           logger.trace("No report found")
           InMemoryResponse(
-              s"No OpenSCAP report found for nodeId ${nodeId}".getBytes()
-            , ("Content-Type" -> "text/txt") ::
-              Nil
-            , Nil
-            , 404)
+            s"No OpenSCAP report found for nodeId ${nodeId}".getBytes(),
+            ("Content-Type" -> "text/txt") ::
+            Nil,
+            Nil,
+            404
+          )
         case eb: EmptyBox =>
           val errorMessage = eb ?~! "Could not get the OpenSCAP report for node ${nodeId}"
           logger.error(errorMessage.messageChain)
-          InMemoryResponse(
-              errorMessage.messageChain.getBytes()
-            , Nil
-            , Nil
-            , 404)
+          InMemoryResponse(errorMessage.messageChain.getBytes(), Nil, Nil, 404)
       }
 
     }
   }
 
   object GetSanitizedOpenScapReport extends LiftApiModule {
-    val schema = OpenScapApi.GetSanitizedOpenScapReport
+    val schema        = OpenScapApi.GetSanitizedOpenScapReport
     val restExtractor = api.restExtractorService
 
-    def process(version: ApiVersion, path: ApiPath, nodeId: String, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        nodeId:     String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
       (for {
-        report        <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenScap Report for node ${nodeId}"
-        existence     <- Box(report) ?~! s"Report not found for node ${nodeId}"
-        sanitizedXml  <- reportSanitizer.sanitizeReport(existence).toBox ?~! "Error while sanitizing report"
+        report       <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenScap Report for node ${nodeId}"
+        existence    <- Box(report) ?~! s"Report not found for node ${nodeId}"
+        sanitizedXml <- reportSanitizer.sanitizeReport(existence).toBox ?~! "Error while sanitizing report"
       } yield {
         logger.trace(s"Report for node ${nodeId} has been found and sanitized")
         sanitizedXml
@@ -128,19 +144,21 @@ class OpenScapApiImpl(
         case Full(sanitizedReport) =>
           logger.trace("Doing in memory response")
           InMemoryResponse(
-            sanitizedReport.toString().getBytes()
-            ,  ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil
-            , Nil
-            , 200)
+            sanitizedReport.toString().getBytes(),
+            ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
+            Nil,
+            200
+          )
         case eb: EmptyBox =>
           val errorMessage = eb ?~! "Could not get the sanitized OpenScap report for node ${nodeId}"
           logger.error(errorMessage.messageChain)
-          val html = <div class="error">{errorMessage.messageChain}</div>
+          val html         = <div class="error">{errorMessage.messageChain}</div>
           InMemoryResponse(
-            html.toString().getBytes()
-            ,  ("Content-Type", "text/html") :: ("Content-Disposition", "inline")  :: Nil
-            , Nil
-            , 404)
+            html.toString().getBytes(),
+            ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
+            Nil,
+            404
+          )
       }
     }
   }

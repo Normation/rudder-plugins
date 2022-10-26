@@ -160,8 +160,47 @@
           </execution>
         </executions>
       </plugin>
+      <!-- formatting with scalafmt -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.25.0</version>
+        <configuration>
+          <scala>
+            <includes>
+              <include>**/*.scala</include>
+            </includes>
+            <excludes>
+            </excludes>
+
+            <scalafmt>
+              <file>../.scalafmt.conf</file>
+            </scalafmt>
+          </scala>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase> <!-- verify: default value -->
+          </execution>
+        </executions>
+      </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <!-- We need to specify that dependencies coming from parent are provided (they are by rudder-web) -->

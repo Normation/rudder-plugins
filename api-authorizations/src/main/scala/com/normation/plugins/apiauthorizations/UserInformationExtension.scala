@@ -5,17 +5,17 @@ import com.normation.plugins.PluginStatus
 import com.normation.rudder.web.snippet.UserInformation
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
-
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class UserInformationExtension(val status: PluginStatus)(implicit val ttag: ClassTag[UserInformation]) extends PluginExtensionPoint[UserInformation] with Loggable {
+class UserInformationExtension(val status: PluginStatus)(implicit val ttag: ClassTag[UserInformation])
+    extends PluginExtensionPoint[UserInformation] with Loggable {
 
-  def pluginCompose(snippet: UserInformation) : Map[String, NodeSeq => NodeSeq] = Map(
-      "userCredentials" -> render _
+  def pluginCompose(snippet: UserInformation): Map[String, NodeSeq => NodeSeq] = Map(
+    "userCredentials" -> render _
   )
 
-  def render(xml:NodeSeq) = {
+  def render(xml: NodeSeq) = {
     /* xml is a menu entry which looks like:
       <li class="user user-menu">
         <a href="#">
@@ -43,8 +43,7 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
       </li>
      */
 
-
-    val embedAppXml =
+    val embedAppXml = {
       <ul id="userApiTokenManagement" class="dropdown-menu">
         <head_merge>
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
@@ -75,14 +74,15 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
         // ]]>
         </script>
       </ul>
+    }
 
     (
       "#user-menu [class+]" #> "dropdown notifications-menu"
-    & "#user-menu-action [style+]" #> "cursor:pointer"
-    & "#user-menu-action [class+]" #> "dropdown-toggle"
-    & "#user-menu-action [data-toggle+]" #> "dropdown"
-    & "#user-menu-action *+" #>  <i class="fa fa-angle-down" style="margin-left:15px;"></i>
-    andThen "#user-menu *+" #> embedAppXml //need to be andThen, else other children mod are erased :/
+      & "#user-menu-action [style+]" #> "cursor:pointer"
+      & "#user-menu-action [class+]" #> "dropdown-toggle"
+      & "#user-menu-action [data-toggle+]" #> "dropdown"
+      & "#user-menu-action *+" #> <i class="fa fa-angle-down" style="margin-left:15px;"></i>
+      andThen "#user-menu *+" #> embedAppXml // need to be andThen, else other children mod are erased :/
     ).apply(xml)
   }
 

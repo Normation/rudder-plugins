@@ -1,42 +1,43 @@
 /*
-*************************************************************************************
-* Copyright 2018 Normation SAS
-*************************************************************************************
-*
-* This file is part of Rudder.
-*
-* Rudder is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU General Public License version 3, the copyright holders add
-* the following Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
-* Public License version 3, when you create a Related Module, this
-* Related Module is not considered as a part of the work and may be
-* distributed under the license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* Rudder is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+ *************************************************************************************
+ * Copyright 2018 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
-*
-*************************************************************************************
-*/
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.changevalidation.api
 
+import com.normation.box._
 import com.normation.plugins.changevalidation._
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
@@ -61,11 +62,9 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import net.liftweb.common._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json.NoTypeHints
 import net.liftweb.json._
+import net.liftweb.json.NoTypeHints
 import sourcecode.Line
-
-import com.normation.box._
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -73,33 +72,31 @@ import com.normation.box._
  * supervision, and is able to save an updated list.
  */
 
-
 sealed trait SupervisedTargetsApi extends EndpointSchema with InternalApi with SortIndex
-object SupervisedTargetsApi extends ApiModuleProvider[SupervisedTargetsApi] {
-  val zz=11
-  final case object GetAllTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
-    val z = implicitly[Line].value
+object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi] {
+  val zz = 11
+  final case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
+    val z              = implicitly[Line].value
     val description    = "Get all available node groups with their role in change request validation"
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
 
     override def dataContainer: Option[String] = None
   }
   final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
-    val z = implicitly[Line].value
+    val z              = implicitly[Line].value
     val description    = "Save the updated list of groups"
     val (action, path) = POST / "changevalidation" / "supervised" / "targets"
 
     override def dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[SupervisedTargetsApi].toList.sortBy( _.z )
+  def endpoints = ca.mrvisser.sealerate.values[SupervisedTargetsApi].toList.sortBy(_.z)
 }
 
-
 class SupervisedTargetsApiImpl(
-    restExtractorService  : RestExtractorService
-  , supervisedTargetsRepos: SupervisedTargetsReposiory
-  , nodeGroupRepository   : RoNodeGroupRepository
+    restExtractorService:   RestExtractorService,
+    supervisedTargetsRepos: SupervisedTargetsReposiory,
+    nodeGroupRepository:    RoNodeGroupRepository
 ) extends LiftApiModuleProvider[SupervisedTargetsApi] {
   api =>
 
@@ -108,10 +105,14 @@ class SupervisedTargetsApiImpl(
   def schemas = SupervisedTargetsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    SupervisedTargetsApi.endpoints.map(e => e match {
-        case SupervisedTargetsApi.GetAllTargets           => GetAllTargets
-        case SupervisedTargetsApi.UpdateSupervisedTargets => UpdateSupervisedTargets
-    }).toList
+    SupervisedTargetsApi.endpoints
+      .map(e => {
+        e match {
+          case SupervisedTargetsApi.GetAllTargets           => GetAllTargets
+          case SupervisedTargetsApi.UpdateSupervisedTargets => UpdateSupervisedTargets
+        }
+      })
+      .toList
   }
 
   /*
@@ -132,7 +133,7 @@ class SupervisedTargetsApiImpl(
    * }
    */
   object GetAllTargets extends LiftApiModule0 {
-    val schema = SupervisedTargetsApi.GetAllTargets
+    val schema        = SupervisedTargetsApi.GetAllTargets
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import com.normation.plugins.changevalidation.RudderJsonMapping._
@@ -144,8 +145,8 @@ class SupervisedTargetsApiImpl(
         jsonRootCat
       }) match {
         case Full(jsonRootCat) =>
-           RestUtils.toJsonResponse(None, Extraction.decompose(jsonRootCat))(schema.name, params.prettify)
-        case eb:EmptyBox =>
+          RestUtils.toJsonResponse(None, Extraction.decompose(jsonRootCat))(schema.name, params.prettify)
+        case eb: EmptyBox =>
           val err = (eb ?~! "Error when trying to get group information").messageChain
           ChangeValidationLogger.error(err)
           RestUtils.toJsonError(None, JString(err))(schema.name, params.prettify)
@@ -161,12 +162,12 @@ class SupervisedTargetsApiImpl(
    */
   object UpdateSupervisedTargets extends LiftApiModule0 {
 
-    //from the JSON, etract the list of target name to supervise
+    // from the JSON, etract the list of target name to supervise
 
-    val schema = SupervisedTargetsApi.UpdateSupervisedTargets
+    val schema        = SupervisedTargetsApi.UpdateSupervisedTargets
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      if(req.json_?) {
+      if (req.json_?) {
         val res = for {
           json    <- req.json
           targets <- Ser.parseJsonTargets(json)
@@ -176,19 +177,19 @@ class SupervisedTargetsApiImpl(
         }
 
         res match {
-          case Full(x)      =>
-            RestUtils.toJsonResponse(None, JString("Set of target needing validation has beed updated"))(schema.name, params.prettify)
+          case Full(x) =>
+            RestUtils.toJsonResponse(None, JString("Set of target needing validation has beed updated"))(
+              schema.name,
+              params.prettify
+            )
           case eb: EmptyBox =>
             val msg = (eb ?~! "An error occurred when trying to save the set of rule target which needs validation").messageChain
             ChangeValidationLogger.error(msg)
-            toJsonError(None, JString(msg))("updateRule",restExtractor.extractPrettify(req.params))
+            toJsonError(None, JString(msg))("updateRule", restExtractor.extractPrettify(req.params))
         }
       } else {
-        toJsonError(None, JString("No Json data sent"))("updateRule",restExtractor.extractPrettify(req.params))
+        toJsonError(None, JString("No Json data sent"))("updateRule", restExtractor.extractPrettify(req.params))
       }
     }
   }
 }
-
-
-
