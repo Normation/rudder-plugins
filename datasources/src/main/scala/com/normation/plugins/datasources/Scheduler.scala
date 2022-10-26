@@ -1,55 +1,60 @@
 /*
-*************************************************************************************
-* Copyright 2016 Normation SAS
-*************************************************************************************
-*
-* This file is part of Rudder.
-*
-* Rudder is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU General Public License version 3, the copyright holders add
-* the following Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
-* Public License version 3, when you create a Related Module, this
-* Related Module is not considered as a part of the work and may be
-* distributed under the license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* Rudder is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+ *************************************************************************************
+ * Copyright 2016 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
-*
-*************************************************************************************
-*/
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.datasources
 
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
-import com.normation.plugins.PluginStatus
-import zio._
-import zio.syntax._
 import com.normation.zio._
+import zio._
 import zio.clock.Clock
 import zio.duration._
+import zio.syntax._
 
-final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Option[String], triggeredByGeneration: Boolean = false)
+final case class UpdateCause(
+    modId:                 ModificationId,
+    actor:                 EventActor,
+    reason:                Option[String],
+    triggeredByGeneration: Boolean = false
+)
 
 /**
  * This object represent a statefull scheduler for fetching (or whatever action)
@@ -63,11 +68,11 @@ final case class UpdateCause(modId: ModificationId, actor:EventActor, reason:Opt
  *   started - the data source configuration will decide if something has to be done or not.
  */
 class DataSourceScheduler(
-    val datasource  : DataSource
-  ,     clock       : Clock
-  ,     pluginStatus: PluginStatus
-  ,     newUuid     : ()          => ModificationId
-  ,     updateAll   : UpdateCause => IOResult[Unit]
+    val datasource: DataSource,
+    clock:          Clock,
+    pluginStatus:   PluginStatus,
+    newUuid:        () => ModificationId,
+    updateAll:      UpdateCause => IOResult[Unit]
 ) {
 
   /**
@@ -79,22 +84,26 @@ class DataSourceScheduler(
    */
   private[this] val semaphore = Semaphore.make(1).runNow
 
-  //for that datasource, this is the timer
-  private[this] val source : UIO[Unit] = {
+  // for that datasource, this is the timer
+  private[this] val source: UIO[Unit] = {
     val never: Schedule[Any, Any, Nothing] = Schedule((_, _) => UIO.never)
 
     val schedule = datasource.runParam.schedule match {
       case Scheduled(d)  =>
-        if(datasource.enabled) {
-          DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes") *>
+        if (datasource.enabled) {
+          DataSourceLoggerPure.Scheduler.info(
+            s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes"
+          ) *>
           // This historical semantic is "do a sync immediately and then one spaced every 'd'"
           Schedule.once.andThen(Schedule.spaced(d)).succeed
         } else {
           DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is disabled") *>
           never.succeed
         }
-      case NoSchedule(_) => //in that case, our source doesn't produce anything
-        DataSourceLoggerPure.Scheduler.info(s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled but no schedule is configured") *>
+      case NoSchedule(_) => // in that case, our source doesn't produce anything
+        DataSourceLoggerPure.Scheduler.info(
+          s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled but no schedule is configured"
+        ) *>
         never.succeed
     }
 
@@ -104,8 +113,7 @@ class DataSourceScheduler(
     // futur update. So we catch all error and log them (in debug because they are (should) already log in error, we
     // only want to be sure to have them)
     val prog = (DataSourceLoggerPure.info(msg) *> DataSourceLoggerPure.trace(s"details: ${datasource}") *>
-                 updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))
-               ).catchAll(err => DataSourceLoggerPure.debug(err.fullMsg))
+      updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))).catchAll(err => DataSourceLoggerPure.debug(err.fullMsg))
 
     for {
       s <- schedule
@@ -118,8 +126,7 @@ class DataSourceScheduler(
   // here is the place where we will store the currently
   // running task, so that we are able the stop it and restart
   // it on user action.
-  private[this] val scheduledTask : Ref[Option[Fiber[_,_]]] = Ref.make(Option.empty[Fiber[_, _]]).runNow
-
+  private[this] val scheduledTask: Ref[Option[Fiber[_, _]]] = Ref.make(Option.empty[Fiber[_, _]]).runNow
 
   /*
    * start scheduling after given delay
@@ -137,36 +144,46 @@ class DataSourceScheduler(
   def restartScheduleTask(): IOResult[Unit] = {
     // clean existing
     cancel() *> (
-    // actually start the scheduler by subscribing to it
-    if(datasource.enabled) {
-      if(pluginStatus.isEnabled()) {
-        for {
-          _     <- DataSourceLoggerPure.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
-          fiber <- source.forkDaemon
-          _     <- scheduledTask.set(Some(fiber))
-        } yield ()
+      // actually start the scheduler by subscribing to it
+      if (datasource.enabled) {
+        if (pluginStatus.isEnabled()) {
+          for {
+            _     <- DataSourceLoggerPure.debug(s"Scheduling runs for data source with id '${datasource.id.value}'")
+            fiber <- source.forkDaemon
+            _     <- scheduledTask.set(Some(fiber))
+          } yield ()
+        } else {
+          // the plugin is disabled, does nothing
+          DataSourceLoggerPure.warn(
+            s"The datasource with id '${datasource.id.value}' is enabled but the plugin is disabled (reason: ${pluginStatus.current}). Not scheduling future runs for it."
+          )
+        }
       } else {
-        // the plugin is disabled, does nothing
-        DataSourceLoggerPure.warn(s"The datasource with id '${datasource.id.value}' is enabled but the plugin is disabled (reason: ${pluginStatus.current}). Not scheduling future runs for it.")
+        DataSourceLoggerPure.trace(
+          s"The datasource with id '${datasource.id.value}' is disabled. Not scheduling future runs for it."
+        )
       }
-    } else {
-      DataSourceLoggerPure.trace(s"The datasource with id '${datasource.id.value}' is disabled. Not scheduling future runs for it.")
-    })
+    )
   }
 
   // the cancel method just stop the current time if
   // exists, and clean things up
-  def cancel() : IOResult[Unit] = { semaphore.withPermit {
-    for {
-      _   <- DataSourceLoggerPure.trace(s"Removing (if needed) any future scheduled tasks for data source '${datasource.name.value}' (${datasource.id.value})")
-      opt <- scheduledTask.get
-      _   <- opt match {
-               case None        => None.succeed
-               case Some(fiber) => fiber.interrupt *> None.succeed
-             }
-      _   <- scheduledTask.set(None)
-    } yield ()
-  } }
+  def cancel(): IOResult[Unit] = {
+    semaphore.withPermit {
+      for {
+        _   <-
+          DataSourceLoggerPure.trace(
+            s"Removing (if needed) any future scheduled tasks for data source '${datasource.name.value}' (${datasource.id.value})"
+          )
+        opt <- scheduledTask.get
+        _   <- opt match {
+                 case None        => None.succeed
+                 case Some(fiber) => fiber.interrupt *> None.succeed
+               }
+        _   <- scheduledTask.set(None)
+      } yield ()
+    }
+  }
 
   /**
    * This is the method that actually do a fetch data and manage
@@ -175,9 +192,8 @@ class DataSourceScheduler(
    */
   def doActionAndSchedule(action: IOResult[Unit]): IOResult[Unit] = {
     cancel() *> action *> (datasource.runParam.schedule match {
-        case Scheduled(p)  => startWithDelay(p)
-        case NoSchedule(_) => UIO.unit//nothing
-      })
+      case Scheduled(p)  => startWithDelay(p)
+      case NoSchedule(_) => UIO.unit // nothing
+    })
   }
 }
-

@@ -18,25 +18,22 @@ import org.joda.time.DateTime
  */
 case class AccessLog(id: Int, user: String, date: DateTime)
 
-class LogAccessInDb(dbUrl:String, dbUser:String, dbPass:String) extends Loggable {
-
+class LogAccessInDb(dbUrl: String, dbUser: String, dbPass: String) extends Loggable {
 
   var base = List[AccessLog]()
 
-  def init() : Unit = {
+  def init(): Unit = {
 
     logger.info("Droping and creting table in database with given schema:")
     base = Nil
   }
 
-  def logAccess(user:String) : Unit = {
+  def logAccess(user: String): Unit = {
     base = AccessLog(base.size, user, DateTime.now) :: base
   }
 
-  def getLog(fromTime: DateTime, toTime: DateTime) : Seq[AccessLog] = {
+  def getLog(fromTime: DateTime, toTime: DateTime): Seq[AccessLog] = {
     base.filter(x => x.date.isAfter(fromTime) && x.date.isBefore(toTime))
   }
 
 }
-
-

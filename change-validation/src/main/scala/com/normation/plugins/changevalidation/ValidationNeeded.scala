@@ -1,5 +1,6 @@
 package com.normation.plugins.changevalidation
 
+import com.normation.box._
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
@@ -16,12 +17,10 @@ import com.normation.rudder.services.workflows.RuleChangeRequest
 import net.liftweb.common.Box
 import net.liftweb.common.Full
 
-import com.normation.box._
-
 object bddMock {
   val USER_AUTH_NEEDED = Map(
     "admin" -> false,
-    "Jean" -> true
+    "Jean"  -> true
   )
 }
 
@@ -30,9 +29,9 @@ object bddMock {
  * arbitrary rules defined in implementation.
  */
 trait ValidationNeeded {
-  def forRule       (actor: EventActor, change: RuleChangeRequest       ): Box[Boolean]
-  def forDirective  (actor: EventActor, change: DirectiveChangeRequest  ): Box[Boolean]
-  def forNodeGroup  (actor: EventActor, change: NodeGroupChangeRequest  ): Box[Boolean]
+  def forRule(actor:        EventActor, change: RuleChangeRequest):        Box[Boolean]
+  def forDirective(actor:   EventActor, change: DirectiveChangeRequest):   Box[Boolean]
+  def forNodeGroup(actor:   EventActor, change: NodeGroupChangeRequest):   Box[Boolean]
   def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean]
 }
 
@@ -43,9 +42,9 @@ class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNe
       case Full(ea) =>
         ea match {
           case Some(_) => Full(false)
-          case None => Full(true)
+          case None    => Full(true)
         }
-      case _ => Full(true)
+      case _        => Full(true)
     }
   }
 
@@ -54,9 +53,9 @@ class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNe
       case Full(ea) =>
         ea match {
           case Some(_) => Full(false)
-          case None => Full(true)
+          case None    => Full(true)
         }
-      case _ => Full(true)
+      case _        => Full(true)
     }
   }
 
@@ -65,23 +64,22 @@ class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNe
       case Full(ea) =>
         ea match {
           case Some(_) => Full(false)
-          case None => Full(true)
+          case None    => Full(true)
         }
-      case _ => Full(true)
+      case _        => Full(true)
     }
   }
-  override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
+  override def forRule(actor: EventActor, change: RuleChangeRequest):           Box[Boolean] = {
     repo.get(actor) match {
       case Full(ea) =>
         ea match {
           case Some(_) => Full(false)
-          case None => Full(true)
+          case None    => Full(true)
         }
-      case _ => Full(true)
+      case _        => Full(true)
     }
   }
 }
-
 
 /*
  * A version of the "validationNeeded" plugin which bases its oracle on a list
@@ -98,11 +96,11 @@ class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNe
  *
  */
 class NodeGroupValidationNeeded(
-    monitoredTargets: () => Box[Set[SimpleTarget]]
-  , repos           : RoChangeRequestRepository
-  , ruleLib         : RoRuleRepository
-  , groupLib        : RoNodeGroupRepository
-  , nodeInfoService : NodeInfoService
+    monitoredTargets: () => Box[Set[SimpleTarget]],
+    repos:            RoChangeRequestRepository,
+    ruleLib:          RoRuleRepository,
+    groupLib:         RoNodeGroupRepository,
+    nodeInfoService:  NodeInfoService
 ) extends ValidationNeeded {
 
   /*
@@ -116,7 +114,7 @@ class NodeGroupValidationNeeded(
    */
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
     val start = System.currentTimeMillis()
-    val res = for {
+    val res   = for {
       groups    <- groupLib.getFullGroupLibrary().toBox
       nodeInfo  <- nodeInfoService.getAll().toBox
       monitored <- monitoredTargets()
@@ -124,7 +122,10 @@ class NodeGroupValidationNeeded(
       val targets = Set(change.newRule) ++ change.previousRule.toSet
       checkNodeTargetByRule(groups, nodeInfo, monitored, targets)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(
+      s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System
+          .currentTimeMillis() - start}ms"
+    )
     res
   }
 
@@ -132,15 +133,22 @@ class NodeGroupValidationNeeded(
    * This method checks if at least one of the nodes belonging to rule targets for the change
    * is supervised.
    */
-  def checkNodeTargetByRule(groups: FullNodeGroupCategory, allNodeInfo: Map[NodeId, NodeInfo], monitored: Set[SimpleTarget], rules: Set[Rule]): Boolean = {
+  def checkNodeTargetByRule(
+      groups:      FullNodeGroupCategory,
+      allNodeInfo: Map[NodeId, NodeInfo],
+      monitored:   Set[SimpleTarget],
+      rules:       Set[Rule]
+  ): Boolean = {
     val monitoredNodes = groups.getNodeIds(monitored.map(identity), allNodeInfo)
-    val changes = rules.flatMap(_.targets)
-    val exists = groups.getNodeIds(changes, allNodeInfo).exists(nodeId => monitoredNodes.contains(nodeId))
+    val changes        = rules.flatMap(_.targets)
+    val exists         = groups.getNodeIds(changes, allNodeInfo).exists(nodeId => monitoredNodes.contains(nodeId))
     // we want to let the log knows why the change request need validation
-    if(exists && ChangeValidationLogger.isDebugEnabled) {
+    if (exists && ChangeValidationLogger.isDebugEnabled) {
       rules.foreach { rule =>
         groups.getNodeIds(rule.targets, allNodeInfo).find(nodeId => monitoredNodes.contains(nodeId)).foreach { node =>
-           ChangeValidationLogger.debug(s"Node '${node.value}' belongs to both a supervised group and is a target of rule '${rule.name}' [${rule.id.serialize}]")
+          ChangeValidationLogger.debug(
+            s"Node '${node.value}' belongs to both a supervised group and is a target of rule '${rule.name}' [${rule.id.serialize}]"
+          )
         }
       }
     }
@@ -171,15 +179,20 @@ class NodeGroupValidationNeeded(
       monitored   <- monitoredTargets()
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
-      val exists = groups.getNodeIds(monitored.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
+      val exists      = groups.getNodeIds(monitored.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
 
       // we want to let the log knows why the change request need validation
       exists.foreach { nodeId =>
-        ChangeValidationLogger.debug(s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.value}]")
+        ChangeValidationLogger.debug(
+          s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.value}]"
+        )
       }
       exists.nonEmpty
     }
-    ChangeValidationLogger.Metrics.debug(s"Check group '${change.newGroup.name}' [${change.newGroup.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(
+      s"Check group '${change.newGroup.name}' [${change.newGroup.id.value}] change requestion need for validation in ${System
+          .currentTimeMillis() - start}ms"
+    )
     res
   }
 
@@ -187,20 +200,23 @@ class NodeGroupValidationNeeded(
    * A directive need a validation if any rule using it need a validation.
    */
   override def forDirective(actor: EventActor, change: DirectiveChangeRequest): Box[Boolean] = {
-    //in a change, the old directive id and the new one is the same.
+    // in a change, the old directive id and the new one is the same.
     val directiveId = change.newDirective.id
-    val start = System.currentTimeMillis()
-    val res = for {
-      rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId))).toBox
+    val start       = System.currentTimeMillis()
+    val res         = for {
+      rules     <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId))).toBox
       // we need to add potentially new rules applied to that directive that the previous request does not cover
-      newRules  =  change.updatedRules
+      newRules   = change.updatedRules
       monitored <- monitoredTargets()
       groups    <- groupLib.getFullGroupLibrary().toBox
       nodeInfo  <- nodeInfoService.getAll().toBox
     } yield {
-      checkNodeTargetByRule(groups, nodeInfo, monitored, (rules++newRules).toSet)
+      checkNodeTargetByRule(groups, nodeInfo, monitored, (rules ++ newRules).toSet)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(
+      s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.value}] change requestion need for validation in ${System
+          .currentTimeMillis() - start}ms"
+    )
     res
   }
 

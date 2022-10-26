@@ -1,24 +1,29 @@
 package com.normation.plugins.openscappolicies.extension
 
-import com.normation.plugins.openscappolicies.services.{OpenScapReportReader, ReportSanitizer}
-import com.normation.plugins.{PluginExtensionPoint, PluginStatus}
+import com.normation.inventory.domain.NodeId
+import com.normation.plugins.PluginExtensionPoint
+import com.normation.plugins.PluginStatus
+import com.normation.plugins.openscappolicies.services.OpenScapReportReader
+import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
-import net.liftweb.common.{EmptyBox, Full, Loggable}
-
-import scala.reflect.ClassTag
-import scala.xml.NodeSeq
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Full
+import net.liftweb.common.Loggable
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers._
-import com.normation.inventory.domain.NodeId
+import scala.reflect.ClassTag
+import scala.xml.NodeSeq
 
 class OpenScapNodeDetailsExtension(
-    val status: PluginStatus
-  , openScapReader: OpenScapReportReader
-  , reportSanitizer: ReportSanitizer)(implicit val ttag: ClassTag[ShowNodeDetailsFromNode]) extends PluginExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
+    val status:      PluginStatus,
+    openScapReader:  OpenScapReportReader,
+    reportSanitizer: ReportSanitizer
+)(implicit val ttag: ClassTag[ShowNodeDetailsFromNode])
+    extends PluginExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
 
-  def pluginCompose(snippet: ShowNodeDetailsFromNode) : Map[String, NodeSeq => NodeSeq] = Map(
-      "popupDetails" -> addOpenScapReportTab(snippet) _
-    , "mainDetails"  -> addOpenScapReportTab(snippet) _
+  def pluginCompose(snippet: ShowNodeDetailsFromNode): Map[String, NodeSeq => NodeSeq] = Map(
+    "popupDetails" -> addOpenScapReportTab(snippet) _,
+    "mainDetails"  -> addOpenScapReportTab(snippet) _
   )
 
   /**
@@ -28,7 +33,7 @@ class OpenScapNodeDetailsExtension(
   def addOpenScapReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq): NodeSeq = {
     // Actually extend
     def display(): NodeSeq = {
-      val nodeId = snippet.nodeId
+      val nodeId  = snippet.nodeId
       val content = openScapReader.checkOpenScapReportExistence(nodeId) match {
         case eb: EmptyBox =>
           val e = eb ?~! "Can not display OpenScap report for that node"
@@ -38,8 +43,7 @@ class OpenScapNodeDetailsExtension(
         case Full(existence) =>
           existence match {
             case false =>
-
-                <div id="openScap" class="inner-portlet">
+              <div id="openScap" class="inner-portlet">
                   <h3 class="page-title">OpenSCAP reporting</h3>
                   <div class="col-xs-12 callout-fade callout-info">
                     <div class="marker">
@@ -63,7 +67,7 @@ class OpenScapNodeDetailsExtension(
       status.isEnabled() match {
         case false =>
           <div class="error">Plugin is disabled</div>
-        case true =>
+        case true  =>
           (
             "#NodeDetailsTabMenu *" #> { (x: NodeSeq) =>
               x ++ (
@@ -72,32 +76,33 @@ class OpenScapNodeDetailsExtension(
                     {tabTitle}
                   </a>
                 </li>
-                )} &
-              "#node_logs" #> { (x:NodeSeq) => x ++ (<div id="openscap_reports">
+              )
+            } &
+            "#node_logs" #> { (x: NodeSeq) =>
+              x ++ (<div id="openscap_reports">
                     {content}
-                   </div>
-                )
+                   </div>)
             }
-            ).apply(xml)
+          ).apply(xml)
       }
     }
 
     openScapReader.checkifOpenScapApplied(snippet.nodeId) match {
       case Full(true) => display()
-      case _ => xml
+      case _          => xml
     }
 
   }
 
-  def frameContent(nodeId : NodeId): CssSel = {
+  def frameContent(nodeId: NodeId): CssSel = {
 
-        "iframe [src]"      #> s"/secure/api/openscap/report/${nodeId.value}" &
-        "a [href]"          #> s"/secure/api/openscap/report/${nodeId.value}"
+    "iframe [src]" #> s"/secure/api/openscap/report/${nodeId.value}" &
+    "a [href]" #> s"/secure/api/openscap/report/${nodeId.value}"
 
   }
 
-  private def openScapExtensionXml =
-      <div id="openScap" class="inner-portlet">
+  private def openScapExtensionXml = {
+    <div id="openScap" class="inner-portlet">
         <h3 class="page-title">OpenSCAP reporting</h3>
         <div class="col-xs-12 callout-fade callout-info">
           <div class="marker">
@@ -109,4 +114,5 @@ class OpenScapNodeDetailsExtension(
         </div>
         <iframe width="100%" height="600"></iframe>
       </div>
+  }
 }
