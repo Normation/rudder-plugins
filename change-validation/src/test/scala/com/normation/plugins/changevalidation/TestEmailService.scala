@@ -1,39 +1,39 @@
 /*
-*************************************************************************************
-* Copyright 2021 Normation SAS
-*************************************************************************************
-*
-* This file is part of Rudder.
-*
-* Rudder is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU General Public License version 3, the copyright holders add
-* the following Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
-* Public License version 3, when you create a Related Module, this
-* Related Module is not considered as a part of the work and may be
-* distributed under the license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* Rudder is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+ *************************************************************************************
+ * Copyright 2021 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
-*
-*************************************************************************************
-*/
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.changevalidation
 
@@ -50,6 +50,7 @@ import com.normation.rudder.domain.workflows.GlobalParameterChanges
 import com.normation.rudder.domain.workflows.NodeGroupChanges
 import com.normation.rudder.domain.workflows.RuleChanges
 import com.normation.rudder.web.model.LinkUtil
+import com.normation.zio._
 import org.apache.commons.io.FileUtils
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
@@ -58,8 +59,6 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.BeforeAfterAll
 import org.subethamail.wiser.Wiser
-import com.normation.zio._
-
 import scala.jdk.CollectionConverters._
 
 @RunWith(classOf[JUnitRunner])
@@ -74,16 +73,22 @@ class TestEmailService extends Specification with BeforeAfterAll {
 
   val testDir = File(s"/tmp/rudder-test-email/${DateTime.now().toString(ISODateTimeFormat.dateTimeNoMillis())}")
   testDir.createDirectories()
-  val conf = testDir / "email.conf"
+  val conf    = testDir / "email.conf"
 
   // create a new smtp server
   val smtpServer = Wiser.port(2525)
 
-  Resource.getAsString("emails/change-validation-email.conf").replaceAll("TESTDIRPATH", testDir.pathAsString).inputStream.pipeTo(conf.newOutputStream).close()
+  Resource
+    .getAsString("emails/change-validation-email.conf")
+    .replaceAll("TESTDIRPATH", testDir.pathAsString)
+    .inputStream
+    .pipeTo(conf.newOutputStream)
+    .close()
   List("cancelled-mail.template", "deployed-mail.template", "deployment-mail.template", "validation-mail.template").foreach(f =>
-    Resource.getAsStream(f).pipeTo((testDir/f).newOutputStream).close()
+    Resource.getAsStream(f).pipeTo((testDir / f).newOutputStream).close()
   )
-  val notification = new NotificationService(new EmailNotificationService(), new LinkUtil(null, null, null, null), conf.pathAsString)
+  val notification =
+    new NotificationService(new EmailNotificationService(), new LinkUtil(null, null, null, null), conf.pathAsString)
 
   override def beforeAll(): Unit = {
     smtpServer.start()
@@ -91,11 +96,10 @@ class TestEmailService extends Specification with BeforeAfterAll {
 
   override def afterAll(): Unit = {
     smtpServer.stop()
-    if(System.getProperty("tests.clean.tmp") != "false") {
+    if (System.getProperty("tests.clean.tmp") != "false") {
       FileUtils.deleteDirectory(testDir.toJava)
     }
   }
-
 
   "The notification service" should {
     "be able to read configurations" in {
@@ -103,7 +107,7 @@ class TestEmailService extends Specification with BeforeAfterAll {
       val config = notification.getSMTPConf(conf.pathAsString).forceGet
 
       (config.smtpHostServer === "localhost") and (config.port === 2525)
-      //todo more tests
+      // todo more tests
     }
 
     "be able to read a template" in {
@@ -117,16 +121,16 @@ class TestEmailService extends Specification with BeforeAfterAll {
     "be able to send a notification email" in {
 
       val cr = ConfigurationChangeRequest(
-          ChangeRequestId(42)
-        , None
-        , ChangeRequestInfo("A test CR", "this CR is for test")
-        , Map[DirectiveId, DirectiveChanges]()
-        , Map[NodeGroupId, NodeGroupChanges]()
-        , Map[RuleId, RuleChanges]()
-        , Map[String, GlobalParameterChanges]()
+        ChangeRequestId(42),
+        None,
+        ChangeRequestInfo("A test CR", "this CR is for test"),
+        Map[DirectiveId, DirectiveChanges](),
+        Map[NodeGroupId, NodeGroupChanges](),
+        Map[RuleId, RuleChanges](),
+        Map[String, GlobalParameterChanges]()
       )
 
-      val expectedMessage =
+      val expectedMessage = {
         """Received: from localhost.localdomain (localhost.localdomain [127.0.0.1])
           |        by localhost.localdomain
           |        with SMTP (SubEthaSMTP null) id KPD9Z0ZH;
@@ -149,12 +153,13 @@ class TestEmailService extends Specification with BeforeAfterAll {
           |<a href="https://my.rudder.server/rudder/secure/plugins/changes/changeRequest/42">Click here to review and validate</a></li>
           |
           |""".stripMargin
+      }
 
       val isEmpty = smtpServer.getMessages.isEmpty
       notification.sendNotification(TwoValidationStepsWorkflowServiceImpl.Validation, cr).forceGet
 
       val messages = smtpServer.getMessages.asScala.toList
-      val msg = messages.headOption.toString
+      val msg      = messages.headOption.toString
 
       // we need to delete date & id related fields
       def deleteDate(s: String): String = {

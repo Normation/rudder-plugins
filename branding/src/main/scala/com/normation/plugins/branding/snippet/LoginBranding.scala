@@ -1,40 +1,39 @@
 /*
-*************************************************************************************
-* Copyright 2018 Normation SAS
-*************************************************************************************
-*
-* This file is part of Rudder.
-*
-* Rudder is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* In accordance with the terms of section 7 (7. Additional Terms.) of
-* the GNU General Public License version 3, the copyright holders add
-* the following Additional permissions:
-* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
-* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
-* Public License version 3, when you create a Related Module, this
-* Related Module is not considered as a part of the work and may be
-* distributed under the license agreement of your choice.
-* A "Related Module" means a set of sources files including their
-* documentation that, without modification of the Source Code, enables
-* supplementary functions or services in addition to those offered by
-* the Software.
-*
-* Rudder is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+ *************************************************************************************
+ * Copyright 2018 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
 
-*
-*************************************************************************************
-*/
-
+ *
+ *************************************************************************************
+ */
 
 package com.normation.plugins.branding.snippet
 
@@ -43,38 +42,40 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.PluginVersion
 import com.normation.rudder.web.snippet.Login
-import net.liftweb.common.{Full, Loggable}
+import net.liftweb.common.Full
+import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
-
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
+class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login])
+    extends PluginExtensionPoint[Login] with Loggable {
 
-class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login]) extends PluginExtensionPoint[Login] with Loggable {
-
-  def pluginCompose(snippet:Login) : Map[String, NodeSeq => NodeSeq] = Map(
+  def pluginCompose(snippet: Login): Map[String, NodeSeq => NodeSeq] = Map(
     "display" -> guard(display(_))
   )
 
-
-  private [this] val confRepo = BrandingPluginConf.brandingConfService
-  def display(xml:NodeSeq) = {
-    val data = confRepo.getConf
-    val bar = data match {
+  private[this] val confRepo = BrandingPluginConf.brandingConfService
+  def display(xml: NodeSeq)  = {
+    val data                      = confRepo.getConf
+    val bar                       = data match {
       case Full(d) if (d.displayBarLogin) =>
         <div id="headerBar">
           <div class="background">
             <span>{if (d.displayLabel) d.labelText}</span>
           </div>
         </div>
-      case _ => NodeSeq.Empty
+      case _                              => NodeSeq.Empty
     }
     var (customLogo, brandingCss) = data match {
       case Full(d) =>
-        ( d.wideLogo.loginLogo
-        , <style>
+        (
+          d.wideLogo.loginLogo,
+          <style>
           #headerBar {{background-color:#fff; float:left; height:30px; width:100%; position:relative; border-top-left-radius:20px; border-top-right-radius: 20px; overflow: hidden;}}
-          #headerBar > .background {{background-color: {d.barColor.toRgba}; color: {d.labelColor.toRgba}; font-size:20px; text-align:center; font-weight: 700; position: absolute; ;top: 0;bottom: 0;left: 0;right: 0;}}
+          #headerBar > .background {{background-color: {d.barColor.toRgba}; color: {
+            d.labelColor.toRgba
+          }; font-size:20px; text-align:center; font-weight: 700; position: absolute; ;top: 0;bottom: 0;left: 0;right: 0;}}
           #headerBar + form > .motd:not(.enabled) + .form-group{{margin-top: 30px;}}
           .motd.enabled{{margin-top: 15px;}}
           .rudder-branding-logo {{
@@ -91,7 +92,7 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
         )
       case _       => (<img src="/images/logo-rudder-white.svg" data-lift="with-cached-resource" alt="Rudder"/>, NodeSeq.Empty)
     }
-    val logoContainer =
+    val logoContainer             = {
       <div>
         {customLogo}
         <style>
@@ -103,15 +104,15 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
           }}
         </style>
       </div>
-    val motd = data match {
-      case Full(data) if (data.displayMotd) =>
-       <div class="motd enabled" style="margin-bottom: 20px; text-align: center;">{data.motd}</div>
-      case _ => <div class="motd"></div>
     }
-    ( ".logo-container" #> logoContainer &
-    ".plugin-info"      #> bar &
-    ".plugin-info *+"   #> brandingCss &
-    ".motd"             #> motd
-    ) (xml)
+    val motd                      = data match {
+      case Full(data) if (data.displayMotd) =>
+        <div class="motd enabled" style="margin-bottom: 20px; text-align: center;">{data.motd}</div>
+      case _                                => <div class="motd"></div>
+    }
+    (".logo-container" #> logoContainer &
+    ".plugin-info" #> bar &
+    ".plugin-info *+" #> brandingCss &
+    ".motd" #> motd)(xml)
   }
 }
