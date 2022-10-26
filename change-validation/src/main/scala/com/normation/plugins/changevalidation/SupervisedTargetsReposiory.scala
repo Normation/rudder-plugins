@@ -1,10 +1,9 @@
 package com.normation.plugins.changevalidation
 
+import com.normation.rudder.domain.policies.SimpleTarget
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-
-import com.normation.rudder.domain.policies.SimpleTarget
 import net.liftweb.common.Box
 import net.liftweb.common.Empty
 import net.liftweb.common.Failure
@@ -12,7 +11,6 @@ import net.liftweb.common.Full
 import net.liftweb.json.NoTypeHints
 import net.liftweb.json.Serialization
 import org.apache.commons.io.FileUtils
-
 import scala.util.control.NonFatal
 
 /*
@@ -29,10 +27,10 @@ import scala.util.control.NonFatal
  *
  */
 class SupervisedTargetsReposiory(
-    directory: Path
-  , filename : String
+    directory: Path,
+    filename:  String
 ) {
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats   = net.liftweb.json.Serialization.formats(NoTypeHints)
   private[this] val path = new File(directory.toFile, filename)
 
   /*
@@ -41,11 +39,13 @@ class SupervisedTargetsReposiory(
    */
   def checkPathAndInitRepos(): Unit = {
     val f = directory.toFile
-    if(f.exists()) {
-      if(f.canWrite) {
+    if (f.exists()) {
+      if (f.canWrite) {
         ChangeValidationLogger.debug(s"Directory '${directory.toString()}' exists and is writable: ok")
       } else {
-        ChangeValidationLogger.error(s"Directory '${directory.toString()}' exists but is not writable. Please correct rights on that directory.")
+        ChangeValidationLogger.error(
+          s"Directory '${directory.toString()}' exists but is not writable. Please correct rights on that directory."
+        )
       }
     } else {
       // try to create it
@@ -56,25 +56,24 @@ class SupervisedTargetsReposiory(
         case NonFatal(ex) => ChangeValidationLogger.error(msg + " Error was: " + ex.getMessage)
       }
     }
-    //also check the file
-    if(path.exists()) {
+    // also check the file
+    if (path.exists()) {
       // ok
       ChangeValidationLogger.debug(s"Supervised target repository file '${path.toString()}' exists: ok")
-    } else { //create it
+    } else { // create it
       ChangeValidationLogger.debug(s"Initializing supervised target repository file '${path.toString()}'.")
       save(Set())
     }
   }
 
-
   def save(groups: Set[SimpleTarget]): Box[Unit] = {
 
     // Always save by replacing the whole file.
     // Sort by name.
-    val targets = SupervisedTargetIds(groups.toList.map( _.target ).sorted) // natural sort on string
+    val targets    = SupervisedTargetIds(groups.toList.map(_.target).sorted) // natural sort on string
     val jsonString = Serialization.writePretty[SupervisedTargetIds](targets)
 
-    //write file
+    // write file
     try {
       FileUtils.writeStringToFile(path, jsonString, StandardCharsets.UTF_8)
       Full(())
