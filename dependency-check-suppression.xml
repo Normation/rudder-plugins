@@ -128,4 +128,11 @@
    <packageUrl regex="true">^pkg:maven/org\.apache\.xmlgraphics/batik\-shared\-resources@.*$</packageUrl>
    <cpe>cpe:/a:apache:batik</cpe>
 </suppress>
+<suppress>
+   <notes><![CDATA[
+   file name: spring-security-oauth2-client-5.5.8.jar
+   ]]></notes>
+   <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-oauth2\-client@.*$</packageUrl>
+   <vulnerabilityName>CVE-2022-31690</vulnerabilityName>
+</suppress>
 </suppressions>
