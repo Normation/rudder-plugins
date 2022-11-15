@@ -130,9 +130,16 @@
 </suppress>
 <suppress>
    <notes><![CDATA[
-   file name: spring-security-oauth2-client-5.5.8.jar
+   file name: spring-security-oauth2-core-5.6.5.jar
    ]]></notes>
-   <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-oauth2\-client@.*$</packageUrl>
-   <vulnerabilityName>CVE-2022-31690</vulnerabilityName>
+   <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-oauth2\-core@.*$</packageUrl>
+   <cve>CVE-2022-31692</cve>
+</suppress>
+<suppress>
+   <notes><![CDATA[
+   file name: spring-security-oauth2-core-5.6.5.jar
+   ]]></notes>
+   <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-oauth2\-core@.*$</packageUrl>
+   <cve>CVE-2022-31690</cve>
 </suppress>
 </suppressions>
