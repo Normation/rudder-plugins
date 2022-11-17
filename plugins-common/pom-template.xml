@@ -211,34 +211,41 @@
       <artifactId>plugins-common-private</artifactId>
       <version>${private-version}</version>
     </dependency>
-
+    <!--
+      dependencyManagement with subprojects is a joke in maven. It mostly not work. https://issues.apache.org/jira/browse/MNG-5761
+      It's still the "best" available way to fix dependencies, but it needs to be copy/pasted at all level.
+    -->
     <!-- from rudder-web: use:
     mvn dependency:resolve | grep "compile\|provided" | awk '{print $2}' | \
      awk -F':' '{print "<dependency><groupId>"$1"</groupId><artifactId>"$2"</artifactId><scope>provided</scope></dependency>"}' | sort -u
+
+     We need to add by hand version of lib that also come via transitive dependencies, because they are lost.
+     Ideally, that section should be provided by a project in Rudder with a script to autogenerate it, name it "rudder-libs-bom", and
+     be imported in each plugin project.
     -->
     <dependency><groupId>antlr</groupId><artifactId>antlr</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ca.mrvisser</groupId><artifactId>sealerate_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.chuusai</groupId><artifactId>shapeless_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
+    <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
+    <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_${scala-binary-version}</artifactId><scope>provided</scope><version>${fs2-version}</version></dependency>
+    <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_${scala-binary-version}</artifactId><scope>provided</scope><version>${fs2-version}</version></dependency>
+    <dependency><groupId>com.chuusai</groupId><artifactId>shapeless_${scala-binary-version}</artifactId><scope>provided</scope><version>${shapeless-version}</version></dependency>
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_${scala-binary-version}</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
+    <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope><version>${caffeine-version}</version></dependency>
+    <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-version}</artifactId><scope>provided</scope><version>${silencer-lib-version}</version></dependency>
+    <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope><version>${better-files-version}</version></dependency>
+    <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope><version>${ipaddress-version}</version></dependency>
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.google.errorprone</groupId><artifactId>error_prone_annotations</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.jayway.jsonpath</groupId><artifactId>json-path</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.lihaoyi</groupId><artifactId>fastparse_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.jayway.jsonpath</groupId><artifactId>json-path</artifactId><scope>provided</scope><version>${json-path-version}</version></dependency>
+    <dependency><groupId>com.lihaoyi</groupId><artifactId>fastparse_${scala-binary-version}</artifactId><scope>provided</scope><version>${fastparse-version}</version></dependency>
     <dependency><groupId>com.lihaoyi</groupId><artifactId>geny_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.lihaoyi</groupId><artifactId>sourcecode_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>commons-codec</groupId><artifactId>commons-codec</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>commons-fileupload</groupId><artifactId>commons-fileupload</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>commons-io</groupId><artifactId>commons-io</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.lihaoyi</groupId><artifactId>sourcecode_${scala-binary-version}</artifactId><scope>provided</scope><version>${sourcecode-version}</version></dependency>
+    <dependency><groupId>commons-codec</groupId><artifactId>commons-codec</artifactId><scope>provided</scope><version>${commons-codec-version}</version></dependency>
+    <dependency><groupId>commons-fileupload</groupId><artifactId>commons-fileupload</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
+    <dependency><groupId>commons-io</groupId><artifactId>commons-io</artifactId><scope>provided</scope><version>${commons-io-version}</version></dependency>
     <dependency><groupId>com.normation</groupId><artifactId>scala-ldap</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation</groupId><artifactId>utils</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.inventory</groupId><artifactId>inventory-api</artifactId><scope>provided</scope></dependency>
@@ -250,92 +257,92 @@
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-templates</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.propensive</groupId><artifactId>magnolia_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.propensive</groupId><artifactId>mercator_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.softwaremill.quicklens</groupId><artifactId>quicklens_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.softwaremill.quicklens</groupId><artifactId>quicklens_${scala-binary-version}</artifactId><scope>provided</scope><version>${quicklens-version}</version></dependency>
     <dependency><groupId>com.thoughtworks.paranamer</groupId><artifactId>paranamer</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.unboundid</groupId><artifactId>unboundid-ldapsdk</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.zaxxer</groupId><artifactId>nuprocess</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope><version>${config-version}</version></dependency>
+    <dependency><groupId>com.unboundid</groupId><artifactId>unboundid-ldapsdk</artifactId><scope>provided</scope><version>${unboundid-version}</version></dependency>
+    <dependency><groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><scope>provided</scope><version>${hikaricp-version}</version></dependency>
+    <dependency><groupId>com.zaxxer</groupId><artifactId>nuprocess</artifactId><scope>provided</scope><version>${nuprocess-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect-thirdparty-boopickle-shaded_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-internal-macros_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-interop-cats_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-json_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>zio-streams_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>io.scalaland</groupId><artifactId>chimney_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio_${scala-binary-version}</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-internal-macros_${scala-binary-version}</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-interop-cats_${scala-binary-version}</artifactId><scope>provided</scope><version>${zio-cats-version}</version></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-json_${scala-binary-version}</artifactId><scope>provided</scope><version>${zio-json-version}</version></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_${scala-binary-version}</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>zio-streams_${scala-binary-version}</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
+    <dependency><groupId>io.scalaland</groupId><artifactId>chimney_${scala-binary-version}</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
     <dependency><groupId>javax.servlet</groupId><artifactId>javax.servlet-api</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope><version>${jodatime-version}</version></dependency>
     <dependency><groupId>net.java.dev.jna</groupId><artifactId>jna</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-common_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json-ext_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-common_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json-ext_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
     <dependency><groupId>net.liftweb</groupId><artifactId>lift-markdown_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-util_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-webkit_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-util_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-webkit_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
     <dependency><groupId>net.minidev</groupId><artifactId>accessors-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.minidev</groupId><artifactId>json-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>nu.validator</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-${bouncycastle-compat}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-${bouncycastle-compat}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcutil-${bouncycastle-compat}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
+    <dependency><groupId>org.bouncycastle</groupId><artifactId>bcutil-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
     <dependency><groupId>org.checkerframework</groupId><artifactId>checker-qual</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.graalvm.js</groupId><artifactId>js</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.graalvm.js</groupId><artifactId>js-scriptengine</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.graalvm.regex</groupId><artifactId>regex</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.graalvm.sdk</groupId><artifactId>graal-sdk</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.graalvm.truffle</groupId><artifactId>truffle-api</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><scope>provided</scope><version>${jgit-version}</version></dependency>
+    <dependency><groupId>org.graalvm.js</groupId><artifactId>js</artifactId><scope>provided</scope><version>${graalvm-version}</version></dependency>
+    <dependency><groupId>org.graalvm.js</groupId><artifactId>js-scriptengine</artifactId><scope>provided</scope><version>${graalvm-version}</version></dependency>
+    <dependency><groupId>org.graalvm.regex</groupId><artifactId>regex</artifactId><scope>provided</scope><version>${graalvm-version}</version></dependency>
+    <dependency><groupId>org.graalvm.sdk</groupId><artifactId>graal-sdk</artifactId><scope>provided</scope><version>${graalvm-version}</version></dependency>
+    <dependency><groupId>org.graalvm.truffle</groupId><artifactId>truffle-api</artifactId><scope>provided</scope><version>${graalvm-version}</version></dependency>
     <dependency><groupId>org.javassist</groupId><artifactId>javassist</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.jgrapht</groupId><artifactId>jgrapht-core</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.jgrapht</groupId><artifactId>jgrapht-core</artifactId><scope>provided</scope><version>${jgrapht-version}</version></dependency>
     <dependency><groupId>org.jheaps</groupId><artifactId>jheaps</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.jline</groupId><artifactId>jline</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.joda</groupId><artifactId>joda-convert</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.joda</groupId><artifactId>joda-convert</artifactId><scope>provided</scope><version>${jodaconvert-version}</version></dependency>
     <dependency><groupId>org.mindrot</groupId><artifactId>jbcrypt</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.reflections</groupId><artifactId>reflections</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scalaj</groupId><artifactId>scalaj-http_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>provided</scope><version>${postgresql-version}</version></dependency>
+    <dependency><groupId>org.reflections</groupId><artifactId>reflections</artifactId><scope>provided</scope><version>${reflections-version}</version></dependency>
+    <dependency><groupId>org.scalaj</groupId><artifactId>scalaj-http_${scala-binary-version}</artifactId><scope>provided</scope><version>${scalaj-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-collection-compat_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parallel-collections_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_${scala-binary-version}</artifactId><scope>provided</scope><version>${scala-xml-version}</version></dependency>
     <dependency><groupId>org.scodec</groupId><artifactId>scodec-bits_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-aop</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-beans</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-core</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-expression</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-jcl</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId><scope>provided</scope><version>${slf4j-version}</version></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><scope>provided</scope><version>${slf4j-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-aop</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-beans</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-context</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-core</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-expression</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-jcl</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
     <dependency><groupId>org.springframework.ldap</groupId><artifactId>spring-ldap-core</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-config</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-core</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-crypto</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-ldap</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-web</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-free_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-postgres_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-config</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-core</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-crypto</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-ldap</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
+    <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-web</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
+    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-core_${scala-binary-version}</artifactId><scope>provided</scope><version>${doobie-version}</version></dependency>
+    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-free_${scala-binary-version}</artifactId><scope>provided</scope><version>${doobie-version}</version></dependency>
+    <dependency><groupId>org.tpolecat</groupId><artifactId>doobie-postgres_${scala-binary-version}</artifactId><scope>provided</scope><version>${doobie-version}</version></dependency>
     <dependency><groupId>org.tpolecat</groupId><artifactId>typename_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>cats-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect-kernel_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect-std_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>cats-free_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.typelevel</groupId><artifactId>cats-kernel_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-core_${scala-binary-version}</artifactId><scope>provided</scope><version>${cats-version}</version></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect_${scala-binary-version}</artifactId><scope>provided</scope><version>${cats-effect-version}</version></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect-kernel_${scala-binary-version}</artifactId><scope>provided</scope><version>${cats-effect-version}</version></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-effect-std_${scala-binary-version}</artifactId><scope>provided</scope><version>${cats-effect-version}</version></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-free_${scala-binary-version}</artifactId><scope>provided</scope><version>${cats-version}</version></dependency>
+    <dependency><groupId>org.typelevel</groupId><artifactId>cats-kernel_${scala-binary-version}</artifactId><scope>provided</scope><version>${cats-version}</version></dependency>
     <dependency><groupId>org.typelevel</groupId><artifactId>literally_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.typelevel</groupId><artifactId>simulacrum-scalafix-annotations_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><scope>provided</scope></dependency>
