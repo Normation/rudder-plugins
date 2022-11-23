@@ -26,6 +26,17 @@ https://github.com/fusioninventory/fusioninventory-for-glpi/releases[fusion inve
 * Edit the configuration file in `/opt/rudder/etc/glpi.conf`. This config
 file must contain the URL to your GLPI server’s fusion inventory plugin.
 
+[WARNING]
+
+====
+
+The glpiinventory plugin of GLPI looks to be the same as the fusioninventory plugin, but it is not.
+The glpiinventory plugin refuses some elements present in fusioninventory for Rudder, so
+it doesn't work with Rudder inventories. Please use the fusioninventory plugin instead.
+
+====
+
+
 == Usage
 
 Run `/opt/rudder/bin/glpi-plugin send-all` to update all the inventories.
