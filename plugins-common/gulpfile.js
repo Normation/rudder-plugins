@@ -38,7 +38,6 @@ function elm(cb) {
                 extname: '.js'
             };
         }))
-        //.pipe(rename('rudder-' + app.toLowerCase() + '.js'))
         // elm minification options from https://guide.elm-lang.org/optimization/asset_size.html#instructions
         .pipe(profile.production(terser({
             compress: {
