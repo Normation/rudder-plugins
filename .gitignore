@@ -26,3 +26,5 @@ rudder-plugins.adoc
 plugin-doc-assets/
 elm-upgrade*.log
 .shellcheck
+node_modules
+*/*/*/gulpfile.js

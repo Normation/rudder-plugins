@@ -137,7 +137,7 @@
               <goal>exec</goal>
             </goals>
             <configuration>
-              <executable>src/main/elm/build.sh</executable>
+              <executable>src/main/build.sh</executable>
               <commandlineArgs>--release</commandlineArgs>
             </configuration>
           </execution>
