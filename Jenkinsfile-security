@@ -29,9 +29,13 @@ pipeline {
                             dir("${it}") {
                                 sh script: 'make generate-pom', label: 'generate pom.xml'
                                 sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
-                                dir("src/main") {
-                                    sh script: 'npm_config_loglevel=error npm ci --no-audit', label: "install dependencies"
-                                    sh script: 'npx better-npm-audit audit --level high', label: "check npm dependencies"
+                                script {
+                                    if (fileExists('src/main/package.json')) {
+                                        dir("src/main") {
+                                            sh script: 'npm_config_loglevel=error npm ci --no-audit', label: "install dependencies"
+                                            sh script: 'npx better-npm-audit audit --level high', label: "check npm dependencies"
+                                        }
+                                    }
                                 }
                                 sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                             }
