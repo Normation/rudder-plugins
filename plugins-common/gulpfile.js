@@ -6,9 +6,19 @@ const mode = require('gulp-mode');
 const profile = mode();
 const terser = require('gulp-terser');
 const elm_p = require('gulp-elm');
-const grep = require('gulp-grep-contents');
 const merge = require('merge-stream');
 const del = require('del');
+const through = require('through2');
+
+// Derived from https://github.com/mixmaxhq/gulp-grep-contents (under MIT License)
+var grep = function(regex, options) {
+    var restoreStream = through.obj();
+    return through.obj(function(file, encoding, callback) {
+      var match = regex.test(String(file.contents))
+      restoreStream.write(file);
+      callback();
+    });
+}
 
 const paths = {
     'elm': {
