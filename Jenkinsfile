@@ -105,19 +105,20 @@ pipeline {
                                     // enough to run the mvn tests and package the plugin
                                     sh script: 'make', label: "build ${p} plugin"
                                 }
+                                post {
+                                    failure {
+                                        script {
+                                            new SlackNotifier().notifyResult("scala-team")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     parallel parallelStages
                 }
             }
-            post {
-                failure {
-                    script {
-                        new SlackNotifier().notifyResult("scala-team")
-                    }
-                }
-            }
+            
         }
         stage('Publish plugins') {
             // only publish nightly on dev branches
@@ -152,6 +153,13 @@ pipeline {
                                     archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
                                     sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                 }
+                                post {
+                                    failure {
+                                        script {
+                                            new SlackNotifier().notifyResult("scala-team")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -161,14 +169,7 @@ pipeline {
                     }
                 }
             }
-            post {
-                failure {
-                    script {
-                        new SlackNotifier().notifyResult("scala-team")
-                    }
-                }
-            }
-        }
+       }
         stage('End') {
             steps {
                 echo 'End of build'
