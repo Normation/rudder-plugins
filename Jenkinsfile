@@ -33,7 +33,8 @@ pipeline {
                             // linters results
                             recordIssues enabledForFailure: true, failOnError: true, sourceCodeEncoding: 'UTF-8',
                                          tool: checkStyle(pattern: '.shellcheck/*.log', reportEncoding: 'UTF-8', name: 'Shell scripts')
-
+                        }
+                        failure {
                             script {
                                 new SlackNotifier().notifyResult("shell-team")
                             }
@@ -50,7 +51,7 @@ pipeline {
                         sh script: './qa-test --python', label: 'python scripts lint'
                     }
                     post {
-                        always {
+                        failure {
                             script {
                                 new SlackNotifier().notifyResult("shell-team")
                             }
@@ -68,7 +69,7 @@ pipeline {
                         sh script: './qa-test --typos', label: 'check typos'
                     }
                     post {
-                        always {
+                        failure {
                             script {
                                 new SlackNotifier().notifyResult("shell-team")
                             }
@@ -111,7 +112,7 @@ pipeline {
                 }
             }
             post {
-                always {
+                failure {
                     script {
                         new SlackNotifier().notifyResult("scala-team")
                     }
@@ -161,9 +162,21 @@ pipeline {
                 }
             }
             post {
-                always {
+                failure {
                     script {
                         new SlackNotifier().notifyResult("scala-team")
+                    }
+                }
+            }
+        }
+        stage('End') {
+            steps {
+                echo 'End of build'
+            }
+            post {
+                fixed {
+                    script {
+                        new SlackNotifier().notifyResult("everyone")
                     }
                 }
             }
