@@ -31,6 +31,13 @@ pipeline {
                                 sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
                                 sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                             }
+                            post {
+                                failure {
+                                    script {
+                                        new SlackNotifier().notifyResult("scala-team")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -38,11 +45,6 @@ pipeline {
             post {
                 always {
             		archiveArtifacts artifacts: '*/target/dependency-check-report.html, */target/site/aggregate-third-party-report.html'
-                }
-                failure {
-                  script {
-                        new SlackNotifier().notifyResult("scala-team")
-                    }
                 }
                 fixed {
                   script {
