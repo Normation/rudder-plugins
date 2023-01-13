@@ -38,7 +38,14 @@ pipeline {
             post {
                 always {
             		archiveArtifacts artifacts: '*/target/dependency-check-report.html, */target/site/aggregate-third-party-report.html'
-                    script {
+                }
+                failure {
+                  script {
+                        new SlackNotifier().notifyResult("scala-team")
+                    }
+                }
+                fixed {
+                  script {
                         new SlackNotifier().notifyResult("scala-team")
                     }
                 }
