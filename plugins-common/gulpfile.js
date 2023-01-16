@@ -11,12 +11,16 @@ const del = require('del');
 const through = require('through2');
 
 // Derived from https://github.com/mixmaxhq/gulp-grep-contents (under MIT License)
-var grep = function(regex, options) {
+var grep = function(regex) {
     var restoreStream = through.obj();
     return through.obj(function(file, encoding, callback) {
-      var match = regex.test(String(file.contents))
-      restoreStream.write(file);
-      callback();
+        var match = regex.test(String(file.contents))
+        if (match) {
+            callback(null, file);
+            return;
+        }
+        restoreStream.write(file);
+        callback();
     });
 }
 
@@ -34,7 +38,7 @@ function clean(cb) {
 }
 
 function elm(cb) {
-    src(path.join(paths.elm.watch))
+    src(paths.elm.watch)
         // Detect entry points
         .pipe(grep(/Browser.element/))
         .pipe(elm_p({
