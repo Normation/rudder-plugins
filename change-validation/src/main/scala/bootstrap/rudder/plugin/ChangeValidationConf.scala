@@ -59,7 +59,6 @@ import com.normation.plugins.changevalidation.RoWorkflowJdbcRepository
 import com.normation.plugins.changevalidation.SupervisedTargetsReposiory
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
-import com.normation.plugins.changevalidation.UserValidationNeeded
 import com.normation.plugins.changevalidation.ValidatedUserMapper
 import com.normation.plugins.changevalidation.ValidationNeeded
 import com.normation.plugins.changevalidation.WoChangeRequestJdbcRepository
@@ -92,6 +91,9 @@ import net.liftweb.common.Full
 import com.normation.box._
 import com.normation.plugins.changevalidation.EmailNotificationService
 import com.normation.plugins.changevalidation.NotificationService
+import com.normation.plugins.changevalidation.RoValidatedUserRepository
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Failure
 
 /*
  * The validation workflow level
@@ -102,6 +104,7 @@ class ChangeValidationWorkflowLevelService(
   , validationWorkflowService: TwoValidationStepsWorkflowServiceImpl
   , validationNeeded         : Seq[ValidationNeeded]
   , workflowEnabledByUser    : () => Box[Boolean]
+  , validatedUserRepo: RoValidatedUserRepository
 ) extends WorkflowLevelService {
 
 
@@ -131,16 +134,34 @@ class ChangeValidationWorkflowLevelService(
   }
 
   /**
-   * Methode to use to combine several validationNeeded check. It's the same for all objects?
+   * Methode to use to combine several validationNeeded check.
+   * Note that a validated user will prevent workflow to be performed, no other validationNeeded check will be executed
    */
   def combine[T](checkFn:(ValidationNeeded, EventActor, T) => Box[Boolean], checks: Seq[ValidationNeeded], actor: EventActor, change: T): Box[WorkflowService] = {
-    getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) { case (shouldValidate, nextCheck) =>
-      shouldValidate.flatMap {
-        // logic is "or": if previous should validate is true, don't check following
-        case true  => Full(true)
-        case false => checkFn(nextCheck, actor, change)
-      }
-    })
+    def getWorkflowAux = {
+      getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) { case (shouldValidate, nextCheck) =>
+        shouldValidate.flatMap {
+          // logic is "or": if previous should validate is true, don't check following
+          case true  => Full(true)
+          case false => checkFn(nextCheck, actor, change)
+        }
+      })
+    }
+
+    /*
+     * Here we check if there is a validated user that should not be subject to any validation workflow
+     * if there is no validated user, we iterate over `checks: Seq[ValidationNeeded]` to verify if there
+     * there is a specific workflow.
+     *
+     * Check why we decided to separate the validated user logic from `ValidationNeeded` objects :
+     * https://issues.rudder.io/issues/22188#note-5
+     */
+
+    validatedUserRepo.get(actor) match {
+      case Full(Some(_)) => getWorkflow(Full(false))
+      case Full(None)    => getWorkflowAux
+      case eb : EmptyBox => eb ?~ s"Could get user from validated user list when checking validation workflow"
+    }
   }
 
   override def getForRule(actor: EventActor, change: RuleChangeRequest): Box[WorkflowService] = {
@@ -248,9 +269,9 @@ object ChangeValidationConf extends RudderPluginModule {
           , RudderConfig.roNodeGroupRepository
           , RudderConfig.nodeInfoService
         )
-        , new UserValidationNeeded(roValidatedUserRepository)
       )
       , () => RudderConfig.configService.rudder_workflow_enabled().toBox
+      , roValidatedUserRepository
     )
   )
 
