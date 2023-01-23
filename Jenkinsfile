@@ -1,6 +1,9 @@
 @Library('slack-notification')
 import org.gradiant.jenkins.slack.SlackNotifier
 
+
+
+def parallelStages = [:]
 pipeline {
     agent none
 
@@ -93,7 +96,7 @@ pipeline {
             }
             steps {
                 script {
-                    def parallelStages = [:]
+                    parallelStages = [:]
                     PLUGINS = sh (
                         script: 'make plugins-list',
                         returnStdout: true
@@ -115,10 +118,11 @@ pipeline {
                             }
                         }
                     }
-                    parallel parallelStages
                 }
+                    parallel parallelStages
+
             }
-            
+
         }
         stage('Publish plugins') {
             // only publish nightly on dev branches
@@ -140,11 +144,12 @@ pipeline {
             }
             steps {
                 script {
-                    def parallelStages = [:]
+                    parallelStages = [:]
                     PLUGINS = sh (
                         script: 'make plugins-list',
                         returnStdout: true
                     ).trim().split(' ')
+
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("publish ${p}") {
@@ -163,11 +168,12 @@ pipeline {
                             }
                         }
                     }
+                }
                     parallel parallelStages
                     stage("Publish to repository") {
                         sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/publish -v \"${RUDDER_VERSION}\" -t plugins -u -m nightly")], verbose:true)])
                     }
-                }
+
             }
        }
         stage('End') {
