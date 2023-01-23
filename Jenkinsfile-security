@@ -3,6 +3,8 @@ import org.gradiant.jenkins.slack.SlackNotifier
 
 // Check vulns in dependencies on repo branches
 
+def notifier = new SlackNotifier()
+
 pipeline {
     agent none
     triggers { cron('@daily') }
@@ -26,26 +28,27 @@ pipeline {
                     ).trim().split(' ')
                     SCALA_PLUGINS.each {
                         stage("${it}") {
-                            dir("${it}") {
-                                sh script: 'make generate-pom', label: 'generate pom.xml'
-                                sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
-                                script {
-                                    if (fileExists('src/main/package.json')) {
-                                        dir("src/main") {
-                                            sh script: 'npm_config_loglevel=error npm ci --no-audit', label: "install dependencies"
-                                            sh script: 'npx better-npm-audit audit --level high', label: "check npm dependencies"
+                            try {
+                                dir("${it}") {
+                                    sh script: 'make generate-pom', label: 'generate pom.xml'
+                                    sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                    script {
+                                        if (fileExists('src/main/package.json')) {
+                                            dir("src/main") {
+                                                sh script: 'npm_config_loglevel=error npm ci --no-audit', label: "install dependencies"
+                                                sh script: 'npx better-npm-audit audit --level high', label: "check npm dependencies"
+                                            }
                                         }
                                     }
-                                }
-                                sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
-                            }
-                            post {
-                                failure {
-                                    script {
-                                        new SlackNotifier().notifyResult("scala-team")
-                                    }
+                                    sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                                 }
                             }
+                            catch (exc) {
+                                // Mark the build as failure since it's actually an error
+                                currentBuild.result = 'FAILURE'
+                                notifier.notifyResult("scala-team")
+                            }
+
                         }
                     }
                 }
@@ -56,7 +59,7 @@ pipeline {
                 }
                 fixed {
                   script {
-                        new SlackNotifier().notifyResult("scala-team")
+                        notifier.notifyResult("scala-team")
                     }
                 }
             }
