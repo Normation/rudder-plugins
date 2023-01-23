@@ -1,6 +1,9 @@
 @Library('slack-notification')
 import org.gradiant.jenkins.slack.SlackNotifier
 
+def notifier = new SlackNotifier()
+
+
 pipeline {
     agent none
 
@@ -36,7 +39,7 @@ pipeline {
                         }
                         failure {
                             script {
-                                new SlackNotifier().notifyResult("shell-team")
+                                notifier.notifyResult("shell-team")
                             }
                         }
                     }
@@ -53,7 +56,7 @@ pipeline {
                     post {
                         failure {
                             script {
-                                new SlackNotifier().notifyResult("shell-team")
+                                notifier.notifyResult("shell-team")
                             }
                         }
                     }
@@ -71,7 +74,7 @@ pipeline {
                     post {
                         failure {
                             script {
-                                new SlackNotifier().notifyResult("shell-team")
+                                notifier.notifyResult("shell-team")
                             }
                         }
                     }
@@ -108,10 +111,9 @@ pipeline {
                                     }
                                 }
                                 catch (exc) {
-
-                                            new SlackNotifier().notifyResult("scala-team")
-
-
+                                    // Mark the build as failure since it's actually an error
+                                    currentBuild.result = 'FAILURE'
+                                    notifier.notifyResult("scala-team")
                                 }
 
                             }
@@ -157,10 +159,11 @@ pipeline {
                                         sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                     }
                                 }
-                                catch (exec) {
-                                            new SlackNotifier().notifyResult("scala-team")
-
-                                    }
+                                catch (exc) {
+                                    // Mark the build as failure since it's actually an error
+                                    currentBuild.result = 'FAILURE'
+                                    notifier.notifyResult("scala-team")
+                                }
 
                             }
                         }
@@ -179,7 +182,7 @@ pipeline {
             post {
                 fixed {
                     script {
-                        new SlackNotifier().notifyResult("everyone")
+                        notifier.notifyResult("everyone")
                     }
                 }
             }
