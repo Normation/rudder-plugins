@@ -47,6 +47,7 @@ pipeline {
                                 // Mark the build as failure since it's actually an error
                                 currentBuild.result = 'FAILURE'
                                 notifier.notifyResult("scala-team")
+                                throw exc
                             }
 
                         }
