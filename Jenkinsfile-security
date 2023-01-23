@@ -28,7 +28,8 @@ pipeline {
                     ).trim().split(' ')
                     SCALA_PLUGINS.each {
                         stage("${it}") {
-                            try {
+                            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                try {
                                 dir("${it}") {
                                     sh script: 'make generate-pom', label: 'generate pom.xml'
                                     sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
@@ -46,8 +47,10 @@ pipeline {
                             catch (exc) {
                                 // Mark the build as failure since it's actually an error
                                 currentBuild.result = 'FAILURE'
+                                stageResult."{STAGE_NAME}" = "UNSTABLE"
                                 notifier.notifyResult("scala-team")
-                                sh 'exit 1'
+                                throw exc
+                            }
                             }
 
                         }
