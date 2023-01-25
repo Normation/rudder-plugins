@@ -1,6 +1,9 @@
 @Library('slack-notification')
 import org.gradiant.jenkins.slack.SlackNotifier
 
+def notifier = new SlackNotifier()
+
+
 pipeline {
     agent none
 
@@ -33,9 +36,10 @@ pipeline {
                             // linters results
                             recordIssues enabledForFailure: true, failOnError: true, sourceCodeEncoding: 'UTF-8',
                                          tool: checkStyle(pattern: '.shellcheck/*.log', reportEncoding: 'UTF-8', name: 'Shell scripts')
-
+                        }
+                        failure {
                             script {
-                                new SlackNotifier().notifyResult("shell-team")
+                                notifier.notifyResult("shell-team")
                             }
                         }
                     }
@@ -50,9 +54,9 @@ pipeline {
                         sh script: './qa-test --python', label: 'python scripts lint'
                     }
                     post {
-                        always {
+                        failure {
                             script {
-                                new SlackNotifier().notifyResult("shell-team")
+                                notifier.notifyResult("shell-team")
                             }
                         }
                     }
@@ -68,9 +72,9 @@ pipeline {
                         sh script: './qa-test --typos', label: 'check typos'
                     }
                     post {
-                        always {
+                        failure {
                             script {
-                                new SlackNotifier().notifyResult("shell-team")
+                                notifier.notifyResult("shell-team")
                             }
                         }
                     }
@@ -100,9 +104,19 @@ pipeline {
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("test ${p}") {
-                                dir("${p}") {
-                                    // enough to run the mvn tests and package the plugin
-                                    sh script: 'make', label: "build ${p} plugin"
+                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                    try {
+                                        dir("${p}") {
+                                            // enough to run the mvn tests and package the plugin
+                                            sh script: 'make', label: "build ${p} plugin"
+                                        }
+                                    }
+                                    catch (exc) {
+                                        // Mark the build as failure since it's actually an error
+                                        currentBuild.result = 'FAILURE'
+                                        notifier.notifyResult("scala-team")
+                                        throw exc
+                                    }
                                 }
                             }
                         }
@@ -110,13 +124,7 @@ pipeline {
                     parallel parallelStages
                 }
             }
-            post {
-                always {
-                    script {
-                        new SlackNotifier().notifyResult("scala-team")
-                    }
-                }
-            }
+
         }
         stage('Publish plugins') {
             // only publish nightly on dev branches
@@ -146,10 +154,20 @@ pipeline {
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("publish ${p}") {
-                                dir("${p}") {
-                                    sh script: 'make', label: "build ${p} plugin"
-                                    archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                                    sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                    try {
+                                        dir("${p}") {
+                                            sh script: 'make', label: "build ${p} plugin"
+                                            archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                                            sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                                        }
+                                    }
+                                    catch (exc) {
+                                        // Mark the build as failure since it's actually an error
+                                        currentBuild.result = 'FAILURE'
+                                        notifier.notifyResult("scala-team")
+                                        throw exc
+                                    }
                                 }
                             }
                         }
@@ -160,10 +178,15 @@ pipeline {
                     }
                 }
             }
+       }
+        stage('End') {
+            steps {
+                echo 'End of build'
+            }
             post {
-                always {
+                fixed {
                     script {
-                        new SlackNotifier().notifyResult("scala-team")
+                        notifier.notifyResult("everyone")
                     }
                 }
             }
