@@ -39,7 +39,7 @@ package com.normation.plugins.usermanagement
 
 import bootstrap.liftweb.PasswordEncoder
 import bootstrap.liftweb.RudderConfig
-import bootstrap.liftweb.UserDetailList
+import bootstrap.liftweb.ValidatedUserList
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
 import net.liftweb.common.Logger
@@ -56,7 +56,7 @@ object UserManagementLogger extends Logger {
 
 object Serialisation {
 
-  implicit class AuthConfigSer(auth: UserDetailList) {
+  implicit class AuthConfigSer(auth: ValidatedUserList) {
     def toJson: JValue = {
       val encoder: String = PassEncoderToString(auth)
       val authBackendsProvider = RudderConfig.authenticationProviders.getConfiguredProviders().map(_.name).toSet
@@ -82,7 +82,7 @@ object Serialisation {
     }
   }
 
-  def PassEncoderToString(auth: UserDetailList): String = {
+  def PassEncoderToString(auth: ValidatedUserList): String = {
     auth.encoder match {
       case PasswordEncoder.MD5    => "MD5"
       case PasswordEncoder.SHA1   => "SHA-1"
