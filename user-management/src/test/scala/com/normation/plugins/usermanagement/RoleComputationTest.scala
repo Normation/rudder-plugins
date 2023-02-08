@@ -4,31 +4,34 @@ import com.normation.plugins.usermanagement.UserManagementService.computeRoleCov
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
-import com.normation.rudder.RoleToRights
-import com.normation.rudder.RoleToRights.parseRole
+import com.normation.rudder.RudderRoles
+
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
+import com.normation.zio._
 
 @RunWith(classOf[JUnitRunner])
 class RoleComputationTest extends Specification {
+  def parseRoles(roles: List[String]) = RudderRoles.parseRoles(roles).runNow.toSet
+
   "Computation of Role Coverage over Rights" should {
 
     "return 'None' when parameters are empty" in {
-      val role = parseRole(Seq("user")).toSet
+      val role = parseRoles(List("user"))
       computeRoleCoverage(role, Set()) must beNone
       computeRoleCoverage(Set(), Set(AuthorizationType.Compliance.Read)) must beNone
       computeRoleCoverage(Set(), Set()) must beNone
     }
 
     "return 'None' when authzs contains no_rights" in {
-      val role = parseRole(Seq("user")).toSet
+      val role = parseRoles(List("user"))
       computeRoleCoverage(role, Set(AuthorizationType.NoRights)) must beNone
       computeRoleCoverage(role, Set(AuthorizationType.NoRights) ++ AuthorizationType.allKind) must beNone
     }
 
     "return a 'Custom' role for empty intersection" in {
-      val role = parseRole(Seq("user")).toSet
+      val role = parseRoles(List("user"))
       computeRoleCoverage(role, Set(AuthorizationType.Compliance.Read)) match {
         case Some(r) =>
           r.head match {
@@ -40,11 +43,11 @@ class RoleComputationTest extends Specification {
     }
 
     "contains 'Inventory' and 'Custom' roles" in {
-      //      val role = parseRole(Seq("inventory", "user")).toSet
-      val role = Role.values.map(_.name).toSeq
+      //      val role = parseRoles(List("inventory", "user"))
+      val role = Role.values.map(_.name).toList
 
       computeRoleCoverage(
-        RoleToRights.parseRole(role).toSet
+        parseRoles(role)
         //        role
         ,
         Set(AuthorizationType.Compliance.Read) ++ Role.Inventory.rights.authorizationTypes
@@ -71,7 +74,7 @@ class RoleComputationTest extends Specification {
     }
 
     "only detect 'Inventory' role" in {
-      val role = parseRole(Seq("inventory")).toSet
+      val role = parseRoles(List("inventory"))
       computeRoleCoverage(
         role,
         Role.Inventory.rights.authorizationTypes
@@ -91,7 +94,7 @@ class RoleComputationTest extends Specification {
     }
 
     "only detect one custom role" in {
-      val role = parseRole(Seq("inventory", "user")).toSet
+      val role = parseRoles(List("inventory", "user"))
       computeRoleCoverage(
         role,
         Set(
@@ -115,9 +118,9 @@ class RoleComputationTest extends Specification {
     }
 
     "return administrator " in {
-      val role = Role.values.map(_.name).toSeq
+      val role = Role.values.map(_.name).toList
       computeRoleCoverage(
-        RoleToRights.parseRole(role).toSet,
+        parseRoles(role),
         AuthorizationType.allKind
       ) match {
         case Some(rs) =>
@@ -130,7 +133,7 @@ class RoleComputationTest extends Specification {
     }
 
     "allows intersection between know roles" in {
-      val role = parseRole(Seq("inventory", "user")).toSet
+      val role = parseRoles(List("inventory", "user"))
       computeRoleCoverage(
         role,
         Role.User.rights.authorizationTypes ++ Role.Inventory.rights.authorizationTypes
@@ -146,7 +149,7 @@ class RoleComputationTest extends Specification {
     }
 
     "ignore NoRights role" in {
-      val role = parseRole(Seq("no_rights", "user")).toSet
+      val role = parseRoles(List("no_rights", "user"))
       computeRoleCoverage(
         role,
         Role.User.rights.authorizationTypes
