@@ -105,7 +105,7 @@ update msg model =
         AddUser result ->
              case result of
                  Ok username ->
-                     (model, postReloadConf model )
+                     (model, getUsersConf model )
                          |> createSuccessNotification (username ++ " have been added")
                  Err err ->
                      processApiError err model
@@ -113,7 +113,7 @@ update msg model =
         DeleteUser result ->
              case result of
                   Ok deletedUser ->
-                       ({model | panelMode = Closed, login = "", openDeleteModal = False}, postReloadConf model)
+                       ({model | panelMode = Closed, login = "", openDeleteModal = False}, getUsersConf model)
                            |> createSuccessNotification (deletedUser ++ " have been deleted")
                   Err err ->
                        processApiError err model
@@ -121,7 +121,7 @@ update msg model =
         UpdateUser result ->
              case result of
                   Ok username ->
-                      (model, postReloadConf model)
+                      (model, getUsersConf model)
                         |> createSuccessNotification (username ++ " have been modified")
 
                   Err err ->
