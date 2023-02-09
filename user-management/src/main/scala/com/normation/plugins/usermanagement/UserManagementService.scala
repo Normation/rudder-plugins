@@ -13,8 +13,10 @@ import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Rights
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
+import com.normation.rudder.RudderRoles
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
+import com.normation.zio._
 import java.util.concurrent.TimeUnit
 import org.springframework.core.io.{ClassPathResource => CPResource}
 import scala.xml.Elem
@@ -30,7 +32,7 @@ case class UserFileInfo(userOrigin: List[UserOrigin], digest: String)
 case class UserOrigin(user: User, hashValidHash: Boolean)
 
 case class User(username: String, password: String, role: Set[String]) {
-  def toNode: Node = <user name={username} password={password} role={role.mkString(",")} />
+  def toNode: Node = <user name={username} password={password} roles={role.mkString(",")} />
 }
 
 object UserOrigin {
@@ -68,7 +70,8 @@ object UserManagementIO {
                         .foldZIO(
                           err2 => {
                             // there, we are in big problem: error in rollback too, likely an FS problem, advice admin
-                            val msg = s"Error when reverting rudder-users.xlm, you will likely need to have a manual action. Backup file is here and won't be deleted automatically: ${backup.pathAsString}. Error was: ${err2.fullMsg}"
+                            val msg =
+                              s"Error when reverting rudder-users.xlm, you will likely need to have a manual action. Backup file is here and won't be deleted automatically: ${backup.pathAsString}. Error was: ${err2.fullMsg}"
                             ApplicationLoggerPure.Authz.error(msg) *> Unexpected(msg).fail
                           },
                           ok => {
@@ -76,7 +79,8 @@ object UserManagementIO {
                               .info(s"User file correctly roll-backed") *> Unexpected(
                               s"And error happened when trying to save rudder-user.xml file, backup version was restore. Error was: ${err.fullMsg}"
                             ).fail
-                     }),
+                          }
+                        ),
                     // in case of update success, we just delete the backup file
                     ok => effectUioUnit(backup.delete(swallowIOExceptions = true))
                   )
@@ -129,43 +133,37 @@ object UserManagementService {
 
   def computeRoleCoverage(roles: Set[Role], authzs: Set[AuthorizationType]): Option[Set[Role]] = {
 
-    def parseAuthzIgnoreError(a: String) = AuthorizationType.parseAuthz(a).getOrElse(Set())
-
-    def compareRights(r: Role): Option[Role] = {
-      if (r.name == "no_rights") {
+    def compareRights(r: Role, as: Set[AuthorizationType]): Option[Role] = {
+      if (r == Role.NoRights) {
         None
       } else {
-        val authzNames     = authzs.map(_.id)
-        val roleAuthzNames = r.rights.authorizationTypes.map(_.id)
-        val commonRights   = roleAuthzNames.intersect(authzNames)
+        val commonRights = r.rights.authorizationTypes.intersect(as)
         commonRights match {
           // Intersection is total
-          case cr if cr == roleAuthzNames => Some(r)
-          case cr if cr.nonEmpty          =>
-            val test = cr.flatMap(parseAuthzIgnoreError)
-            if (test.isEmpty) {
-              None
-            } else {
-              val c = Custom(new Rights(test.toSeq: _*))
-              Some(c)
-            }
-          case _                          => None
+          case cr if cr == r.rights.authorizationTypes => Some(r)
+          case cr if cr.nonEmpty                       =>
+            Some(Custom(new Rights(cr.toSeq: _*)))
+          case _                                       => None
         }
       }
     }
 
-    if (authzs.isEmpty || roles.isEmpty || authzs.exists(_.id == "no_rights")) {
+    if (authzs.isEmpty || roles.isEmpty || authzs.contains(AuthorizationType.NoRights)) {
       None
+    } else if (authzs.contains(AuthorizationType.AnyRights)) {
+      // only administrator can have that right, and it encompasses every other ones
+      Some(Set(Role.Administrator))
     } else {
-      val (rs, custom)    = roles.flatMap(compareRights).partition {
+      val (rs, custom)    = roles.flatMap(r => compareRights(r,authzs)).partition {
         case Custom(_) => false
         case _         => true
       }
-      val customAuthz     = custom.flatMap(_.rights.authorizationTypes.map(_.id))
+
+      val customAuthz     = custom.flatMap(_.rights.authorizationTypes)
       // remove authzs taken by a role in custom's rights
-      val minCustomAuthz  = customAuthz.diff(rs.flatMap(_.rights.authorizationTypes.map(_.id)))
-      val leftoversRights =
-        authzs.diff(rs.flatMap(_.rights.authorizationTypes).union(minCustomAuthz.flatMap(parseAuthzIgnoreError)))
+      val minCustomAuthz  = customAuthz.diff(rs.flatMap(_.rights.authorizationTypes))
+      val rsRights = rs.flatMap(_.rights.authorizationTypes)
+      val leftoversRights = authzs.diff(rsRights.union(minCustomAuthz))
       val leftoversCustom: Option[Role]      = {
         if (leftoversRights.nonEmpty)
           Some(Custom(new Rights(leftoversRights.toSeq: _*)))
@@ -174,8 +172,8 @@ object UserManagementService {
       }
       val data:            Option[Set[Role]] = {
         if (minCustomAuthz.nonEmpty) {
-          Some(rs + Custom(new Rights(minCustomAuthz.flatMap(parseAuthzIgnoreError).toSeq: _*)))
-        } else if (rs == Role.values.diff(Set(Role.NoRights))) {
+          Some(rs + Custom(new Rights(minCustomAuthz.toSeq: _*)))
+        } else if (rs == RudderRoles.getAllRoles.runNow.values.toSet.diff(Set(Role.NoRights: Role))) {
           Some(Set(Role.Administrator))
         } else if (rs.nonEmpty)
           Some(rs)
