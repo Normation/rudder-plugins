@@ -38,11 +38,14 @@
 package com.normation.plugins.usermanagement.api
 
 import bootstrap.liftweb.FileUserDetailListProvider
+import com.normation.box._
+import com.normation.errors._
 import com.normation.plugins.usermanagement.Serialization
 import com.normation.plugins.usermanagement.User
 import com.normation.plugins.usermanagement.UserManagementService
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
-import com.normation.rudder.RoleToRights
+import com.normation.rudder.RudderRoles
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
@@ -54,6 +57,7 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.zio._
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -80,7 +84,7 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     override def dataContainer: Option[String] = None
   }
 
-  final case object GetRole extends UserManagementApi with ZeroParam with StartsAtVersion10 {
+  final case object GetRoles extends UserManagementApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
     val description    = "Get roles and their authorizations"
     val (action, path) = GET / "usermanagement" / "roles"
@@ -167,7 +171,7 @@ class UserManagementApiImpl(
       case UserManagementApi.DeleteUser      => DeleteUser
       case UserManagementApi.UpdateUserInfos => UpdateUserInfos
       case UserManagementApi.RoleCoverage    => RoleCoverage
-      case UserManagementApi.GetRole         => GetRole
+      case UserManagementApi.GetRoles        => GetRoles
     }.toList
   }
 
@@ -189,12 +193,12 @@ class UserManagementApiImpl(
     }
   }
 
-  object GetRole extends LiftApiModule0 {
-    val schema        = UserManagementApi.GetRole
+  object GetRoles extends LiftApiModule0 {
+    val schema        = UserManagementApi.GetRoles
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val allRoleAndAuthz: Map[String, List[String]] = Role.values
-        .map(role => role.name -> role.rights.authorizationTypes.map(_.id).toList.sorted)
+      val allRoleAndAuthz: Map[String, List[String]] = RudderRoles.getAllRoles.runNow
+        .values.map(role => role.name -> role.rights.authorizationTypes.map(_.id).toList.sorted)
         .map {
           case (k, v) => {
             val authz_all  = v
@@ -219,7 +223,7 @@ class UserManagementApiImpl(
       implicit val action = "reloadUserConf"
 
       val value: Box[JValue] = for {
-        response <- reload()
+        response <- reload().toBox
       } yield {
         "status" -> "Done"
       }
@@ -227,13 +231,8 @@ class UserManagementApiImpl(
     }
   }
 
-  private def reload(): Box[Unit] = {
-    userService.reload() match {
-      case Left(error) =>
-        Failure("Error when trying to reload the list of users from 'rudder-users.xml' file: " + error.msg)
-      case _           =>
-        Full(())
-    }
+  private def reload(): IOResult[Unit] = {
+    userService.reloadPure().chainError("Error when trying to reload the list of users from 'rudder-users.xml' file")
   }
 
   object AddUser extends LiftApiModule0 {
@@ -250,8 +249,8 @@ class UserManagementApiImpl(
         checkExistence <- if (userService.authConfig.users.keySet contains user.username)
                             Failure(s"User '${user.username}' already exists")
                           else Full("ok")
-        added          <- UserManagementService.add(user, isPreHashed)
-        _              <- reload()
+        added          <- UserManagementService.add(user, isPreHashed).toBox
+        _              <- reload().toBox
 
       } yield {
         Serialization.serializeUser(added)
@@ -275,8 +274,8 @@ class UserManagementApiImpl(
       implicit val action = "deleteUser"
 
       val value: Box[JValue] = for {
-        _ <- UserManagementService.remove(id)
-        _ <- reload()
+        _ <- UserManagementService.remove(id).toBox
+        _ <- reload().toBox
       } yield {
         "username" -> id
       }
@@ -302,14 +301,17 @@ class UserManagementApiImpl(
         json           <- req.json ?~! "No JSON data sent"
         user           <- extractUser(json)
         isPreHashed    <- extractIsHashed(json)
-        checkExistence <-
-          if (!(userService.authConfig.users.keySet contains id)) Failure(s"'$id' does not exists") else Full("ok")
-        updated        <- UserManagementService.update(id, user, isPreHashed)
-        _              <- reload()
+        checkExistence <- if (!(userService.authConfig.users.keySet contains id)) {
+                            Failure(s"'$id' does not exists")
+                          } else {
+                            Full("ok")
+                          }
+        _              <- UserManagementService.update(id, user, isPreHashed).toBox
+        _              <- reload().toBox
       } yield {
         Serialization.serializeUser(user)
       }
-      response(value, req, s"Could not update $id", None, "updatedUser")
+      response(value, req, s"Could not update user '$id''", None, "updatedUser")
     }
   }
 
@@ -330,9 +332,10 @@ class UserManagementApiImpl(
       val value: Box[JValue] = for {
         roles    <- restExtractorService.extractList("role")(req)(json => Full(json))
         authzs   <- restExtractorService.extractList("authz")(req)(json => Full(json))
+        parsed   <- RudderRoles.parseRoles(roles).toBox
         coverage <- UserManagementService.computeRoleCoverage(
-                      RoleToRights.parseRole(roles).toSet,
-                      authzs.toSet.flatMap(RoleToRights.parseAuthz) ++ Role.ua
+                      parsed.toSet,
+                      authzs.flatMap(a => AuthorizationType.parseAuthz(a).getOrElse(Set())).toSet ++ Role.ua
                     )
       } yield {
         Serialization.serializeRole(coverage)

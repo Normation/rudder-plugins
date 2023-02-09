@@ -39,13 +39,15 @@ package com.normation.plugins.usermanagement
 
 import bootstrap.liftweb.PasswordEncoder
 import bootstrap.liftweb.RudderConfig
-import bootstrap.liftweb.UserDetailList
-import com.normation.rudder.Role
+import bootstrap.liftweb.ValidatedUserList
 import com.normation.rudder.Role.Custom
+import com.normation.rudder.RudderRoles
+
 import net.liftweb.common.Logger
 import net.liftweb.json.{Serialization => S}
 import net.liftweb.json.JsonAST.JValue
 import org.slf4j.LoggerFactory
+import com.normation.zio._
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -56,7 +58,7 @@ object UserManagementLogger extends Logger {
 
 object Serialisation {
 
-  implicit class AuthConfigSer(auth: UserDetailList) {
+  implicit class AuthConfigSer(auth: ValidatedUserList) {
     def toJson: JValue = {
       val encoder: String = PassEncoderToString(auth)
       val authBackendsProvider = RudderConfig.authenticationProviders.getConfiguredProviders().map(_.name).toSet
@@ -64,7 +66,7 @@ object Serialisation {
       val jUser            = auth.users.map {
         case (_, u) =>
           val (rs, custom) = {
-            UserManagementService.computeRoleCoverage(Role.values, u.authz.authorizationTypes).getOrElse(Set.empty).partition {
+            UserManagementService.computeRoleCoverage(RudderRoles.getAllRoles.runNow.values.toSet, u.authz.authorizationTypes).getOrElse(Set.empty).partition {
               case Custom(_) => false
               case _         => true
             }
@@ -82,7 +84,7 @@ object Serialisation {
     }
   }
 
-  def PassEncoderToString(auth: UserDetailList): String = {
+  def PassEncoderToString(auth: ValidatedUserList): String = {
     auth.encoder match {
       case PasswordEncoder.MD5    => "MD5"
       case PasswordEncoder.SHA1   => "SHA-1"
