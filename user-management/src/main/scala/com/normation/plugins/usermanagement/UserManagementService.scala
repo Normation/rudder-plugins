@@ -265,7 +265,6 @@ object UserManagementService {
       file       <- getUserFilePath
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
       userXML    <- IOResult.attempt(parsedFile.document().children)
-      toUpdate    = (userXML \\ "authentication").head
       res        <- (userXML \\ "authentication").head match {
                       case e: Elem =>
                         val digest = (userXML \\ "authentication" \ "@hash").text.toUpperCase
