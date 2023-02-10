@@ -52,8 +52,9 @@
       <span class="glyphicon glyphicon-info-sign"></span>
     </div>
     <div>
-      This change request can not be accepted because configuration state
-      was modified since change request creation. Only "decline" action is available.
+      <p>Configuration state of the object modified by this change request has change since the
+      moment that change request was created. If you accept the change request, previous modification
+        will be lost.</p><p>Please double-check that it is what you want before accepting it.</p>
     </div>
   </div>
 </component-warnUnmergeable>
@@ -90,10 +91,10 @@
                         <span class="sr-only">Close</span>
                     </div>
                     <h4 class="modal-title">Change Request state</h4>
-                </div>                
-                <div id="form"></div>              
+                </div>
+                <div id="form"></div>
             </div>
-        </div>  
+        </div>
     </div>
 </div>
 </component-popup>
