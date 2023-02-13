@@ -1,7 +1,7 @@
 package com.normation.plugins.changevalidation
 
 import bootstrap.liftweb.RudderConfig
-import bootstrap.liftweb.UserDetailList
+import bootstrap.liftweb.ValidatedUserList
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie._
@@ -36,7 +36,7 @@ class RoValidatedUserJdbcRepository(
   }
 
   override def getUsers(): Box[Set[WorkflowUsers]] = {
-    val userDetails: UserDetailList = RudderConfig.rudderUserListProvider.authConfig
+    val userDetails: ValidatedUserList = RudderConfig.rudderUserListProvider.authConfig
     val usersInFile = userDetails.users.keySet
 
     getValidatedUsers() match {
