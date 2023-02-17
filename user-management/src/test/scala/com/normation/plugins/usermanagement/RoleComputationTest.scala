@@ -3,7 +3,6 @@ package com.normation.plugins.usermanagement
 import com.normation.plugins.usermanagement.UserManagementService.computeRoleCoverage
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
-import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
 import com.normation.zio._
 import org.junit.runner.RunWith
