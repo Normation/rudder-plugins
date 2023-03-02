@@ -181,18 +181,16 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       }
     } &
     "#nextStep" #> {
-      if (commitAndDeployChangeRequest.isMergeable(cr)) {
-        workflowService.findNextSteps(authz, step, isOwner) match {
-          case NoWorkflowAction                                             => NodeSeq.Empty
-          case WorkflowAction(actionName, emptyList) if emptyList.size == 0 => NodeSeq.Empty
-          case WorkflowAction(actionName, steps)                            =>
-            SHtml.ajaxButton(
-              actionName,
-              () => ChangeStepPopup(actionName, steps, cr),
-              ("class", "btn btn-success")
-            )
-        }
-      } else NodeSeq.Empty
+      workflowService.findNextSteps(authz, step, isOwner) match {
+        case NoWorkflowAction                                             => NodeSeq.Empty
+        case WorkflowAction(actionName, emptyList) if emptyList.size == 0 => NodeSeq.Empty
+        case WorkflowAction(actionName, steps)                            =>
+          SHtml.ajaxButton(
+            actionName,
+            () => ChangeStepPopup(actionName, steps, cr),
+            ("class", "btn btn-success")
+          )
+      }
     })(actionButtons)
   }
 
