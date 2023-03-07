@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xe
+set -e
 # Force policy regeneration at restart
 touch /opt/rudder/etc/trigger-policy-generation
 cp /opt/rudder/share/plugins/scale-out-relay/server-node-to-relay /opt/rudder/share/commands/
