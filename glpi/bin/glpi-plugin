@@ -27,9 +27,9 @@ case "${ACTION}" in
   ;;
   
   send-one)
+    INV=$(ls -1 "${INVENTORIES_DIR}" | egrep "$2.*\.ocs$")
     echo "[ ] Sending inventory ${INVENTORIES_DIR}/${INV} to GLPI..."
 #shellcheck disable=SC2012
-    INV=$(ls -1 "${INVENTORIES_DIR}" | egrep "$2.*\.ocs$")
     FIC="${INVENTORIES_DIR}"/"${INV}"
     [ ! -r "${FIC}" ] && echo "No file candidate for $2" && exit 1
     send_inventory "${INVENTORIES_DIR}"/"${INV}"
