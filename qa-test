@@ -46,15 +46,15 @@ test_typos()
 
 test_scripts()
 {
-  # plugin packaging scripts (postinst, etc...) must have the set -xe enabled
+  # plugin packaging scripts (postinst, etc...) must have the set -e enabled
   RESULT=0
   find . -name "packaging" -type d -not -path "./src/*"|
     while IFS="" read -r directory
     do
       for file in $directory/*; do
         if sed -n '1p' $file | grep -q "#\!/bin/bash"; then
-          if ! grep -q "set -xe" "$file"; then
-            echo "$file does not seem to contain mandatory 'set -xe' line"
+          if ! grep -q "set -e" "$file"; then
+            echo "$file does not seem to contain mandatory 'set -e' line"
             RESULT=1
           fi
         fi

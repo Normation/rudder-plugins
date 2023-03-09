@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xe
+set -e
 
 # add post-installation script, like:
 
