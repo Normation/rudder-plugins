@@ -100,7 +100,18 @@ class NodeGroupValidationNeeded(
         }
       }
     }
-    exists
+    val e = exists
+    println(s"\n\n\n*****************************************************************************************************\n" +
+      s"monitoredNodes: $monitoredNodes \n" +
+      s"changes: $changes \n" +
+      s"exits: $exists \n" +
+      s"---------------------------------------------------------------------------------------------------------- \n" +
+      s"groups: $groups \n" +
+      s"allNodeINfo: $allNodeInfo \n" +
+      s"monitored: $monitored \n" +
+      s"rules: $rules \n" +
+      s"**********************************************************************************************************\n\n\n")
+    e
   }
 
   /*
