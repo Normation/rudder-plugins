@@ -53,39 +53,29 @@ Each plugin build information are grouped in file `build.conf` in plugin root di
 == Branch versionning and compatibility with Rudder versions
 
 
-Plugins are linked to Rudder main version, so we retrieve in `rudder-plugins` the same branch
+Plugins are linked to Rudder patch version, so we retrieve in `rudder-plugins` the same branch
 structure than in `rudder`. Moreover, one needs to always compile and use a plugin for the
-corresponding Rudder version:
+corresponding Rudder patch version:
 
 ```
-- master (plugin compatible with Rudder next version, i.e developing branch)
-- branches/rudder/5.0 (plugins compatible with Rudder 5.0)
-- branches/rudder/5.1 (plugins compatible with Rudder 5.1)
+- branches/rudder/7.2-next (plugin compatible with Rudder next 7.2 version, i.e developing branch)
+- branches/rudder/7.2.4 (plugins compatible with Rudder 7.2.4)
+- branches/rudder/7.3.0 (plugins compatible with Rudder 7.3.0)
 - etc
 ```
 
-This branch scheme allows to accommodate API changes between main Rudder versions.
+This  scheme allows to ensure total binary compatiblity, and upgrade is done automatically by rudder package at upgrade.
 
-Most of the time, there is no need to recompile a plugin for the corresponding Rudder minor version, so that
-plugins compiled on branch `branches/rudder/5.1` should be compatible with all Rudder 5.1.x versions.
-
-It may happens that at some point in the Rudder maintenance cycle, a Rudder minor version introduces a
-breaking change in a plugin API or a binary incompability in a plugin ABI. In such a case, we will
-explain which plugin versions are compatible with which Rudder versions in plugin readme file.
-
-=== Summary of binary compatibility for Rudder 6.0 branch
-
-Please see file: version-compat.adoc
 
 == Plugin version and Tag convention
 
 
 Plugin versions are composed in two parts separated by a `-`:
 
-- the Rudder corresponding version (without the minor number),
+- the Rudder corresponding version (including the patch number),
 - the plugin own version in format X.Y(.Z) where the Z part is optionnal.
 
-For example, the `datasources` plugin, in own version 1.1, for Rudder 4.1 will get version: `4.1-1.1`.
+For example, the `datasources` plugin, in own version 2.1, for Rudder 7.2.3 will get version: `7.2.3-2.2`.
 
 This version is used to postfix plugin package name.
 
@@ -99,11 +89,11 @@ You can get all the versions for a given plugins with the `git tag --list` comma
 $ git tag --list 'datasources-*'
 
 # results
-datasources-4.1-0.1
-datasources-4.1-0.2
-datasources-4.1-1.0
-datasources-4.1-1.1
-datasources-4.2-1.1
+datasources-7.2.1-2.2
+datasources-7.2.2-2.2
+datasources-7.2.3-2.2
+datasources-7.2.4-2.2
+datasources-7.3.0.beta1-2.3
 
 ```
 
@@ -119,12 +109,12 @@ You will need:
 - standard `make` tool chain,
 - `ar`, and for any plugin with scala code (i.e most of them),
 - `maven` in version 3.2 or up,
-- `Java 8 JDK tools (javac, jar, etc).
+- `Java 11 JDK tools (javac, jar, etc).
 
 For information, this the list of package that need to be installed on a minimal linux distribution:
 
 ```
-openjdk-8-jdk maven binutils make git-core xz-utils
+openjdk-11-jdk maven binutils make git-core xz-utils
 ```
 
 For the branding plugin, you need to have elm-install present on the system
@@ -152,7 +142,7 @@ This package can then be transferred to a Rudder server and installed with the c
 === Building licensed / limited plugin version
 
 
-As of Rudder 4.1, plugins can have a license and adapt there behavior based on runtime license information.
+Plugins can have a license and adapt there behavior based on runtime license information.
 The licensing framework is not open source, and such plugin need access to Rudder private repositories.
 
 The common API can be build and installed in user local maven repository with the following command line
