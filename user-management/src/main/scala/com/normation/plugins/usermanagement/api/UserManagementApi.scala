@@ -335,7 +335,7 @@ class UserManagementApiImpl(
         parsed   <- RudderRoles.parseRoles(roles).toBox
         coverage <- UserManagementService.computeRoleCoverage(
                       parsed.toSet,
-                      authzs.flatMap(a => AuthorizationType.parseAuthz(a).getOrElse(Set())).toSet ++ Role.ua
+                      authzs.flatMap(a => AuthorizationType.parseRight(a).getOrElse(Set())).toSet ++ Role.ua
                     )
       } yield {
         Serialization.serializeRole(coverage)
