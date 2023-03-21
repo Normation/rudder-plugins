@@ -93,9 +93,9 @@ object SupervisedTargetsApi extends ApiModuleProvider[SupervisedTargetsApi] {
 
 
 class SupervisedTargetsApiImpl(
-    restExtractorService  : RestExtractorService
-  , supervisedTargetsRepos: SupervisedTargetsReposiory
-  , nodeGroupRepository   : RoNodeGroupRepository
+    restExtractorService    : RestExtractorService
+  , unsupervisedTargetsRepos: UnsupervisedTargetsRepository
+  , nodeGroupRepository     : RoNodeGroupRepository
 ) extends LiftApiModuleProvider[SupervisedTargetsApi] {
   api =>
 
@@ -134,8 +134,10 @@ class SupervisedTargetsApiImpl(
       import com.normation.plugins.changevalidation.RudderJsonMapping._
 
       (for {
-        supervised  <- supervisedTargetsRepos.load()
-        jsonRootCat <- nodeGroupRepository.getFullGroupLibrary().map(_.toJson(supervised)).toBox
+        groups        <- nodeGroupRepository.getFullGroupLibrary().toBox
+        unsupervised  <- unsupervisedTargetsRepos.load()
+        supervised    =  UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
+        jsonRootCat   =  groups.toJson(supervised)
       } yield {
         jsonRootCat
       }) match {
@@ -165,8 +167,9 @@ class SupervisedTargetsApiImpl(
       if(req.json_?) {
         val res = for {
           json    <- req.json
-          targets <- Ser.parseJsonTargets(json)
-          saved   <- supervisedTargetsRepos.save(targets)
+          targets <- Ser.parseSupervisedTarget(json)
+          groups  <- nodeGroupRepository.getFullGroupLibrary().toBox
+          saved   <- unsupervisedTargetsRepos.save(UnsupervisedTargetsRepository.invertTargets(targets, groups))
         } yield {
           ()
         }

@@ -13,8 +13,10 @@ import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
+
 import net.liftweb.common.Box
 import net.liftweb.common.Full
+
 import com.normation.box._
 
 object bddMock {
@@ -54,15 +56,15 @@ trait ValidationNeeded {
  * Note that a validated user will always bypass this validation (see https://issues.rudder.io/issues/22188#note-5)
  */
 class NodeGroupValidationNeeded(
-    monitoredTargets: () => Box[Set[SimpleTarget]]
-  , repos           : RoChangeRequestRepository
-  , ruleLib         : RoRuleRepository
-  , groupLib        : RoNodeGroupRepository
-  , nodeInfoService : NodeInfoService
+    unsupervisedTargets: () => Box[Set[SimpleTarget]]
+  , repos              : RoChangeRequestRepository
+  , ruleLib            : RoRuleRepository
+  , groupLib           : RoNodeGroupRepository
+  , nodeInfoService    : NodeInfoService
 ) extends ValidationNeeded {
 
   /*
-   * A rule need external validation if any of its current or futur nodes
+   * A rule need external validation if any of its current or future nodes
    * are also in a monitored group.
    * We can't check only for group target by the rule, because of (for ex)
    * that case:
@@ -73,14 +75,15 @@ class NodeGroupValidationNeeded(
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
     val start = System.currentTimeMillis()
     val res = for {
-      groups    <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo  <- nodeInfoService.getAll()
-      monitored <- monitoredTargets()
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      nodeInfo     <- nodeInfoService.getAll()
+      unsupervised <- unsupervisedTargets()
+      supervised   =  UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
     } yield {
       val targets = Set(change.newRule) ++ change.previousRule.toSet
-      checkNodeTargetByRule(groups, nodeInfo, monitored, targets)
+      checkNodeTargetByRule(groups, nodeInfo, supervised, targets)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check rule '${change.newRule.name}' [${change.newRule.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check rule '${change.newRule.name}' [${change.newRule.id.value}] change request need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 
@@ -105,7 +108,7 @@ class NodeGroupValidationNeeded(
 
   /*
    * We want to check if the supervised node are the same before and after the change to avoid the case:
-   * - the group (not supervised) does not contain any sypervised nodes,
+   * - the group (not supervised) does not contain any supervised nodes,
    * - the group is applied to a directive,
    * - the group (still not supervised) is modified to include supervised nodes (because they also
    *   belong to an other group)
@@ -122,12 +125,13 @@ class NodeGroupValidationNeeded(
     val start = System.currentTimeMillis()
 
     val res = for {
-      groups      <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo <- nodeInfoService.getAll()
-      monitored   <- monitoredTargets()
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      allNodeInfo  <- nodeInfoService.getAll()
+      unsupervised <- unsupervisedTargets()
+      supervised   =  UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
-      val exists = groups.getNodeIds(monitored.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
+      val exists = groups.getNodeIds(supervised.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
 
       // we want to let the log knows why the change request need validation
       exists.foreach { nodeId =>
@@ -135,7 +139,7 @@ class NodeGroupValidationNeeded(
       }
       exists.nonEmpty
     }
-    ChangeValidationLogger.Metrics.debug(s"Check group '${change.newGroup.name}' [${change.newGroup.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check group '${change.newGroup.name}' [${change.newGroup.id.value}] change request need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 
@@ -147,16 +151,17 @@ class NodeGroupValidationNeeded(
     val directiveId = change.newDirective.id
     val start = System.currentTimeMillis()
     val res = for {
-      rules     <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId))).toBox
+      rules        <- ruleLib.getAll(includeSytem = true).map( _.filter(r => r.directiveIds.contains(directiveId))).toBox
       // we need to add potentially new rules applied to that directive that the previous request does not cover
-      newRules  =  change.updatedRules
-      monitored <- monitoredTargets()
-      groups    <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo  <- nodeInfoService.getAll()
+      newRules     =  change.updatedRules
+      unsupervised <- unsupervisedTargets()
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      supervised   =  UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
+      nodeInfo     <- nodeInfoService.getAll()
     } yield {
-      checkNodeTargetByRule(groups, nodeInfo, monitored, (rules++newRules).toSet)
+      checkNodeTargetByRule(groups, nodeInfo, supervised, (rules++newRules).toSet)
     }
-    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.value}] change requestion need for validation in ${System.currentTimeMillis() - start}ms")
+    ChangeValidationLogger.Metrics.debug(s"Check directive '${change.newDirective.name}' [${change.newDirective.id.value}] change request need for validation in ${System.currentTimeMillis() - start}ms")
     res
   }
 

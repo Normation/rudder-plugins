@@ -1,10 +1,12 @@
 package com.normation.plugins.changevalidation
 
+import com.normation.rudder.domain.policies.SimpleTarget
+
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
+import com.normation.rudder.repository.FullNodeGroupCategory
 
-import com.normation.rudder.domain.policies.SimpleTarget
 import net.liftweb.common.Box
 import net.liftweb.common.Empty
 import net.liftweb.common.Failure
@@ -20,15 +22,26 @@ import scala.util.control.NonFatal
  * json file in given directory.
  * JSON format:
  * {
- *   "supervised": [
+ *   "unsupervised": [
  *     "group:xxxxxx",
  *     "special:allnodes",
  *     ...
  *   ]
  * }
  *
+ * Because of https://issues.rudder.io/issues/14330 we need to
+ * save *un*supervised target so that when a new group is created,
+ * it is automatically supervised.
+ *
  */
-class SupervisedTargetsReposiory(
+object UnsupervisedTargetsRepository {
+  // invert non supervised target to find the ones supervised
+  def invertTargets(unsupervised: Set[SimpleTarget], groupLib: FullNodeGroupCategory): Set[SimpleTarget] = {
+    groupLib.allTargets.values.map(_.target.target).collect { case t: SimpleTarget if(!unsupervised.contains(t)) => t }.toSet
+  }
+}
+
+class UnsupervisedTargetsRepository(
     directory: Path
   , filename : String
 ) {
@@ -71,8 +84,8 @@ class SupervisedTargetsReposiory(
 
     // Always save by replacing the whole file.
     // Sort by name.
-    val targets = SupervisedTargetIds(groups.toList.map( _.target ).sorted) // natural sort on string
-    val jsonString = Serialization.writePretty[SupervisedTargetIds](targets)
+    val targets = UnsupervisedTargetIds(groups.toList.map( _.target ).sorted) // natural sort on string
+    val jsonString = Serialization.writePretty[UnsupervisedTargetIds](targets)
 
     //write file
     try {
