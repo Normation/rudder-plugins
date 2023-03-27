@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xe
+set -e
 # Postinstall for Rudder datasource plugin
 RUDDER_OPT="/opt/rudder"
 

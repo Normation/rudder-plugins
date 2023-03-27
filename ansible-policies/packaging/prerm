@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xe
+set -e
 PLUGIN_FOLDER="/var/rudder/packages/rudder-plugin-ansible-policies"
 
 # Remove techniques
