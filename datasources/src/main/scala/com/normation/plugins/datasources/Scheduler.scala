@@ -38,6 +38,7 @@
 package com.normation.plugins.datasources
 
 import com.normation.errors.IOResult
+import com.normation.errors.effectUioUnit
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.plugins.PluginStatus
@@ -85,7 +86,7 @@ class DataSourceScheduler(
   private[this] val semaphore = Semaphore.make(1).runNow
 
   // for that datasource, this is the timer
-  private[this] val source: UIO[Unit] = {
+  private[datasources] val source: UIO[Unit] = {
     val never: Schedule[Any, Any, Nothing] = Schedule((_, _) => UIO.never)
 
     val schedule = datasource.runParam.schedule match {
@@ -110,7 +111,7 @@ class DataSourceScheduler(
     val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value}): ${schedule}"
 
     // The full action with logging. We don't want it to be able to fail, because it would stop
-    // futur update. So we catch all error and log them (in debug because they are (should) already log in error, we
+    // future update. So we catch all error and log them (in debug because they are (should) already log in error, we
     // only want to be sure to have them)
     val prog = (DataSourceLoggerPure.info(msg) *> DataSourceLoggerPure.trace(s"details: ${datasource}") *>
       updateAll(UpdateCause(newUuid(), RudderEventActor, Some(msg)))).catchAll(err => DataSourceLoggerPure.debug(err.fullMsg))
@@ -126,7 +127,7 @@ class DataSourceScheduler(
   // here is the place where we will store the currently
   // running task, so that we are able the stop it and restart
   // it on user action.
-  private[this] val scheduledTask: Ref[Option[Fiber[_, _]]] = Ref.make(Option.empty[Fiber[_, _]]).runNow
+  private[datasources] val scheduledTask: Ref[Option[Fiber[_, _]]] = Ref.make(Option.empty[Fiber[_, _]]).runNow
 
   /*
    * start scheduling after given delay
