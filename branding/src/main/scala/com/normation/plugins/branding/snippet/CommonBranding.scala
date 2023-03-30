@@ -71,7 +71,9 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
           #headerBar > .background {{background-color: {d.barColor.toRgba}; color: {
           d.labelColor.toRgba
         }; font-size:20px; font-weight: 700; text-align:center; position: absolute;top: 0;bottom: 0;left: 0;right: 0;}}
-          .skin-yellow #headerBar + .wrapper aside.main-sidebar.fixed {{height: calc(100% - 80px); min-height: calc(100% - 80px); margin-top: 80px;}}
+          #headerBar + .wrapper aside.main-sidebar.fixed {{height: calc(100% - 80px); min-height: calc(100% - 80px); margin-top: 80px;}}
+          #headerBar ~ .content-wrapper .rudder-template .template-main .main-container,
+          #headerBar ~ .content-wrapper .rudder-template .template-main > .main-table{{height: calc(100vh - 80px);}}
         </style>
       </div>
       case _                         => NodeSeq.Empty
