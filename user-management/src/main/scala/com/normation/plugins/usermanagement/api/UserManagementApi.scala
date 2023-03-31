@@ -151,11 +151,11 @@ class UserManagementApiImpl(
 
   def extractUser(json: JValue): Box[User] = {
     for {
-      username <- CompleteJson.extractJsonString(json, "username")
-      password <- CompleteJson.extractJsonString(json, "password")
-      roles    <- CompleteJson.extractJsonListString(json, "role")
+      username    <- CompleteJson.extractJsonString(json, "username")
+      password    <- CompleteJson.extractJsonString(json, "password")
+      permissions <- CompleteJson.extractJsonListString(json, "permissions")
     } yield {
-      User(username, password, roles.toSet)
+      User(username, password, permissions.toSet)
     }
   }
 
@@ -197,8 +197,8 @@ class UserManagementApiImpl(
     val schema        = UserManagementApi.GetRoles
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val allRoleAndAuthz: Map[String, List[String]] = RudderRoles.getAllRoles.runNow
-        .values.map(role => role.name -> role.rights.authorizationTypes.map(_.id).toList.sorted)
+      val allRoleAndAuthz: Map[String, List[String]] = RudderRoles.getAllRoles.runNow.values
+        .map(role => role.name -> role.rights.authorizationTypes.map(_.id).toList.sorted)
         .map {
           case (k, v) => {
             val authz_all  = v
@@ -330,13 +330,13 @@ class UserManagementApiImpl(
       implicit val action = "rolesCoverageOnRights"
 
       val value: Box[JValue] = for {
-        roles    <- restExtractorService.extractList("role")(req)(json => Full(json))
-        authzs   <- restExtractorService.extractList("authz")(req)(json => Full(json))
-        parsed   <- RudderRoles.parseRoles(roles).toBox
-        coverage <- UserManagementService.computeRoleCoverage(
-                      parsed.toSet,
-                      authzs.flatMap(a => AuthorizationType.parseRight(a).getOrElse(Set())).toSet ++ Role.ua
-                    )
+        permissions <- restExtractorService.extractList("permissions")(req)(json => Full(json))
+        authzs      <- restExtractorService.extractList("authz")(req)(json => Full(json))
+        parsed      <- RudderRoles.parseRoles(permissions).toBox
+        coverage    <- UserManagementService.computeRoleCoverage(
+                         parsed.toSet,
+                         authzs.flatMap(a => AuthorizationType.parseRight(a).getOrElse(Set())).toSet ++ Role.ua
+                       )
       } yield {
         Serialization.serializeRole(coverage)
       }

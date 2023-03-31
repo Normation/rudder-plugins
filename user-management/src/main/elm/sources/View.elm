@@ -222,7 +222,7 @@ displayRightPanel model =
                 ]
            ]
            , button [class "btn btn-sm btn-danger btn-delete",onClick (OpenDeleteModal user.login)] [text "Delete"]
-           , button [class "btn btn-sm btn-success btn-save", onClick (SubmitUpdatedInfos {user | role = user.role ++ model.authzToAddOnSave})] [text "Save"]
+           , button [class "btn btn-sm btn-success btn-save", onClick (SubmitUpdatedInfos {user | permissions = user.permissions ++ model.authzToAddOnSave})] [text "Save"]
         ]
     ]
 
@@ -230,7 +230,7 @@ displayUsersConf : Model -> Users -> Html Msg
 displayUsersConf model u =
     let
         users =
-            (List.map (\(name, rights) -> (User name rights.custom rights.roles)) (Dict.toList u)) |> List.map (\user -> displayUser user)
+            (List.map (\(name, rights) -> (User name rights.custom rights.permissions)) (Dict.toList u)) |> List.map (\user -> displayUser user)
         newUserMenu =
             if model.panelMode == AddMode then
                 displayRightPanelAddUser model
@@ -314,7 +314,7 @@ displayAddAuth model user  =
                         , div [id "remove-role",class "fa fa-times", onClick (RemoveRole user x)] []
                     ]
 
-            ) (user.role ++ user.authz)
+            ) (user.permissions ++ user.authz)
         roles = userRoles ++ newAddedRole
     in
     if (List.isEmpty roles) then
@@ -329,7 +329,7 @@ displayAuth user  =
             List.map (
                 \x ->
                     span [ class "auth" ][text x]
-            ) (user.role ++ user.authz)
+            ) (user.permissions ++ user.authz)
     in
     if (List.isEmpty userRoles) then
         span[class "list-auths-empty"]

@@ -30,7 +30,7 @@ decodeUser =
     D.succeed User
         |> required "login" D.string
         |> required "authz" (D.list <| D.string)
-        |> required "role" (D.list <| D.string)
+        |> required "permissions" (D.list <| D.string)
 
 decodeApiRoleCoverage : Decoder Authorization
 decodeApiRoleCoverage =
@@ -41,8 +41,8 @@ decodeRoleCoverage =
     let
         response =
             D.succeed Authorization
-                |> required "role" (D.list <| D.string)
-                |> required "authz" (D.list <| D.string)
+                |> required "permissions" (D.list <| D.string)
+                |> required "custom" (D.list <| D.string)
     in
         D.at [ "coverage" ] response
 

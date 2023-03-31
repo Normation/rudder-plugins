@@ -8,8 +8,8 @@ encodeAuthorization: Authorization -> Value
 encodeAuthorization authorizations =
     object
     [ ("action", string "rolesCoverageOnRights")
-    , ("role", list (\s -> string s) authorizations.roles)
-    , ("authz", list (\s -> string s) authorizations.roles)
+    , ("permissions", list (\s -> string s) authorizations.permissions)
+    , ("authz", list (\s -> string s) authorizations.permissions)
     ]
 
 encodeUser: (User, String) -> Value
@@ -17,7 +17,7 @@ encodeUser (user, password) =
     object
     [ ("username", string user.login)
     , ("password", string password)
-    , ("role", list (\s -> string s) (user.authz ++  user.role))
+    , ("permissions", list (\s -> string s) (user.authz ++  user.permissions))
     ]
 
 encodeAddUser: AddUserForm -> Value
@@ -25,6 +25,6 @@ encodeAddUser userForm =
     object
     [ ("username", string userForm.user.login)
     , ("password", string userForm.password)
-    , ("role", list (\s -> string s) (userForm.user.authz ++  userForm.user.role))
+    , ("permissions", list (\s -> string s) (userForm.user.authz ++  userForm.user.permissions))
     , ("isPreHashed", bool userForm.isPreHashed)
     ]
