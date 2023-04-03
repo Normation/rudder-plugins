@@ -14,7 +14,7 @@ subscriptions model =
 
 authorizations : Authorization
 authorizations =
-    {roles = [], custom = []}
+    {permissions = [], custom = []}
 
 init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =

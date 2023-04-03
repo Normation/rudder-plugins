@@ -31,8 +31,8 @@ import zio.syntax._
 case class UserFileInfo(userOrigin: List[UserOrigin], digest: String)
 case class UserOrigin(user: User, hashValidHash: Boolean)
 
-case class User(username: String, password: String, role: Set[String]) {
-  def toNode: Node = <user name={username} password={password} roles={role.mkString(",")} />
+case class User(username: String, password: String, permissions: Set[String]) {
+  def toNode: Node = <user name={username} password={password} permissions={permissions.mkString(",")} />
 }
 
 object UserOrigin {
@@ -154,7 +154,7 @@ object UserManagementService {
       // only administrator can have that right, and it encompasses every other ones
       Some(Set(Role.Administrator))
     } else {
-      val (rs, custom)    = roles.flatMap(r => compareRights(r,authzs)).partition {
+      val (rs, custom) = roles.flatMap(r => compareRights(r, authzs)).partition {
         case Custom(_) => false
         case _         => true
       }
@@ -162,7 +162,7 @@ object UserManagementService {
       val customAuthz     = custom.flatMap(_.rights.authorizationTypes)
       // remove authzs taken by a role in custom's rights
       val minCustomAuthz  = customAuthz.diff(rs.flatMap(_.rights.authorizationTypes))
-      val rsRights = rs.flatMap(_.rights.authorizationTypes)
+      val rsRights        = rs.flatMap(_.rights.authorizationTypes)
       val leftoversRights = authzs.diff(rsRights.union(minCustomAuthz))
       val leftoversCustom: Option[Role]      = {
         if (leftoversRights.nonEmpty)
@@ -242,7 +242,10 @@ object UserManagementService {
                       override def transform(n: Node): NodeSeq = n match {
                         case user: Elem if (user \ "@name").text == currentUser =>
                           // for each user's parameters, if a new user's parameter is empty we decide to keep the original one
-                          val newRoles    = if (newUser.role.isEmpty) (user \ "@role").text.split(",").toSet else newUser.role
+                          val newRoles    = {
+                            if (newUser.permissions.isEmpty) ((user \ "@role") ++ (user \ "@permissions")).text.split(",").toSet
+                            else newUser.permissions
+                          }
                           val newUsername = if (newUser.username.isEmpty) currentUser else newUser.username
                           val newPassword = if (newUser.password.isEmpty) {
                             (user \ "@password").text
@@ -271,7 +274,8 @@ object UserManagementService {
                         val users  = e
                           .map(u => {
                             val password     = (u \ "@password").text
-                            val user         = User((u \ "@name").text, (u \ "@password").text, (u \ "@role").map(_.text).toSet)
+                            val user         =
+                              User((u \ "@name").text, (u \ "@password").text, ((u \ "@role") ++ (u \ "@permissions")).map(_.text).toSet)
                             val hasValidHash = UserOrigin.verifyHash(digest, password)
                             UserOrigin(user, hasValidHash)
                           })

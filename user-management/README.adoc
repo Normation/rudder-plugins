@@ -111,6 +111,12 @@ They are provided for convenience, but if they don't fit your need you can defin
 |validator | Can access and act on compliance and validator part
 |====
 
+[INFO]
+====
+Built-in roles, like right, can use `\_` in their name. Custom-roles are not allowed to
+use `_` in their name.
+====
+
 The precise permission set for each role is presented below:
 
 .Permission for pre-defined roles
