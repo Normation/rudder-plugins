@@ -225,6 +225,7 @@ rudder.auth.ldap.connection.url=ldap://ldap.mycorp.com:389/dc=mycorp,dc=com
 # "application" DN for Rudder in you LDAP directory, or an LDAP user with
 # enought rights to be able to walk the user branch configured below.
 # LDAP dn, no default value.
+# Be careful to not add quote around the DN, the value is used as provided.
 #
 rudder.auth.ldap.connection.bind.dn=cn=rudder,ou=services,dc=mycorp,dc=com
 
@@ -233,6 +234,13 @@ rudder.auth.ldap.connection.bind.dn=cn=rudder,ou=services,dc=mycorp,dc=com
 # String, no default value.
 #
 rudder.auth.ldap.connection.bind.password=secret
+
+#
+# If your directory uses remote links that need to be deferenced
+# for resolving the actual entry, for example in the case of an
+# AD forest, you need to uncomment the following option.
+#
+# rudder.auth.ldap.connection.derefLink=true
 
 #
 # Search base and filter to use to find the user.
