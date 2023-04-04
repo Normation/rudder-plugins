@@ -13,8 +13,11 @@ other general information.
 
 This plugin allows to get new capabilities for user management:
 - you can assign fined-grained permissions to user through roles,
-- users get a self-service UI to manage an API token to perform API calls with their personal account,
-- and finally, a UI is added in Rudder `Administration` menu to help with user management.
+- and a UI is added in Rudder `Administration` menu to help with user management.
+
+Note that the xref:plugins:api-authorizations.adoc[API authorizations] plugin also extends user
+rights with a self-service UI to manage an API token to perform API calls with their personal account. 
+See the xref:plugins:api-authorizations.adoc[plugin documentation] if you need more info about that feature.
 
 
 == Unitary permission: a right
@@ -176,15 +179,6 @@ User credentials are defined in the same file as custom roles, `/opt/rudder/etc/
 `user` tag can have the following parameters:
 - `name` and `password` parameters are explained in xref:reference:administration:users.adoc[user administration page].
 - `permissions` has the same semantic as `permissions` in custom roles;
-
-== User API token self-service
-
-The plugin allows user to manage (create or renew) a personal API token with the same rights as the permissions they
-are granted.
-
-The self-service is available by clicking on the user login in the top right corner of Rudder UI.
-
-image::docs/images/usermanagement-ui-api-token.png[]
 
 
 == User management plugin interface
