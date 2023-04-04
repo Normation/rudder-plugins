@@ -325,7 +325,7 @@ rudder.auth.oauth2.provider.registrations=okta,google
 
 Each provider needs to then have a bunch of properties defined for it. They are listed below and all follow the pattern `rudder.auth.oauth2.provider.${providerID}.${subPath} where `providerId` is the ID in the previous list, and `subPath` is the remaining name of the property.
 
-We advice to configure each provider in it's own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
+We advise to configure each provider in it's own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
 so that it is easier to change or disable some of them.
 
 === Example configuration for `okta` provider
