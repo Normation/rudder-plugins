@@ -39,24 +39,25 @@ along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
                         http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd">
 
-    <!-- 
+    <!--
       The properties in that file are read from rudder-web.properties, then translated into
-      system properties in LiftInitContextListener class. 
+      system properties in LiftInitContextListener class.
     -->
-    
+
     <beans:bean id="contextSource" class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
       <beans:constructor-arg value="${rudder.auth.ldap.connection.url}"/>
       <beans:property name="userDn" value="${rudder.auth.ldap.connection.bind.dn}"/>
       <beans:property name="password" value="${rudder.auth.ldap.connection.bind.password}"/>
     </beans:bean>
-    
-    
+
+
     <beans:bean id="userLookup" class="org.springframework.security.ldap.search.FilterBasedLdapUserSearch">
       <beans:constructor-arg index="0" value="${rudder.auth.ldap.searchbase}"/>
       <beans:constructor-arg index="1" value="${rudder.auth.ldap.filter}"/>
       <beans:constructor-arg index="2" ref="contextSource" />
+      <beans:property name="derefLinkFlag" value="${rudder.auth.ldap.connection.derefLink:false}"/>
     </beans:bean>
-    
+
     <beans:bean id="ldapAuthenticationProvider" class="org.springframework.security.ldap.authentication.LdapAuthenticationProvider">
        <beans:constructor-arg>
          <beans:bean class="org.springframework.security.ldap.authentication.BindAuthenticator">
