@@ -41,8 +41,8 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
+import com.normation.plugins.changevalidation.ChangeValidationLogger
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
-import com.normation.rudder.ActionType
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.eventlog.AddChangeRequest
 import com.normation.rudder.domain.eventlog.DeleteChangeRequest
@@ -86,11 +86,13 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   private[this] val commitAndDeployChangeRequest = RudderConfig.commitAndDeployChangeRequest
 
   private[this] def checkAccess(cr: ChangeRequest) = {
-    CurrentUser.checkRights(AuthorizationType.Validator.Read) || CurrentUser.checkRights(
+    val check = CurrentUser.checkRights(AuthorizationType.Validator.Read) || CurrentUser.checkRights(
       AuthorizationType.Deployer.Read
     ) || cr.owner == CurrentUser.actor.name
+    ChangeValidationLogger.trace(s"check user '${CurrentUser.actor.name}' access to change request '${cr.id}': ${check}")
+    check
   }
-  private[this] val CrId:          Box[Int]           = { S.param("crId").map(x => x.toInt) }
+  private[this] val CrId: Box[Int] = { S.param("crId").map(x => x.toInt) }
   private[this] var changeRequest: Box[ChangeRequest] = {
     CrId match {
       case Full(id) =>
@@ -167,12 +169,20 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   }
 
   def displayActionButton(cr: ChangeRequest, step: WorkflowNodeId): NodeSeq = {
-    val authz   = CurrentUser.getRights.authorizationTypes.toSeq.collect { case right: ActionType.Edit => right.authzKind }
+    val authz   = Nil // we are sideStepping it, see: https://issues.rudder.io/issues/22595
     val isOwner = cr.owner == CurrentUser.actor.name
+
     ("#backStep" #> {
       workflowService.findBackSteps(authz, step, isOwner) match {
-        case Nil   => NodeSeq.Empty
+        case Nil   =>
+          ChangeValidationLogger.trace(
+            s"- no back step found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
+          )
+          NodeSeq.Empty
         case steps =>
+          ChangeValidationLogger.trace(
+            s"- back steps '${steps.map(_._1.value).mkString(", ")}' found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
+          )
           SHtml.ajaxButton(
             "Decline",
             () => ChangeStepPopup("Decline", steps, cr),
@@ -182,9 +192,20 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     } &
     "#nextStep" #> {
       workflowService.findNextSteps(authz, step, isOwner) match {
-        case NoWorkflowAction                                             => NodeSeq.Empty
-        case WorkflowAction(actionName, emptyList) if emptyList.size == 0 => NodeSeq.Empty
+        case NoWorkflowAction                                             =>
+          ChangeValidationLogger.trace(
+            s"- no next step found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
+          )
+          NodeSeq.Empty
+        case WorkflowAction(actionName, emptyList) if emptyList.size == 0 =>
+          ChangeValidationLogger.trace(
+            s"- no next step found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
+          )
+          NodeSeq.Empty
         case WorkflowAction(actionName, steps)                            =>
+          ChangeValidationLogger.trace(
+            s"- next steps '${steps.map(_._1.value).mkString(", ")}' found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
+          )
           SHtml.ajaxButton(
             actionName,
             () => ChangeStepPopup(actionName, steps, cr),

@@ -41,6 +41,8 @@ import com.normation.box._
 import com.normation.errors._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
+import com.normation.rudder.AuthorizationType
+import com.normation.rudder.Role
 import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.domain.eventlog.AddChangeRequestDiff
 import com.normation.rudder.domain.eventlog.ChangeRequestDiff
@@ -54,6 +56,7 @@ import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
+import com.normation.rudder.web.services.CurrentUser
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.common._
 import zio._
@@ -99,22 +102,39 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
 
 object TwoValidationStepsWorkflowServiceImpl {
   case object Validation extends WorkflowNode {
-    val id = WorkflowNodeId("Pending validation")
+    val id: WorkflowNodeId = WorkflowNodeId("Pending validation")
   }
 
   case object Deployment extends WorkflowNode {
-    val id = WorkflowNodeId("Pending deployment")
+    val id: WorkflowNodeId = WorkflowNodeId("Pending deployment")
   }
 
   case object Deployed extends WorkflowNode {
-    val id = WorkflowNodeId("Deployed")
+    val id: WorkflowNodeId = WorkflowNodeId("Deployed")
   }
 
   case object Cancelled extends WorkflowNode {
-    val id = WorkflowNodeId("Cancelled")
+    val id: WorkflowNodeId = WorkflowNodeId("Cancelled")
   }
 
   val steps: List[WorkflowNode] = List(Validation, Deployment, Deployed, Cancelled)
+
+  /*
+   * Validation rule logic:
+   * - check for self validation (only needed if current user is the CR author)
+   * - check for current user rights.
+   *   WARNING: WE ARE SIDE STEPPING authz check until https://issues.rudder.io/issues/22595 is solved
+   */
+  private def canValidate(isCreator: Boolean, selfValidation: () => Box[Boolean]): Boolean = {
+    val correctActor = selfValidation().getOrElse(false) || !isCreator
+    correctActor && CurrentUser.checkRights(AuthorizationType.Validator.Edit)
+  }
+
+  private def canDeploy(isCreator: Boolean, selfDeployment: () => Box[Boolean]): Boolean = {
+    val correctActor = selfDeployment().getOrElse(false) || isCreator
+    correctActor && CurrentUser.checkRights(AuthorizationType.Deployer.Edit)
+  }
+
 }
 
 class TwoValidationStepsWorkflowServiceImpl(
@@ -140,27 +160,27 @@ class TwoValidationStepsWorkflowServiceImpl(
 
   val closedSteps: List[WorkflowNodeId] = List(Cancelled.id, Deployed.id)
   val openSteps:   List[WorkflowNodeId] = List(Validation.id, Deployment.id)
-  val stepsValue = steps.map(_.id)
+  val stepsValue:  List[WorkflowNodeId] = steps.map(_.id)
 
   private[this] def saveAndLogChangeRequest(diff: ChangeRequestDiff, actor: EventActor, reason: Option[String]) = {
     val changeRequest = diff.changeRequest
     // We need to remap back to the original type to fetch the id of the CR created
     val save          = diff match {
-      case add:    AddChangeRequestDiff      =>
-        woChangeRequestRepository.createChangeRequest(diff.changeRequest, actor, reason).map(AddChangeRequestDiff(_))
+      case _:      AddChangeRequestDiff      =>
+        woChangeRequestRepository.createChangeRequest(diff.changeRequest, actor, reason).map(AddChangeRequestDiff)
       case modify: ModifyToChangeRequestDiff =>
         woChangeRequestRepository
           .updateChangeRequest(changeRequest, actor, reason)
-          .map(x => modify) // For modification the id is already correct
-      case delete: DeleteChangeRequestDiff   =>
-        woChangeRequestRepository.deleteChangeRequest(changeRequest.id, actor, reason).map(DeleteChangeRequestDiff(_))
+          .map(_ => modify) // For modification the id is already correct
+      case _:      DeleteChangeRequestDiff   =>
+        woChangeRequestRepository.deleteChangeRequest(changeRequest.id, actor, reason).map(DeleteChangeRequestDiff)
     }
 
     for {
       saved          <- save ?~! s"could not save change request ${changeRequest.info.name}"
       modId           = ModificationId(uuidGen.newUuid)
       workflowEnable <- workflowEnable()
-      logged         <- if (workflowEnable) {
+      _              <- if (workflowEnable) {
                           changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
                           s"could not save event log for change request ${saved.changeRequest.id} creation"
                         } else {
@@ -179,40 +199,37 @@ class TwoValidationStepsWorkflowServiceImpl(
     saveAndLogChangeRequest(ModifyToChangeRequestDiff(newCr, oldChangeRequest), actor, reason)
   }
 
+  /*
+   * Find available next steps for the current user.
+   * The given rights are expected to be the string representation of atomic permissions.
+   */
   def findNextSteps(
       currentUserRights: Seq[String],
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
   ): WorkflowAction = {
-    val authorizedRoles = currentUserRights.filter(role => (role == "validator" || role == "deployer"))
-    // TODO: manage error for config !
-    val canValid        = selfValidation().getOrElse(false) || !isCreator
-    val canDeploy       = selfDeployment().getOrElse(false) || !isCreator
+    val deployAction = {
+      if (canDeploy(isCreator, selfDeployment))
+        Seq((Deployed.id, stepValidationToDeployed _))
+      else Seq()
+    }
+
     currentStep match {
       case Validation.id =>
         val validatorActions = {
-          if (authorizedRoles.contains("validator") && canValid) {
-            Seq((Deployment.id, stepValidationToDeployment _)) ++ {
-              if (authorizedRoles.contains("deployer") && canDeploy)
-                Seq((Deployed.id, stepValidationToDeployed _))
-              else Seq()
-            }
-          } else Seq()
+          (if (canValidate(isCreator, selfValidation)) {
+             Seq((Deployment.id, stepValidationToDeployment _))
+           } else Seq()) ++ deployAction
         }
         WorkflowAction("Validate", validatorActions)
 
       case Deployment.id     =>
-        val actions = {
-          if (authorizedRoles.contains("deployer") && canDeploy)
-            Seq((Deployed.id, stepDeploymentToDeployed _))
-          else Seq()
-        }
-        WorkflowAction("Deploy", actions)
+        WorkflowAction("Deploy", deployAction)
       case Deployed.id       => NoWorkflowAction
       case Cancelled.id      => NoWorkflowAction
       case WorkflowNodeId(x) =>
         ChangeValidationLogger.warn(
-          s"An unknow workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it"
+          s"An unknown workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it"
         )
         NoWorkflowAction
     }
@@ -223,30 +240,30 @@ class TwoValidationStepsWorkflowServiceImpl(
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
   ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId])] = {
-    val authorizedRoles = currentUserRights.filter(role => (role == "validator" || role == "deployer"))
-    // TODO: manage error for config !
-    val canValid        = selfValidation().getOrElse(false) || !isCreator
-    val canDeploy       = selfDeployment().getOrElse(false) || !isCreator
     currentStep match {
       case Validation.id     =>
-        if (authorizedRoles.contains("validator") && canValid) Seq((Cancelled.id, stepValidationToCancelled _)) else Seq()
+        if (canValidate(isCreator, selfValidation))
+          Seq((Cancelled.id, stepValidationToCancelled))
+        else Seq()
       case Deployment.id     =>
-        if (authorizedRoles.contains("deployer") && canDeploy) Seq((Cancelled.id, stepDeploymentToCancelled _)) else Seq()
+        if (canDeploy(isCreator, selfDeployment))
+          Seq((Cancelled.id, stepDeploymentToCancelled))
+        else Seq()
       case Deployed.id       => Seq()
       case Cancelled.id      => Seq()
       case WorkflowNodeId(x) =>
         ChangeValidationLogger.warn(
-          s"An unknow workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it"
+          s"An unknown workflow state was reached with ID: '${x}'. It is likely to be a bug, please report it"
         )
         Seq()
     }
   }
 
   def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean = {
-    val authorizedRoles = currentUserRights.filter(role => (role == "validator" || role == "deployer"))
+    val authorizedRoles = currentUserRights.filter(role => role == Role.Validator.name || role == Role.Deployer.name)
     currentStep match {
-      case Validation.id     => authorizedRoles.contains("validator") || isCreator
-      case Deployment.id     => authorizedRoles.contains("deployer")
+      case Validation.id     => authorizedRoles.contains(Role.Validator.name) || isCreator
+      case Deployment.id     => authorizedRoles.contains(Role.Deployer.name)
       case Deployed.id       => false
       case Cancelled.id      => false
       case WorkflowNodeId(x) =>
@@ -281,9 +298,9 @@ class TwoValidationStepsWorkflowServiceImpl(
   def startWorkflow(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequestId] = {
     ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
     for {
-      saved    <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), actor, reason)
-      workflow <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
-      _         = notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
+      saved <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), actor, reason)
+      _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
+      _      = notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
     } yield {
       workflowComet ! WorkflowUpdate
       saved.id
@@ -300,7 +317,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     (for {
       state       <- woWorkflowRepo.updateState(changeRequestId, from.id, to.id)
       workflowStep = WorkflowStepChange(changeRequestId, from.id, to.id)
-      log         <- workflowLogger.saveEventLog(workflowStep, actor, reason)
+      _           <- workflowLogger.saveEventLog(workflowStep, actor, reason)
       _            = sendEmail(from, to, changeRequestId).catchEmailError(from.id.value, to.id.value)
     } yield {
       workflowComet ! WorkflowUpdate
@@ -365,11 +382,11 @@ class TwoValidationStepsWorkflowServiceImpl(
   ): Box[WorkflowNodeId] = {
     ChangeValidationLogger.debug(s"${name}: deploy change for change request '${changeRequestId.value}'")
     for {
-      optcr  <- roChangeRequestRepository.get(changeRequestId)
-      cr     <- Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database"
-      saved  <- commit.save(cr, actor, reason)
-      repoOk <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
-      state  <- changeStep(from, Deployed, changeRequestId, actor, reason)
+      optcr <- roChangeRequestRepository.get(changeRequestId)
+      cr    <- Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database"
+      saved <- commit.save(cr, actor, reason)
+      _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
+      state <- changeStep(from, Deployed, changeRequestId, actor, reason)
     } yield {
       state
     }
@@ -408,14 +425,6 @@ class TwoValidationStepsWorkflowServiceImpl(
       reason:          Option[String]
   ): Box[WorkflowNodeId] = {
     toFailure(Validation, changeRequestId, actor, reason)
-  }
-
-  private[this] def stepDeploymentToDeployed(
-      changeRequestId: ChangeRequestId,
-      actor:           EventActor,
-      reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
-    onSuccessWorkflow(Deployment, changeRequestId, actor, reason)
   }
 
   private[this] def stepDeploymentToCancelled(
