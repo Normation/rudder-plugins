@@ -24,14 +24,14 @@ type alias Role =
     }
 
 type alias Authorization =
-    { roles : List String
+    { permissions : List String
     , custom: List String
     }
 
 type alias User =
     { login : String
     , authz : List String
-    , role : List String
+    , permissions : List String
     }
 
 type Provider
