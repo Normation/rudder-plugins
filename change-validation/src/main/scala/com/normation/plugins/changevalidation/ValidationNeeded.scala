@@ -96,15 +96,15 @@ class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNe
  *
  */
 class NodeGroupValidationNeeded(
-    monitoredTargets: () => Box[Set[SimpleTarget]],
-    repos:            RoChangeRequestRepository,
-    ruleLib:          RoRuleRepository,
-    groupLib:         RoNodeGroupRepository,
-    nodeInfoService:  NodeInfoService
+    unsupervisedTargets: () => Box[Set[SimpleTarget]],
+    repos:               RoChangeRequestRepository,
+    ruleLib:             RoRuleRepository,
+    groupLib:            RoNodeGroupRepository,
+    nodeInfoService:     NodeInfoService
 ) extends ValidationNeeded {
 
   /*
-   * A rule need external validation if any of its current or futur nodes
+   * A rule need external validation if any of its current or future nodes
    * are also in a monitored group.
    * We can't check only for group target by the rule, because of (for ex)
    * that case:
@@ -115,12 +115,13 @@ class NodeGroupValidationNeeded(
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
     val start = System.currentTimeMillis()
     val res   = for {
-      groups    <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo  <- nodeInfoService.getAll().toBox
-      monitored <- monitoredTargets()
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      nodeInfo     <- nodeInfoService.getAll().toBox
+      unsupervised <- unsupervisedTargets()
+      supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
     } yield {
       val targets = Set(change.newRule) ++ change.previousRule.toSet
-      checkNodeTargetByRule(groups, nodeInfo, monitored, targets)
+      checkNodeTargetByRule(groups, nodeInfo, supervised, targets)
     }
     ChangeValidationLogger.Metrics.debug(
       s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System
@@ -157,7 +158,7 @@ class NodeGroupValidationNeeded(
 
   /*
    * We want to check if the supervised node are the same before and after the change to avoid the case:
-   * - the group (not supervised) does not contain any sypervised nodes,
+   * - the group (not supervised) does not contain any supervised nodes,
    * - the group is applied to a directive,
    * - the group (still not supervised) is modified to include supervised nodes (because they also
    *   belong to an other group)
@@ -174,12 +175,15 @@ class NodeGroupValidationNeeded(
     val start = System.currentTimeMillis()
 
     val res = for {
-      groups      <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo <- nodeInfoService.getAll().toBox
-      monitored   <- monitoredTargets()
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      allNodeInfo  <- nodeInfoService.getAll().toBox
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      allNodeInfo  <- nodeInfoService.getAll().toBox
+      unsupervised <- unsupervisedTargets()
+      supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
-      val exists      = groups.getNodeIds(monitored.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
+      val exists      = groups.getNodeIds(supervised.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
 
       // we want to let the log knows why the change request need validation
       exists.foreach { nodeId =>
@@ -204,14 +208,15 @@ class NodeGroupValidationNeeded(
     val directiveId = change.newDirective.id
     val start       = System.currentTimeMillis()
     val res         = for {
-      rules     <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId))).toBox
+      rules        <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId))).toBox
       // we need to add potentially new rules applied to that directive that the previous request does not cover
-      newRules   = change.updatedRules
-      monitored <- monitoredTargets()
-      groups    <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo  <- nodeInfoService.getAll().toBox
+      newRules      = change.updatedRules
+      unsupervised <- unsupervisedTargets()
+      groups       <- groupLib.getFullGroupLibrary().toBox
+      supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
+      nodeInfo     <- nodeInfoService.getAll().toBox
     } yield {
-      checkNodeTargetByRule(groups, nodeInfo, monitored, (rules ++ newRules).toSet)
+      checkNodeTargetByRule(groups, nodeInfo, supervised, (rules ++ newRules).toSet)
     }
     ChangeValidationLogger.Metrics.debug(
       s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.serialize}] change requestion need for validation in ${System
