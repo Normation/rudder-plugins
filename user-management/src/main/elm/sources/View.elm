@@ -168,7 +168,7 @@ displayRightPanelAddUser model =
            [
                  input [id emptyUsername, class "form-control username-input", type_ "text", placeholder "Username", onInput Login, required True] []
                , displayPasswordBlock model
-               , button [class "btn btn-sm btn-success btn-save", onClick (SubmitNewUser (User model.login [] []))] [text "Save"]
+               , div [class "btn-container"] [ button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitNewUser (User model.login [] []))][ i[ class "fa fa-download"][] ]  ]
            ]
        ]
    ]
@@ -221,8 +221,10 @@ displayRightPanel model =
                     , (displayDropdownRoleList availableRoles)
                 ]
            ]
-           , button [class "btn btn-sm btn-danger btn-delete",onClick (OpenDeleteModal user.login)] [text "Delete"]
-           , button [class "btn btn-sm btn-success btn-save", onClick (SubmitUpdatedInfos {user | permissions = user.permissions ++ model.authzToAddOnSave})] [text "Save"]
+           , div[class "btn-container"]
+             [ button [class "btn btn-sm btn-danger btn-delete" , onClick (OpenDeleteModal user.login)] [text "Delete"]
+             , button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitUpdatedInfos {user | permissions = user.permissions ++ model.authzToAddOnSave})][ i[ class "fa fa-download"][] ]
+             ]
         ]
     ]
 
