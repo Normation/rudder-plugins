@@ -85,7 +85,7 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
     }
 
     // init directory to save JSON
-    ChangeValidationConf.supervisedTargetRepo.checkPathAndInitRepos()
+    ChangeValidationConf.unsupervisedTargetRepo.checkPathAndInitRepos()
   }
 
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(ChangeValidationConf.api)

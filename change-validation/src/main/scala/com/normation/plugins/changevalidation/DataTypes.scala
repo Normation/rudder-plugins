@@ -90,8 +90,8 @@ final case class JsonTarget(
  * The JSON class saved in /var/rudder/plugins/...
  * with the list of targets
  */
-final case class SupervisedTargetIds(
-    supervised: List[String]
+final case class UnsupervisedTargetIds(
+    unsupervised: List[String]
 )
 
 /*
@@ -159,12 +159,10 @@ object Ser {
     }
   }
 
-  /*
-   * Transform a JSON value
-   */
-  def parseJsonTargets(json: JValue): Box[Set[SimpleTarget]] = {
+  // used from API
+  def parseSupervisedTarget(json: JValue): Box[Set[SimpleTarget]] = {
     /*
-     * Here, for some reason, JNothing.extractOpt[SupervisedTargetIds] returns Some(SupervisedTargetIds(Nil)).
+     * Here, for some reason, JNothing.extractOpt[UnsupervisedTargetIds] returns Some(UnsupervisedTargetIds(Nil)).
      * Which is not what we want, obviously. So the workaround.
      */
     for {
@@ -186,8 +184,34 @@ object Ser {
   }
 
   /*
+   * Transform a JSON value
+   */
+  def parseJsonTargets(json: JValue): Box[Set[SimpleTarget]] = {
+    /*
+     * Here, for some reason, JNothing.extractOpt[UnsupervisedTargetIds] returns Some(UnsupervisedTargetIds(Nil)).
+     * Which is not what we want, obviously. So the workaround.
+     */
+    for {
+      list    <- parseUnsupervised(json)
+      targets <- Control.sequence(list)(parseTargetId)
+    } yield {
+      targets.toSet
+    }
+  }
+
+  def parseUnsupervised(json: JValue): Box[List[String]] = {
+    (json \ "unsupervised") match {
+      case JArray(list) => Control.sequence(list)(s => Box(s.extractOpt[String])).map(_.toList)
+      case _            =>
+        val msg = s"Error when trying to parse JSON content ${json.toString} as a set of rule target."
+        ChangeValidationLogger.error(msg)
+        Failure("Error when trying to parse JSON content as a set of rule target.", Empty, Empty)
+    }
+  }
+
+  /*
    * Parse a string, expecting to be the JSON representation
-   * of SupervisedTargetIds
+   * of UnsupervisedTargetIds
    */
   def parseTargetIds(source: String): Box[Set[SimpleTarget]] = {
     for {
