@@ -320,17 +320,17 @@ h3 {
   border-bottom : 2px solid #e4e4e4;
 }
 
-.btn-save {
-  position   : absolute;
-  right      : 15px;
-  margin-top : 15px;
-  width      : 55px;
+.btn-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
 }
-
-.btn-delete {
-  position : absolute;
-  right    : 70px;
-  margin   : 15px 15px 0 0;
+.btn-container .btn-save .fa{
+  margin-left: 6px;
+}
+.btn-container .btn-delete{
+  min-width: 86px;
+  margin-right: 15px;
 }
 
 .title-username {
