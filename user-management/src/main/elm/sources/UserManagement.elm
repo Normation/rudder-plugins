@@ -23,7 +23,7 @@ getUser: Username -> Users -> Maybe User
 getUser username users =
     case (Dict.get username users) of
         Just a ->
-           Just (User username a.custom a.roles)
+           Just (User username a.custom a.permissions)
         Nothing ->
             Nothing
 
@@ -39,7 +39,7 @@ update msg model =
                     let
                         knownProviders = List.filter (\p -> p /= Unknown) (List.map toProvider u.authenticationBackends)
                         recordUser =
-                            List.map (\x -> (x.login, (Authorization x.authz  x.role))) u.users
+                            List.map (\x -> (x.login, (Authorization x.authz  x.permissions))) u.users
                         newModel =
                             { model | users = fromList recordUser, digest = u.digest, providers = knownProviders}
 
@@ -131,9 +131,9 @@ update msg model =
             ({model | authzToAddOnSave = r :: model.authzToAddOnSave}, Cmd.none)
         RemoveRole user r ->
             let
-                newRoles = List.filter (\x -> r /= x) user.role
+                newRoles = List.filter (\x -> r /= x) user.permissions
                 newAuthz = List.filter (\x -> r /= x) user.authz
-                newUser = {user | role = newRoles, authz = newAuthz}
+                newUser = {user | permissions = newRoles, authz = newAuthz}
             in
             ({model | panelMode = EditMode newUser}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.isHashedPasswd))
         Notification subMsg ->
