@@ -3,7 +3,6 @@ package com.normation.plugins.usermanagement
 import com.normation.plugins.usermanagement.UserManagementService.computeRoleCoverage
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
-import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
 import com.normation.zio._
 import org.junit.runner.RunWith
@@ -29,7 +28,7 @@ class RoleComputationTest extends Specification {
 
     "return a 'Custom' role for empty intersection" in {
       computeRoleCoverage(Set(Role.User), Set(AuthorizationType.Compliance.Read)) must beEqualTo(
-        Some(Set(Role.forAuthz(AuthorizationType.Compliance.Read)))
+        Some(Set(Role.forRight(AuthorizationType.Compliance.Read)))
       )
     }
 
@@ -37,7 +36,7 @@ class RoleComputationTest extends Specification {
       computeRoleCoverage(
         Role.values,
         Set(AuthorizationType.Compliance.Read) ++ Role.Inventory.rights.authorizationTypes
-      ) must beEqualTo(Some(Set(Role.Inventory, Role.forAuthz(AuthorizationType.Compliance.Read))))
+      ) must beEqualTo(Some(Set(Role.Inventory, Role.forRight(AuthorizationType.Compliance.Read))))
     }
 
     "only detect 'Inventory' role" in {
@@ -56,7 +55,7 @@ class RoleComputationTest extends Specification {
       computeRoleCoverage(
         Set(Role.User, Role.Inventory),
         a
-      ) must beEqualTo(Some(Set(Role.forAuthz(a))))
+      ) must beEqualTo(Some(Set(Role.forRights(a))))
     }
 
     "return administrator " in {

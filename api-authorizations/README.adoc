@@ -39,24 +39,24 @@ You can log information about ACL (behavior and errors) by adding the following 
 
 = API authorizations
 
-== User personnal API Token
+== User personal API Token
 
-When you use `api-authorizations` plugin, any logged user can get a personnal API token by clicking on
+When you use `api-authorizations` plugin, any logged user can get a personal API token by clicking on
 its login information:
 
-image:api-authorizations/api-authorizations-user-no-token.png[User requesting a personnal API token]
+image:api-authorizations/api-authorizations-user-no-token.png[User requesting a personal API token]
 
-Once you click on the button, you get you personnal API token that can get revoked at any time:
+Once you click on the button, you get you personal API token that can get revoked at any time:
 
-image:api-authorizations/api-authorizations-user-with-token.png[Personnal API token information]
+image:api-authorizations/api-authorizations-user-with-token.png[personal API token information]
 
 The user can use that token to execute API requests for the same action that his role allows him to do:
 
-image:api-authorizations/api-authorizations-user-curl.png[Personnal API token information]
+image:api-authorizations/api-authorizations-user-curl.png[personal API token information]
 
 These actions are recorded as done by the user owning the API token in Rudder events log:
 
-image:api-authorizations/api-authorizations-user-event-log.png[Personnal API token information]
+image:api-authorizations/api-authorizations-user-event-log.png[personal API token information]
 
 
 == API ACLs

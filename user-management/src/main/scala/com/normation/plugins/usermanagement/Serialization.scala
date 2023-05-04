@@ -15,17 +15,17 @@ object Serialization {
   }
 
   def serializeUser(u: User): JValue = {
-    (("username"  -> u.username)
-    ~ ("password" -> u.password)
-    ~ ("role"     -> u.role))
+    (("username"     -> u.username)
+    ~ ("password"    -> u.password)
+    ~ ("permissions" -> u.permissions))
   }
 
   def serializeRole(rs: Set[Role]): JValue = {
-    val (roles, customs) = rs.partition {
+    val (permissions, customs) = rs.partition {
       case Custom(_) => false
       case _         => true
     }
-    (("role" -> roles.map(_.name))
+    (("permissions" -> permissions.map(_.name))
     ~ ("custom" -> customs.flatMap(_.rights.authorizationTypes.map(_.id)).toSeq.sorted))
   }
 }

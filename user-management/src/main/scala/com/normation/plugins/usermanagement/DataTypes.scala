@@ -42,12 +42,11 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.ValidatedUserList
 import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
-
+import com.normation.zio._
 import net.liftweb.common.Logger
 import net.liftweb.json.{Serialization => S}
 import net.liftweb.json.JsonAST.JValue
 import org.slf4j.LoggerFactory
-import com.normation.zio._
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -66,10 +65,13 @@ object Serialisation {
       val jUser            = auth.users.map {
         case (_, u) =>
           val (rs, custom) = {
-            UserManagementService.computeRoleCoverage(RudderRoles.getAllRoles.runNow.values.toSet, u.authz.authorizationTypes).getOrElse(Set.empty).partition {
-              case Custom(_) => false
-              case _         => true
-            }
+            UserManagementService
+              .computeRoleCoverage(RudderRoles.getAllRoles.runNow.values.toSet, u.authz.authorizationTypes)
+              .getOrElse(Set.empty)
+              .partition {
+                case Custom(_) => false
+                case _         => true
+              }
           }
           JsonUser(
             u.getUsername,
@@ -103,7 +105,7 @@ final case class JsonAuthConfig(
 )
 
 final case class JsonUser(
-    login: String,
-    authz: Set[String],
-    role:  Set[String]
+    login:       String,
+    authz:       Set[String],
+    permissions: Set[String]
 )

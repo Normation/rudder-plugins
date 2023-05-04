@@ -12,7 +12,8 @@ other general information.
 
 = Authentication backends
 
-This plugins allows to use alternative authentication backends for Rudder: SAMLv2/OpenID Connect, LDAP/AD and radius (DEPRECATED).
+This plugins allows to use alternative authentication backends for Rudder: *SAMLv2*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
+The old radius module is deprecated and will totally removed in a future version.
 
 Each authentication method is detailed below. Users are expected to know how an authentication system works independently from Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
 
@@ -36,18 +37,29 @@ image:docs/images/oauth2-oidc-login-form.png[]
 
 == Configure enabled backends
 
+=== Using one external backend for authentication
+
 By default, both authentication and authorization are handle in the `rudder-users.xml`
-file. But you may want to rely on your existing entreprise Active Directory or LDAP
+file. But you may want to rely on your existing enterprise Active Directory or LDAP
 to take care of the authentication part.
 
-To choose the scheme to use, either use 'file' or 'ldap' for the `rudder.auth.provider`
-parameter in configuration file: `/opt/rudder/etc/rudder-web.properties`.
+This behavior can be changed to use one of the provided authentication provider described 
+below by editing the configuration property `rudder.auth.provider` in 
+`/opt/rudder/etc/rudder-web.properties`.
+
+For example, if you want to use the LDAP/AD authentication backend, you will set:
+
+```
+rudder.auth.provider=ldap
+```
+
+Identifier for each authentication backend is documented in its respective chapter below. 
 
 [NOTE]
 =====
 
-After a change in Rudder `/opt/rudder/etc/rudder-web.properties` configuration file,
-you need to restart the web application with the command:
+After a change in Rudder `/opt/rudder/etc/rudder-web.properties` configuration file or any configuration
+files under `/opt/rudder/etc/rudder-web.properties.d/`, Rudder needs to be restarted with the command:
 
 ```
 systemctl restart rudder-jetty
@@ -55,10 +67,7 @@ systemctl restart rudder-jetty
 
 =====
 
-You can also use a comma separated list of authentication provider to use,
-like 'ldap,file' in which case each one will be tested in turned for authentication.
-
-When set to 'ldap' or 'radius', passwords in rudder-users.xml are ignored and the
+When set to external provider like 'ldap', passwords in rudder-users.xml are ignored and the
 authentication is delegated to the LDAP or radius server configured.
 
 By convention, when LDAP authentication is enable, 'password' field in
@@ -78,6 +87,11 @@ systemctl restart rudder-jetty
 ```
 
 =====
+
+=== Using several backends for authentication
+
+You can also use a comma separated list of authentication providers in `rudder.auth.provider`,
+like 'ldap,file' in which case each one will be tested in turned for authentication.
 
 
 For example, to use first an `ldap` authentication, and then in case the user is not found
@@ -101,7 +115,7 @@ For example, that `rudder-users.xml` file will configure "admin" by file access,
 [WARNING]
 ======
 
-Be careful to have only one `rudder.auth.provider` property in your file!
+Be careful to have only one `rudder.auth.provider` property in your files!
 
 ======
 
@@ -111,6 +125,8 @@ Be careful to have only one `rudder.auth.provider` property in your file!
 If an error happened in one of the authentication modules, the following in the provider sequence won't be tried.
 
 ======
+
+== Root access when external authentication is not working
 
 [NOTE]
 =====
@@ -127,30 +143,26 @@ In particular, check that `Computed list of providers` entry matches your will.
 
 == LDAP / AD backend configuration
 
-The configuration properties that need to be added in
-/opt/rudder/etc/rudder-web.properties file to configure the LDAP or AD
+The configuration properties needed to configure the LDAP or AD
 authentication backend are displayed below.
 
-For convenience, the part betweeb `---- add in rudder-web.properties ----` and
-`---- end of add in rudder-web.properties ----` can
-be directly added in your /opt/rudder/etc/rudder-web.properties file.
+You should copy the whole configuration properties in a new file under
+`/opt/rudder/etc/rudder-web.properties.d/`(see 
+xref:reference:administration:webapp.adoc#_configuration for more detail about
+how Rudder configuration properties override works).
 
-Note that key "rudder.auth.provider" is likelly to already exists. In
-that case, just update it with the sequence of authentication backend
-you want to try.
-
+Note that key "rudder.auth.provider" is already defined in `/opt/rudder/etc/rudder-web.properties`
+and will need to be updated in that place:
 
 ```
----- add in rudder-web.properties ----
-
-###########################
-# Rudder Authentication    #############################################################
-###########################
-
 #
 # update provider:
 #
 rudder.auth.provider=ldap
+```
+
+```
+---- copy into new file /opt/rudder/etc/rudder-web.properties.d/20-ldap-authentication.properties ----
 
 
 ###########################
@@ -213,6 +225,7 @@ rudder.auth.ldap.connection.url=ldap://ldap.mycorp.com:389/dc=mycorp,dc=com
 # "application" DN for Rudder in you LDAP directory, or an LDAP user with
 # enought rights to be able to walk the user branch configured below.
 # LDAP dn, no default value.
+# Be careful to not add quote around the DN, the value is used as provided.
 #
 rudder.auth.ldap.connection.bind.dn=cn=rudder,ou=services,dc=mycorp,dc=com
 
@@ -221,6 +234,13 @@ rudder.auth.ldap.connection.bind.dn=cn=rudder,ou=services,dc=mycorp,dc=com
 # String, no default value.
 #
 rudder.auth.ldap.connection.bind.password=secret
+
+#
+# If your directory uses remote links that need to be deferenced
+# for resolving the actual entry, for example in the case of an
+# AD forest, you need to uncomment the following option.
+#
+# rudder.auth.ldap.connection.derefLink=true
 
 #
 # Search base and filter to use to find the user.
@@ -243,7 +263,7 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 #rudder.auth.ldap.searchbase=
 #rudder.auth.ldap.filter=(&(sAMAccountName={0})(objectclass=user))
 
----- end of add in rudder-web.properties ----
+---- end of ldap authentication properties to copy ----
 ```
 
 === Using a certificate for secure connection to LDAP/AD
@@ -313,7 +333,20 @@ rudder.auth.oauth2.provider.registrations=okta,google
 
 Each provider needs to then have a bunch of properties defined for it. They are listed below and all follow the pattern `rudder.auth.oauth2.provider.${providerID}.${subPath} where `providerId` is the ID in the previous list, and `subPath` is the remaining name of the property.
 
-In the next below description, we use `okta` as a provider. We chose this one because OAUTHv2/OpenID Connect configuration can be a bit complicated and full of jargon, and so having a real, well documented reference is helpful - and https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#next-steps[Okta provides that].
+We advise to configure each provider in it's own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
+so that it is easier to change or disable some of them.
+
+=== Example configuration for `okta` provider
+
+In this section, we use `okta` as OIDC provider, and we chose the name `okta` to identify that provider in Rudder configuration file.
+
+We chose this OIDC provider because it provides freely available 
+https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#next-steps[extensive documentation and testing platform]. 
+This can be useful since OAUTHv2/OpenID Connect configuration can be a bit complicated and full of jargon.
+
+In the remaining part of this section, you will need to change `okta` by the name you chose to identify your OIDC provider in Rudder.
+
+You can copy the following example into `/opt/rudder/etc/rudder-web.properties.d/30-oidc-okta-authentication.properties`.
 
 ```
 # Authentication provider id in rudder.auth.provider:

@@ -47,6 +47,7 @@ import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.KeyStatus
 import com.normation.inventory.domain.NodeId
 import com.normation.inventory.domain.SecurityToken
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.PluginEnableImpl
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
@@ -91,6 +92,7 @@ import zio.{System => _, _}
 import zio.syntax._
 import zio.test.Annotations
 import zio.test.TestClock
+
 
 /**
  *  This is just an example test server to run by hand and see how things work.
@@ -744,14 +746,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
             total_0 = ce_0 + cs_0
             _      <- dss.restartScheduleTask()
             // then, event after days, nothing is done
-            _      <- testClock.get[TestClock].adjust(1 day)
+            _      <- testClock.get[TestClock].adjust(1.day)
             ce_1d  <- CmdbServer.counterError.get
             cs_1d  <- CmdbServer.counterSuccess.get
           } yield {
             (total_0, ce_1d + cs_1d)
           }
         })
-        .runTimeout(1 minute)
+        .runTimeout(1.minute)
 
       (total_0, total_1d) must beEqualTo((0, 0))
     }
@@ -780,7 +782,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
             total_0 = ce_0 + cs_0
             _      <- dss.restartScheduleTask()
             // then, event after days, nothing is done
-            _      <- testClock.get[TestClock].adjust(1 day)
+            _      <- testClock.get[TestClock].adjust(1.day)
             _      <- queue.failIfNonEmpty
             ce_1   <- CmdbServer.counterError.get
             cs_1   <- CmdbServer.counterSuccess.get
@@ -794,7 +796,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
             total_2 = ce_2 + cs_2
           } yield (total_0, total_1, total_2)
         })
-        .runTimeout(1 minute)
+        .runTimeout(1.minute)
 
       val logger = LoggerFactory.getLogger("datasources").asInstanceOf[ch.qos.logback.classic.Logger]
       logger.setLevel(Level.OFF)
@@ -803,19 +805,29 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "create a new schedule from data source information" in {
-      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO
-        .scoped(makeTestClock.flatMap { testClock =>
+//<<<<<<< HEAD
+//      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO
+//        .scoped(makeTestClock.flatMap { testClock =>
+//=======
+      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO.scoped(makeTestClock.flatMap {
+        testClock =>
+//>>>>>>> branches/rudder/7.2*/
           // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
           val queue = Queue.unbounded[Unit].runNow
 
           val dss = new DataSourceScheduler(
-            datasource.copy(name = DataSourceName("create a new schedule")),
+            datasource.copy(name = DataSourceName("create a new schedule")), 
+            //<<<<<<< HEAD
+//=======
+         //   testClock,
+//>>>>>>> branches/rudder/7.2*/
             Enabled,
             () => ModificationId(MyDatasource.uuidGen.newUuid),
             testAction(queue)
           )
 
           // reset counter
+//<<<<<<< HEAD
           CmdbServer.reset()
           for {
             // before start, nothing is done
@@ -838,32 +850,128 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
             ce_1s   <- CmdbServer.counterError.get
             cs_1s   <- CmdbServer.counterSuccess.get
             total_1s = ce_1s + cs_1s
-            _       <- testClock.get[TestClock].adjust(4 minutes)
+            _       <- testClock.get[TestClock].adjust(4.minute)
             _       <- queue.failIfNonEmpty
             ce_4m   <- CmdbServer.counterError.get
             cs_4m   <- CmdbServer.counterSuccess.get
             total_4m = ce_4m + cs_4m
             // then all the nodes gets their info
-            _       <- testClock.get[TestClock].adjust(1 minutes) // 5 minutes
+            _       <- testClock.get[TestClock].adjust(1.minute) // 5 minutes
             _       <- queue.take
             ce_5m   <- CmdbServer.counterError.get
             cs_5m   <- CmdbServer.counterSuccess.get
             total_5m = ce_5m + cs_5m
             // then nothing happen anymore
-            _       <- testClock.get[TestClock].adjust(3 minutes) // 8 minutes
+            _       <- testClock.get[TestClock].adjust(3.minute) // 8 minutes
             _       <- queue.failIfNonEmpty
             ce_8m   <- CmdbServer.counterError.get
             cs_8m   <- CmdbServer.counterSuccess.get
             total_8m = ce_8m + cs_8m
           } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m)
         })
-        .runTimeout(1 minute)
+        .runTimeout(1.minute)
+/*=======
+          CmdbServer.reset()
+          for {
+            // before start, nothing is done
+            _       <- queue.failIfNonEmpty
+            ce_0    <- CmdbServer.counterError.get
+            cs_0    <- CmdbServer.counterSuccess.get
+            total_0  = ce_0 + cs_0
+            f1      <- dss.scheduledTask.get
+            _       <- dss.restartScheduleTask()
+            // now we have a stored fiber
+            f2      <- dss.scheduledTask.get.notOptional("Fiber reference not defined")
+            r1      <- f2.fold(r => r.status, s => Unexpected(s"f2 should not be a synthetic fiber").fail)
+            // then just after, we have the first exec - it still need at least a ms to tick
+            // still nothing here
+            _       <- testClock.get[TestClock].adjust(1.second)
+            // here we have results
+            _       <- queue.take
+            ce_0s   <- CmdbServer.counterError.get
+            cs_0s   <- CmdbServer.counterSuccess.get
+            total_0s = ce_0s + cs_0s
+            // then nothing happens before 5 minutes
+            _       <- testClock.get[TestClock].adjust(1.second)
+            _       <- queue.failIfNonEmpty
+            ce_1s   <- CmdbServer.counterError.get
+            cs_1s   <- CmdbServer.counterSuccess.get
+            total_1s = ce_1s + cs_1s
+            _       <- testClock.get[TestClock].adjust(4.minutes)
+            _       <- queue.failIfNonEmpty
+            ce_4m   <- CmdbServer.counterError.get
+            cs_4m   <- CmdbServer.counterSuccess.get
+            total_4m = ce_4m + cs_4m
+            // then all the nodes gets their info
+            _       <- testClock.get[TestClock].adjust(1.minutes) // 5 minutes
+            _       <- queue.take
+            ce_5m   <- CmdbServer.counterError.get
+            cs_5m   <- CmdbServer.counterSuccess.get
+            total_5m = ce_5m + cs_5m
+            // then nothing happen anymore
+            _       <- testClock.get[TestClock].adjust(3.minutes) // 8 minutes
+            _       <- queue.failIfNonEmpty
+            ce_8m   <- CmdbServer.counterError.get
+            cs_8m   <- CmdbServer.counterSuccess.get
+            _       <- dss.cancel()
+            // write again fiber
+            r2      <- f2.fold(r => r.status, s => Unexpected(s"f2 should not be a synthetic fiber").fail)
+            total_8m = ce_8m + cs_8m
+          } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m, f1, f2, r1, r2)
+      }).runTimeout(1.minute)
+//>>>>>>> branches/rudder/7.2*/
 
       val size = NodeConfigData.allNodesInfo.size
-      (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo((0, size, size, size, size * 2, size * 2))
+      (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo((0, size, size, size, size * 2, size * 2))// and
+      //(f1 must beEqualTo(None)) and (r1 === Fiber.Status.Running(interrupting = false)) and (r2 === Fiber.Status.Done)
     }
-
   }
+
+  "operation from repository" should {
+
+    "saving rom repos should kill the old fiber" in {
+      val id = DataSourceId("test-repos-save")
+
+      val datasource = NewDataSource(
+        name = id.value,
+        url = s"${REST_SERVER_URL}/$${rudder.node.id}",
+        path = "$.hostname",
+        schedule = Scheduled(5.minute)
+      )
+
+      val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
+      val repos = new DataSourceRepoImpl(
+        new MemoryDataSourceRepository(),
+        new HttpQueryDataSourceService(
+          infos,
+          parameterRepo,
+          infos,
+          interpolation,
+          noPostHook,
+          () => alwaysEnforce.succeed
+        ),
+        MyDatasource.uuidGen,
+        AlwaysEnabledPluginStatus
+      )
+
+      val (r11, r12) = RunNowTimeout(
+        for {
+          _   <- repos.save(datasource)
+          f1  <- repos.datasources.all().flatMap(_(id).scheduledTask.get).notOptional("error in test: f1 is none")
+          // here, it should be Suspended because it won't run before 5 minutes
+          r11 <- f1.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
+          _   <- repos.save(datasource.copy(name = DataSourceName("updated name")))
+          _   <- repos.datasources.all().flatMap(_(id).scheduledTask.get).notOptional("error in test: f2 is none")
+          r12 <- f1.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
+        } yield (r11, r12)
+      ).runTimeout(1.minute)
+
+      (r11 must beLike {
+        case Fiber.Status.Suspended( _, _, _) => ok
+      }) and (r12 === Fiber.Status.Done)
+    }
+  }
+
   "querying a lot of nodes" should {
 
     // test on 100 nodes. With 30s timeout, even on small hardware it will be ok.

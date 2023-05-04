@@ -164,30 +164,30 @@ class DataSourceRepoImpl(
   /*
    * Be careful, ALL modification to datasource must be synchronized
    */
-  private[this] object datasources extends AnyRef {
-    private[this] val semaphore   = Semaphore.make(1).runNow
-    private[this] val internalRef = Ref.make(Map[DataSourceId, DataSourceScheduler]()).runNow
+  private[datasources] object datasources extends AnyRef {
+    private[this] val semaphore          = Semaphore.make(1).runNow
+    private[datasources] val internalRef = Ref.make(Map[DataSourceId, DataSourceScheduler]()).runNow
 
     // utility methods on datasources
     // stop a datasource - must be called when the datasource still in "datasources"
-    private[this] def stop(id: DataSourceId) = {
+    private[datasources] def stop(id: DataSourceId): IOResult[Unit] = {
       DataSourceLoggerPure.debug(s"Stopping data source with id '${id.value}'") *>
-      internalRef.get.map(_.get(id) match {
-        case None      => DataSourceLogger.trace(s"Data source with id ${id.value} was not found running")
+      internalRef.get.flatMap(_.get(id) match {
+        case None      => DataSourceLoggerPure.trace(s"Data source with id ${id.value} was not found running")
         case Some(dss) => dss.cancel()
       })
     }
 
-    def save(dss: DataSourceScheduler) = semaphore.withPermit {
+    def save(dss: DataSourceScheduler): IOResult[Unit]                                   = semaphore.withPermit {
       stop(dss.datasource.id) *>
       internalRef.update(_ + (dss.datasource.id -> dss))
     }
-    def delete(id: DataSourceId)       = semaphore.withPermit {
+    def delete(id: DataSourceId) = semaphore.withPermit {
       stop(id) *>
       internalRef.update(_ - id)
     }
     // get all - return an immutable map
-    def all(): IOResult[Map[DataSourceId, DataSourceScheduler]] = semaphore.withPermit(internalRef.get)
+    def all():                          IOResult[Map[DataSourceId, DataSourceScheduler]] = semaphore.withPermit(internalRef.get)
   }
 
   // Initialize data sources scheduler, with all sources present in backend
