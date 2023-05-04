@@ -58,9 +58,9 @@ import com.normation.plugins.changevalidation.RoChangeRequestJdbcRepository
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoValidatedUserJdbcRepository
 import com.normation.plugins.changevalidation.RoWorkflowJdbcRepository
-import com.normation.plugins.changevalidation.SupervisedTargetsReposiory
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
+import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
 import com.normation.plugins.changevalidation.UserValidationNeeded
 import com.normation.plugins.changevalidation.ValidatedUserMapper
 import com.normation.plugins.changevalidation.ValidationNeeded
@@ -195,6 +195,11 @@ class ChangeValidationWorkflowLevelService(
  */
 object ChangeValidationConf extends RudderPluginModule {
 
+  val migration = new MigrateSupervisedGroups(RudderConfig.roNodeGroupRepository, unsupervisedTargetRepo)
+  // look if we were using supervised groups and need to use unsupervised ones.
+  // can be removed in Rudder 8.0 since Rudder 7.3 only knows about unsupervised groups.
+  migration.migrate()
+
   lazy val notificationService = new NotificationService(
     new EmailNotificationService(),
     RudderConfig.linkUtil,
@@ -222,9 +227,9 @@ object ChangeValidationConf extends RudderPluginModule {
     () => RudderConfig.configService.rudder_workflow_self_deployment().toBox
   )
 
-  lazy val supervisedTargetRepo = new SupervisedTargetsReposiory(
+  lazy val unsupervisedTargetRepo = new UnsupervisedTargetsRepository(
     directory = Paths.get("/var/rudder/plugin-resources/" + pluginDef.shortName),
-    filename = "supervised-targets.json"
+    filename = "unsupervised-targets.json"
   )
   lazy val roChangeRequestRepository: RoChangeRequestRepository = {
     new RoChangeRequestJdbcRepository(doobie, changeRequestMapper)
@@ -242,7 +247,13 @@ object ChangeValidationConf extends RudderPluginModule {
     new WoValidatedUserJdbcRepository(doobie, validatedUserMapper, roValidatedUserRepository)
   }
 
-  // other service instanciation / initialization
+  val loadSupervisedTargets = () => {
+    for {
+      u <- unsupervisedTargetRepo.load()
+      g <- RudderConfig.roNodeGroupRepository.getFullGroupLibrary().toBox
+    } yield UnsupervisedTargetsRepository.invertTargets(u, g)
+  }
+
   RudderConfig.workflowLevelService.overrideLevel(
     new ChangeValidationWorkflowLevelService(
       pluginStatusService,
@@ -250,7 +261,7 @@ object ChangeValidationConf extends RudderPluginModule {
       validationWorkflowService,
       Seq(
         new NodeGroupValidationNeeded(
-          supervisedTargetRepo.load _,
+          loadSupervisedTargets,
           roChangeRequestRepository,
           RudderConfig.roRuleRepository,
           RudderConfig.roNodeGroupRepository,
@@ -272,7 +283,7 @@ object ChangeValidationConf extends RudderPluginModule {
   lazy val api = {
     val api1 = new SupervisedTargetsApiImpl(
       RudderConfig.restExtractorService,
-      supervisedTargetRepo,
+      unsupervisedTargetRepo,
       RudderConfig.roNodeGroupRepository
     )
     val api2 = new ChangeRequestApiImpl(
