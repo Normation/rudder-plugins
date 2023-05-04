@@ -6,6 +6,9 @@ import org.gradiant.jenkins.slack.SlackNotifier
 def notifier = new SlackNotifier()
 
 pipeline {
+    environment {
+      SLACK_CHANNEL = 'ci-security'
+    }
     agent none
     triggers { cron('@daily') }
 

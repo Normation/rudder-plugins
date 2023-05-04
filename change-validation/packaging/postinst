@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xe
+set -e
 SQL_CREDENTIALS=$(grep -c -E "^rudder.jdbc.(username|password)[ \t]*=" /opt/rudder/etc/rudder-web.properties || true)
 
 if [ -f /opt/rudder/etc/rudder-web.properties -a ${SQL_CREDENTIALS} -eq 2 ]; then

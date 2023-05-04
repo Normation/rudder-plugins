@@ -36,7 +36,7 @@ NOTE: To trigger periodic playbooks execution you can use the `Schedule Simple S
 
 There is also an Ansible plugin available to use the Rudder inventory, groups and node properties in your Ansible playbooks.
 
-To get more information about it, see the https://docs.rudder.io/reference/5.0/administration/integration.html[dedicated documentation]
+To get more information about it, see the https://docs.rudder.io/reference/current/administration/integration.html[dedicated documentation]
 
 ==== Reference
 

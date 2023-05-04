@@ -18,31 +18,3 @@ Enable usage of scale-out relay servers
 This plugins allows Rudder infrastructure to use "relay servers".
 Relay servers are special nodes which are part of Rudder policy distribution and report gathering.
 They allows to spread load or hop between networks.
-
-== Relay compatibility
-
-Starting Rudder 6.0 relays are now supporting multiple reporting modes.
-The following tables report the compatibility between agent/relay/server and the different reporting modes:
-
-.Agent 5.0
-[s, e, options="header"]
-|=======================
-s| Reporting mode         |Relay 5.0   | Relay 6.0   | Server 5.0 | Server 6.0
-s|HTTPS                   |            |             |            |
-s|HTTPS + SYSLOG          |SYSLOG      |SYSLOG       |SYSLOG      |SYSLOG
-s|SYSLOG  Only            |SYSLOG      |SYSLOG       |SYSLOG      |SYSLOG
-
-|=======================
-
-
-.Agent 6.0
-[s, e, options="header"]
-|=======================
-s| Reporting mode         |Relay 5.0   | Relay 6.0   | Server 5.0 | Server 6.0
-s|HTTPS                   |            |HTTPS        |            |HTTPS
-s|HTTPS + SYSLOG          |SYSLOG      |HTTPS        |SYSLOG      |HTTP
-s|SYSLOG  Only            |SYSLOG      |SYSLOG       |SYSLOG      |SYSLOG
-
-|=======================
-
- WARNING: A 6.0 node managed by a 5.0 relay will not be able to report except if the global reporting mode is forced to SYSLOG Only.
