@@ -1,14 +1,10 @@
-@Library('slack-notification')
-import org.gradiant.jenkins.slack.SlackNotifier
+def slackResponse = slackSend(channel: "ci-security", message: "*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def job = ""
+def errors = []
+def running = []
 
-// Check vulns in dependencies on repo branches
-
-def notifier = new SlackNotifier()
 
 pipeline {
-    environment {
-      SLACK_CHANNEL = 'ci-security'
-    }
     agent none
     triggers { cron('@daily') }
 
@@ -31,6 +27,10 @@ pipeline {
                     ).trim().split(' ')
                     SCALA_PLUGINS.each {
                         stage("${it}") {
+                            script {
+                                running.add("${it}")
+                                updateSlack(errors, running, slackResponse)
+                            }
                             catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                 try {
                                     dir("${it}") {
@@ -46,15 +46,17 @@ pipeline {
                                         }
                                         sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                                     }
-                                }
-                                catch (exc) {
+                                } catch (exc) {
                                     // Mark the build as failure since it's actually an error
                                     currentBuild.result = 'FAILURE'
-                                    notifier.notifyResult("scala-team")
-                                    throw exc
+                                    errors.add("${it}")
+                                    slackSend(channel: slackResponse.threadId, message: "Dependency check error on plugin ${it} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                 }
                             }
-
+                            script {
+                                running.remove("${it}")
+                                updateSlack(errors, running, slackResponse)
+                            }
                         }
                     }
                 }
@@ -63,13 +65,29 @@ pipeline {
                 always {
             		archiveArtifacts artifacts: '*/target/dependency-check-report.html, */target/site/aggregate-third-party-report.html'
                 }
-                fixed {
-                  script {
-                        notifier.notifyResult("scala-team")
-                    }
-                }
             }
         }
     }
 }
 
+def updateSlack(errors, running , slackResponse) {
+
+
+def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>\n"
+
+def color = "#00A8E1"
+
+if (! errors.isEmpty()) {
+    msg += "*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
+    color = "#CC3421"
+}
+if (! running.isEmpty()) {
+    msg += "*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
+}
+
+if (errors.isEmpty() && running.isEmpty()) {
+    msg +=  ":yesyes: All plugin dependencies checked! :fiesta-parrot:"
+	color = "good"
+}
+  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+}
