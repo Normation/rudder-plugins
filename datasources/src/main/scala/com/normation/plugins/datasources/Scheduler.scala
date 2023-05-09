@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import com.normation.errors.IOResult
-import com.normation.errors.effectUioUnit
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.plugins.PluginStatus
@@ -108,7 +107,7 @@ class DataSourceScheduler(
         never.succeed
     }
 
-    val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value}): ${schedule}"
+    val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value})"
 
     // The full action with logging. We don't want it to be able to fail, because it would stop
     // future update. So we catch all error and log them (in debug because they are (should) already log in error, we
