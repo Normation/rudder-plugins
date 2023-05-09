@@ -13,13 +13,18 @@ other general information.
 = Authentication backends
 
 This plugins allows to use alternative authentication backends for Rudder: *SAMLv2*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
-The old radius module is deprecated and will totally removed in a future version.
+The old *radius module is deprecated* and will be totally removed in a future version.
 
-Each authentication method is detailed below. Users are expected to know how an authentication system works independently from Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
+Each authentication method is detailed below. Users are expected to know how an authentication system works independently of Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
+
+== Centralized user authorization management with OIDC
+
+In addition to alternative authentication provider, the OIDC backends allow to provide Rudder roles through the OIDC token so that you can control your Rudder user authorisation directly from your identity provider.
+See OIDC chapter below for more information.
 
 == Configure login form rendering
 
-By default, the standard Rudder login form is displayed. SSO backends like OpenID Connect ones add links to the relevant SSO own login page below that Rudder login form. When you use such an authentication method, you want to hide or totaly remove Rudder own login form to avoid to confuse you user. For that, you can use the following property:
+By default, the standard Rudder login form is displayed. SSO backends like OpenID Connect ones add links to the relevant SSO own login page below that Rudder login form. When you use such an authentication method, you want to hide or totally remove Rudder own login form to avoid to confuse you user. For that, you can use the following property:
 
 ```
 rudder.auth.displayLoginForm=show
@@ -43,8 +48,8 @@ By default, both authentication and authorization are handle in the `rudder-user
 file. But you may want to rely on your existing enterprise Active Directory or LDAP
 to take care of the authentication part.
 
-This behavior can be changed to use one of the provided authentication provider described 
-below by editing the configuration property `rudder.auth.provider` in 
+This behavior can be changed to use one of the provided authentication provider described
+below by editing the configuration property `rudder.auth.provider` in
 `/opt/rudder/etc/rudder-web.properties`.
 
 For example, if you want to use the LDAP/AD authentication backend, you will set:
@@ -53,7 +58,7 @@ For example, if you want to use the LDAP/AD authentication backend, you will set
 rudder.auth.provider=ldap
 ```
 
-Identifier for each authentication backend is documented in its respective chapter below. 
+Identifier for each authentication backend is documented in its respective chapter below.
 
 [NOTE]
 =====
@@ -147,7 +152,7 @@ The configuration properties needed to configure the LDAP or AD
 authentication backend are displayed below.
 
 You should copy the whole configuration properties in a new file under
-`/opt/rudder/etc/rudder-web.properties.d/`(see 
+`/opt/rudder/etc/rudder-web.properties.d/`(see
 xref:reference:administration:webapp.adoc#_configuration for more detail about
 how Rudder configuration properties override works).
 
@@ -307,13 +312,20 @@ To correct that problem, you need to remove that restriction (and update your ce
   * `jdk.certpath.disabledAlgorithms`
 * restart `rudder-jetty`
 
-=== OAUTHv2 / OpenID Connect
+=== OAUTHv2 / OpenID Connect (OIDC)
 
 https://openid.net/connect/[OpenID Connect] (OIDC) is a very common SSO protocol to authenticate and manage authorizations of users in a decentralized, multi-tenant set-up (ie, typically web applications nowadays). It's built on top of `OAUTHv2` and replace it in most new cases.
 
 These protocols delegate the actual authentication to an identity provider (IdP) that in turns send the relevant authentication information to the client, i.e. to Rudder in our case. These `IdP` can be public providers, like https://google.com[Google], deployed and managed internally in a company, like ForgeRock's open source https://forgerock.github.io/openam-community-edition/[OpenAM], or used as SaaS, like https://okta.com[Okta] - and often, providers do a mix of these things.
 
 Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
+
+[notice]
+====
+
+We advise to use OICD over SAMLv2 if possible.
+
+====
 
 To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAUTHv2` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider.
 
@@ -333,15 +345,30 @@ rudder.auth.oauth2.provider.registrations=okta,google
 
 Each provider needs to then have a bunch of properties defined for it. They are listed below and all follow the pattern `rudder.auth.oauth2.provider.${providerID}.${subPath} where `providerId` is the ID in the previous list, and `subPath` is the remaining name of the property.
 
-We advise to configure each provider in it's own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
+We advise to configure each provider in its own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
 so that it is easier to change or disable some of them.
+
+=== OIDC-provided authorisations for Rudder users
+
+You can configure an OIDC provider so that it informs Rudder of the roles the user need to have. This allows to centrally
+manage both user and authorisation in the same place.
+
+This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
+
+You need three additional properties to enable and configure that property for a given OIDC provider:
+- the first, `roles.enabled` allows to enable the feature,
+- the second, `roles.attribute` defines the name of the OIDC token attribute which holds the list of roles,
+- the third, `roles.override` defines if the OIDC provided roles must be the only one the user get, or if they
+  are merged with the `rudder-users.xml` ones.
+
+See the example configuration file below for details about these property values.
 
 === Example configuration for `okta` provider
 
 In this section, we use `okta` as OIDC provider, and we chose the name `okta` to identify that provider in Rudder configuration file.
 
-We chose this OIDC provider because it provides freely available 
-https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#next-steps[extensive documentation and testing platform]. 
+We chose this OIDC provider because it provides freely available
+https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#next-steps[extensive documentation and testing platform].
 This can be useful since OAUTHv2/OpenID Connect configuration can be a bit complicated and full of jargon.
 
 In the remaining part of this section, you will need to change `okta` by the name you chose to identify your OIDC provider in Rudder.
@@ -424,6 +451,22 @@ rudder.auth.oauth2.provider.okta.client.redirect=https://my-external-rudder-host
 rudder.auth.oauth2.provider.okta.grantType=authorization_code
 # Authentication type - Rudder only supports client_secret_basic and client_secret_post.
 rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
+
+#
+# Properties to configure roles provisioning through the OIDC token
+#
+# enable Rudder user role provisioning by the OIDC IdP. use `true` or `false` (default)
+rudder.auth.oauth2.provider.okta.roles.enabled=true
+#Name of the OIDC token attribute that will hold rudder roles. This is something that you identity provider
+#administrator will give you. The attribute value must be a SAML list of string, ie in the format:
+#  attribute: [role-oidc-a, role-oidc-b, etc]
+#Each string will be mapped to a rudder role (or ignored if no matching is found). Default value: empty.
+rudder.auth.oauth2.provider.okta.roles.attribute=rudderroles
+#Define if the provided list of roles should *override* or *be appended to* the list of roles configured for
+#the user in the `rudder-users.xml` file. Use `false` for append (default), `true` for override.
+rudder.auth.oauth2.provider.okta.roles.override=true
+
+
 ```
 
 
@@ -543,7 +586,7 @@ In the log, you see:
 It means that the value used for `rudder.auth.oauth2.provider.${registrationKey}.userNameAttributeName` was correctly returned in the profile list for the authenticated user, but that value was not found in Rudder user configuration files `/opt/rudder/etc/rudder-users.xml`.
 Check that one of the entries in that file has the corresponding value for its `name` attribute.
 
-=== Radius backend
+=== Radius backend (deprecated)
 
 [WARNING]
 =====
@@ -552,7 +595,7 @@ Radius backend is deprecated as of Rudder 7.0. It will be removed in a
 next version of Rudder.
 You should try to replace it with another backend. In case that backend is
 a must-have for you, please contact Rudder company for discussing how to help
-you migrate away of Radius of get specific support for it.
+you migrate away of Radius or get specific support for it.
 
 =====
 
