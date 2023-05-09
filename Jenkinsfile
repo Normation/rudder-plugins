@@ -1,7 +1,10 @@
-@Library('slack-notification')
-import org.gradiant.jenkins.slack.SlackNotifier
 
-def notifier = new SlackNotifier()
+def failedBuild = false
+
+def slackResponse = slackSend(channel: "ci", message: "7.2 plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def job = ""
+def errors = []
+def running = []
 
 
 pipeline {
@@ -13,7 +16,7 @@ pipeline {
 
     environment {
         // TODO: automate
-        RUDDER_VERSION = "7.1"
+        RUDDER_VERSION = "7.2"
         // we want it everywhere for plugins
         MAVEN_ARGS = "--update-snapshots"
     }
@@ -28,6 +31,10 @@ pipeline {
                         }
                     }
                     steps {
+                        script {
+                            running.add("shell scripts")
+                            updateSlack(errors, running, slackResponse)
+                        }
                         sh script: './qa-test --shell', label: 'shell scripts lint'
                         sh script: './qa-test --scripts', label: 'shell postinst lint'
                     }
@@ -37,9 +44,18 @@ pipeline {
                             recordIssues enabledForFailure: true, failOnError: true, sourceCodeEncoding: 'UTF-8',
                                          tool: checkStyle(pattern: '.shellcheck/*.log', reportEncoding: 'UTF-8', name: 'Shell scripts')
                         }
+
                         failure {
                             script {
-                                notifier.notifyResult("shell-team")
+                                errors.add("shell scripts")
+                                //notifier.notifyResult("shell-team")
+                                slackSend(channel: slackResponse.threadId, message: "Check shell scripts on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                            }
+                        }
+                        cleanup {
+                            script {
+                                running.remove("shell scripts")
+                                updateSlack(errors, running, slackResponse)
                             }
                         }
                     }
@@ -51,12 +67,24 @@ pipeline {
                         }
                     }
                     steps {
+                        script {
+                            running.add("python scripts")
+                            updateSlack(errors, running, slackResponse)
+                        }
                         sh script: './qa-test --python', label: 'python scripts lint'
                     }
                     post {
                         failure {
                             script {
-                                notifier.notifyResult("shell-team")
+                                errors.add("python scripts")
+                                //notifier.notifyResult("shell-team")
+                                slackSend(channel: slackResponse.threadId, message: "Check python scripts on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                            }
+                        }
+                        cleanup {
+                            script {
+                                running.remove("python scripts")
+                                updateSlack(errors, running, slackResponse)
                             }
                         }
                     }
@@ -69,12 +97,24 @@ pipeline {
                         }
                     }
                     steps {
+                        script {
+                            running.add("check typos")
+                            updateSlack(errors, running, slackResponse)
+                        }
                         sh script: './qa-test --typos', label: 'check typos'
                     }
                     post {
                         failure {
                             script {
-                                notifier.notifyResult("shell-team")
+                                errors.add("check typos")
+                                //notifier.notifyResult("shell-team")
+                                slackSend(channel: slackResponse.threadId, message: "Check typos on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                            }
+                        }
+                        cleanup {
+                            script {
+                                running.remove("check typos")
+                                updateSlack(errors, running, slackResponse)
                             }
                         }
                     }
@@ -104,21 +144,30 @@ pipeline {
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("test ${p}") {
+
+                                script {
+                                    running.add("Test - ${p}")
+                                    updateSlack(errors, running, slackResponse)
+                                }
                                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                     try {
                                         dir("${p}") {
-                                            // enough to run the mvn tests and package the plugin
-                                            sh script: 'make', label: "build ${p} plugin"
+                                        // enough to run the mvn tests and package the plugin
+                                        sh script: 'make', label: "build ${p} plugin"
                                         }
-                                    }
-                                    catch (exc) {
+                                    } catch (exc) {
                                         // Mark the build as failure since it's actually an error
                                         currentBuild.result = 'FAILURE'
-                                        notifier.notifyResult("scala-team")
-                                        throw exc
+                                        errors.add("${p}")
+                                        slackSend(channel: slackResponse.threadId, message: "Test failed on plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
                                 }
+                                script {
+                                    running.remove("${p}")
+                                    updateSlack(errors, running, slackResponse)
+                                }
                             }
+
                         }
                     }
                     parallel parallelStages
@@ -154,6 +203,10 @@ pipeline {
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("publish ${p}") {
+                                script {
+                                    running.add("Publish - ${p}")
+                                    updateSlack(errors, running, slackResponse)
+                                }
                                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                                     try {
                                         dir("${p}") {
@@ -161,13 +214,16 @@ pipeline {
                                             archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
                                             sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                         }
-                                    }
-                                    catch (exc) {
+                                    } catch (exc) {
                                         // Mark the build as failure since it's actually an error
                                         currentBuild.result = 'FAILURE'
-                                        notifier.notifyResult("scala-team")
-                                        throw exc
+                                        errors.add("${p}")
+                                        slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
+                                }
+                                script {
+                                    running.remove("${p}")
+                                    updateSlack(errors, running, slackResponse)
                                 }
                             }
                         }
@@ -183,13 +239,28 @@ pipeline {
             steps {
                 echo 'End of build'
             }
-            post {
-                fixed {
-                    script {
-                        notifier.notifyResult("everyone")
-                    }
-                }
-            }
         }
     }
+}
+
+def updateSlack(errors, running , slackResponse) {
+
+
+def msg ="*7.2 plugins* - <"+currentBuild.absoluteUrl+"|Link>\n"
+
+def color = "#00A8E1"
+
+if (! errors.isEmpty()) {
+    msg += "*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
+    color = "#CC3421"
+}
+if (! running.isEmpty()) {
+    msg += "*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
+}
+
+if (errors.isEmpty() && running.isEmpty()) {
+    msg +=  ":yesyes: All plugins checked! :fiesta-parrot:"
+	color = "good"
+}
+  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
 }
