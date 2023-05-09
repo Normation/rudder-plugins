@@ -279,5 +279,6 @@ if (errors.isEmpty() && running.isEmpty()) {
     msg +=  "\n:yesyes: All plugins checked! :fiesta-parrot:"
 	color = "good"
 }
+
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
 }
