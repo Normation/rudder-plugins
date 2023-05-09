@@ -2,6 +2,7 @@ def slackResponse = slackSend(channel: "ci-security", message: "*7.3 plugins - d
 def job = ""
 def errors = []
 def running = []
+def failedBuild = false
 
 
 pipeline {
@@ -31,7 +32,7 @@ pipeline {
                                 running.add("${it}")
                                 updateSlack(errors, running, slackResponse)
                             }
-                            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                 try {
                                     dir("${it}") {
                                         sh script: 'make generate-pom', label: 'generate pom.xml'
@@ -48,8 +49,8 @@ pipeline {
                                     }
                                 } catch (exc) {
                                     // Mark the build as failure since it's actually an error
-                                    currentBuild.result = 'FAILURE'
                                     errors.add("${it}")
+                                    failedBuild = true
                                     slackSend(channel: slackResponse.threadId, message: "Dependency check error on plugin ${it} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                 }
                             }
@@ -67,26 +68,37 @@ pipeline {
                 }
             }
         }
+        stage('End') {
+            steps {
+                script {
+                    if (failedBuild) {
+                        error 'End of build'
+                    } else {
+                        echo 'End of build '
+                    }
+                }
+            }
+        }
     }
 }
 
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>\n"
+def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
 
 def color = "#00A8E1"
 
 if (! errors.isEmpty()) {
-    msg += "*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
+    msg += "\n*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
     color = "#CC3421"
 }
 if (! running.isEmpty()) {
-    msg += "*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
+    msg += "\n*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  ":yesyes: All plugin dependencies checked! :fiesta-parrot:"
+    msg +=  "\n:yesyes: All plugin dependencies checked! :fiesta-parrot:"
 	color = "good"
 }
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
