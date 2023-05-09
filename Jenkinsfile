@@ -162,7 +162,6 @@ pipeline {
                                 }
                                 script {
                                     if (! stageSuccess[p]) {
-                                        echo ("hoho")
                                         errors.add("Test - ${p}")
                                         failedBuild = true
                                         slackSend(channel: slackResponse.threadId, message: "Error on build of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
@@ -199,6 +198,7 @@ pipeline {
             }
             steps {
                 script {
+                    def stageSuccess = [:]
                     def parallelStages = [:]
                     PLUGINS = sh (
                         script: 'make plugins-list',
@@ -210,7 +210,7 @@ pipeline {
                                 script {
                                     running.add("Publish - ${p}")
                                     updateSlack(errors, running, slackResponse)
-                                    def success = false
+                                    stageSuccess.put(p,false)
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 
@@ -220,15 +220,16 @@ pipeline {
                                         sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                     }
                                     script {
-                                        success = true
+                                        stageSuccess.put(p,true)
                                     }
                                 }
                                 script {
                                     if (!success) {
-                                        errors.add("${p}")
+                                        errors.add("Publish - ${p}")
+                                        failedBuild = true
                                         slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
-                                    running.remove("${p}")
+                                    running.remove("Publish - ${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
                             }
