@@ -65,7 +65,7 @@ pipeline {
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.2 - dependency check* - <"+currentBuild.absoluteUrl+"|Link>\n"
+def msg ="*7.2 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>\n"
 
 def color = "#00A8E1"
 
@@ -78,7 +78,7 @@ if (! running.isEmpty()) {
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  ":yesyes: All dependencies checked! :fiesta-parrot:"
+    msg +=  ":yesyes: All plugin dependencies checked! :fiesta-parrot:"
 	color = "good"
 }
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)

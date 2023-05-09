@@ -144,32 +144,30 @@ pipeline {
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("test ${p}") {
-                                steps {
-                                    script {
-                                        running.add("Test - ${p}")
-                                        updateSlack(errors, running, slackResponse)
-                                    }
-                                    dir("${p}") {
+
+                                script {
+                                    running.add("Test - ${p}")
+                                    updateSlack(errors, running, slackResponse)
+                                }
+                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                    try {
+                                        dir("${p}") {
                                         // enough to run the mvn tests and package the plugin
                                         sh script: 'make', label: "build ${p} plugin"
+                                        }
+                                    } catch (exc) {
+                                        // Mark the build as failure since it's actually an error
+                                        currentBuild.result = 'FAILURE'
+                                        errors.add("${p}")
+                                        slackSend(channel: slackResponse.threadId, message: "Test failed on plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
                                 }
-                                post {
-                                    failure {
-                                        script {
-                                           errors.add("Test - ${p}")
-                                          //notifier.notifyResult("scala-team")
-                                          slackSend(channel: slackResponse.threadId, message: "Test failed on plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
-                                        }
-                                    }
-                                    cleanup {
-                                        script {
-                                            running.remove("Test - ${p}")
-                                            updateSlack(errors, running, slackResponse)
-                                        }
-                                    }
+                                script {
+                                    running.remove("${p}")
+                                    updateSlack(errors, running, slackResponse)
                                 }
                             }
+
                         }
                     }
                     parallel parallelStages
@@ -205,32 +203,27 @@ pipeline {
                     PLUGINS.each { p ->
                         parallelStages[p] = {
                             stage("publish ${p}") {
-                                steps {
-                                    script {
-                                        running.add("Publish - ${p}")
-                                        updateSlack(errors, running, slackResponse)
-                                    }
-                                    dir("${p}") {
-                                        sh script: 'make', label: "build ${p} plugin"
-                                        archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                                        sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
-                                    }
-
+                                script {
+                                    running.add("Publish - ${p}")
+                                    updateSlack(errors, running, slackResponse)
                                 }
-                                post {
-                                    failure {
-                                        script {
-                                           errors.add("Publish - ${p}")
-                                          //notifier.notifyResult("scala-team")
-                                          slackSend(channel: slackResponse.threadId, message: "Test failed on plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                    try {
+                                        dir("${p}") {
+                                            sh script: 'make', label: "build ${p} plugin"
+                                            archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                                            sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                         }
+                                    } catch (exc) {
+                                        // Mark the build as failure since it's actually an error
+                                        currentBuild.result = 'FAILURE'
+                                        errors.add("${p}")
+                                        slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
-                                    cleanup {
-                                        script {
-                                            running.remove("Publish - ${p}")
-                                            updateSlack(errors, running, slackResponse)
-                                        }
-                                    }
+                                }
+                                script {
+                                    running.remove("${p}")
+                                    updateSlack(errors, running, slackResponse)
                                 }
                             }
                         }
@@ -245,13 +238,6 @@ pipeline {
         stage('End') {
             steps {
                 echo 'End of build'
-            }
-            post {
-                fixed {
-                    script {
-                        notifier.notifyResult("everyone")
-                    }
-                }
             }
         }
     }
@@ -273,7 +259,7 @@ if (! running.isEmpty()) {
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  ":yesyes: All dependencies checked! :fiesta-parrot:"
+    msg +=  ":yesyes: All plugins checked! :fiesta-parrot:"
 	color = "good"
 }
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
