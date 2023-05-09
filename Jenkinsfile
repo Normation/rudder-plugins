@@ -149,17 +149,16 @@ pipeline {
                                     running.add("Test - ${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
-                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                     try {
                                         dir("${p}") {
                                         // enough to run the mvn tests and package the plugin
                                         sh script: 'make', label: "build ${p} plugin"
                                         }
                                     } catch (exc) {
-                                        // Mark the build as failure since it's actually an error
-                                        currentBuild.result = 'FAILURE'
                                         errors.add("${p}")
                                         slackSend(channel: slackResponse.threadId, message: "Test failed on plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                                        failedBuild = true
                                     }
                                 }
                                 script {
@@ -207,7 +206,7 @@ pipeline {
                                     running.add("Publish - ${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
-                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                     try {
                                         dir("${p}") {
                                             sh script: 'make', label: "build ${p} plugin"
@@ -215,8 +214,6 @@ pipeline {
                                             sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                         }
                                     } catch (exc) {
-                                        // Mark the build as failure since it's actually an error
-                                        currentBuild.result = 'FAILURE'
                                         errors.add("${p}")
                                         slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
@@ -237,7 +234,13 @@ pipeline {
        }
         stage('End') {
             steps {
-                echo 'End of build'
+                script {
+                    if (failedBuild) {
+                        error 'End of build'
+                    } else {
+                        echo 'End of build'
+                    }
+                }
             }
         }
     }
@@ -246,20 +249,20 @@ pipeline {
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.2 plugins* - <"+currentBuild.absoluteUrl+"|Link>\n"
+def msg ="*7.2 plugins* - <"+currentBuild.absoluteUrl+"|Link>"
 
 def color = "#00A8E1"
 
 if (! errors.isEmpty()) {
-    msg += "*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
+    msg += "\n*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
     color = "#CC3421"
 }
 if (! running.isEmpty()) {
-    msg += "*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
+    msg += "\n*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  ":yesyes: All plugins checked! :fiesta-parrot:"
+    msg +=  "\n:yesyes: All plugins checked! :fiesta-parrot:"
 	color = "good"
 }
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
