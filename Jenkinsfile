@@ -148,7 +148,7 @@ pipeline {
                                 script {
                                     running.add("Test - ${p}")
                                     updateSlack(errors, running, slackResponse)
-                                    def success = false
+                                    def success = ""
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                     dir("${p}") {
@@ -156,14 +156,19 @@ pipeline {
                                         sh script: 'make', label: "build ${p} plugin"
                                     }
                                     script {
-                                        success = true
+                                        success = "${p}"
                                     }
                                 }
                                 script {
-                                    if (!success) {
+                                    echo ("${success} - haha")
+                                    if (success == "") {
+                                        echo ("hoho")
                                         errors.add("${p}")
-                                        slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                                        failedBuild = true
+                                        slackSend(channel: slackResponse.threadId, message: "Error on build of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
+
+                                    echo ("hihi")
                                     running.remove("${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
