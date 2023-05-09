@@ -224,7 +224,7 @@ pipeline {
                                     }
                                 }
                                 script {
-                                    if (!success) {
+                                    if (! stageSuccess[p]) {
                                         errors.add("Publish - ${p}")
                                         failedBuild = true
                                         slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
@@ -275,9 +275,6 @@ if (errors.isEmpty() && running.isEmpty()) {
     msg +=  "\n:yesyes: All plugins checked! :fiesta-parrot:"
 	color = "good"
 }
-echo (msg)
-echo ("$running")
 
-echo ("$errors")
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
 }
