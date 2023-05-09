@@ -137,6 +137,7 @@ pipeline {
             steps {
                 script {
                     def parallelStages = [:]
+                    def stageSuccess = [:]
                     PLUGINS = sh (
                         script: 'make plugins-list',
                         returnStdout: true
@@ -148,7 +149,7 @@ pipeline {
                                 script {
                                     running.add("Test - ${p}")
                                     updateSlack(errors, running, slackResponse)
-                                    def success = ""
+                                    stageSuccess.put(p,false)
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                     dir("${p}") {
@@ -156,20 +157,17 @@ pipeline {
                                         sh script: 'make', label: "build ${p} plugin"
                                     }
                                     script {
-                                        success = "${p}"
+                                        stageSuccess.put(p,true)
                                     }
                                 }
                                 script {
-                                    echo ("${success} - haha")
-                                    if (success != "p") {
+                                    if (! stageSuccess[p]) {
                                         echo ("hoho")
-                                        errors.add("${p}")
+                                        errors.add("Test - ${p}")
                                         failedBuild = true
                                         slackSend(channel: slackResponse.threadId, message: "Error on build of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
-
-                                    echo ("hihi")
-                                    running.remove("${p}")
+                                    running.remove("Test - ${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
                             }
