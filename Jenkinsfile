@@ -141,6 +141,7 @@ pipeline {
             steps {
                 script {
                     def parallelStages = [:]
+                    def stageSuccess = [:]
                     PLUGINS = sh (
                         script: 'make plugins-list',
                         returnStdout: true
@@ -152,21 +153,24 @@ pipeline {
                                 script {
                                     running.add("Test - ${p}")
                                     updateSlack(errors, running, slackResponse)
+                                    stageSuccess.put(p,false)
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                                    try {
-                                        dir("${p}") {
+                                    dir("${p}") {
                                         // enough to run the mvn tests and package the plugin
                                         sh script: 'make', label: "build ${p} plugin"
-                                        }
-                                    } catch (exc) {
-                                        errors.add("${p}")
-                                        slackSend(channel: slackResponse.threadId, message: "Test failed on plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
-                                        failedBuild = true
+                                    }
+                                    script {
+                                        stageSuccess.put(p,true)
                                     }
                                 }
                                 script {
-                                    running.remove("${p}")
+                                    if (! stageSuccess[p]) {
+                                        errors.add("Test - ${p}")
+                                        failedBuild = true
+                                        slackSend(channel: slackResponse.threadId, message: "Error on build of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                                    }
+                                    running.remove("Test - ${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
                             }
@@ -198,6 +202,7 @@ pipeline {
             }
             steps {
                 script {
+                    def stageSuccess = [:]
                     def parallelStages = [:]
                     PLUGINS = sh (
                         script: 'make plugins-list',
@@ -209,21 +214,26 @@ pipeline {
                                 script {
                                     running.add("Publish - ${p}")
                                     updateSlack(errors, running, slackResponse)
+                                    stageSuccess.put(p,false)
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                                    try {
-                                        dir("${p}") {
-                                            sh script: 'make', label: "build ${p} plugin"
-                                            archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                                            sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
-                                        }
-                                    } catch (exc) {
-                                        errors.add("${p}")
-                                        slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+
+                                    dir("${p}") {
+                                        sh script: 'make', label: "build ${p} plugin"
+                                        archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                                        sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                                    }
+                                    script {
+                                        stageSuccess.put(p,true)
                                     }
                                 }
                                 script {
-                                    running.remove("${p}")
+                                    if (! stageSuccess[p]) {
+                                        errors.add("Publish - ${p}")
+                                        failedBuild = true
+                                        slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                                    }
+                                    running.remove("Publish - ${p}")
                                     updateSlack(errors, running, slackResponse)
                                 }
                             }
