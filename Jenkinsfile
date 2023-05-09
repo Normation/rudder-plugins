@@ -178,8 +178,7 @@ pipeline {
             // only publish nightly on dev branches
             when {
                 allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
-                not { changeRequest() };
-                not { failedBuild } }
+                not { changeRequest() } }
                 // Disabled
                 expression { return false }
             }
@@ -235,10 +234,12 @@ pipeline {
        }
         stage('End') {
             steps {
-                if (failedBuild) {
-                    error 'End of build'
-                } else {
-                    echo 'End of build'
+                script {
+                    if (failedBuild) {
+                        error 'End of build'
+                    } else {
+                        echo 'End of build'
+                    }
                 }
             }
         }
