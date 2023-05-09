@@ -73,7 +73,7 @@ pipeline {
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>\n"
 
 def color = "#00A8E1"
 

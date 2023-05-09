@@ -1,7 +1,7 @@
 
 def failedBuild = false
 
-def slackResponse = slackSend(channel: "ci", message: "7.2 plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def slackResponse = slackSend(channel: "ci", message: "7.3 plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -246,7 +246,7 @@ pipeline {
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.2 plugins* - <"+currentBuild.absoluteUrl+"|Link>\n"
+def msg ="*7.3 plugins* - <"+currentBuild.absoluteUrl+"|Link>\n"
 
 def color = "#00A8E1"
 
