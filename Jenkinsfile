@@ -161,7 +161,7 @@ pipeline {
                                 }
                                 script {
                                     echo ("${success} - haha")
-                                    if (success == "") {
+                                    if (success != "p") {
                                         echo ("hoho")
                                         errors.add("${p}")
                                         failedBuild = true
@@ -276,5 +276,9 @@ if (errors.isEmpty() && running.isEmpty()) {
     msg +=  "\n:yesyes: All plugins checked! :fiesta-parrot:"
 	color = "good"
 }
+echo (msg)
+echo ("$running")
+
+echo ("$errors")
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
 }
