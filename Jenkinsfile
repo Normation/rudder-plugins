@@ -1,11 +1,7 @@
 
 def failedBuild = false
 
-<<<<<<< HEAD
-def slackResponse = slackSend(channel: "ci", message: "7.3 plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
-=======
-def slackResponse = slackSend(channel: "ci", message: "7.2 next plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
->>>>>>> 7.2-next
+def slackResponse = slackSend(channel: "ci", message: "8.0 plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -263,7 +259,7 @@ pipeline {
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.3 next plugins* - <"+currentBuild.absoluteUrl+"|Link>"
+def msg ="*8.0 plugins* - <"+currentBuild.absoluteUrl+"|Link>"
 
 def color = "#00A8E1"
 

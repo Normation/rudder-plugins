@@ -1,4 +1,4 @@
-def slackResponse = slackSend(channel: "ci-security", message: "*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def slackResponse = slackSend(channel: "ci-security", message: "*8.0 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -85,7 +85,7 @@ pipeline {
 def updateSlack(errors, running , slackResponse) {
 
 
-def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+def msg ="*8.0 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
 
 def color = "#00A8E1"
 
