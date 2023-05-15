@@ -1,10 +1,12 @@
 
 def failedBuild = false
+def version = "7.2"
 
-<<<<<<< HEAD
-def slackResponse = slackSend(channel: "ci", message: "7.3 plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
-=======
-def slackResponse = slackSend(channel: "ci", message: "7.2 next plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def slackResponse = slackSend(channel: "ci", message: "7.3 - next plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+
+def changeUrl = env.CHANGE_URL
+
+def slackResponse = slackSend(channel: "ci", message: "${version} next plugins - build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 >>>>>>> 7.2-next
 def job = ""
 def errors = []
@@ -20,7 +22,7 @@ pipeline {
 
     environment {
         // TODO: automate
-        RUDDER_VERSION = "7.2"
+        RUDDER_VERSION = "${version}"
         // we want it everywhere for plugins
         MAVEN_ARGS = "--update-snapshots"
     }
@@ -37,7 +39,7 @@ pipeline {
                     steps {
                         script {
                             running.add("shell scripts")
-                            updateSlack(errors, running, slackResponse)
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
                         }
                         sh script: './qa-test --shell', label: 'shell scripts lint'
                         sh script: './qa-test --scripts', label: 'shell postinst lint'
@@ -59,7 +61,7 @@ pipeline {
                         cleanup {
                             script {
                                 running.remove("shell scripts")
-                                updateSlack(errors, running, slackResponse)
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -73,7 +75,7 @@ pipeline {
                     steps {
                         script {
                             running.add("python scripts")
-                            updateSlack(errors, running, slackResponse)
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
                         }
                         sh script: './qa-test --python', label: 'python scripts lint'
                     }
@@ -88,7 +90,7 @@ pipeline {
                         cleanup {
                             script {
                                 running.remove("python scripts")
-                                updateSlack(errors, running, slackResponse)
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -103,7 +105,7 @@ pipeline {
                     steps {
                         script {
                             running.add("check typos")
-                            updateSlack(errors, running, slackResponse)
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
                         }
                         sh script: './qa-test --typos', label: 'check typos'
                     }
@@ -118,7 +120,7 @@ pipeline {
                         cleanup {
                             script {
                                 running.remove("check typos")
-                                updateSlack(errors, running, slackResponse)
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -152,7 +154,7 @@ pipeline {
 
                                 script {
                                     running.add("Test - ${p}")
-                                    updateSlack(errors, running, slackResponse)
+                                    updateSlack(errors, running, slackResponse, version, changeUrl)
                                     stageSuccess.put(p,false)
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -171,7 +173,7 @@ pipeline {
                                         slackSend(channel: slackResponse.threadId, message: "Error on build of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
                                     running.remove("Test - ${p}")
-                                    updateSlack(errors, running, slackResponse)
+                                    updateSlack(errors, running, slackResponse, version, changeUrl)
                                 }
                             }
 
@@ -213,7 +215,7 @@ pipeline {
                             stage("publish ${p}") {
                                 script {
                                     running.add("Publish - ${p}")
-                                    updateSlack(errors, running, slackResponse)
+                                    updateSlack(errors, running, slackResponse, version, changeUrl)
                                     stageSuccess.put(p,false)
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -234,7 +236,7 @@ pipeline {
                                         slackSend(channel: slackResponse.threadId, message: "Error on publication of plugin ${p} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                     }
                                     running.remove("Publish - ${p}")
-                                    updateSlack(errors, running, slackResponse)
+                                    updateSlack(errors, running, slackResponse, version, changeUrl)
                                 }
                             }
                         }
@@ -260,23 +262,26 @@ pipeline {
     }
 }
 
-def updateSlack(errors, running , slackResponse) {
+def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
+def msg ="*${version} - next plugins - build* - <"+currentBuild.absoluteUrl+"|Link>"
 
-def msg ="*7.3 next plugins* - <"+currentBuild.absoluteUrl+"|Link>"
+if (changeUrl != null) {
+  msg ="*${version} PR - next plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+changeUrl+"|Pull request>"
+}
 
 def color = "#00A8E1"
 
 if (! errors.isEmpty()) {
-    msg += "\n*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
+    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
     color = "#CC3421"
 }
 if (! running.isEmpty()) {
-    msg += "\n*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
+    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  "\n:yesyes: All plugins checked! :fiesta-parrot:"
+    msg +=  " => All plugin built! :white_check_mark:"
 	color = "good"
 }
 
