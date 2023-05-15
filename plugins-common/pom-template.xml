@@ -233,7 +233,6 @@
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_${scala-binary-version}</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
     <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope><version>${caffeine-version}</version></dependency>
-    <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-version}</artifactId><scope>provided</scope><version>${silencer-lib-version}</version></dependency>
     <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope><version>${better-files-version}</version></dependency>
     <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope><version>${ipaddress-version}</version></dependency>
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
