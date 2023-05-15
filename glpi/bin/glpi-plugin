@@ -9,6 +9,8 @@ readonly GLPI_FUSION_URL=$(sed -e "/GLPI_FUSION_URL/s/^.*=//" /opt/rudder/etc/gl
 
 send_inventory()
 {
+  FQDN=$(xmlstarlet sel -T -t -v "/REQUEST/CONTENT/RUDDER/HOSTNAME" "$1")
+  xmlstarlet edit -L --update "/REQUEST/CONTENT/HARDWARE/NAME" --value "${FQDN}" "$1"
   curl -w "%{http_code}" -H "Content-Type: Application/x-compress" -k -s --data @"$1" "${GLPI_FUSION_URL}" || echo "Error sending $1" 
 }
 
