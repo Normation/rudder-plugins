@@ -1,13 +1,10 @@
 
 def failedBuild = false
-def version = "7.2"
-
-def slackResponse = slackSend(channel: "ci", message: "7.3 - next plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def version = "7.3"
 
 def changeUrl = env.CHANGE_URL
 
 def slackResponse = slackSend(channel: "ci", message: "${version} next plugins - build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
->>>>>>> 7.2-next
 def job = ""
 def errors = []
 def running = []
