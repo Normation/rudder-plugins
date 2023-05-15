@@ -1,4 +1,7 @@
-def slackResponse = slackSend(channel: "ci-security", message: "*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+
+def version = "7.3"
+def changeUrl = env.CHANGE_URL
+def slackResponse = slackSend(channel: "ci-security", message: "*${version} plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -30,7 +33,7 @@ pipeline {
                         stage("${it}") {
                             script {
                                 running.add("${it}")
-                                updateSlack(errors, running, slackResponse)
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                 try {
@@ -56,7 +59,7 @@ pipeline {
                             }
                             script {
                                 running.remove("${it}")
-                                updateSlack(errors, running, slackResponse)
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -82,23 +85,27 @@ pipeline {
     }
 }
 
-def updateSlack(errors, running , slackResponse) {
 
+def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
-def msg ="*7.3 plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+def msg ="*${version} - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+
+if (changeUrl != null) {
+  msg ="*${version} PR - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link> - <"+changeUrl+"|Pull request>"
+}
 
 def color = "#00A8E1"
 
 if (! errors.isEmpty()) {
-    msg += "\n*Errors* :nono: ("+errors.size()+")\n• " + errors.join("\n• ")
+    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
     color = "#CC3421"
 }
 if (! running.isEmpty()) {
-    msg += "\n*Running* :felisk: ("+running.size()+")\n• " + running.join("\n• ")
+    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  "\n:yesyes: All plugin dependencies checked! :fiesta-parrot:"
+    msg +=  " => All plugin dependencies checked! :white_check_mark:"
 	color = "good"
 }
   slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
