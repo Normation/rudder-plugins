@@ -157,7 +157,7 @@ object TestingZioHttpServer {
 /**
  * This is just a test program to see how test clock works
  */
-@silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
+@nowarn("msg=a type was inferred to be `\\w+`; this may indicate a programming error.")
 object TestingSpacedClock {
 
   val makeTestClock = TestClock.default.build
