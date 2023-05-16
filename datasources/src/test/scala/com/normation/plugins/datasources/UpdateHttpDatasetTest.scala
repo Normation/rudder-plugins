@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import ch.qos.logback.classic.Level
-import com.github.ghik.silencer.silent
 import com.normation.BoxSpecMatcher
 import com.normation.box._
 import com.normation.errors._
@@ -82,6 +81,7 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
 import org.specs2.specification.core.Fragment
+import scala.annotation.nowarn
 import scala.util.Random
 import zhttp.http._
 import zhttp.http.Method._
@@ -414,7 +414,7 @@ object CmdbServer {
   }
 }
 
-@silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
+@nowarn("msg=a type was inferred to be `\\w+`; this may indicate a programming error.")
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
   import com.normation.plugins.datasources.Data._
@@ -805,29 +805,19 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "create a new schedule from data source information" in {
-//<<<<<<< HEAD
-//      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO
-//        .scoped(makeTestClock.flatMap { testClock =>
-//=======
       val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO.scoped(makeTestClock.flatMap {
         testClock =>
-//>>>>>>> branches/rudder/7.2*/
           // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
           val queue = Queue.unbounded[Unit].runNow
 
           val dss = new DataSourceScheduler(
             datasource.copy(name = DataSourceName("create a new schedule")), 
-            //<<<<<<< HEAD
-//=======
-         //   testClock,
-//>>>>>>> branches/rudder/7.2*/
             Enabled,
             () => ModificationId(MyDatasource.uuidGen.newUuid),
             testAction(queue)
           )
 
           // reset counter
-//<<<<<<< HEAD
           CmdbServer.reset()
           for {
             // before start, nothing is done
@@ -870,56 +860,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m)
         })
         .runTimeout(1.minute)
-/*=======
-          CmdbServer.reset()
-          for {
-            // before start, nothing is done
-            _       <- queue.failIfNonEmpty
-            ce_0    <- CmdbServer.counterError.get
-            cs_0    <- CmdbServer.counterSuccess.get
-            total_0  = ce_0 + cs_0
-            f1      <- dss.scheduledTask.get
-            _       <- dss.restartScheduleTask()
-            // now we have a stored fiber
-            f2      <- dss.scheduledTask.get.notOptional("Fiber reference not defined")
-            r1      <- f2.fold(r => r.status, s => Unexpected(s"f2 should not be a synthetic fiber").fail)
-            // then just after, we have the first exec - it still need at least a ms to tick
-            // still nothing here
-            _       <- testClock.get[TestClock].adjust(1.second)
-            // here we have results
-            _       <- queue.take
-            ce_0s   <- CmdbServer.counterError.get
-            cs_0s   <- CmdbServer.counterSuccess.get
-            total_0s = ce_0s + cs_0s
-            // then nothing happens before 5 minutes
-            _       <- testClock.get[TestClock].adjust(1.second)
-            _       <- queue.failIfNonEmpty
-            ce_1s   <- CmdbServer.counterError.get
-            cs_1s   <- CmdbServer.counterSuccess.get
-            total_1s = ce_1s + cs_1s
-            _       <- testClock.get[TestClock].adjust(4.minutes)
-            _       <- queue.failIfNonEmpty
-            ce_4m   <- CmdbServer.counterError.get
-            cs_4m   <- CmdbServer.counterSuccess.get
-            total_4m = ce_4m + cs_4m
-            // then all the nodes gets their info
-            _       <- testClock.get[TestClock].adjust(1.minutes) // 5 minutes
-            _       <- queue.take
-            ce_5m   <- CmdbServer.counterError.get
-            cs_5m   <- CmdbServer.counterSuccess.get
-            total_5m = ce_5m + cs_5m
-            // then nothing happen anymore
-            _       <- testClock.get[TestClock].adjust(3.minutes) // 8 minutes
-            _       <- queue.failIfNonEmpty
-            ce_8m   <- CmdbServer.counterError.get
-            cs_8m   <- CmdbServer.counterSuccess.get
-            _       <- dss.cancel()
-            // write again fiber
-            r2      <- f2.fold(r => r.status, s => Unexpected(s"f2 should not be a synthetic fiber").fail)
-            total_8m = ce_8m + cs_8m
-          } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m, f1, f2, r1, r2)
-      }).runTimeout(1.minute)
-//>>>>>>> branches/rudder/7.2*/
 
       val size = NodeConfigData.allNodesInfo.size
       (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo((0, size, size, size, size * 2, size * 2))// and
