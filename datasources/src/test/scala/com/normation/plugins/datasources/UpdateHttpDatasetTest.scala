@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import ch.qos.logback.classic.Level
-import com.github.ghik.silencer.silent
 import com.normation.BoxSpecMatcher
 import com.normation.box._
 import com.normation.errors._
@@ -83,6 +82,7 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
 import org.specs2.specification.core.Fragment
+import scala.annotation.nowarn
 import scala.util.Random
 import zhttp.http._
 import zhttp.http.Method._
@@ -304,7 +304,7 @@ object NodeDataset {
 }
 
 @RunWith(classOf[JUnitRunner])
-@silent("a type was inferred to be `Any`")
+@nowarn("msg=a type was inferred to be `Any`")
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
   import com.normation.plugins.datasources.Data._
   val makeTestClock = TestClock.default.build
