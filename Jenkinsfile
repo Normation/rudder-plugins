@@ -4,11 +4,7 @@ def version = "8.0"
 
 def changeUrl = env.CHANGE_URL
 
-<<<<<<< HEAD
 def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
-=======
-def slackResponse = slackSend(channel: "ci", message: "${version} next plugins - build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
->>>>>>> 7.3-next
 def job = ""
 def errors = []
 def running = []
