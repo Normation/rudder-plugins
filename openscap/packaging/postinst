@@ -4,7 +4,16 @@ PLUGIN_NAME="openscap"
 PRETTY_NAME="OpenSCAP Policies"
 CONFIGURATION_PATH=/opt/rudder/share/plugins/$PLUGIN_NAME
 
-# Code below should be mostly comon between the plugins
+# Don't do anything during an upgrade
+RUDDER_PLUGIN_UPGRADE="$1"
+
+if [ "$RUDDER_PLUGIN_UPGRADE" == "upgrade" ]
+then
+  echo "Skipping postinstall during upgrade of OpenSCAP plugin, as Technique already exists"
+  exit 0
+fi
+
+# Code below should be mostly common between the plugins
 SOURCE_DIR=${CONFIGURATION_PATH}/techniques
 CONFIG_REPO=/var/rudder/configuration-repository
 
