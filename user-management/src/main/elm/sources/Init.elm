@@ -34,15 +34,8 @@ getErrorMessage e =
     let
         errMessage =
             case e of
-                Http.BadStatus b ->
-                    let
-                        status =
-                            b.status
-
-                        message =
-                            status.message
-                    in
-                    "Code " ++ String.fromInt status.code ++ " : " ++ message
+                Http.BadStatus status ->
+                    "Code " ++ String.fromInt status
 
                 Http.BadUrl str ->
                     "Invalid API url"
@@ -53,7 +46,7 @@ getErrorMessage e =
                 Http.NetworkError ->
                     "Network error"
 
-                Http.BadPayload str rstr ->
+                Http.BadBody str ->
                     str
     in
     errMessage
