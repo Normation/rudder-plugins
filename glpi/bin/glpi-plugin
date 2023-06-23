@@ -5,13 +5,17 @@ readonly ACTION="$1"
 set -u
 readonly INVENTORIES_DIR=/var/rudder/inventories/received
 readonly GLPI_FUSION_URL=$(sed -e "/GLPI_FUSION_URL/s/^.*=//" /opt/rudder/etc/glpi.conf)
+readonly PATCH_FQDN=$(sed -e "/PATCH_FQDN/s/^.*=//" /opt/rudder/etc/glpi.conf)
 
 
 send_inventory()
 {
-  FQDN=$(xmlstarlet sel -T -t -v "/REQUEST/CONTENT/RUDDER/HOSTNAME" "$1")
-  xmlstarlet edit -L --update "/REQUEST/CONTENT/HARDWARE/NAME" --value "${FQDN}" "$1"
-  curl -w "%{http_code}" -H "Content-Type: Application/x-compress" -k -s --data @"$1" "${GLPI_FUSION_URL}" || echo "Error sending $1" 
+  if [ "${PATCH_FQDN}" = yes ] || [[ " $@ " =~ " --fqdn " ]]
+  then
+    FQDN=$(xmlstarlet sel -T -t -v "/REQUEST/CONTENT/RUDDER/HOSTNAME" "$1")
+    xmlstarlet edit -L --update "/REQUEST/CONTENT/HARDWARE/NAME" --value "${FQDN}" "$1"
+  fi
+  curl -w "%{http_code}" -H "Content-Type: Application/x-compress" -k -s --data @"$1" "${GLPI_FUSION_URL}" || echo "Error sending $1"
 }
 
 
@@ -19,7 +23,7 @@ case "${ACTION}" in
   send-all)
     INV_N=$(find "${INVENTORIES_DIR}" -type f -name "*.ocs" -atime -1 -printf "%f\n" | wc -l)
     echo "[ ] Sending ${INV_N} inventories to GLPI..."
-    
+
 #shellcheck disable=SC2044
     for INV in $(find "${INVENTORIES_DIR}" -type f -name "*.ocs" -atime -1 -printf "%f\n"); do
       echo "${INV}"
@@ -27,7 +31,7 @@ case "${ACTION}" in
     done
     echo "[+] Done."
   ;;
-  
+
   send-one)
     INV=$(ls -1 "${INVENTORIES_DIR}" | egrep "$2.*\.ocs$")
     echo "[ ] Sending inventory ${INVENTORIES_DIR}/${INV} to GLPI..."
