@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-PLUGIN_FOLDER="/var/rudder/packages/rudder-plugin-openscap"
+PLUGIN_FOLDER="/opt/rudder/share/plugins/openscap"
 
 # Remove techniques
 $PLUGIN_FOLDER/remove_configuration configuration $PLUGIN_FOLDER $PLUGIN_FOLDER/openscap.json

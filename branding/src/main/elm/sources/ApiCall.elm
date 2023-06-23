@@ -12,21 +12,18 @@ getSettings model =
         url =
             model.contextPath ++ "/secure/api/branding"
 
-        headers =
-            []
-
         req =
             request
                 { method = "GET"
                 , headers = []
                 , url = url
                 , body = emptyBody
-                , expect = expectJson decodeApiSettings
+                , expect = expectJson GetSettings decodeApiSettings
                 , timeout = Nothing
-                , withCredentials = False
+                , tracker = Nothing
                 }
     in
-    send GetSettings req
+      req
 
 
 saveSettings : Model -> Cmd Msg
@@ -38,9 +35,9 @@ saveSettings model =
                 , headers = []
                 , url = model.contextPath ++ "/secure/api/branding"
                 , body = jsonBody (encodeSettings model.settings)
-                , expect = expectJson decodeApiSettings
+                , expect = expectJson SaveSettings decodeApiSettings
                 , timeout = Nothing
-                , withCredentials = False
+                , tracker = Nothing
                 }
     in
-    send SaveSettings req
+      req
