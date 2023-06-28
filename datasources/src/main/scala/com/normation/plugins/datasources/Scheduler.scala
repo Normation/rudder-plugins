@@ -83,7 +83,7 @@ class DataSourceScheduler(
   private[this] val semaphore = Semaphore.make(1).runNow
 
   // for that datasource, this is the timer
-    private[datasources] val source: UIO[Unit] = {
+  private[datasources] val source: UIO[Unit] = {
     val never = Schedule.stop
 
     val schedule = datasource.runParam.schedule match {
