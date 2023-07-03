@@ -1,14 +1,14 @@
-@Library('slack-notification')
-import org.gradiant.jenkins.slack.SlackNotifier
 
-// Check vulns in dependencies on repo branches
+def version = "7.3"
+def changeUrl = env.CHANGE_URL
+def slackResponse = slackSend(channel: "ci-security", message: "*${version} plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def job = ""
+def errors = []
+def running = []
+def failedBuild = false
 
-def notifier = new SlackNotifier()
 
 pipeline {
-    environment {
-      SLACK_CHANNEL = 'ci-security'
-    }
     agent none
     triggers { cron('@daily') }
 
@@ -31,7 +31,11 @@ pipeline {
                     ).trim().split(' ')
                     SCALA_PLUGINS.each {
                         stage("${it}") {
-                            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            script {
+                                running.add("${it}")
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
+                            }
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                 try {
                                     dir("${it}") {
                                         sh script: 'make generate-pom', label: 'generate pom.xml'
@@ -46,15 +50,17 @@ pipeline {
                                         }
                                         sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
                                     }
-                                }
-                                catch (exc) {
+                                } catch (exc) {
                                     // Mark the build as failure since it's actually an error
-                                    currentBuild.result = 'FAILURE'
-                                    notifier.notifyResult("scala-team")
-                                    throw exc
+                                    errors.add("${it}")
+                                    failedBuild = true
+                                    slackSend(channel: slackResponse.threadId, message: "Dependency check error on plugin ${it} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                 }
                             }
-
+                            script {
+                                running.remove("${it}")
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
+                            }
                         }
                     }
                 }
@@ -63,9 +69,15 @@ pipeline {
                 always {
             		archiveArtifacts artifacts: '*/target/dependency-check-report.html, */target/site/aggregate-third-party-report.html'
                 }
-                fixed {
-                  script {
-                        notifier.notifyResult("scala-team")
+            }
+        }
+        stage('End') {
+            steps {
+                script {
+                    if (failedBuild) {
+                        error 'End of build'
+                    } else {
+                        echo 'End of build '
                     }
                 }
             }
@@ -73,3 +85,28 @@ pipeline {
     }
 }
 
+
+def updateSlack(errors, running, slackResponse, version, changeUrl) {
+
+def msg ="*${version} - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+
+if (changeUrl != null) {
+  msg ="*${version} PR - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link> - <"+changeUrl+"|Pull request>"
+}
+
+def color = "#00A8E1"
+
+if (! errors.isEmpty()) {
+    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
+    color = "#CC3421"
+}
+if (! running.isEmpty()) {
+    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
+}
+
+if (errors.isEmpty() && running.isEmpty()) {
+    msg +=  " => All plugin dependencies checked! :white_check_mark:"
+	color = "good"
+}
+  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+}

@@ -1,6 +1,7 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import bootstrap.liftweb.RudderParsedProperties._
 import com.normation.plugins._
 import com.normation.plugins.helloworld.CheckRudderPluginEnableImpl
 import com.normation.plugins.helloworld.HelloWorldPluginDef
@@ -26,9 +27,9 @@ object HelloWorldConf extends Loggable with RudderPluginModule {
   RudderConfig.snippetExtensionRegister.register(new CreateRuleEditFormExtension(dbService))
 
   lazy val dbService = new LogAccessInDb(
-    RudderConfig.RUDDER_JDBC_URL,
-    RudderConfig.RUDDER_JDBC_USERNAME,
-    RudderConfig.RUDDER_JDBC_PASSWORD
+    RUDDER_JDBC_URL,
+    RUDDER_JDBC_USERNAME,
+    RUDDER_JDBC_PASSWORD
   )
 }
 
