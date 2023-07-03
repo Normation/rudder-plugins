@@ -226,7 +226,6 @@
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.github.ghik</groupId><artifactId>silencer-lib_${scala-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.scopt</groupId><artifactId>scopt_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope></dependency>
