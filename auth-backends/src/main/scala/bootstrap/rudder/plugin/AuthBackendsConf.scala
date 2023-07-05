@@ -539,6 +539,10 @@ class RudderOidcUserService(
                 ApplicationLoggerPure.Authz.logEffect.info(
                   s"Principal '${rudder.getUsername}' role list extended with OIDC provided roles: [${custom.toList.map(_.name).sorted.mkString(", ")}] (override: ${reg.roles.over})"
                 )
+              } else {
+                AuthBackendsLogger.debug(
+                  s"No roles provided by OIDC in attribute: ${reg.roles.attributeName} (or attribute is missing, or user-management plugin is missing)"
+                )
               }
 
               val roles = if (reg.roles.over) {
@@ -547,7 +551,9 @@ class RudderOidcUserService(
               } else {
                 rudder.roles ++ custom
               }
-              AuthBackendsLogger.debug(s"Principal '${rudder.getUsername}' final list of roles: [${roles.map(_.name).mkString(", ")}]")
+              AuthBackendsLogger.debug(
+                s"Principal '${rudder.getUsername}' final list of roles: [${roles.map(_.name).mkString(", ")}]"
+              )
               roles
 
             } else {
