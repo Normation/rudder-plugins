@@ -150,43 +150,6 @@ class AuthBackendsRepository(
       )
     )
 
-    val radius = JsonRadiusConfig(
-      "radius",
-      """# The following parameters allow to configure authentication with a
-         # Radius server.""".stripMargin('#'),
-      param(
-        """# IP or hostname of the Radius server. Both work, but it
-           # is preferred to use an IP.""".stripMargin('#'),
-        "rudder.auth.radius.host.name"
-      ),
-      param("""# Authentication port for the Radius server""".stripMargin('#'), "rudder.auth.radius.host.auth.port"),
-      param(
-        """# The shared secret as configured in your Radius server
-           # for Rudder application / host.""".stripMargin('#'),
-        "rudder.auth.radius.host.sharedSecret"
-      ).hideValue(),
-      param(
-        """# Time to wait in seconds when trying to connect to
-           # the server before giving up.""".stripMargin('#'),
-        "rudder.auth.radius.auth.timeout"
-      ),
-      param(
-        """# Number of retries to attempt in case of timeout before
-           # giving up.""".stripMargin('#'),
-        "rudder.auth.radius.auth.retries"
-      ),
-      param(
-        """# Authentication protocol to use to connect to the Radius server.
-           # The default one is 'pap' (PAP).
-           # Available protocols are: pap, chap, eap-md5, eap-ttls.
-           #
-           # For `eap-ttls`, you can append `key=value` parameters, separated by `:`
-           # to the protocol name to specify protocol option, for example:
-           # `eap-tls:keyFile=keystore:keyPassword=mypass`""".stripMargin('#'),
-        "rudder.auth.radius.auth.protocol"
-      )
-    )
-
     // get configured backend order - it shall not fail.
     val configuredOrder = {
       try {
@@ -199,14 +162,7 @@ class AuthBackendsRepository(
     val usedOrder = authService.getConfiguredProviders().map(_.name)
 
     Right(
-      JsonAuthConfiguration(
-        configuredOrder,
-        usedOrder,
-        rootAdmin,
-        file,
-        ldap,
-        radius
-      )
+      JsonAuthConfiguration(configuredOrder, usedOrder, rootAdmin, file, ldap)
     )
   }
 }
