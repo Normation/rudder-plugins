@@ -40,6 +40,7 @@ package com.normation.plugins.authbackends
 import com.normation.NamedZioLogger
 import net.liftweb.common.Logger
 import net.liftweb.json.Extraction
+import net.liftweb.json.Formats
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.NoTypeHints
 import org.slf4j.LoggerFactory
@@ -124,7 +125,7 @@ final case class JsonRadiusConfig(
 
 final object JsonSerialization {
 
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   implicit class ConfigOptionToJson(config: JsonAuthConfiguration) {
     def toJson(): JValue = {

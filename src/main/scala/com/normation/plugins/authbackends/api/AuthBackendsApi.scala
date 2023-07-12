@@ -87,7 +87,7 @@ class AuthBackendsApiImpl(
 ) extends LiftApiModuleProvider[AuthBackendsApi] {
   api =>
 
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   def schemas = AuthBackendsApi
 
