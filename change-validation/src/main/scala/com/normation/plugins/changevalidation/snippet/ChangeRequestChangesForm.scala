@@ -459,7 +459,7 @@ class ChangeRequestChangesForm(
       diff:  ModifyNodeGroupDiff,
       group: NodeGroup
   ) = {
-    def displayQuery(query: Option[Query])       = query match {
+    def displayQuery(query: Option[Query])            = query match {
       case None    => "None"
       case Some(q) => q.toJSONString
     }

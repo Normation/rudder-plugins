@@ -63,6 +63,7 @@ import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import net.liftweb.json.Formats
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.JValue
 import net.liftweb.json.NoTypeHints
@@ -145,7 +146,7 @@ class UserManagementApiImpl(
 ) extends LiftApiModuleProvider[UserManagementApi] {
   api =>
 
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   override def schemas = UserManagementApi
 

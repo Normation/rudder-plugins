@@ -46,6 +46,7 @@ import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.RoNodeGroupRepository
 import java.nio.charset.StandardCharsets
 import net.liftweb.common._
+import net.liftweb.json.Formats
 import net.liftweb.json.NoTypeHints
 
 final case class OldfileFormat(supervised: List[String])
@@ -57,9 +58,9 @@ class MigrateSupervisedGroups(
     groupRepository:  RoNodeGroupRepository,
     unsupervisedRepo: UnsupervisedTargetsRepository
 ) {
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-  val directory        = "/var/rudder/plugin-resources/change-validation"
-  val oldFilename      = "supervised-targets.json"
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  val directory   = "/var/rudder/plugin-resources/change-validation"
+  val oldFilename = "supervised-targets.json"
 
   def migrate(): Unit = {
     Box.tryo {

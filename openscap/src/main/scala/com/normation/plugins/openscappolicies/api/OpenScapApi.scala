@@ -22,6 +22,7 @@ import net.liftweb.common.Full
 import net.liftweb.http.InMemoryResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import net.liftweb.json.Formats
 import net.liftweb.json.JValue
 import net.liftweb.json.NoTypeHints
 import sourcecode.Line
@@ -57,7 +58,7 @@ class OpenScapApiImpl(
 
   val logger = OpenscapPoliciesLogger
 
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   def schemas = OpenScapApi
 

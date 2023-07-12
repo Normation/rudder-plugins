@@ -38,7 +38,6 @@ package com.normation.plugins.changevalidation
 
 import cats.implicits._
 import com.normation.rudder.db.Doobie
-import com.normation.rudder.db.Doobie._
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import doobie._

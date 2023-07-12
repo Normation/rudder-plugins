@@ -48,6 +48,7 @@ import net.liftweb.common.Empty
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.common.Logger
+import net.liftweb.json.Formats
 import net.liftweb.json.JsonAST.JArray
 import net.liftweb.json.JValue
 import net.liftweb.json.NoTypeHints
@@ -144,7 +145,7 @@ object RudderJsonMapping {
  * Ser utils
  */
 object Ser {
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   /*
    * Parse a string as a simple target ID

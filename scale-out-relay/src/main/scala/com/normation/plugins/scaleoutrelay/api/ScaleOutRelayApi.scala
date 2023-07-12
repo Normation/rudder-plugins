@@ -18,6 +18,7 @@ import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import net.liftweb.json.Formats
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.NoTypeHints
@@ -50,7 +51,7 @@ class ScaleOutRelayApiImpl(
 
   api =>
 
-  implicit val formats = net.liftweb.json.Serialization.formats((NoTypeHints))
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats((NoTypeHints))
   override def schemas = ScaleOutRelayApi
 
   override def getLiftEndpoints(): List[LiftApiModule] = {

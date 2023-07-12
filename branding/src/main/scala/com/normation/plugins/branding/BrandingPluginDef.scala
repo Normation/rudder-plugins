@@ -39,13 +39,12 @@ package com.normation.plugins.branding
 
 import bootstrap.liftweb.Boot
 import bootstrap.liftweb.MenuUtils
+import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.DefaultPluginDef
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-
-import bootstrap.rudder.plugin.BrandingPluginConf
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template

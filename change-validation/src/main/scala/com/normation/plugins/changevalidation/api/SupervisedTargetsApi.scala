@@ -100,7 +100,7 @@ class SupervisedTargetsApiImpl(
 ) extends LiftApiModuleProvider[SupervisedTargetsApi] {
   api =>
 
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   def schemas = SupervisedTargetsApi
 

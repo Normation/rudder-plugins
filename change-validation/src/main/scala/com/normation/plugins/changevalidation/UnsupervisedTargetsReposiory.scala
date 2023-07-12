@@ -9,6 +9,7 @@ import net.liftweb.common.Box
 import net.liftweb.common.Empty
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
+import net.liftweb.json.Formats
 import net.liftweb.json.NoTypeHints
 import net.liftweb.json.Serialization
 import org.apache.commons.io.FileUtils
@@ -42,7 +43,7 @@ class UnsupervisedTargetsRepository(
     directory: Path,
     filename:  String
 ) {
-  implicit val formats   = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
   private[this] val path = new File(directory.toFile, filename)
 
   /*
