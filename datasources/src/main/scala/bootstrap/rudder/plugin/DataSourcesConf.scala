@@ -48,7 +48,7 @@ import com.normation.rudder.batch.AsyncDeploymentActor
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.services.policies.PromiseGenerationHooks
-import com.normation.rudder.services.servers.NewNodeManagerHooks
+import com.normation.rudder.services.servers.NewNodePostAcceptHooks
 import com.normation.zio._
 import net.liftweb.common.Box
 import org.joda.time.DateTime
@@ -99,8 +99,12 @@ object DatasourcesConf extends RudderPluginModule {
     }
   })
 
-  Cfg.newNodeManager.appendPostAcceptCodeHook(new NewNodeManagerHooks() {
-    def afterNodeAcceptedAsync(nodeId: NodeId): Unit = {
+  Cfg.newNodeManagerHooks.appendPostAcceptCodeHook(new NewNodePostAcceptHooks {
+    override def name: String = {
+      "update-datasource-new-node"
+    }
+
+    override def run(nodeId: NodeId): Unit = {
       dataSourceRepository.onNewNode(nodeId).runNow
     }
   })
