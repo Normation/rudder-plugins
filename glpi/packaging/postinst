@@ -2,7 +2,7 @@
 set -e
 CONFFILE="/opt/rudder/etc/glpi.conf"
 
-echo "15 7 * * * /opt/rudder/bin/glpi-plugin send-all" > /etc/cron.d/glpi-rudder
+echo "15 7 * * * root /opt/rudder/bin/glpi-plugin send-all" > /etc/cron.d/glpi-rudder
 
 
 # create configuration file
