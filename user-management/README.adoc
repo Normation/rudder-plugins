@@ -131,7 +131,7 @@ You can define custom roles as union set of any permissions, ie any rights or ot
 Custom roles are defined in the files `/opt/rudder/etc/rudder-users.xml` with the following syntax:
 
 ```
-<authentications>
+<authentication>
   <custom-roles>
       <role name="read-only-restricted" permissions="node_read,rule_read" />
       <role name="read-only-extended"   permissions="read-only-restricted,configuration_read" />
@@ -139,7 +139,7 @@ Custom roles are defined in the files `/opt/rudder/etc/rudder-users.xml` with th
       <role name="auditor"              permissions="cve-access, compliance" />
   </custom-roles>
   ...
-</authentications>
+</authentication>
 ```
 
 We can see that:
@@ -162,7 +162,7 @@ If a name in the `roles` list is unknown, it is ignored and grant no additional 
 User credentials are defined in the same file as custom roles, `/opt/rudder/etc/rudder-users.xml` with the following syntax:
 
 ```
-<authentications>
+<authentication>
   <custom-roles>
       <role name="read-only-restricted" permissions="node_read,rule_read" />
       <role name="read-only-extended"   permissions="read-only-restricted,configuration_read" />
@@ -173,7 +173,7 @@ User credentials are defined in the same file as custom roles, `/opt/rudder/etc/
   <user name="user_1" password="..."  permissions="node_read,node_write,configuration" />
   <user name="user_2" password="..."  permissions="auditor" />
   ...
-</authentications>
+</authentication>
 ```
 
 `user` tag can have the following parameters:
