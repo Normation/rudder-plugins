@@ -181,7 +181,60 @@ pipeline {
             }
 
         }
-        stage('Publish plugins') {
+
+        stage('Publish plugins commons') {
+
+            steps {
+
+                script {
+                    running.add("Publish - common plugin")
+                    updateSlack(errors, running, slackResponse, version, changeUrl)
+                }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    dir('plugins-common') {
+                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                            // don't archive jars
+                            options: [artifactsPublisher(disabled: true)]
+                        ) {
+                            // we need to use $MVN_COMMAND to get the settings file path
+                            sh script: 'make'
+                            sh script: '$MVN_CMD --update-snapshots clean package deploy', label: "common deploy"
+                        }
+                    }
+                }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    dir('plugins-common-private') {
+                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                            // don't archive jars
+                            options: [artifactsPublisher(disabled: true)]
+                        ) {
+                            // we need to use $MVN_COMMAND to get the settings file path
+                            sh script: 'make'
+                            sh script: '$MVN_CMD --update-snapshots clean package deploy', label: "private common deploy"
+                        }
+                    }
+                }
+
+                post {
+                    always {
+                        archiveArtifacts artifacts: 'webapp/sources/rudder/rudder-web/target/*.war'
+                    }
+                    failure {
+                        script {
+                            failedBuild = true
+                            errors.add("Publish - common plugin")
+                            //notifier.notifyResult("scala-team")
+                            slackSend(channel: slackResponse.threadId, message: "Error while publishing webapp - <${currentBuild.absoluteUrl}|Link>", color: "#CC3421")
+                        }
+                    }
+                    cleanup {
+                        script {
+                            running.remove("Publish - common plugin")
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
+                        }
+                    }
+                }
+            }
             // only publish nightly on dev branches
             when {
                 allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
