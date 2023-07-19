@@ -229,24 +229,20 @@ pipeline {
                         }
                     }
                 }
-
-                post {
-                    always {
-                        archiveArtifacts artifacts: 'webapp/sources/rudder/rudder-web/target/*.war'
+            }
+            post {
+                failure {
+                    script {
+                        failedBuild = true
+                        errors.add("Publish - common plugin")
+                        //notifier.notifyResult("scala-team")
+                        slackSend(channel: slackResponse.threadId, message: "Error while publishing webapp - <${currentBuild.absoluteUrl}|Link>", color: "#CC3421")
                     }
-                    failure {
-                        script {
-                            failedBuild = true
-                            errors.add("Publish - common plugin")
-                            //notifier.notifyResult("scala-team")
-                            slackSend(channel: slackResponse.threadId, message: "Error while publishing webapp - <${currentBuild.absoluteUrl}|Link>", color: "#CC3421")
-                        }
-                    }
-                    cleanup {
-                        script {
-                            running.remove("Publish - common plugin")
-                            updateSlack(errors, running, slackResponse, version, changeUrl)
-                        }
+                }
+                cleanup {
+                    script {
+                        running.remove("Publish - common plugin")
+                        updateSlack(errors, running, slackResponse, version, changeUrl)
                     }
                 }
             }
