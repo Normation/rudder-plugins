@@ -4,7 +4,7 @@ def version = "7.3"
 
 def changeUrl = env.CHANGE_URL
 
-def slackResponse = slackSend(channel: "ci", message: "${version} next plugins - build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -156,8 +156,14 @@ pipeline {
                                 }
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                     dir("${p}") {
+
+                                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                                          // don't archive jars
+                                          options: [artifactsPublisher(disabled: true)]
+                                        ) {
                                         // enough to run the mvn tests and package the plugin
                                         sh script: 'make', label: "build ${p} plugin"
+                                        }
                                     }
                                     script {
                                         stageSuccess.put(p,true)
@@ -283,9 +289,15 @@ pipeline {
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 
                                     dir("${p}") {
-                                        sh script: 'make', label: "build ${p} plugin"
-                                        archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                                        sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
+
+                                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                                          // don't archive jars
+                                          options: [artifactsPublisher(disabled: true)]
+                                        ) {
+                                            sh script: 'make licensed', label: "build ${p} plugin"
+                                            archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                                            sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                                        }
                                     }
                                     script {
                                         stageSuccess.put(p,true)
