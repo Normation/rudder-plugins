@@ -188,8 +188,6 @@ pipeline {
             when {
                 allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
                 not { changeRequest() } }
-                // Disabled
-                expression { return false }
             }
 
             agent {
@@ -259,8 +257,6 @@ pipeline {
             when {
                 allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
                 not { changeRequest() } }
-                // Disabled
-                expression { return false }
             }
 
             agent {
