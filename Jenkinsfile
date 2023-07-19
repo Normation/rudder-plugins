@@ -184,6 +184,23 @@ pipeline {
 
         stage('Publish plugins commons') {
 
+            // only publish nightly on dev branches
+            when {
+                allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
+                not { changeRequest() } }
+                // Disabled
+                expression { return false }
+            }
+
+            agent {
+                dockerfile {
+                    filename 'ci/plugins.Dockerfile'
+                    additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
+                    // set same timezone as some tests rely on it
+                    // and share maven cache
+                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
+                }
+            }
             steps {
 
                 script {
@@ -235,6 +252,9 @@ pipeline {
                     }
                 }
             }
+        }
+
+        stage('Publish plugins') {
             // only publish nightly on dev branches
             when {
                 allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
