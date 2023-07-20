@@ -23,6 +23,7 @@ this plugin has to be installed and running on the Rudder server.
 * Install the
 https://github.com/fusioninventory/fusioninventory-for-glpi/releases[fusion inventory plugin for GLPI]
 * Install the glpi plugin on your Rudder server
+* Install `xmlstarlet`
 * Edit the configuration file in `/opt/rudder/etc/glpi.conf`. This config
 file must contain the URL to your GLPI server’s fusion inventory plugin.
 

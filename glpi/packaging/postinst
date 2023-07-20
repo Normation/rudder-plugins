@@ -10,6 +10,8 @@ if [ ! -f "${CONFFILE}" ]
 then
   cat > "${CONFFILE}" <<EOF
 GLPI_FUSION_URL=http://<your_glpi_server_root>/plugins/fusioninventory/
+# change to yes to patch GLPI hostname and use Rudder FQDN instead
+PATCH_FQDN=no
 EOF
 fi
 
