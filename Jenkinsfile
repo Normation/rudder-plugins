@@ -252,11 +252,7 @@ pipeline {
 
         stage("Publish to repository") {
             when { not { changeRequest() } }
-            agent {
-                dockerfile {
-                    filename 'ci/plugins.Dockerfile'
-                }
-            }
+            agent any
             steps {
                 script {
                     running.add("Publish - plugins")
