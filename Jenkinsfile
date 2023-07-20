@@ -209,7 +209,7 @@ pipeline {
                         parallelStages[p] = {
                             stage("Build ${p}") {
                                 script {
-                                    running.add("Publish - ${p}")
+                                    running.add("Build - ${p}")
                                     updateSlack(errors, running, slackResponse, version, changeUrl)
                                     stageSuccess.put(p,false)
                                 }
@@ -304,7 +304,7 @@ if (! running.isEmpty()) {
 }
 
 if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  " => All plugin built! :white_check_mark:"
+    msg +=  " => All plugins built! :white_check_mark:"
 	color = "good"
 }
 
