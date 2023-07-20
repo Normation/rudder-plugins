@@ -259,19 +259,18 @@ pipeline {
                     updateSlack(errors, running, slackResponse, version, changeUrl)
                 }
                 sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/publish -v \"${RUDDER_VERSION}\" -t plugins -u -m nightly")], verbose:true)])
-                    
-                post {
-                    failure {
-                        script {
-                            errors.add("Publish - plugins")
-                            slackSend(channel: slackResponse.threadId, message: "Check typos on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
-                        }
+            }   
+            post {
+                failure {
+                    script {
+                        errors.add("Publish - plugins")
+                        slackSend(channel: slackResponse.threadId, message: "Check typos on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                     }
-                    cleanup {
-                        script {
-                            running.remove("Publish - plugins")
-                            updateSlack(errors, running, slackResponse, version, changeUrl)
-                        }
+                }
+                cleanup {
+                    script {
+                        running.remove("Publish - plugins")
+                        updateSlack(errors, running, slackResponse, version, changeUrl)
                     }
                 }
             }
