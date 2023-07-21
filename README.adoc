@@ -348,9 +348,9 @@ Each provider needs to then have a bunch of properties defined for it. They are 
 We advise to configure each provider in its own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
 so that it is easier to change or disable some of them.
 
-=== OIDC-provided authorisations for Rudder users
+=== IdP-provided authorisations for Rudder users
 
-You can configure an OIDC provider so that it informs Rudder of the roles the user need to have. This allows to centrally
+You can configure an OAuth2 or OIDC provider so that it informs Rudder of the roles the user need to have. This allows to centrally
 manage both user and authorisation in the same place.
 
 This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
