@@ -76,8 +76,7 @@ final case class JsonAuthConfiguration(
     ,
     adminConfig:       JsonAdminConfig,
     fileConfig:        JsonFileConfig,
-    ldapConfig:        JsonLdapConfig,
-    radiusConfig:      JsonRadiusConfig
+    ldapConfig:        JsonLdapConfig
 )
 
 /*
@@ -110,17 +109,6 @@ final case class JsonLdapConfig(
     bindPassword: ConfigOption,
     searchBase:   ConfigOption,
     ldapFilter:   ConfigOption
-)
-
-final case class JsonRadiusConfig(
-    providerId:  String,
-    description: String,
-    hostName:    ConfigOption,
-    hostPort:    ConfigOption,
-    secret:      ConfigOption,
-    timeout:     ConfigOption,
-    retries:     ConfigOption,
-    protocol:    ConfigOption
 )
 
 final object JsonSerialization {
