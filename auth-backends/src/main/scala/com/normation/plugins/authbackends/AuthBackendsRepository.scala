@@ -77,7 +77,7 @@ class AuthBackendsRepository(
       }
     }
 
-    // hide a passward with stars
+    // hide a password with stars
     implicit class HideValue(conf: ConfigOption) {
       def hideValue() = conf.copy(value = "****")
     }
@@ -102,7 +102,7 @@ class AuthBackendsRepository(
 
     val file = JsonFileConfig(
       "file",
-      """By default, Rudder authentication is collocated with user authorisatoin
+      """By default, Rudder authentication is collocated with user authorization
         |in 'rudder-user.xml' file. The file is located:""".stripMargin,
       "/opt/rudder/etc/rudder-users.xml"
     )
