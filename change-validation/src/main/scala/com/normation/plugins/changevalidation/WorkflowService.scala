@@ -208,6 +208,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
   ): WorkflowAction = {
+
     val deployAction = {
       if (canDeploy(isCreator, selfDeployment))
         Seq((Deployed.id, stepValidationToDeployed _))
@@ -224,7 +225,12 @@ class TwoValidationStepsWorkflowServiceImpl(
         WorkflowAction("Validate", validatorActions)
 
       case Deployment.id     =>
-        WorkflowAction("Deploy", deployAction)
+        val deploymentAction = {
+          (if (canDeploy(isCreator, selfValidation)) {
+            Seq((Deployment.id, stepDeploymentToDeployed _))
+          } else Seq()) ++ deployAction
+        }
+        WorkflowAction("Deploy", deploymentAction)
       case Deployed.id       => NoWorkflowAction
       case Cancelled.id      => NoWorkflowAction
       case WorkflowNodeId(x) =>
@@ -434,6 +440,15 @@ class TwoValidationStepsWorkflowServiceImpl(
   ): Box[WorkflowNodeId] = {
     toFailure(Deployment, changeRequestId, actor, reason)
   }
+
+  private[this] def stepDeploymentToDeployed(
+    changeRequestId: ChangeRequestId,
+    actor:           EventActor,
+    reason:          Option[String]
+  ): Box[WorkflowNodeId] = {
+    onSuccessWorkflow(Deployment, changeRequestId, actor, reason)
+  }
+
 
   // this THE workflow that needs external validation.
   override def needExternalValidation(): Boolean = true
