@@ -102,7 +102,7 @@ class AuthBackendsRepository(
 
     val file = JsonFileConfig(
       "file",
-      """By default, Rudder authentication is collocated with user authorisation
+      """By default, Rudder authentication is collocated with user authorization
         |in 'rudder-user.xml' file. The file is located:""".stripMargin,
       "/opt/rudder/etc/rudder-users.xml"
     )
