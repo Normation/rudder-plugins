@@ -16,6 +16,27 @@ This plugins allows to use alternative authentication backends for Rudder: *SAML
 
 Each authentication method is detailed below. Users are expected to know how an authentication system works independently of Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
 
+== Configuring log level
+
+Rudder has general info level information for user authentication. They trace what user get connected, with the use of what means.
+
+====
+[2020-07-28 12:01:13+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': success
+====
+
+They trace log login failure at trace level:
+====
+[2023-07-28 12:00:07+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': failure
+[2023-07-28 12:00:07+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'file': failure
+[2023-07-28 12:00:07+0200] WARN  application - Login authentication failed for user 'alice' from IP '127.0.0.1': Bad credentials
+====
+
+They are enough to follow user authentication. But authentication methods based on central authentication provider can be tricky to configure correctly, and that level of log won't help you to set-up things.
+Rudder try to give you helpful information for that task:
+
+- there is a logger for the authentication backend plugin that can help you for general information like configuration:  `<logger name="auth-backends" level="debug" />`
+- each authentication backend can provide more information with other loggers, which are in that case documented in their relevant section.
+
 == Centralized user authorization management with OIDC
 
 In addition to alternative authentication provider, the OIDC backends allow to provide Rudder roles through the OIDC token so that you can control your Rudder user authorisation directly from your identity provider.
@@ -147,6 +168,11 @@ In particular, check that `Computed list of providers` entry matches your will.
 
 == LDAP / AD backend configuration
 
+LDAP and Active Directories are a common enterprise authentication mean. In Rudder, they are configured with the same backend. That section explain what option are available, and in the following paragraphs we deal with the backend own logger and configuration of a secured (`LDAPS`) connection and how to register the corresponding certificate in Rudder.
+
+=== LDAP backend parameters
+
+
 The configuration properties needed to configure the LDAP or AD
 authentication backend are displayed below.
 
@@ -269,6 +295,33 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 
 ---- end of ldap authentication properties to copy ----
 ```
+=== LDAP backend logger
+
+In addition to the common loggers, LDAP backend use the `org.springframework.security.ldap` namespace.
+You can configure the corresponding logger in `/opt/rudder/etc/logback.xml` at debug or trace level by adding the line:
+
+====
+
+<logger name="org.springframework.security.ldap" level="trace" />
+
+====
+
+This will lead to trace looking like:
+
+====
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.SpringSecurityLdapTemplate - Searching for entry under DN 'cn=rudder-configuration', base = 'ou=Users', filter = '(&(cn={0})(objectclass=person))'
+[2023-07-28 12:00:07+0200] DEBUG org.springframework.security.ldap.SpringSecurityLdapTemplate - Found DN: cn=alice,ou=Users
+[2023-07-28 12:00:07+0200] DEBUG org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Found user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Attempting to bind as cn=alice,ou=Users,cn=rudder-configuration
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.DefaultSpringSecurityContextSource - Removing pooling flag for user cn=alice,ou=Users,cn=rudder-configuration
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind as cn=alice,ou=Users
+org.springframework.ldap.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:191)
+	at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:363)
+
+====
 
 === Using a certificate for secure connection to LDAP/AD
 
