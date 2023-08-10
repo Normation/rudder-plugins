@@ -171,7 +171,13 @@ class UserApi(
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
         case Full(Some(account)) =>
-          val accounts: JValue = ("accounts" -> JArray(List(account.toJson)))
+          val filtered = account.copy(token = if (account.token.isHashed) {
+            // Don't send hashes
+            ApiToken("")
+          } else {
+            account.token
+          })
+          val accounts: JValue = ("accounts" -> JArray(List(filtered.toJson)))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)
 
         case Full(None) =>
