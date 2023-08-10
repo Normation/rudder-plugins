@@ -61,17 +61,22 @@ import zio.syntax._
  *
  */
 
+final case class OIDCProvidedRole(enabled: Boolean, attributeName: String, over: Boolean) {
+  override def toString: String = if (enabled) s"enabled, list obtained from attribute: ${attributeName} (override: ${over})"
+  else "disabled"
+}
+
 /*
  * Data container class to add our properties to spring ClientRegistration ones
  * We never want to print the secret in logs, so override it.
  */
-final case class RudderClientRegistration(registration: ClientRegistration, infoMsg: String) {
+final case class RudderClientRegistration(registration: ClientRegistration, infoMsg: String, roles: OIDCProvidedRole) {
   override def toString: String = {
     toDebugStringWithSecret.replaceFirst("""clientSecret='([^']+?)'""", "clientSecret='*****'")
   }
 
   // avoid that in logs etc, use only for interactive debugging sessions
-  def toDebugStringWithSecret = s"""{${registration.toString}}, '${infoMsg}'"""
+  def toDebugStringWithSecret = s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}"""
 }
 
 /*
@@ -96,6 +101,9 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   val A_URI_USER_INFO   = "uri.userInfo"
   val A_URI_JWK_SET     = "uri.jwkSet"
   val A_PIVOT_ATTR      = "userNameAttributeName"
+  val A_ROLES_ENABLED   = "roles.enabled"
+  val A_ROLES_ATTRIBUTE = "roles.attribute"
+  val A_ROLES_OVERRIDE  = "roles.override"
 
   val authMethods = {
     import ClientAuthenticationMethod._
@@ -122,7 +130,10 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     A_URI_TOKEN       -> "provider URL to contact for token verification (see provider documentation)",
     A_URI_USER_INFO   -> "provider URL to contact to get user information (see provider documentation)",
     A_URI_JWK_SET     -> "provider URL to check signature of JWT token (see provider documentation)",
-    A_PIVOT_ATTR      -> "the attribute used to find local app user"
+    A_PIVOT_ATTR      -> "the attribute used to find local app user",
+    A_ROLES_ENABLED   -> "enable custom role extension by OIDC",
+    A_ROLES_ATTRIBUTE -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
+    A_ROLES_OVERRIDE  -> "keep user configured roles in rudder-user.xml or override them with the one provided in the token"
   )
 
   def parseAuthenticationMethod(method: String): PureResult[ClientAuthenticationMethod] = {
@@ -196,6 +207,11 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
         config.getString(path)
       )
     }
+    def toBool(s: String) = s.toLowerCase match {
+      case "true" => true
+      case _      => false
+    }
+
     for {
       name           <- read(A_NAME)
       clientId       <- read(A_CLIENT_ID)
@@ -210,6 +226,9 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       uriUserInfo    <- read(A_URI_USER_INFO)
       pivotAttr      <- read(A_PIVOT_ATTR)
       jwkSetUri      <- read(A_URI_JWK_SET)
+      rolesEnabled   <- read(A_ROLES_ENABLED).catchAll(_ => "false".succeed)
+      rolesAttr      <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
+      rolesOverride  <- read(A_ROLES_OVERRIDE).catchAll(_ => "false".succeed)
     } yield {
       RudderClientRegistration(
         ClientRegistration
@@ -227,7 +246,12 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
           .clientName(name)
           .jwkSetUri(jwkSetUri)
           .build(),
-        infoMessage
+        infoMessage,
+        OIDCProvidedRole(
+          toBool(rolesEnabled),
+          rolesAttr,
+          toBool(rolesOverride)
+        )
       )
     }
   }
