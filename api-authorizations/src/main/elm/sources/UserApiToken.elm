@@ -291,17 +291,17 @@ tokenPresent token isNewToken =
         text ""
     , li []
         [ a [ class "no-click" ]
-            [ span [ class "fa fa-calendar" ] []
-            , text "Generated on "
-            , b [] [ text token.generationDate ]
-            ]
+          [ span [ class "fa fa-calendar" ] []
+          , text "Generated on "
+          , b [] [ text token.generationDate ]
+          ]
         ]
     , li []
         [ a [ class "no-click" ]
-            [ span [ class ("fa " ++ statusIcon) ] []
-            , text "Status: "
-            , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
-            ]
+          [ span [ class ("fa " ++ statusIcon) ] []
+          , text "Status: "
+          , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
+          ]
         ]
     , li [ class "footer" ] [ a [ class "deleteToken", onClick DeleteButton ] [ text "Delete API Token" ] ]
     ]
