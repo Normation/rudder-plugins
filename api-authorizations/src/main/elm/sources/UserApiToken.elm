@@ -303,14 +303,14 @@ tokenPresent token isNewToken =
           , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
           ]
         ]
-    , li [ class "footer" ] [ a [ class "deleteToken", onClick DeleteButton ] [ text "Delete API Token" ] ]
+    , li [ class "footer" ] [ a [ class "deleteToken", onClick DeleteButton ] [ text "Delete API token" ] ]
     ]
 
 
 tokenAbsent : Model -> List (Html Msg)
 tokenAbsent model =
     [ li [] [ a [ class "no-click no-token" ] [ text "You don't have an API token yet." ] ]
-    , li [ class "footer" ] [ a [ class "createToken", onClick CreateButton ] [ text "Create an API Token" ] ]
+    , li [ class "footer" ] [ a [ class "createToken", onClick CreateButton ] [ text "Create an API token" ] ]
     ]
 
 
