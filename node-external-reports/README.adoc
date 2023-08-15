@@ -65,7 +65,7 @@ plugin.node-external-reports.reports {
 Note that quotes are mandatory only when the value contains `@@` (so most likely only for
 the `filename` parameter).
 
-- "01_first_report_type" is a unique key, used internaly (in logs for example) and for
+- "01_first_report_type" is a unique key, used internally (in logs for example) and for
   sorting reports display order in node page;
 - "title" is the name of section in the external document tab;
 - "dirname" is the base directory on the local file system where documents are stored;

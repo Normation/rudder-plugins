@@ -4,7 +4,7 @@ PLUGIN_FULL_NAME="rudder-plugin-ansible-policies"
 PRETTY_NAME="Ansible Policies"
 CONFIGURATION_PATH=/var/rudder/packages/$PLUGIN_FULL_NAME
 
-# Code below should be mostly comon between the plugins
+# Code below should be mostly common between the plugins
 SOURCE_DIR=${CONFIGURATION_PATH}/techniques
 CONFIG_REPO=/var/rudder/configuration-repository
 

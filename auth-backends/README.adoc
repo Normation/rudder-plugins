@@ -54,7 +54,7 @@ Possible values are:
 
 * `show` [default]: show Rudder login form as usual
 * `hide`: hide the login form below a toggle button. This is a good option if you want to let your user only see SSO links by default, but still have access to the login form for special cases (like, typically, for emergency admin access when the SSO or network to it is down)
-* `remove`: completly remove Rudder login form.
+* `remove`: completely remove Rudder login form.
 
 For example, with an OpenID Connect service configured and the `hide` value chosen, your login form will be updated to look like:
 
@@ -253,7 +253,7 @@ rudder.auth.ldap.connection.url=ldap://ldap.mycorp.com:389/dc=mycorp,dc=com
 #
 # Bind DN used by Rudder to do the search. This is the "service" or
 # "application" DN for Rudder in you LDAP directory, or an LDAP user with
-# enought rights to be able to walk the user branch configured below.
+# enough rights to be able to walk the user branch configured below.
 # LDAP dn, no default value.
 # Be careful to not add quote around the DN, the value is used as provided.
 #

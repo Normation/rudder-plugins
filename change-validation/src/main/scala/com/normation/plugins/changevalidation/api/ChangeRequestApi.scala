@@ -154,11 +154,11 @@ class ChangeRequestApiImpl(
     val isAcceptable = commitRepository.isMergeable(cr)
     restDataSerializer.serializeCR(cr, status, isAcceptable, version)
   }
-  private[this] def unboxAnswer(actionName: String, id: ChangeRequestId, boxedAnwser: Box[LiftResponse])(implicit
+  private[this] def unboxAnswer(actionName: String, id: ChangeRequestId, boxedAnswer: Box[LiftResponse])(implicit
       action:                               String,
       prettify:                             Boolean
   ) = {
-    boxedAnwser match {
+    boxedAnswer match {
       case Full(response) => response
       case eb: EmptyBox =>
         val fail    = eb ?~! (s"Could not $actionName ChangeRequest ${id}")

@@ -258,7 +258,7 @@ tokenPresent token =
     [ li []
         [ a [ class "no-click" ]
             [ span [ class "fa fa-key" ] []
-            , text "Your personnal token: "
+            , text "Your personal token: "
             , div [ class "help-block" ] [ b [] [ text token.token ] ]
             ]
         ]

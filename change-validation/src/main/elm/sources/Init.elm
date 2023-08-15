@@ -53,7 +53,7 @@ getErrorMessage e =
         Http.NetworkError ->
           "Network error"
         Http.BadBody c->
-          "Wront content in request body" ++ c
+          "Wrong content in request body" ++ c
   in
     errMessage
 
