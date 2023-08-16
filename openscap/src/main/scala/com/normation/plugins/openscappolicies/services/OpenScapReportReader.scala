@@ -54,7 +54,7 @@ class OpenScapReportReader(
         logger.error(errMessage)
         Failure(errMessage)
       case Full(directives) if directives.size == 0 =>
-        logger.info("There are not OpensCAP based directive yet")
+        logger.info("There are no OpensCAP-based directive yet")
         Full(false)
       case Full(directives) =>
         val expectedOption = (for {
@@ -85,7 +85,7 @@ class OpenScapReportReader(
   def checkOpenScapReportExistence(nodeId: NodeId): Box[Boolean] = {
     nodeInfoService.getNodeInfo(nodeId).toBox match {
       case t: EmptyBox =>
-        val errMessage = s"Node with id ${nodeId.value} does not exists"
+        val errMessage = s"Node with id ${nodeId.value} does not exist"
         logger.error(errMessage)
         Failure(errMessage)
       case Full(id) =>

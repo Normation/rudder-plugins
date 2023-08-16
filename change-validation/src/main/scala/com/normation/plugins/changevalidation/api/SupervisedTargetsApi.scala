@@ -120,7 +120,7 @@ class SupervisedTargetsApiImpl(
    *
    * { "name": "root category"
    * , "targets": [
-   *     {"id": "group:xxxx", "name": "Some name choosed by user", "description": "", "supervised":true}
+   *     {"id": "group:xxxx", "name": "Some name chosen by user", "description": "", "supervised":true}
    *   , {"id": "group:xxxx", "name": "Some other group", "description": "", "supervised":false}
    *   , ...
    *   ]
@@ -181,7 +181,7 @@ class SupervisedTargetsApiImpl(
 
         res match {
           case Full(x) =>
-            RestUtils.toJsonResponse(None, JString("Set of target needing validation has beed updated"))(
+            RestUtils.toJsonResponse(None, JString("Set of target needing validation has been updated"))(
               schema.name,
               params.prettify
             )

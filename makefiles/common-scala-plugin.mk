@@ -10,7 +10,7 @@ FILES += $(NAME)
 include ../makefiles/common.mk
 
 ## For licensed plugins
-# The path are expected on Rudder, and the license and key file will be provided separatly
+# The path are expected on Rudder, and the license and key file will be provided separately
 # standard destination path for the license file is in module directory, "license.sign"
 TARGET_LICENSE_PATH = /opt/rudder/etc/plugins/licenses/$(NAME).license
 # standard destination path for the key:

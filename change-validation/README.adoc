@@ -98,7 +98,7 @@ Change request information::
 
 display common information (title, description, status, id) and a form to edit them.
 
-image::docs/images/Informations.png[]
+image::docs/images/Information.png[]
 
 Change request content::
 
@@ -245,4 +245,4 @@ image::docs/images/1_Validated_User.png[List of validated users]
 
 image::docs/images/2_Validated_User.png[Update validated users]
 
-image::docs/images/3_Validated_User.png[Upadated list of validated users]
+image::docs/images/3_Validated_User.png[Updated list of validated users]

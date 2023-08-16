@@ -54,7 +54,7 @@ showDeleteModal username =
                               [
                                 div [class "row"]
                                 [
-                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text " ?"]
+                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text "?"]
                                 ]
                               ]
                             , div [class "modal-footer"]
@@ -209,7 +209,7 @@ displayRightPanel model =
                 h2 [class "title-username"] [text user.login]
               , button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
            ]
-           , input [class "form-control username-input", type_ "text", placeholder "New Username", onInput Login] []
+           , input [class "form-control username-input", type_ "text", placeholder "New username", onInput Login] []
            , displayPasswordBlock model
            , h4 [class "role-title"][text "Roles"]
            , div [class "role-management-wrapper"]
@@ -262,7 +262,7 @@ displayUsersConf model u =
                 [
                     div []
                     [
-                          h2 [][text "User Management Configuration"]
+                          h2 [][text "User management"]
                         , div [class"description-plugin"]
                         [
                             p [] [text "This page shows you the current Rudder users and their rights."]
