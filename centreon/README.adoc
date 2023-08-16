@@ -87,7 +87,7 @@ Note: Rule is the application of one or more directives to a group of nodes.
 It is the glue between both Asset Management and Configuration Management parts of
 the application.
 
-* Centreon comes with the possiblity to add monitoring templates to its hosts.
+* Centreon comes with the possibility to add monitoring templates to its hosts.
 
 * Create a service template model in centreon or check for available ones proposed by Centreon interface.
 
@@ -96,10 +96,10 @@ generic method from the technique editor.
 
 In order to configure the monitoring of the Rudder nodes, you can provide Centreon with parameters associated to its hosts. The *Monitoring parameter* generic method achieves this.
 
-At this stage, Centreon supervise your rudder-node services in a fairly syncronized way.
+At this stage, Centreon supervise your rudder-node services in a fairly synchronized way.
 
 The data will be sent to the Centreon server after the agent and the
-synchonization process have run. This synchonization process can be
+synchronization process have run. This synchronization process can be
 manually executed by running:
 
 ----

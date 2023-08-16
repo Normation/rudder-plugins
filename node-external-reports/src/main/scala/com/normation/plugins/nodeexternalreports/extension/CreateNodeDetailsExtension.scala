@@ -66,7 +66,7 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
     val (tabTitle, content) = externalReport.getExternalReports(snippet.nodeId) match {
       case eb: EmptyBox =>
         val e = eb ?~! "Can not display external reports for that node"
-        ("External Reports", <div class="error">{e.messageChain}</div>)
+        ("External reports", <div class="error">{e.messageChain}</div>)
       case Full(config) =>
         (config.tabTitle, <div id="externalReport">{tabContent(config.reports)(myXml)}</div>)
     }

@@ -116,7 +116,7 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
                          sql"""update workflow set state = ${state} where id = ${crId}""".update.run.attempt
                        } else {
                          val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' " +
-                           s"but we were expecting '${from.value}'. Perhaps someone else changed it concurently?"
+                           s"but we were expecting '${from.value}'. Perhaps someone else changed it concurrently?"
                          ChangeValidationLogger.error(msg)
                          (Left(msg).pure[ConnectionIO])
                        }

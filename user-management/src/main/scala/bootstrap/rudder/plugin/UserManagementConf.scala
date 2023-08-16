@@ -50,7 +50,7 @@ import com.normation.plugins.usermanagement.api.UserManagementApiImpl
  */
 class UserManagementAuthorizationLevel(status: PluginStatus) extends UserAuthorisationLevel {
   override def userAuthEnabled: Boolean = status.isEnabled()
-  override val name:            String  = "User Management pluging: extended authorizations"
+  override val name:            String  = "User Management plugin: extended authorizations"
 }
 
 /*

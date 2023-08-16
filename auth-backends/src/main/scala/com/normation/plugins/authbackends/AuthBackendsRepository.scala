@@ -92,7 +92,7 @@ class AuthBackendsRepository(
         """Rudder has a root admin account, with full rights on the
             # application, and whose authentication is independent from
             # the authentication provider chosen (file, LDAP, etc).
-            # By default, the accound is disabled (either by letting the
+            # By default, the account is disabled (either by letting the
             # the login or the password empty, or by commenting it).""",
         login,
         password,

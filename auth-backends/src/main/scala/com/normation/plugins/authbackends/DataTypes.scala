@@ -58,7 +58,7 @@ object AuthBackendsLoggerPure extends NamedZioLogger {
 
 /*
  * The Json ADT to present information to client side
- * All the *Json case clases define an user API, any change
+ * All the *Json case classes define an user API, any change
  * must be handle with care (and forward compatibility in mind).
  */
 

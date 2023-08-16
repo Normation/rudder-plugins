@@ -136,7 +136,7 @@ class ChangeValidationWorkflowLevelService(
   }
 
   /**
-   * Methode to use to combine several validationNeeded check.
+   * Method to use to combine several validationNeeded check.
    * Note that a validated user will prevent workflow to be performed, no other validationNeeded check will be executed
    */
   def combine[T](
@@ -331,7 +331,7 @@ object ChangeValidationConf extends RudderPluginModule {
         /*
          * Here, rights are not sufficiently precise: the check need to know the value
          * of the "status" parameter to decide if a validator (resp a deployer) can do
-         * what he asked for.
+         * what they asked for.
          */
         override def authorizationApiMapping: AuthorizationApiMapping = new AuthorizationApiMapping {
           override def mapAuthorization(authz: AuthorizationType): List[ApiAclElement] = {

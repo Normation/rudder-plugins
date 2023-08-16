@@ -360,7 +360,7 @@
       <groupId>com.normation.rudder</groupId>
       <artifactId>rudder-web</artifactId>
       <version>${rudder-build-version}</version>
-      <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appened -->
+      <!-- this is needed as rudder-web is a war - its classes are packaged with "-classes" appended -->
       <classifier>classes</classifier>
       <scope>provided</scope>
     </dependency>

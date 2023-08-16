@@ -182,7 +182,7 @@ class ChangeRequestChangesForm(
 
     def groupChild(groupId: NodeGroupId) = new JsTreeNode {
       val changes    = changeRequest.nodeGroups(groupId).changes
-      val groupeName = changes.initialState
+      val groupName = changes.initialState
         .map(_.name)
         .getOrElse(changes.firstChange.diff match {
           case a:     AddNodeGroupDiff      => a.group.name
@@ -191,7 +191,7 @@ class ChangeRequestChangesForm(
         })
       val body       = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, List(changes))),
-        <span>{groupeName}</span>
+        <span>{groupName}</span>
       )
 
       val children = Nil

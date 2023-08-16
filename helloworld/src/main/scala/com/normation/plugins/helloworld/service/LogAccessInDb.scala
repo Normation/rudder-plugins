@@ -24,7 +24,7 @@ class LogAccessInDb(dbUrl: String, dbUser: String, dbPass: String) extends Logga
 
   def init(): Unit = {
 
-    logger.info("Droping and creting table in database with given schema:")
+    logger.info("Dropping and creting table in database with given schema:")
     base = Nil
   }
 

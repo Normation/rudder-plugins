@@ -72,7 +72,7 @@ update msg model =
 
         SendReload ->
             (model, postReloadConf model)
-                |> createSuccessNotification "User configuration's file have been reloaded"
+                |> createSuccessNotification "User configuration file have been reloaded"
 
         ToastyMsg subMsg ->
             Toasty.update defaultConfig ToastyMsg subMsg model

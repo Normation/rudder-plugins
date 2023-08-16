@@ -1,5 +1,9 @@
 [default.extend-words]
 monitord = "monitord"
+Ser = "Ser"
+unser = "unser"
+# False positive on the OAUTHv2 string
+OAUT = "OAUT"
 
 # All exceptions below should be removed when upstream will be fixed
 includeSytem = "includeSytem"
@@ -7,3 +11,6 @@ Sytem = "Sytem"
 cssPsuedoElementExclusion = "cssPsuedoElementExclusion"
 Psuedo = "Psuedo"
 criterias = "criterias"
+Formater = "Formater"
+Provid = "Provid"
+Optionnal = "Optionnal"
