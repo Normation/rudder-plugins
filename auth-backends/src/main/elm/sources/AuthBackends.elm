@@ -319,7 +319,7 @@ displayProvidConfig config =
                 , text "."
                 ]
             , p [] [ text """A special provider can be added for a root admin. It's an hook to
-                     alway let the possibility to have at least one access in the application.
+                     always let the possibility to have at least one access in the application.
                      That provider does not have to be declared in the list, and is always
                      tested first the root admin is enabled.
                   """ ]

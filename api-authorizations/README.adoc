@@ -23,7 +23,7 @@ You can log information about ACL (behavior and errors) by adding the following 
   <!--
       API ACLs
       ========
-      Information about ALC evalutation for APIs.
+      Information about ALC evaluation for APIs.
 
       This logger allows to get extra information about API
       ACLs resolution.

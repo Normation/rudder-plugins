@@ -93,7 +93,7 @@ class ChangeRequestEditForm(
   private[this] val formTracker = new FormTracker(changeRequestName)
   private[this] def onNothingToDo: JsCmd = {
     formTracker.addFormError(error("There are no modifications to save."))
-    updateFomClientSide
+    updateFromClientSide
   }
   private[this] val isEditable = {
     val authz   = CurrentUser.getRights.authorizationTypes.toSeq.collect { case right: ActionType.Edit => right.authzKind }
@@ -124,7 +124,7 @@ class ChangeRequestEditForm(
     if (isEditable) changeRequestDescription.toForm_! else changeRequestDescription.readOnlyValue
   }
 
-  def updateFomClientSide = SetHtml(containerId, display)
+  def updateFromClientSide = SetHtml(containerId, display)
 
   def display: NodeSeq = {
     ("#detailsForm *" #> { (n: NodeSeq) => SHtml.ajaxForm(n) } andThen
@@ -141,7 +141,7 @@ class ChangeRequestEditForm(
   def submit = {
     if (formTracker.hasErrors) {
       formTracker.addFormError(error("There was problem with your request"))
-      updateFomClientSide
+      updateFromClientSide
     } else {
       val newInfo = ChangeRequestInfo(changeRequestName.get, changeRequestDescription.get)
       if (info == newInfo) {

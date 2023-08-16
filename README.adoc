@@ -15,14 +15,14 @@ Once `g8` command is installed (see http://www.foundweekends.org/giter8/setup.ht
 ```
 % g8 file://.
 ```
-You can alos use the github resolution:
+You can also use the github resolution:
 
 ```
 % g8 normation/rudder-plugins
 ```
 
 And answer the questions. Only the `name` is mandatory: use the plugin short name, with
-space and capital if you want  (see convetion below).
+space and capital if you want  (see convention below).
 Juste hitting <ENTER> choose the default value (the one between []).
 
 ```
@@ -50,7 +50,7 @@ minus 'rudder-plugin-" prefix.
 
 Each plugin build information are grouped in file `build.conf` in plugin root directory.
 
-== Branch versionning and compatibility with Rudder versions
+== Branch versioning and compatibility with Rudder versions
 
 
 Plugins are linked to Rudder patch version, so we retrieve in `rudder-plugins` the same branch
@@ -64,7 +64,7 @@ corresponding Rudder patch version:
 - etc
 ```
 
-This  scheme allows to ensure total binary compatiblity, and upgrade is done automatically by rudder package at upgrade.
+This  scheme allows to ensure total binary compatibility, and upgrade is done automatically by rudder package at upgrade.
 
 
 == Plugin version and Tag convention
@@ -73,7 +73,7 @@ This  scheme allows to ensure total binary compatiblity, and upgrade is done aut
 Plugin versions are composed in two parts separated by a `-`:
 
 - the Rudder corresponding version (including the patch number),
-- the plugin own version in format X.Y(.Z) where the Z part is optionnal.
+- the plugin own version in format X.Y(.Z) where the Z part is optional.
 
 For example, the `datasources` plugin, in own version 2.1, for Rudder 7.2.3 will get version: `7.2.3-2.2`.
 
@@ -126,7 +126,7 @@ npm install -g  elm
 To build a plugin package, do:
 
 ```
-git checkout tag-corresponding-to-plugin-vesion
+git checkout tag-corresponding-to-plugin-version
 make clean && make generate-all-pom && make plugin-name
 ```
 
@@ -172,4 +172,4 @@ https://www.rudder.io/en/expand/contribute/
 
 == Authors
 
-Authors are tracked by their git name and public git hostory of the project.
+Authors are tracked by their git name and public git history of the project.

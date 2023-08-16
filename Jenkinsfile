@@ -94,7 +94,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'ci/typos.Dockerfile'
-                            additionalBuildArgs  '--build-arg VERSION=1.0'
+                            additionalBuildArgs  '--build-arg VERSION=1.16.5'
                         }
                     }
                     steps {

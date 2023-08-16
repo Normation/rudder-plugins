@@ -131,7 +131,7 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
       conf    <- config
       optNode <- nodeInfoService.getNodeInfo(nodeId).toBox
       node    <- optNode match {
-                   case None    => Failure(s"The node with ID '${nodeId}' was not found, we can add external information")
+                   case None    => Failure(s"The node with ID '${nodeId}' was not found, we can't add external information")
                    case Some(n) => Full(n)
                  }
     } yield {

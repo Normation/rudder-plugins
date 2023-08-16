@@ -113,7 +113,7 @@ object OpenscapPoliciesConf extends RudderPluginModule {
   )
 
   lazy val openScapApiImpl = new OpenScapApiImpl(RudderConfig.restExtractorService, openScapReportReader, reportSanitizer)
-  // other service instanciation / initialization
+  // other service instantiation / initialization
   RudderConfig.snippetExtensionRegister.register(
     new OpenScapNodeDetailsExtension(pluginStatusService, openScapReportReader, reportSanitizer)
   )
