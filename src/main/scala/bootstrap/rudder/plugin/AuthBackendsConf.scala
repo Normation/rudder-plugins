@@ -307,7 +307,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
 
   /**
    * We don't use rights provided by spring, nor the one provided by OAUTH2, so
-   * alway map user to role `ROLE_USER`
+   * always map user to role `ROLE_USER`
    */
   @Bean def userAuthoritiesMapper = {
 
@@ -340,7 +340,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
     new RudderOAuth2UserService(rudderUserDetailsService, registrationRepository)
   }
 
-  // following beans are the detault one provided by spring security for oauth2 logic
+  // following beans are the default one provided by spring security for oauth2 logic
 
   val authorizationRequestBaseUri = "/oauth2/authorization"
   val loginProcessingUrl          = "/login/oauth2/code/*"
