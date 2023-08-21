@@ -307,9 +307,80 @@ You can configure the corresponding logger in `/opt/rudder/etc/logback.xml` at d
 
 ====
 
-This will lead to trace looking like:
+This will lead to trace looking like the following in the different case of errors/success/
 
-====
+==== LDAP/AD server not reachable
+
+When the LDAP server configured in `rudder.auth.ldap.connection.url` is not reachable, you will get (be careful, it starts
+like the base for bad DN/password for service account):
+
+----
+[2023-08-21 16:14:53+0200] DEBUG org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind with any user DNs []
+[2023-08-21 16:14:53+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:14:53+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'admin', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:14:54+0200] INFO  application - Rudder authentication attempt for principal 'admin' with backend 'ldap': failure
+[2023-08-21 16:14:54+0200] ERROR org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter - An internal error occurred while trying to authenticate the user.
+org.springframework.security.authentication.InternalAuthenticationServiceException: nested exception is javax.naming.CommunicationException [Root exception is java.io.IOException: connection closed]
+	at org.springframework.security.ldap.authentication.LdapAuthenticationProvider.doAuthentication(LdapAuthenticationProvider.java:190)
+	at org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider.authenticate(AbstractLdapAuthenticationProvider.java:79)
+	at bootstrap.liftweb.RudderAuthenticationProvider.authenticate(AppConfigAuth.scala:701)
+	at bootstrap.liftweb.RudderProviderManager.authenticate(RudderProviderManager.java:116)
+....
+Caused by: org.springframework.ldap.CommunicationException: nested exception is javax.naming.CommunicationException [Root exception is java.io.IOException: connection closed]
+	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:108)
+	at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:363)
+....
+Caused by: java.io.IOException: connection closed
+	at java.naming/com.sun.jndi.ldap.LdapClient.ensureOpen(LdapClient.java:1598)
+   ...
+[2023-08-21 16:14:54+0200] WARN  application - Login authentication failed for user 'admin' from IP '127.0.0.1': nested exception is javax.naming.CommunicationException [Root exception is java.io.IOException: connection closed]
+----
+
+
+==== Bad DN or bad password for service account
+
+When parameter `rudder.auth.ldap.connection.bind.dn`  (DN for service account) or parameter `rudder.auth.ldap.connection.bind.password` (password for service account) is incorrect, you will get something like (be careful, it starts like
+the previous case for server unreachable):
+
+----
+[2023-08-21 15:43:49+0200] DEBUG org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind with any user DNs []
+[2023-08-21 15:43:49+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 15:43:49+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 15:43:49+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': failure
+[2023-08-21 15:43:49+0200] ERROR org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter - An internal error occurred while trying to authenticate the user.
+org.springframework.security.authentication.InternalAuthenticationServiceException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+	at org.springframework.security.ldap.authentication.LdapAuthenticationProvider.doAuthentication(LdapAuthenticationProvider.java:190)
+	at org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider.authenticate(AbstractLdapAuthenticationProvider.java:79)
+	....
+    at org.eclipse.jetty.util.thread.QueuedThreadPool$Runner.run(QueuedThreadPool.java:938)
+	at java.base/java.lang.Thread.run(Thread.java:1589)
+Caused by: org.springframework.ldap.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:191)
+	....
+    at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:351)
+	... 63 common frames omitted
+[2023-08-21 15:43:49+0200] WARN  application - Login authentication failed for user 'alice' from IP '127.0.0.1': [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+----
+
+
+==== Bad login name (in login page)
+
+This case is less visibly an error: we see in the log that Rudder tries `ldap` but has a failure and switch to next
+configured backend.
+
+----
+[2023-08-21 16:19:08+0200] DEBUG org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind with any user DNs []
+[2023-08-21 16:19:08+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:19:08+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'Bob', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:19:08+0200] TRACE org.springframework.security.ldap.SpringSecurityLdapTemplate - Searching for entry under DN 'cn=rudder-configuration', base = 'ou=Users', filter = '(&(cn={0})(objectclass=person))'
+[2023-08-21 16:19:08+0200] INFO  application - Rudder authentication attempt for principal 'Bob' with backend 'ldap': failure
+[2023-08-21 16:19:09+0200] INFO  application - Rudder authentication attempt for principal 'Bob' with backend 'file': failure
+[2023-08-21 16:19:09+0200] WARN  application - Login authentication failed for user 'Bob' from IP '127.0.0.1': Bad credentials
+----
+
+==== Bad password for user (in login page)
+
+----
 [2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
 [2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
 [2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.SpringSecurityLdapTemplate - Searching for entry under DN 'cn=rudder-configuration', base = 'ou=Users', filter = '(&(cn={0})(objectclass=person))'
@@ -321,8 +392,8 @@ This will lead to trace looking like:
 org.springframework.ldap.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
 	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:191)
 	at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:363)
-
-====
+    ...
+----
 
 === Using a certificate for secure connection to LDAP/AD
 
