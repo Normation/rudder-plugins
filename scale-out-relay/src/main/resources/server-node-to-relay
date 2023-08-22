@@ -14,25 +14,9 @@
 
 RUDDER_OPT=/opt/rudder
 RUDDER_VAR=/var/rudder
-RUDDER_JSON="${RUDDER_VAR}/cfengine-community/inputs/rudder.json"
 SYSTEM_TOKEN=$(cat /var/rudder/run/api-token)
 
-rudder_json_value() {
-	jq -r ".$1" ${RUDDER_JSON}
-}
-
-if [ -f "${RUDDER_JSON}" ]; then
-  RUDDER_VERIFY_CERTIFICATES=$(rudder_json_value 'RUDDER_VERIFY_CERTIFICATES')
-fi
-
-if [ "${RUDDER_VERIFY_CERTIFICATES}" = "true" ]
-then
-  CERTIFICATE_OPTION=""
-else
-  CERTIFICATE_OPTION="--insecure"
-fi
-
-DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --globoff"
+DOWNLOAD_COMMAND="curl --silent --show-error --globoff"
 
 usage() {
 	echo "Usage: $0 <UUID of the node to make a relay server>"
