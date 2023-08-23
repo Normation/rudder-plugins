@@ -142,7 +142,7 @@ object UserManagementService {
           // Intersection is total
           case cr if cr == r.rights.authorizationTypes => Some(r)
           case cr if cr.nonEmpty                       =>
-            Some(Custom(new Rights(cr.toSeq: _*)))
+            Some(Custom(Rights(cr)))
           case _                                       => None
         }
       }
@@ -166,13 +166,13 @@ object UserManagementService {
       val leftoversRights = authzs.diff(rsRights.union(minCustomAuthz))
       val leftoversCustom: Option[Role]      = {
         if (leftoversRights.nonEmpty)
-          Some(Custom(new Rights(leftoversRights.toSeq: _*)))
+          Some(Custom(Rights(leftoversRights)))
         else
           None
       }
       val data:            Option[Set[Role]] = {
         if (minCustomAuthz.nonEmpty) {
-          Some(rs + Custom(new Rights(minCustomAuthz.toSeq: _*)))
+          Some(rs + Custom(Rights(minCustomAuthz)))
         } else if (rs == RudderRoles.getAllRoles.runNow.values.toSet.diff(Set(Role.NoRights: Role))) {
           Some(Set(Role.Administrator))
         } else if (rs.nonEmpty)
