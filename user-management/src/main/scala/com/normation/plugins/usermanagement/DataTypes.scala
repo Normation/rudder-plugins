@@ -62,6 +62,16 @@ object Serialisation {
       val encoder: String = PassEncoderToString(auth)
       val authBackendsProvider = RudderConfig.authenticationProviders.getConfiguredProviders().map(_.name).toSet
 
+      // for now, we can only guess if the role list can be extended/overridden (and only guess for the worse).
+      // The correct solution is to get that from rudder, but it will be done along with other enhancement about
+      // user / roles management.
+      // Also, until then, we need to update that test is other backend get that possibility
+      val roleListOverride = if(authBackendsProvider.contains("oidc") || authBackendsProvider.contains("oauth2")) {
+        "override" // should be a type provided by rudder core
+      } else {
+        "none"
+      }
+
       val jUser            = auth.users.map {
         case (_, u) =>
           val (rs, custom) = {
@@ -79,7 +89,7 @@ object Serialisation {
             rs.map(_.name)
           )
       }.toList.sortBy(_.login)
-      val json             = JsonAuthConfig(encoder, authBackendsProvider, jUser)
+      val json             = JsonAuthConfig(encoder, roleListOverride, authBackendsProvider, jUser)
       import net.liftweb.json._
       implicit val formats = S.formats(NoTypeHints)
       Extraction.decompose(json)
@@ -100,6 +110,7 @@ object Serialisation {
 
 final case class JsonAuthConfig(
     digest:                 String,
+    roleListOverride:       String,
     authenticationBackends: Set[String],
     users:                  List[JsonUser]
 )
