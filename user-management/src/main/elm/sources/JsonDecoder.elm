@@ -1,6 +1,6 @@
 module JsonDecoder exposing (..)
 
-import DataTypes exposing (Authorization, Role, RoleConf, User, UsersConf)
+import DataTypes exposing (Authorization, Role, RoleConf, RoleListOverride(..), User, UsersConf)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 
@@ -22,8 +22,20 @@ decodeCurrentUsersConf : Decoder UsersConf
 decodeCurrentUsersConf =
     D.succeed UsersConf
         |> required "digest" D.string
+        |> required "roleListOverride" decodeRoleListOverride
         |> required "authenticationBackends" (D.list <| D.string)
         |> required "users" (D.list <| decodeUser)
+
+decodeRoleListOverride : Decoder RoleListOverride
+decodeRoleListOverride =
+  D.string |> D.andThen
+    (\str ->
+      case str of
+        "extend"   -> D.succeed Extend
+        "override" -> D.succeed Override
+        _          -> D.succeed None
+    )
+
 
 decodeUser : Decoder User
 decodeUser =
