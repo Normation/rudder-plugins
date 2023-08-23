@@ -34,30 +34,27 @@ type alias User =
     , permissions : List String
     }
 
-type Provider
-  = File
-  | Ldap
-  | Radius
-  | Unknown
+-- does the configured list of provider allows to change the list of user roles, and how (extend only, or override?)
+-- Note: until rudder core is updated to give us the info, we can only guess based on provider list
+type RoleListOverride
+  = None
+  | Extend
+  | Override
 
-toProvider: String -> Provider
-toProvider str =
-  case toLower str of
-    "file"   -> File
-    "ldap"   -> Ldap
-    "radius" -> Radius
-    _        -> Unknown
+-- we want to filter out the "rootadmin" account (and perhaps other in the future). All back-end provided
+-- provider list should be filtered by that method
 
-providerToString: Provider -> String
-providerToString provider =
-  case provider of
-    File   -> "file"
-    Ldap   -> "ldap"
-    Radius -> "radius"
-    _      -> "unknown provider"
+userProviders: List String -> List String
+userProviders providers =
+  List.filter (\p -> p /= "rootAdmin") providers
+
+takeFirstExtProvider: List String -> Maybe String
+takeFirstExtProvider providers =
+    List.head (List.filter (\p -> p /= "file" && p /= "rootAdmin") providers)
 
 type alias UsersConf =
     { digest : String
+    , roleListOverride: RoleListOverride
     , authenticationBackends: List String
     , users : List User
     }
@@ -77,6 +74,7 @@ type alias Model =
     , users: Users
     , roles: Roles
     , rolesConf : RoleConf  -- from API
+    , roleListOverride: RoleListOverride
     , authorizations : Authorization
     , toasties : Toasty.Stack Toasty.Defaults.Toast
     , panelMode : PanelMode
@@ -85,7 +83,7 @@ type alias Model =
     , isHashedPasswd : Bool
     , isValidInput : StateInput
     , authzToAddOnSave : List String
-    , providers : List Provider
+    , providers : List String
     , userForcePasswdInput : Bool
     , openDeleteModal : Bool
     }
