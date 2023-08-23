@@ -14,26 +14,9 @@
 
 RUDDER_OPT=/opt/rudder
 RUDDER_VAR=/var/rudder
-RUDDER_JSON="${RUDDER_VAR}/cfengine-community/inputs/rudder.json"
 SYSTEM_TOKEN=$(cat /var/rudder/run/api-token)
-PORT=$(get_https_port)
 
-rudder_json_value() {
-	jq -r ".$1" ${RUDDER_JSON}
-}
-
-if [ -f "${RUDDER_JSON}" ]; then
-  RUDDER_VERIFY_CERTIFICATES=$(rudder_json_value 'RUDDER_VERIFY_CERTIFICATES')
-fi
-
-if [ "${RUDDER_VERIFY_CERTIFICATES}" = "true" ]
-then
-  CERTIFICATE_OPTION=""
-else
-  CERTIFICATE_OPTION="--insecure"
-fi
-
-DOWNLOAD_COMMAND="curl --silent --show-error ${CERTIFICATE_OPTION} --globoff"
+DOWNLOAD_COMMAND="curl --silent --show-error --globoff"
 
 usage() {
 	echo "Usage: $0 <UUID of the relay server to make a node>"
@@ -52,7 +35,7 @@ elif [ "${NODE_UUID}" = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeee" ]; then
 fi
 
 # Scale-out-relay API call (must have the plugin installed)
-API_URL="https://127.0.0.1${PORT}/rudder/api/latest"
+API_URL="http://127.0.0.1:8080/rudder/api/latest"
 response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST "${API_URL}/scaleoutrelay/demote/${NODE_UUID}")
 code=$?
 
