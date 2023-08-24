@@ -266,10 +266,10 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean = {
-    val authorizedRoles = currentUserRights.filter(role => role == Role.Validator.name || role == Role.Deployer.name)
+    val authorizedRoles = currentUserRights.filter(role => role == Role.BuiltinName.Validator.value || role == Role.BuiltinName.Deployer.value)
     currentStep match {
-      case Validation.id     => authorizedRoles.contains(Role.Validator.name) || isCreator
-      case Deployment.id     => authorizedRoles.contains(Role.Deployer.name)
+      case Validation.id     => authorizedRoles.contains(Role.BuiltinName.Validator.value) || isCreator
+      case Deployment.id     => authorizedRoles.contains(Role.BuiltinName.Deployer.value)
       case Deployed.id       => false
       case Cancelled.id      => false
       case WorkflowNodeId(x) =>
