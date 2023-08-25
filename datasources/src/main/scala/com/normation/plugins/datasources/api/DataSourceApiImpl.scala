@@ -131,7 +131,6 @@ class DataSourceApiImpl(
           case API.UpdateDataSource                => UpdateDataSource
         }
       })
-      .toList
   }
 
   object ReloadAllDatasourcesOneNode extends LiftApiModule {
