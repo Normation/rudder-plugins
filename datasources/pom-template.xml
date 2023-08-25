@@ -20,7 +20,7 @@
   </description>
 
   <properties>
-    <destDirectory>datasource</destDirectory>
+    <destDirectory>datasources</destDirectory>
   </properties>
 
 

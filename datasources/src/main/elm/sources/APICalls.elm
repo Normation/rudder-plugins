@@ -35,7 +35,7 @@ saveDataSource  model isNew datasource =
       request
         { method  = if isNew then "PUT" else "POST"
         , headers = []
-        , url     = getUrl model "datasources"
+        , url     = getUrl model ("datasources" ++ if isNew then "" else "/"++ datasource.id)
         , body    = jsonBody (encodeDataSource datasource)
         , expect  = expectJson SaveDataSource (decodeDataList decodeDataSource [ "datasources"] |> headList )
         , timeout = Nothing

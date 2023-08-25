@@ -58,7 +58,7 @@ datasourceForm model datasource origin =
                           if (isNew) then text ""
                           else
                           button [ type_ "button", class "btn btn-default", onClick (SaveCall { datasource | enabled = not enabled } ) ] [
-                            text (if datasource.enabled then "Enable" else "Disable")
+                            text (if datasource.enabled then "Disable" else "Enable")
                           , i [ class ("fa " ++ (if datasource.enabled then "fa-ban" else "fa-circle-o")) ] []
                         ]
                       , div [ class "btn-group pull-right" ] [

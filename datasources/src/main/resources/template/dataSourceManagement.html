@@ -1,8 +1,8 @@
 <lift:surround with="common-layout" at="content">
   <head_merge>
     <title>Rudder - Data sources</title>
-    <link data-lift="with-cached-resource" href="/toserve/datasource/rudder-datasources.css" rel="stylesheet" type="text/css">
-    <script type="text/javascript" data-lift="with-cached-resource" src="/toserve/datasource/rudder-datasource.js"></script>
+    <link data-lift="with-cached-resource" href="/toserve/datasources/rudder-datasources.css" rel="stylesheet" type="text/css">
+    <script type="text/javascript" data-lift="with-cached-resource" src="/toserve/datasources/rudder-datasources.js"></script>
   </head_merge>
   <main class="rudder-template" id="datasource" ng-controller="datasourceCtrl">
   </main>
@@ -22,7 +22,7 @@
           contextPath : contextPath
         , hasWriteRights : hasWriteRights
       }
-      var app = Elm.DataSource.init({ node: main, flags: initValues});
+      var app = Elm.DataSources.init({ node: main, flags: initValues});
 
       app.ports.errorNotification.subscribe(function(str) {
         createErrorNotification(str)

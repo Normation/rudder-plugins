@@ -1,4 +1,4 @@
-module DataSource exposing (..)
+module DataSources exposing (..)
 
 import APICalls exposing (getDataSources)
 import Browser
