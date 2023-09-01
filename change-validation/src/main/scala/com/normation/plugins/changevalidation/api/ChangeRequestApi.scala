@@ -93,6 +93,7 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     val description    = "List all change requests"
     val (action, path) = GET / "changeRequests"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
     override def dataContainer: Option[String] = None
   }
   final case object ChangeRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
@@ -100,6 +101,7 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     val description    = "Get information about given change request"
     val (action, path) = GET / "changeRequests" / "{id}"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
     override def dataContainer: Option[String] = None
   }
   final case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
@@ -107,6 +109,7 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     val description    = "Decline given change request"
     val (action, path) = DELETE / "changeRequests" / "{id}"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Write, AuthorizationType.Deployer.Edit, AuthorizationType.Validator.Write, AuthorizationType.Validator.Edit)
     override def dataContainer: Option[String] = None
   }
   final case object AcceptRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
@@ -114,6 +117,7 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     val description    = "Accept given change request"
     val (action, path) = POST / "changeRequests" / "{id}" / "accept"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Write, AuthorizationType.Deployer.Edit, AuthorizationType.Validator.Write, AuthorizationType.Validator.Edit)
     override def dataContainer: Option[String] = None
   }
   final case object UpdateRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
@@ -121,6 +125,7 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     val description    = "Update information about given change request"
     val (action, path) = POST / "changeRequests" / "{id}"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Write, AuthorizationType.Deployer.Edit, AuthorizationType.Validator.Write, AuthorizationType.Validator.Edit)
     override def dataContainer: Option[String] = None
   }
 
