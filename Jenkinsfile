@@ -3,8 +3,8 @@ def failedBuild = false
 def version = "7.2"
 
 def changeUrl = env.CHANGE_URL
-
-def slackResponse = slackSend(channel: "ci", message: "${version} plugins - next build - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
+def blueUrl = "${env.RUN_DISPLAY_URL}"
+def slackResponse = slackSend(channel: "ci", message: "${version} plugins - next build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -150,7 +150,7 @@ pipeline {
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
                             sh script: 'make'
-                            sh script: '$MVN_CMD --update-snapshots clean package deploy', label: "common deploy"
+                            sh script: '$MVN_CMD --update-snapshots clean install package deploy', label: "common deploy"
                         }
                     }
                 }
@@ -162,7 +162,7 @@ pipeline {
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
                             sh script: 'make'
-                            sh script: '$MVN_CMD --update-snapshots clean package deploy', label: "private common deploy"
+                            sh script: '$MVN_CMD --update-snapshots install package deploy', label: "private common deploy"
                         }
                     }
                 }
@@ -291,10 +291,13 @@ pipeline {
 
 def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
-def msg ="*${version} - plugins - next build* - <"+currentBuild.absoluteUrl+"|Link>"
+def blueUrl = "${env.RUN_DISPLAY_URL}"
+
+
+def msg ="*${version} - plugins - next build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>"
 
 if (changeUrl != null) {
-  msg ="*${version} PR - plugins - next build* - <"+currentBuild.absoluteUrl+"|Link> - <"+changeUrl+"|Pull request>"
+  msg ="*${version} PR - plugins - next build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue> - <"+changeUrl+"|Pull request>"
 }
 
 def color = "#00A8E1"
