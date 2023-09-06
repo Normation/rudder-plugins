@@ -149,7 +149,7 @@ pipeline {
                             options: [artifactsPublisher(disabled: true)]
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
-                            sh script: 'make'
+                            sh script: 'make generate-pom'
                             sh script: '$MVN_CMD --update-snapshots clean install package deploy', label: "common deploy"
                         }
                     }
@@ -161,7 +161,7 @@ pipeline {
                             options: [artifactsPublisher(disabled: true)]
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
-                            sh script: 'make'
+                            sh script: 'make generate-pom'
                             sh script: '$MVN_CMD --update-snapshots install package deploy', label: "private common deploy"
                         }
                     }
