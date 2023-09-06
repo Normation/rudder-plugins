@@ -3,8 +3,8 @@ def failedBuild = false
 def version = "7.2"
 
 def changeUrl = env.CHANGE_URL
-def blueUrl = "${env.RUN_DISPLAY_URL}"
-def slackResponse = slackSend(channel: "ci", message: "${version} plugins - next build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
+def blueUrl = "${env.JOB_DISPLAY_URL}"
+def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
@@ -291,13 +291,13 @@ pipeline {
 
 def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
-def blueUrl = "${env.RUN_DISPLAY_URL}"
+def blueUrl = "${env.JOB_DISPLAY_URL}"
 
 
-def msg ="*${version} - plugins - next build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>"
+def msg ="*${version} - plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>"
 
 if (changeUrl != null) {
-  msg ="*${version} PR - plugins - next build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue> - <"+changeUrl+"|Pull request>"
+  msg ="*${version} PR - plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue> - <"+changeUrl+"|Pull request>"
 }
 
 def color = "#00A8E1"
