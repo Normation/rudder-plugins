@@ -11,3 +11,5 @@ licensed-files:
 	echo "License not supported for this kind of plugin, building without license"
 
 
+licensed-files-only:
+	echo "License not supported for this kind of plugin, building without license"
