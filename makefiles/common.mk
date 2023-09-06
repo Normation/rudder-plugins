@@ -21,6 +21,8 @@ all: std-files $(FULL_NAME)-$(VERSION).rpkg
 # build a "licensed" version of the plugin, limited by a license file and verified by a public key
 licensed: licensed-files $(FULL_NAME)-$(VERSION).rpkg
 
+licensed-only: generate-pom build-licensed-files $(FULL_NAME)-$(VERSION).rpkg
+
 $(FULL_NAME)-$(VERSION).rpkg: target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
 	ar r $(FULL_NAME)-$(VERSION).rpkg target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
 
