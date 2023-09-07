@@ -72,7 +72,7 @@ on the Rudder server.
 In order to configure the monitoring to the Rudder nodes, you can provide Zabbix with templates and parameters (macros) associated to Zabbix hosts and will be synchronized with zabbix using its API.
 
 
-This operation can be mannually executed by running:
+This operation can be manually executed by running:
 
 ----
 /opt/rudder/bin/zabbix-plugin.py apply-configuration

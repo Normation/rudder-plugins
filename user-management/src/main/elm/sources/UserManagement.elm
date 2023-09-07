@@ -2,7 +2,7 @@ module UserManagement exposing (processApiError, update)
 
 import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
-import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), Provider(..), StateInput(..), User, Username, Users, toProvider)
+import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), StateInput(..), User, Username, Users, userProviders)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, createSuccessNotification, defaultConfig, init, subscriptions)
@@ -37,11 +37,10 @@ update msg model =
             case result of
                 Ok u ->
                     let
-                        knownProviders = List.filter (\p -> p /= Unknown) (List.map toProvider u.authenticationBackends)
                         recordUser =
                             List.map (\x -> (x.login, (Authorization x.authz  x.permissions))) u.users
                         newModel =
-                            { model | users = fromList recordUser, digest = u.digest, providers = knownProviders}
+                            { model | roleListOverride = u.roleListOverride, users = fromList recordUser, digest = u.digest, providers = (userProviders u.authenticationBackends)}
 
                     in
                     ( newModel, getRoleConf model )
@@ -72,7 +71,7 @@ update msg model =
 
         SendReload ->
             (model, postReloadConf model)
-                |> createSuccessNotification "User configuration's file have been reloaded"
+                |> createSuccessNotification "User configuration file have been reloaded"
 
         ToastyMsg subMsg ->
             Toasty.update defaultConfig ToastyMsg subMsg model

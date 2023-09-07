@@ -120,7 +120,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     for {
       parameters <- ZIO
                       .foreach(parameters)(compiler.compileParameters(_).toIO)
-                      .chainError("Error when transforming Rudder Parameter for variable interpolation")
+                      .chainError("Error when transforming Rudder parameter for variable interpolation")
       expand      = compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap) _
       url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
       path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")

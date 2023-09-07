@@ -1,7 +1,7 @@
 module View exposing (..)
 
 import ApiCalls exposing (deleteUser)
-import DataTypes exposing (Model, Msg(..), PanelMode(..), Provider(..), RoleConf, Roles, StateInput(..), User, Username, Users, UsersConf, providerToString)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleConf, RoleListOverride(..), Roles, StateInput(..), User, Username, Users, UsersConf, takeFirstExtProvider)
 import Dict exposing (keys)
 import Html exposing (..)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, required, style, tabindex, type_)
@@ -11,10 +11,6 @@ import String exposing (isEmpty)
 import Toasty
 import Toasty.Defaults
 import List
-
-takeFirstExtProvider: List Provider -> Maybe Provider
-takeFirstExtProvider providers =
-    List.head (List.filter (\p -> p /= Unknown && p /= File) providers)
 
 view : Model -> Html Msg
 view model =
@@ -54,7 +50,7 @@ showDeleteModal username =
                               [
                                 div [class "row"]
                                 [
-                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text " ?"]
+                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text "?"]
                                 ]
                               ]
                             , div [class "modal-footer"]
@@ -90,13 +86,13 @@ displayPasswordBlock : Model -> Html Msg
 displayPasswordBlock model =
     let
         mainProvider =
-            case (List.head (List.filter (\p -> p /= Unknown && p /= File) model.providers)) of
-              Just p  -> providerToString p
+            case (takeFirstExtProvider model.providers) of
+              Just p  -> p
               Nothing -> "unknown_provider"
         classDeactivatePasswdInput = if isPasswordMandatory then "" else " deactivate-auth-backend  ask-passwd-deactivate "
         isPasswordMandatory =
            case (List.head model.providers) of
-             Just p -> p == File
+             Just p -> p == "file"
              Nothing -> True
         isHidden =
             if model.isHashedPasswd then
@@ -173,6 +169,16 @@ displayRightPanelAddUser model =
        ]
    ]
 
+displayRoleListOverrideWarning : RoleListOverride -> Html Msg
+displayRoleListOverrideWarning rlo =
+  case rlo of
+      None -> div [][]
+      x    ->
+        div [class "msg-providers"][
+          i [class "fa fa-exclamation-triangle warning-icon"][]
+        , span [][text " Be careful! Displayed user roles originate from Rudder static configuration file, but providers currently configured can change them. This property can be check in provider configuration options."]
+       ]
+
 getDiffRoles : Roles -> List String -> List String
 getDiffRoles total sample =
     let
@@ -209,9 +215,10 @@ displayRightPanel model =
                 h2 [class "title-username"] [text user.login]
               , button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
            ]
-           , input [class "form-control username-input", type_ "text", placeholder "New Username", onInput Login] []
+           , input [class "form-control username-input", type_ "text", placeholder "New username", onInput Login] []
            , displayPasswordBlock model
            , h4 [class "role-title"][text "Roles"]
+           , (displayRoleListOverrideWarning model.roleListOverride)
            , div [class "role-management-wrapper"]
            [
                   div [id "input-role"][(displayAddAuth model user)]
@@ -242,16 +249,16 @@ displayUsersConf model u =
             case model.panelMode of
                 EditMode _    -> displayRightPanel model
                 _             -> div [][]
-        providers = List.filter (\p -> p /= Unknown && p /= File) model.providers
-        lstOfExtProviders =
-            if (List.isEmpty providers) then
+        hasExternal =  (takeFirstExtProvider model.providers)
+        lstOfExtProviders = case hasExternal of
+            Nothing ->
                 div [][]
-            else
-                div [class "provider-list"](List.map (\s -> span [class "providers"][text s]) (List.map providerToString model.providers))
-        msgProvider =
-            if (List.isEmpty providers) then
+            Just _ ->
+                div [class "provider-list"](List.map (\s -> span [class "providers"][text s]) model.providers)
+        msgProvider = case hasExternal of
+            Nothing ->
                 "Default authentication method is used"
-            else
+            Just _ ->
                 "Authentication providers priority: "
     in
     div [ class "row" ]
@@ -262,7 +269,7 @@ displayUsersConf model u =
                 [
                     div []
                     [
-                          h2 [][text "User Management Configuration"]
+                          h2 [][text "User management"]
                         , div [class"description-plugin"]
                         [
                             p [] [text "This page shows you the current Rudder users and their rights."]
@@ -279,6 +286,7 @@ displayUsersConf model u =
                           div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
                         , text msgProvider
                         , lstOfExtProviders
+                        , (displayRoleListOverrideWarning model.roleListOverride)
                     ]
                 ]
                 , newUserMenu

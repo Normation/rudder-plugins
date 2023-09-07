@@ -13,9 +13,29 @@ other general information.
 = Authentication backends
 
 This plugins allows to use alternative authentication backends for Rudder: *SAMLv2*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
-The old *radius module is deprecated* and will be totally removed in a future version.
 
 Each authentication method is detailed below. Users are expected to know how an authentication system works independently of Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
+
+== Configuring log level
+
+Rudder has general info level information for user authentication. They trace what user get connected, with the use of what means.
+
+====
+[2020-07-28 12:01:13+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': success
+====
+
+They trace log login failure at trace level:
+====
+[2023-07-28 12:00:07+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': failure
+[2023-07-28 12:00:07+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'file': failure
+[2023-07-28 12:00:07+0200] WARN  application - Login authentication failed for user 'alice' from IP '127.0.0.1': Bad credentials
+====
+
+They are enough to follow user authentication. But authentication methods based on central authentication provider can be tricky to configure correctly, and that level of log won't help you to set-up things.
+Rudder try to give you helpful information for that task:
+
+- there is a logger for the authentication backend plugin that can help you for general information like configuration:  `<logger name="auth-backends" level="debug" />`
+- each authentication backend can provide more information with other loggers, which are in that case documented in their relevant section.
 
 == Centralized user authorization management with OIDC
 
@@ -34,7 +54,7 @@ Possible values are:
 
 * `show` [default]: show Rudder login form as usual
 * `hide`: hide the login form below a toggle button. This is a good option if you want to let your user only see SSO links by default, but still have access to the login form for special cases (like, typically, for emergency admin access when the SSO or network to it is down)
-* `remove`: completly remove Rudder login form.
+* `remove`: completely remove Rudder login form.
 
 For example, with an OpenID Connect service configured and the `hide` value chosen, your login form will be updated to look like:
 
@@ -73,9 +93,9 @@ systemctl restart rudder-jetty
 =====
 
 When set to external provider like 'ldap', passwords in rudder-users.xml are ignored and the
-authentication is delegated to the LDAP or radius server configured.
+authentication is delegated to the corresponding provider.
 
-By convention, when LDAP authentication is enable, 'password' field in
+By convention, when LDAP authentication is enabled, 'password' field in
 `rudder-users.xml` are set to 'LDAP'.
 
 
@@ -147,6 +167,11 @@ In particular, check that `Computed list of providers` entry matches your will.
 
 
 == LDAP / AD backend configuration
+
+LDAP and Active Directories are a common enterprise authentication mean. In Rudder, they are configured with the same backend. That section explain what option are available, and in the following paragraphs we deal with the backend own logger and configuration of a secured (`LDAPS`) connection and how to register the corresponding certificate in Rudder.
+
+=== LDAP backend parameters
+
 
 The configuration properties needed to configure the LDAP or AD
 authentication backend are displayed below.
@@ -228,7 +253,7 @@ rudder.auth.ldap.connection.url=ldap://ldap.mycorp.com:389/dc=mycorp,dc=com
 #
 # Bind DN used by Rudder to do the search. This is the "service" or
 # "application" DN for Rudder in you LDAP directory, or an LDAP user with
-# enought rights to be able to walk the user branch configured below.
+# enough rights to be able to walk the user branch configured below.
 # LDAP dn, no default value.
 # Be careful to not add quote around the DN, the value is used as provided.
 #
@@ -270,6 +295,104 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 
 ---- end of ldap authentication properties to copy ----
 ```
+=== LDAP backend logger
+
+In addition to the common loggers, LDAP backend use the `org.springframework.security.ldap` namespace.
+You can configure the corresponding logger in `/opt/rudder/etc/logback.xml` at debug or trace level by adding the line:
+
+====
+
+<logger name="org.springframework.security.ldap" level="trace" />
+
+====
+
+This will lead to trace looking like the following in the different case of errors/success/
+
+==== LDAP/AD server not reachable
+
+When the LDAP server configured in `rudder.auth.ldap.connection.url` is not reachable, you will get (be careful, it starts
+like the base for bad DN/password for service account):
+
+----
+[2023-08-21 16:14:53+0200] DEBUG org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind with any user DNs []
+[2023-08-21 16:14:53+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:14:53+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'admin', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:14:54+0200] INFO  application - Rudder authentication attempt for principal 'admin' with backend 'ldap': failure
+[2023-08-21 16:14:54+0200] ERROR org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter - An internal error occurred while trying to authenticate the user.
+org.springframework.security.authentication.InternalAuthenticationServiceException: nested exception is javax.naming.CommunicationException [Root exception is java.io.IOException: connection closed]
+	at org.springframework.security.ldap.authentication.LdapAuthenticationProvider.doAuthentication(LdapAuthenticationProvider.java:190)
+	at org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider.authenticate(AbstractLdapAuthenticationProvider.java:79)
+	at bootstrap.liftweb.RudderAuthenticationProvider.authenticate(AppConfigAuth.scala:701)
+	at bootstrap.liftweb.RudderProviderManager.authenticate(RudderProviderManager.java:116)
+....
+Caused by: org.springframework.ldap.CommunicationException: nested exception is javax.naming.CommunicationException [Root exception is java.io.IOException: connection closed]
+	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:108)
+	at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:363)
+....
+Caused by: java.io.IOException: connection closed
+	at java.naming/com.sun.jndi.ldap.LdapClient.ensureOpen(LdapClient.java:1598)
+   ...
+[2023-08-21 16:14:54+0200] WARN  application - Login authentication failed for user 'admin' from IP '127.0.0.1': nested exception is javax.naming.CommunicationException [Root exception is java.io.IOException: connection closed]
+----
+
+
+==== Bad DN or bad password for service account
+
+When parameter `rudder.auth.ldap.connection.bind.dn`  (DN for service account) or parameter `rudder.auth.ldap.connection.bind.password` (password for service account) is incorrect, you will get something like (be careful, it starts like
+the previous case for server unreachable):
+
+----
+[2023-08-21 15:43:49+0200] DEBUG org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind with any user DNs []
+[2023-08-21 15:43:49+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 15:43:49+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 15:43:49+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': failure
+[2023-08-21 15:43:49+0200] ERROR org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter - An internal error occurred while trying to authenticate the user.
+org.springframework.security.authentication.InternalAuthenticationServiceException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+	at org.springframework.security.ldap.authentication.LdapAuthenticationProvider.doAuthentication(LdapAuthenticationProvider.java:190)
+	at org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider.authenticate(AbstractLdapAuthenticationProvider.java:79)
+	....
+    at org.eclipse.jetty.util.thread.QueuedThreadPool$Runner.run(QueuedThreadPool.java:938)
+	at java.base/java.lang.Thread.run(Thread.java:1589)
+Caused by: org.springframework.ldap.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:191)
+	....
+    at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:351)
+	... 63 common frames omitted
+[2023-08-21 15:43:49+0200] WARN  application - Login authentication failed for user 'alice' from IP '127.0.0.1': [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+----
+
+
+==== Bad login name (in login page)
+
+This case is less visibly an error: we see in the log that Rudder tries `ldap` but has a failure and switch to next
+configured backend.
+
+----
+[2023-08-21 16:19:08+0200] DEBUG org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind with any user DNs []
+[2023-08-21 16:19:08+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:19:08+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'Bob', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-08-21 16:19:08+0200] TRACE org.springframework.security.ldap.SpringSecurityLdapTemplate - Searching for entry under DN 'cn=rudder-configuration', base = 'ou=Users', filter = '(&(cn={0})(objectclass=person))'
+[2023-08-21 16:19:08+0200] INFO  application - Rudder authentication attempt for principal 'Bob' with backend 'ldap': failure
+[2023-08-21 16:19:09+0200] INFO  application - Rudder authentication attempt for principal 'Bob' with backend 'file': failure
+[2023-08-21 16:19:09+0200] WARN  application - Login authentication failed for user 'Bob' from IP '127.0.0.1': Bad credentials
+----
+
+==== Bad password for user (in login page)
+
+----
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Searching for user using FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Searching for user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.SpringSecurityLdapTemplate - Searching for entry under DN 'cn=rudder-configuration', base = 'ou=Users', filter = '(&(cn={0})(objectclass=person))'
+[2023-07-28 12:00:07+0200] DEBUG org.springframework.security.ldap.SpringSecurityLdapTemplate - Found DN: cn=alice,ou=Users
+[2023-07-28 12:00:07+0200] DEBUG org.springframework.security.ldap.search.FilterBasedLdapUserSearch - Found user 'alice', with FilterBasedLdapUserSearch [searchFilter=(&(cn={0})(objectclass=person)); searchBase=ou=Users; scope=subtree; searchTimeLimit=0; derefLinkFlag=false ]
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Attempting to bind as cn=alice,ou=Users,cn=rudder-configuration
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.DefaultSpringSecurityContextSource - Removing pooling flag for user cn=alice,ou=Users,cn=rudder-configuration
+[2023-07-28 12:00:07+0200] TRACE org.springframework.security.ldap.authentication.BindAuthenticator - Failed to bind as cn=alice,ou=Users
+org.springframework.ldap.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]; nested exception is javax.naming.AuthenticationException: [LDAP: error code 49 - Invalid Credentials]
+	at org.springframework.ldap.support.LdapUtils.convertLdapException(LdapUtils.java:191)
+	at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:363)
+    ...
+----
 
 === Using a certificate for secure connection to LDAP/AD
 
@@ -348,9 +471,9 @@ Each provider needs to then have a bunch of properties defined for it. They are 
 We advise to configure each provider in its own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
 so that it is easier to change or disable some of them.
 
-=== OIDC-provided authorisations for Rudder users
+=== IdP-provided authorisations for Rudder users
 
-You can configure an OIDC provider so that it informs Rudder of the roles the user need to have. This allows to centrally
+You can configure an OAuth2 or OIDC provider so that it informs Rudder of the roles the user need to have. This allows to centrally
 manage both user and authorisation in the same place.
 
 This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
@@ -586,96 +709,3 @@ In the log, you see:
 It means that the value used for `rudder.auth.oauth2.provider.${registrationKey}.userNameAttributeName` was correctly returned in the profile list for the authenticated user, but that value was not found in Rudder user configuration files `/opt/rudder/etc/rudder-users.xml`.
 Check that one of the entries in that file has the corresponding value for its `name` attribute.
 
-=== Radius backend (deprecated)
-
-[WARNING]
-=====
-
-Radius backend is deprecated as of Rudder 7.0. It will be removed in a
-next version of Rudder.
-You should try to replace it with another backend. In case that backend is
-a must-have for you, please contact Rudder company for discussing how to help
-you migrate away of Radius or get specific support for it.
-
-=====
-
-
-Below follow the configuration properties that need to be added in
-`/opt/rudder/etc/rudder-web.properties` file to configure the Radius
-authentication backend.
-
-For convenience, the part under "---- add in rudder-web.properties----" can
-be directly added in your `/opt/rudder/etc/rudder-web.properties` file.
-
-Note that key `rudder.auth.provider` is likelly to already exists. In
-that case, just update it with the sequence of authentication backend
-you want to try.
-
-
-```
----- add in rudder-web.properties ----
-
-###########################
-# Rudder Authentication    #############################################################
-###########################
-
-# update provider list:
-rudder.auth.provider=radius
-
-###########################
-# Radius Authentication    #############################################################
-###########################
-
-#
-# The following parameters allow to configure authentication with a
-# Radius server.
-#
-
-
-#
-# Use "radius" auth type to enable radius authentication
-#
-#rudder.auth.provider=file,radius
-
-#
-# IP or hostname of the Radius server. Both work, but it is preferred to use an IP.
-#
-rudder.auth.radius.host.name=192.168.42.80
-
-#
-# Authentication port for the Radius server
-#
-rudder.auth.radius.host.auth.port=1812
-
-#
-# The shared secret as configured in your Radius server for Rudder application / host.
-#
-rudder.auth.radius.host.sharedSecret=secret
-
-#
-# Time to wait in seconds when trying to connect to the server before giving up.
-#
-rudder.auth.radius.auth.timeout=10
-
-#
-# Number of retries to attempt in case of timeout before giving up.
-#
-rudder.auth.radius.auth.retries=0
-
-#
-# Authentication protocol to use to connect to the Radius server. The default
-# one is 'pap' (PAP).
-# Available protocols::
-# - pap
-# - chap
-# - eap-md5
-# - eap-ttls
-#
-# For `eap-ttls`, you can append `key=value` parameters, separated by `:` to the
-# protocol name to specify protocol option, for example:
-# `eap-tls:keyFile=keystore:keyPassword=mypass`
-#
-rudder.auth.radius.auth.protocol=pap
-
----- end of add in rudder-web.properties ----
-```

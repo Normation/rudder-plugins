@@ -59,6 +59,8 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.AuthorizationType
+
 import net.liftweb.common._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -81,6 +83,7 @@ object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
 
     override def dataContainer: Option[String] = None
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
   final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -120,7 +123,7 @@ class SupervisedTargetsApiImpl(
    *
    * { "name": "root category"
    * , "targets": [
-   *     {"id": "group:xxxx", "name": "Some name choosed by user", "description": "", "supervised":true}
+   *     {"id": "group:xxxx", "name": "Some name chosen by user", "description": "", "supervised":true}
    *   , {"id": "group:xxxx", "name": "Some other group", "description": "", "supervised":false}
    *   , ...
    *   ]
@@ -181,7 +184,7 @@ class SupervisedTargetsApiImpl(
 
         res match {
           case Full(x) =>
-            RestUtils.toJsonResponse(None, JString("Set of target needing validation has beed updated"))(
+            RestUtils.toJsonResponse(None, JString("Set of target needing validation has been updated"))(
               schema.name,
               params.prettify
             )

@@ -17,7 +17,7 @@ features are:
 
 * Provide an ACL system and enable traffic encryption.
 
-* Provide a healthcheck service that return the health state of differents services.
+* Provide a healthcheck service that return the health state of different services.
 
 * Provides a cluster of server nodes to ensure high availability.
 
@@ -26,7 +26,7 @@ your needs. The Rudder server does not need to access the Consul server to get k
 
 == Installation
 
-* You're supposed to already have your Consul environment configured, with differents keys-values that can be: Indexed objects, configuration parameters or metadata.
+* You're supposed to already have your Consul environment configured, with different keys-values that can be: Indexed objects, configuration parameters or metadata.
 
 * Install the plugin on your Rudder server
 

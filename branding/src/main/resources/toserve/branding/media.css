@@ -21,7 +21,7 @@ label.form-control,label.input-group-addon{
 label.form-control > i {
   font-weight: normal;
   opacity: .8;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: .9em;
   margin-left: 2px;
   font-style: normal;
