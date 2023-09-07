@@ -1,4 +1,4 @@
-module AuthBackends exposing (AdminConfig, AuthConfig, ConfigOption, FileConfig, LdapConfig, Model, Msg(..), RadiusConfig, addTempToast, addToast, backendConfigOption, backendDescription, backendTitle, createDecodeErrorNotification, createErrorNotification, createSuccessNotification, decodeAdminConfig, decodeApiCurrentAuthConf, decodeConfigOption, decodeCurrentAuthConf, decodeFileConfig, decodeLdapConfig, decodeRadiusConfig, defaultConfig, displayAdminConfig, displayAuthConfig, displayBackendId, displayFileConfig, displayLdapConfig, displayProvidConfig, displayRadiusConfig, getErrorMessage, getTargets, init, main, subscriptions, tempConfig, update, view)
+module AuthBackends exposing (AdminConfig, AuthConfig, ConfigOption, FileConfig, LdapConfig, Model, Msg(..), addTempToast, addToast, backendConfigOption, backendDescription, backendTitle, createDecodeErrorNotification, createErrorNotification, createSuccessNotification, decodeAdminConfig, decodeApiCurrentAuthConf, decodeConfigOption, decodeCurrentAuthConf, decodeFileConfig, decodeLdapConfig, defaultConfig, displayAdminConfig, displayAuthConfig, displayBackendId, displayFileConfig, displayLdapConfig, displayProvidConfig, getErrorMessage, getTargets, init, main, subscriptions, tempConfig, update, view)
 
 import Html exposing (..)
 import Browser
@@ -60,7 +60,6 @@ type alias AuthConfig =
     , adminConfig : AdminConfig
     , fileConfig : FileConfig
     , ldapConfig : LdapConfig
-    , radiusConfig : RadiusConfig
     }
 
 
@@ -94,18 +93,6 @@ type alias LdapConfig =
     , bindPassword : ConfigOption
     , searchBase : ConfigOption
     , ldapFilter : ConfigOption
-    }
-
-
-type alias RadiusConfig =
-    { providerId : String
-    , description : String
-    , hostName : ConfigOption
-    , hostPort : ConfigOption
-    , secret : ConfigOption
-    , timeout : ConfigOption
-    , retries : ConfigOption
-    , protocol : ConfigOption
     }
 
 
@@ -170,7 +157,6 @@ decodeCurrentAuthConf =
         |> required "adminConfig" decodeAdminConfig
         |> required "fileConfig" decodeFileConfig
         |> required "ldapConfig" decodeLdapConfig
-        |> required "radiusConfig" decodeRadiusConfig
 
 
 decodeConfigOption : Decoder ConfigOption
@@ -208,21 +194,6 @@ decodeLdapConfig =
         |> required "bindPassword" decodeConfigOption
         |> required "searchBase" decodeConfigOption
         |> required "ldapFilter" decodeConfigOption
-
-
-decodeRadiusConfig : Decoder RadiusConfig
-decodeRadiusConfig =
-    succeed RadiusConfig
-        |> required "providerId" D.string
-        |> required "description" D.string
-        |> required "hostName" decodeConfigOption
-        |> required "hostPort" decodeConfigOption
-        |> required "secret" decodeConfigOption
-        |> required "timeout" decodeConfigOption
-        |> required "retries" decodeConfigOption
-        |> required "protocol" decodeConfigOption
-
-
 
 ------------------------------
 -- UPDATE --
@@ -324,7 +295,6 @@ displayAuthConfig config =
         , displayAdminConfig config.adminConfig
         , displayFileConfig config.fileConfig
         , displayLdapConfig config.ldapConfig
-        , displayRadiusConfig config.radiusConfig
         ]
 
 
@@ -349,7 +319,7 @@ displayProvidConfig config =
                 , text "."
                 ]
             , p [] [ text """A special provider can be added for a root admin. It's an hook to
-                     alway let the possibility to have at least one access in the application.
+                     always let the possibility to have at least one access in the application.
                      That provider does not have to be declared in the list, and is always
                      tested first the root admin is enabled.
                   """ ]
@@ -401,22 +371,6 @@ displayLdapConfig ldap =
         , backendConfigOption ldap.searchBase
         , backendConfigOption ldap.ldapFilter
         ]
-
-
-displayRadiusConfig : RadiusConfig -> Html Msg
-displayRadiusConfig radius =
-    div [ class "col-xs-12" ]
-        [ backendTitle "Radius configuration" radius.providerId
-        , backendDescription radius.description
-        , backendConfigOption radius.hostName
-        , backendConfigOption radius.hostPort
-        , backendConfigOption radius.secret
-        , backendConfigOption radius.timeout
-        , backendConfigOption radius.retries
-        , backendConfigOption radius.protocol
-        ]
-
-
 
 ------------------------------
 -- NOTIFICATIONS --

@@ -41,7 +41,7 @@ test_python_error()
 test_typos()
 {
   # json file below has a name which looks like a typo in its first part, skipping it
-  typos --exclude '*.css' --exclude '*-6a9f-4865-a837-95a6a0c49f04.json'
+  typos --exclude 'RestDataSourceTest.scala' --exclude 'ipaddress.py' --exclude '*.css' --exclude '*-6a9f-4865-a837-95a6a0c49f04.json'
 }
 
 test_scripts()

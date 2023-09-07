@@ -36,7 +36,7 @@ class OpenScapNodeDetailsExtension(
       val nodeId  = snippet.nodeId
       val content = openScapReader.checkOpenScapReportExistence(nodeId) match {
         case eb: EmptyBox =>
-          val e = eb ?~! "Can not display OpenScap report for that node"
+          val e = eb ?~! "Can not display OpenSCAP report for that node"
           (<div class="error">
             {e.messageChain}
           </div>)
@@ -51,7 +51,7 @@ class OpenScapNodeDetailsExtension(
                     </div>
                     <p>That tab gives access to OpenSCAP report configured for that node.</p>
                     <br/>
-                    <div class="error">There are no OpenScap report available yet for node
+                    <div class="error">There are no OpenSCAP report available yet for node
                       {snippet.nodeId.value}
                     </div>
                   </div>

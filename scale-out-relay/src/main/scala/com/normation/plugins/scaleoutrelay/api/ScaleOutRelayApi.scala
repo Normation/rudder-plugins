@@ -108,7 +108,7 @@ class ScaleOutRelayApiImpl(
         case Full(node) =>
           toJsonResponse(None, nodeId)("demoteToNode", true)
         case eb: EmptyBox =>
-          val message = (eb ?~ (s"Error when trying to promote mode $nodeId")).msg
+          val message = (eb ?~ (s"Error when trying to demote mode $nodeId")).msg
           toJsonError(None, message)("demoteToNode", true)
       }
     }

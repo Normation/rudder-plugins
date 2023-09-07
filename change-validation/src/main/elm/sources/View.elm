@@ -140,7 +140,7 @@ renderUserHelper user pos model =
           if not user.isInFile then
             createInfoTootlip
             """
-            This user <b> doesn't exist anymore </b> but he is still a validated user, delete him by removing him from the validated users.
+            The user <b> doesn't exist anymore </b> but they are still a validated user, delete them by removing them from the validated users.
             """
              "auto"
           else
@@ -255,7 +255,7 @@ displayLeftCol model =
     [
       div [ class "box-users-container "]
       [
-        h5 [class "box-header"] [ b [][text "Validated Users"]],
+        h5 [class "box-header"] [ b [][text "Validated users"]],
         div  [class "box-users-content"]
         [
           if isEmpty model.validatedUsers then
@@ -265,7 +265,7 @@ displayLeftCol model =
                 i [class "fa fa-user-times empty-validated-user", style "margin-bottom" "10px"]
                 [
                   br [][],
-                  p [class "empty-box-msg"] [text "No Validated Users found"]
+                  p [class "empty-box-msg"] [text "No validated users found"]
                 ]
                 else
                   div [] []

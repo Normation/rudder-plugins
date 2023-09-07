@@ -53,7 +53,7 @@ object $plugin_class$Conf extends RudderPluginModule {
 
   lazy val pluginDef = new $plugin_class$PluginDef($plugin_class$Conf.pluginStatusService)
 
-  // other service instanciation / initialization
+  // other service instantiation / initialization
 
 }
 

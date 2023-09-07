@@ -200,7 +200,7 @@ ul.clipboard-list > li:last-child{
 
 #plugin-main .inner-portlet {
   padding: 5px 15px 40px 15px;
-  font-family: 'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif;
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 14px;
 }
@@ -685,7 +685,7 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
 }
 
 .empty-box-msg {
-  font-family : 'PT Sans', sans-serif;
+  font-family : var(--font-sans);
   font-size   : 20px;
   margin-top: 16px;
 }

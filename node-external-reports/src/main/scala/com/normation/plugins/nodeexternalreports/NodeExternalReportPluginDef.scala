@@ -64,7 +64,7 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (
-      (Menu("160-nodeExternalReportInfo", <span>Node External Reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
+      (Menu("160-nodeExternalReportInfo", <span>Node external reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
       LocGroup("pluginsGroup") >>
       Template(() => {
         ClasspathTemplates("nodeExternalReports" :: Nil) openOr

@@ -19,11 +19,20 @@
     data sources contacted thought their REST API.
   </description>
 
+  <properties>
+    <destDirectory>datasources</destDirectory>
+  </properties>
+
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
       </plugin>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>

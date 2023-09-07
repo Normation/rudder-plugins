@@ -208,6 +208,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
   ): WorkflowAction = {
+
     val deployAction = {
       if (canDeploy(isCreator, selfDeployment))
         Seq((Deployed.id, stepValidationToDeployed _))
@@ -224,7 +225,12 @@ class TwoValidationStepsWorkflowServiceImpl(
         WorkflowAction("Validate", validatorActions)
 
       case Deployment.id     =>
-        WorkflowAction("Deploy", deployAction)
+        val deploymentAction = {
+          (if (canDeploy(isCreator, selfValidation)) {
+            Seq((Deployment.id, stepDeploymentToDeployed _))
+          } else Seq()) ++ deployAction
+        }
+        WorkflowAction("Deploy", deploymentAction)
       case Deployed.id       => NoWorkflowAction
       case Cancelled.id      => NoWorkflowAction
       case WorkflowNodeId(x) =>
@@ -260,10 +266,10 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean = {
-    val authorizedRoles = currentUserRights.filter(role => role == Role.Validator.name || role == Role.Deployer.name)
+    val authorizedRoles = currentUserRights.filter(role => role == Role.BuiltinName.Validator.value || role == Role.BuiltinName.Deployer.value)
     currentStep match {
-      case Validation.id     => authorizedRoles.contains(Role.Validator.name) || isCreator
-      case Deployment.id     => authorizedRoles.contains(Role.Deployer.name)
+      case Validation.id     => authorizedRoles.contains(Role.BuiltinName.Validator.value) || isCreator
+      case Deployment.id     => authorizedRoles.contains(Role.BuiltinName.Deployer.value)
       case Deployed.id       => false
       case Cancelled.id      => false
       case WorkflowNodeId(x) =>
@@ -434,6 +440,15 @@ class TwoValidationStepsWorkflowServiceImpl(
   ): Box[WorkflowNodeId] = {
     toFailure(Deployment, changeRequestId, actor, reason)
   }
+
+  private[this] def stepDeploymentToDeployed(
+    changeRequestId: ChangeRequestId,
+    actor:           EventActor,
+    reason:          Option[String]
+  ): Box[WorkflowNodeId] = {
+    onSuccessWorkflow(Deployment, changeRequestId, actor, reason)
+  }
+
 
   // this THE workflow that needs external validation.
   override def needExternalValidation(): Boolean = true

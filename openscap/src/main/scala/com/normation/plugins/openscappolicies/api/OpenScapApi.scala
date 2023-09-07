@@ -32,7 +32,7 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
 
   final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
     val z              = implicitly[Line].value
-    val description    = "Get OpenScap report for a node"
+    val description    = "Get OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
 
     override def dataContainer: Option[String] = Some("openscap")
@@ -40,7 +40,7 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
 
   final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
     val z              = implicitly[Line].value
-    val description    = "Get sanitized OpenScap report for a node"
+    val description    = "Get sanitized OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
 
     override def dataContainer: Option[String] = Some("openscap")
@@ -135,7 +135,7 @@ class OpenScapApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        report       <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenScap Report for node ${nodeId}"
+        report       <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenSCAP report for node ${nodeId}"
         existence    <- Box(report) ?~! s"Report not found for node ${nodeId}"
         sanitizedXml <- reportSanitizer.sanitizeReport(existence).toBox ?~! "Error while sanitizing report"
       } yield {
@@ -151,7 +151,7 @@ class OpenScapApiImpl(
             200
           )
         case eb: EmptyBox =>
-          val errorMessage = eb ?~! "Could not get the sanitized OpenScap report for node ${nodeId}"
+          val errorMessage = eb ?~! "Could not get the sanitized OpenSCAP report for node ${nodeId}"
           logger.error(errorMessage.messageChain)
           val html         = <div class="error">{errorMessage.messageChain}</div>
           InMemoryResponse(

@@ -145,32 +145,32 @@ class ScaleOutRelayService(
     val nPromoted       = woLDAPNodeRepository.deleteNode(newInfo.node, modId, actor, reason).unit
     val nBeforePromoted = woLDAPNodeRepository
       .createNode(old.node, modId, actor, reason)
-      .chainError(s"Demote relay failed : restore '${newInfo.node}' configuration failed")
+      .chainError(s"Demote relay failed: restore '${newInfo.node}' configuration failed")
       .unit
 
     val targets    = objects.targets.map(t => {
       woLDAPNodeGroupRepository
         .deletePolicyServerTarget(t)
-        .chainError(s"Demote relay failed : removing '${newInfo.node}' configuration failed")
+        .chainError(s"Demote relay failed: removing '${newInfo.node}' configuration failed")
         .unit
     })
     val groups     = objects.groups.map(g => {
       woLDAPNodeGroupRepository
         .delete(g.id, modId, actor, reason)
-        .chainError(s"Demote relay failed : removing node group '${g.id.serialize}' failed")
+        .chainError(s"Demote relay failed: removing node group '${g.id.serialize}' failed")
         .unit
     })
     val directives = objects.directives.toList.map(d => {
       woDirectiveRepository
         .deleteSystemDirective(d._2.id.uid, modId, actor, reason)
-        .chainError(s"Demote relay failed : removing directive '${d._2.id.debugString}' failed")
+        .chainError(s"Demote relay failed: removing directive '${d._2.id.debugString}' failed")
         .unit
     })
     val rules      = objects.rules.map(r => {
       woRuleRepository
         .deleteSystemRule(r.id, modId, actor, reason)
         .catchAll { err =>
-          ScaleOutRelayLoggerPure.info(s"Trying to remove residual object Rule ${r.id.serialize} : ${err.fullMsg}")
+          ScaleOutRelayLoggerPure.info(s"Trying to remove residual object rule ${r.id.serialize}: ${err.fullMsg}")
         }
         .unit
     })

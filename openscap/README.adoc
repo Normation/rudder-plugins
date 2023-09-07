@@ -30,7 +30,7 @@ The technique comes with two parameters:
 
 image:openscap/openscap-directive.png[OpenSCAP directive example]
 
-SCAP content refers to document in the XCCDF, OVAL and Source DataStream formats. These documents can be presented in different forms and by different organizations to meet their security automation and technical implementation needs. You can find more informations on the https://github.com/ComplianceAsCode/content[ComplianceAsCode]  GitHub project.
+SCAP content refers to document in the XCCDF, OVAL and Source DataStream formats. These documents can be presented in different forms and by different organizations to meet their security automation and technical implementation needs. You can find more information on the https://github.com/ComplianceAsCode/content[ComplianceAsCode]  GitHub project.
 
 By default, available `scap_files` are located on `/usr/share/xml/scap/ssg/content/` after installation of the openSCAP agent on the nodes. Given profiles for specific scap_files can be obtain with the command:
 

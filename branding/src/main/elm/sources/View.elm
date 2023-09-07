@@ -82,7 +82,7 @@ view model =
 
     bar =
       [ div [ class "panel-col col-md-6" ]
-        [ checkbox settings.displayBar ToggleCustomBar "enable-bar" "Display Custom Bar"
+        [ checkbox settings.displayBar ToggleCustomBar "enable-bar" "Display custom bar"
         , div [ class "form-group" ]
           [ label [] [ text "Background color" ]
           , div [ class "input-group" ]
@@ -113,9 +113,9 @@ view model =
       ]
     in
     Html.form []
-        [ createPanel "Custom Logos" "custom-logos" customLogos
-        , createPanel "Custom Bar" "custom-bar" bar
-        , createPanel "Login Page" "login-page" loginPage
+        [ createPanel "Custom logos" "custom-logos" customLogos
+        , createPanel "Custom bar" "custom-bar" bar
+        , createPanel "Login page" "login-page" loginPage
         , div [ class "toolbar" ]
             [ button [ type_ "button", class "btn btn-success", onClick SendSave ] [ text "Save" ]
             ]
