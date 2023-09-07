@@ -56,6 +56,8 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.AuthorizationType
+
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json._
@@ -75,6 +77,7 @@ object AuthBackendsApi       extends ApiModuleProvider[AuthBackendsApi] {
     val description    = "Get information about current authentication configuration"
     val (action, path) = GET / "authbackends" / "current-configuration"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
     override def dataContainer: Option[String] = None
   }
 

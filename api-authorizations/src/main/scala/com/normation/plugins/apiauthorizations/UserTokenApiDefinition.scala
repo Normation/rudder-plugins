@@ -89,8 +89,14 @@ class UserApi(
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
-        case Full(Some(token)) =>
-          val accounts: JValue = ("accounts" -> JArray(List(token.toJson)))
+        case Full(Some(account)) =>
+          val filtered = account.copy(token = if (account.token.isHashed) {
+            // Don't send hashes
+            ApiToken("")
+          } else {
+            account.token
+          })
+          val accounts: JValue = ("accounts" -> JArray(List(filtered.toJson)))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)
 
         case Full(None) =>
@@ -109,20 +115,31 @@ class UserApi(
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       val now     = DateTime.now
+      val secret  = ApiToken.generate_secret(tokenGenerator)
+      val hash    = ApiToken.hash(secret)
       val account = ApiAccount(
         ApiAccountId(authzToken.actor.name),
         ApiAccountKind.User,
         ApiAccountName(authzToken.actor.name),
-        ApiToken(tokenGenerator.newToken(32)),
+        ApiToken(hash),
         s"API token for user '${authzToken.actor.name}'",
-        true,
+        isEnabled = true,
         now,
         now
       )
 
       writeApi.save(account, ModificationId(uuidGen.newUuid), authzToken.actor).toBox match {
-        case Full(token) =>
-          val accounts: JValue = ("accounts" -> JArray(List(token.toJson)))
+        case Full(account) =>
+          val accounts: JValue = ("accounts" -> JArray(
+            List(
+              account
+                .copy(
+                  // Send clear text secret
+                  token = ApiToken(secret)
+                )
+                .toJson
+            )
+          ))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)
 
         case eb: EmptyBox =>
@@ -137,8 +154,8 @@ class UserApi(
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       writeApi.delete(ApiAccountId(authzToken.actor.name), ModificationId(uuidGen.newUuid), authzToken.actor).toBox match {
-        case Full(token) =>
-          val accounts: JValue = ("accounts" -> ("id" -> token.value))
+        case Full(account) =>
+          val accounts: JValue = ("accounts" -> ("id" -> account.value))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)
 
         case eb: EmptyBox =>
@@ -153,8 +170,14 @@ class UserApi(
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
-        case Full(Some(token)) =>
-          val accounts: JValue = ("accounts" -> JArray(List(token.toJson)))
+        case Full(Some(account)) =>
+          val filtered = account.copy(token = if (account.token.isHashed) {
+            // Don't send hashes
+            ApiToken("")
+          } else {
+            account.token
+          })
+          val accounts: JValue = ("accounts" -> JArray(List(filtered.toJson)))
           RestUtils.toJsonResponse(None, accounts)(schema.name, true)
 
         case Full(None) =>

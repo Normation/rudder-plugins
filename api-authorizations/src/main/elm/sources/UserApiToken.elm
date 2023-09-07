@@ -39,6 +39,7 @@ type alias Model =
     { contextPath : String
     , token : Maybe Token
     , error : Maybe (Html Msg)
+    , isNewToken : Bool
     }
 
 
@@ -95,7 +96,7 @@ init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
         initModel =
-            Model flags.contextPath Nothing Nothing
+            Model flags.contextPath Nothing Nothing False
     in
     ( initModel
     , getUserToken initModel
@@ -173,7 +174,7 @@ update msg model =
             updateFromApiResult res model
 
         CreateUserToken res ->
-            updateFromApiResult res model
+            updateFromApiResult res { model | isNewToken = True}
 
         DeleteUserToken res ->
             updateFromDelete res model
@@ -244,8 +245,8 @@ deleteUserToken model =
 -- view when the token exists
 
 
-tokenPresent : Token -> List (Html Msg)
-tokenPresent token =
+tokenPresent : Token -> Bool -> List (Html Msg)
+tokenPresent token isNewToken =
     let
         ( statusIcon, statusTxt, statusClass ) =
             case token.enabled of
@@ -254,36 +255,62 @@ tokenPresent token =
 
                 False ->
                     ( "fa-ban", "disabled", "text-info" )
+        hasClearTextToken = not (String.isEmpty token.token)
     in
-    [ li []
+    [ if hasClearTextToken then
+      li []
+      [ a [ class "no-click" ]
+        [ span [ class "fa fa-key" ] []
+        , text "Your personal token: "
+        , div [ class "help-block" ] [ b [] [ text token.token ] ]
+        ]
+      ]
+    else
+      li []
+      [ a [ class "no-click" ]
+        [ span [ class "fa fa-key" ] []
+        , text "You have a personal token."
+        ]
+      ]
+    , if isNewToken then
+      li []
+      [ a [ class "no-click" ]
+        [ span [ class "fa fa-exclamation-triangle" ] []
+        , text "Copy it now as it will not be re-displayed"
+        ]
+      ]
+    else
+      if hasClearTextToken then
+        li []
         [ a [ class "no-click" ]
-            [ span [ class "fa fa-key" ] []
-            , text "Your personal token: "
-            , div [ class "help-block" ] [ b [] [ text token.token ] ]
-            ]
+          [ span [ class "fa fa-exclamation-triangle" ] []
+          , text "Deprecated token format, please re-create"
+          ]
+        ]
+      else
+        text ""
+    , li []
+        [ a [ class "no-click" ]
+          [ span [ class "fa fa-calendar" ] []
+          , text "Generated on "
+          , b [] [ text token.generationDate ]
+          ]
         ]
     , li []
         [ a [ class "no-click" ]
-            [ span [ class "fa fa-calendar" ] []
-            , text "Generated on "
-            , b [] [ text token.generationDate ]
-            ]
+          [ span [ class ("fa " ++ statusIcon) ] []
+          , text "Status: "
+          , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
+          ]
         ]
-    , li []
-        [ a [ class "no-click" ]
-            [ span [ class ("fa " ++ statusIcon) ] []
-            , text "Status: "
-            , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
-            ]
-        ]
-    , li [ class "footer" ] [ a [ class "deleteToken", onClick DeleteButton ] [ text "Delete API Token" ] ]
+    , li [ class "footer" ] [ a [ class "deleteToken", onClick DeleteButton ] [ text "Delete API token" ] ]
     ]
 
 
 tokenAbsent : Model -> List (Html Msg)
 tokenAbsent model =
     [ li [] [ a [ class "no-click no-token" ] [ text "You don't have an API token yet." ] ]
-    , li [ class "footer" ] [ a [ class "createToken", onClick CreateButton ] [ text "Create an API Token" ] ]
+    , li [ class "footer" ] [ a [ class "createToken", onClick CreateButton ] [ text "Create an API token" ] ]
     ]
 
 
@@ -299,7 +326,7 @@ view model =
          ]
             ++ (case model.token of
                     Just token ->
-                        tokenPresent token
+                        tokenPresent token model.isNewToken
 
                     Nothing ->
                         tokenAbsent model
