@@ -1,6 +1,6 @@
 
 def failedBuild = false
-def version = "7.2-next"
+def version = "7.2"
 
 def changeUrl = env.CHANGE_URL
 def blueUrl = "${env.JOB_DISPLAY_URL}"
