@@ -24,13 +24,6 @@ pipeline {
                 }
             }
             steps {
-
-
-
-                script {
-                    running.add("Publish - common plugin")
-                    updateSlack(errors, running, slackResponse, version, changeUrl)
-                }
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                     dir('plugins-common') {
                         withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
