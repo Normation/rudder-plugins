@@ -37,6 +37,8 @@ build-licensed-files:
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
-licensed-files: plugins-common-private generate-pom build-licensed-files
+licensed-files: plugins-common-private licensed-files-only
+
+licensed-files-only: generate-pom build-licensed-files
 
 .PHONY: std-files licensed-files 
