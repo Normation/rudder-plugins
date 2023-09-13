@@ -24,6 +24,31 @@ pipeline {
                 }
             }
             steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    dir('plugins-common') {
+                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                            // don't archive jars
+                            options: [artifactsPublisher(disabled: true)]
+                        ) {
+                            // we need to use $MVN_COMMAND to get the settings file path
+                            sh script: 'make generate-pom'
+                            sh script: 'mvn --update-snapshots clean install', label: "common deploy"
+                        }
+                    }
+                }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    dir('plugins-common-private') {
+                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                            // don't archive jars
+                            options: [artifactsPublisher(disabled: true)]
+                        ) {
+                            // we need to use $MVN_COMMAND to get the settings file path
+                            sh script: 'make generate-pom'
+                            sh script: 'mvn --update-snapshots install package', label: "private common deploy"
+                        }
+                    }
+                }
+            
                 script {
                     SCALA_PLUGINS = sh (
                         script: 'make scala-plugins-list',
@@ -63,11 +88,6 @@ pipeline {
                             }
                         }
                     }
-                }
-            }
-            post {
-                always {
-            		archiveArtifacts artifacts: '*/target/dependency-check-report.html, */target/site/aggregate-third-party-report.html'
                 }
             }
         }
