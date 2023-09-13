@@ -42,6 +42,10 @@ import bootstrap.liftweb.MenuUtils
 import com.normation.plugins.DefaultPluginDef
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.AuthorizationType.Administration
+import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.lift.LiftApiModuleProvider
+
+import bootstrap.rudder.plugin.BrandingPluginConf
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
@@ -52,6 +56,8 @@ import net.liftweb.sitemap.Menu
 class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.branding"
+
+  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(BrandingPluginConf.brandingApi)
 
   def init = {}
 

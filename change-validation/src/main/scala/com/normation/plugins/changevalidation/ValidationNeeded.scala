@@ -27,58 +27,15 @@ object bddMock {
 /**
  * Check is an external validation is needed for the change, given some
  * arbitrary rules defined in implementation.
+ *
+ * Validated user will be checked directly in `combine` method, it will not follow this logic
+ * (see https://issues.rudder.io/issues/22188#note-5)
  */
 trait ValidationNeeded {
   def forRule(actor:        EventActor, change: RuleChangeRequest):        Box[Boolean]
   def forDirective(actor:   EventActor, change: DirectiveChangeRequest):   Box[Boolean]
   def forNodeGroup(actor:   EventActor, change: NodeGroupChangeRequest):   Box[Boolean]
   def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean]
-}
-
-class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNeeded {
-
-  override def forDirective(actor: EventActor, change: DirectiveChangeRequest): Box[Boolean] = {
-    repo.get(actor) match {
-      case Full(ea) =>
-        ea match {
-          case Some(_) => Full(false)
-          case None    => Full(true)
-        }
-      case _        => Full(true)
-    }
-  }
-
-  override def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean] = {
-    repo.get(actor) match {
-      case Full(ea) =>
-        ea match {
-          case Some(_) => Full(false)
-          case None    => Full(true)
-        }
-      case _        => Full(true)
-    }
-  }
-
-  override def forNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[Boolean] = {
-    repo.get(actor) match {
-      case Full(ea) =>
-        ea match {
-          case Some(_) => Full(false)
-          case None    => Full(true)
-        }
-      case _        => Full(true)
-    }
-  }
-  override def forRule(actor: EventActor, change: RuleChangeRequest):           Box[Boolean] = {
-    repo.get(actor) match {
-      case Full(ea) =>
-        ea match {
-          case Some(_) => Full(false)
-          case None    => Full(true)
-        }
-      case _        => Full(true)
-    }
-  }
 }
 
 /*
@@ -94,13 +51,14 @@ class UserValidationNeeded(repo: RoValidatedUserRepository) extends ValidationNe
  * - a modification in a directive is validated if it as at least configured in one rule where modification
  *   are supervised.
  *
+ * Note that a validated user will always bypass this validation (see https://issues.rudder.io/issues/22188#note-5)
  */
 class NodeGroupValidationNeeded(
-    unsupervisedTargets: () => Box[Set[SimpleTarget]],
-    repos:               RoChangeRequestRepository,
-    ruleLib:             RoRuleRepository,
-    groupLib:            RoNodeGroupRepository,
-    nodeInfoService:     NodeInfoService
+    supervisedTargets: () => Box[Set[SimpleTarget]],
+    repos:             RoChangeRequestRepository,
+    ruleLib:           RoRuleRepository,
+    groupLib:          RoNodeGroupRepository,
+    nodeInfoService:   NodeInfoService
 ) extends ValidationNeeded {
 
   /*
@@ -115,10 +73,9 @@ class NodeGroupValidationNeeded(
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
     val start = System.currentTimeMillis()
     val res   = for {
-      groups       <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo     <- nodeInfoService.getAll().toBox
-      unsupervised <- unsupervisedTargets()
-      supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
+      groups     <- groupLib.getFullGroupLibrary().toBox
+      nodeInfo   <- nodeInfoService.getAll().toBox
+      supervised <- supervisedTargets()
     } yield {
       val targets = Set(change.newRule) ++ change.previousRule.toSet
       checkNodeTargetByRule(groups, nodeInfo, supervised, targets)
@@ -175,12 +132,11 @@ class NodeGroupValidationNeeded(
     val start = System.currentTimeMillis()
 
     val res = for {
-      groups       <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo  <- nodeInfoService.getAll().toBox
-      groups       <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo  <- nodeInfoService.getAll().toBox
-      unsupervised <- unsupervisedTargets()
-      supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
+      groups      <- groupLib.getFullGroupLibrary().toBox
+      allNodeInfo <- nodeInfoService.getAll().toBox
+      groups      <- groupLib.getFullGroupLibrary().toBox
+      allNodeInfo <- nodeInfoService.getAll().toBox
+      supervised  <- supervisedTargets()
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
       val exists      = groups.getNodeIds(supervised.map(identity), allNodeInfo).find(nodeId => targetNodes.contains(nodeId))
@@ -208,13 +164,12 @@ class NodeGroupValidationNeeded(
     val directiveId = change.newDirective.id
     val start       = System.currentTimeMillis()
     val res         = for {
-      rules        <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId))).toBox
+      rules      <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId))).toBox
       // we need to add potentially new rules applied to that directive that the previous request does not cover
-      newRules      = change.updatedRules
-      unsupervised <- unsupervisedTargets()
-      groups       <- groupLib.getFullGroupLibrary().toBox
-      supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
-      nodeInfo     <- nodeInfoService.getAll().toBox
+      newRules    = change.updatedRules
+      supervised <- supervisedTargets()
+      groups     <- groupLib.getFullGroupLibrary().toBox
+      nodeInfo   <- nodeInfoService.getAll().toBox
     } yield {
       checkNodeTargetByRule(groups, nodeInfo, supervised, (rules ++ newRules).toSet)
     }
