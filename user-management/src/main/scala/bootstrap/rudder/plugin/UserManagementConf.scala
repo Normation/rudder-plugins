@@ -43,6 +43,7 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.usermanagement.CheckRudderPluginEnableImpl
 import com.normation.plugins.usermanagement.UserManagementPluginDef
+import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.plugins.usermanagement.api.UserManagementApiImpl
 
 /*
@@ -63,7 +64,12 @@ object UserManagementConf extends RudderPluginModule {
 
   lazy val pluginDef = new UserManagementPluginDef(UserManagementConf.pluginStatusService)
 
-  lazy val api = new UserManagementApiImpl(RudderConfig.restExtractorService, RudderConfig.rudderUserListProvider)
+  lazy val api = new UserManagementApiImpl(
+    RudderConfig.userRepository,
+    RudderConfig.restExtractorService,
+    RudderConfig.rudderUserListProvider,
+    new UserManagementService(RudderConfig.userRepository)
+  )
 
   RudderConfig.userAuthorisationLevel.overrideLevel(new UserManagementAuthorizationLevel(pluginStatusService))
 }

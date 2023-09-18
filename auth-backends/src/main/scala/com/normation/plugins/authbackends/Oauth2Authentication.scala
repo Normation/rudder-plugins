@@ -70,13 +70,18 @@ final case class OIDCProvidedRole(enabled: Boolean, attributeName: String, over:
  * Data container class to add our properties to spring ClientRegistration ones
  * We never want to print the secret in logs, so override it.
  */
-final case class RudderClientRegistration(registration: ClientRegistration, infoMsg: String, roles: OIDCProvidedRole) {
+final case class RudderClientRegistration(
+    registration: ClientRegistration,
+    infoMsg:      String,
+    roles:        OIDCProvidedRole,
+    provisioning: Boolean
+) {
   override def toString: String = {
     toDebugStringWithSecret.replaceFirst("""clientSecret='([^']+?)'""", "clientSecret='*****'")
   }
 
   // avoid that in logs etc, use only for interactive debugging sessions
-  def toDebugStringWithSecret = s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}"""
+  def toDebugStringWithSecret = s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}, user provisioning enabled: ${provisioning}"""
 }
 
 /*
@@ -104,6 +109,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   val A_ROLES_ENABLED   = "roles.enabled"
   val A_ROLES_ATTRIBUTE = "roles.attribute"
   val A_ROLES_OVERRIDE  = "roles.override"
+  val A_PROVISIONING    = "enableProvisioning"
 
   val authMethods = {
     import ClientAuthenticationMethod._
@@ -133,7 +139,8 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     A_PIVOT_ATTR      -> "the attribute used to find local app user",
     A_ROLES_ENABLED   -> "enable custom role extension by OIDC",
     A_ROLES_ATTRIBUTE -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
-    A_ROLES_OVERRIDE  -> "keep user configured roles in rudder-user.xml or override them with the one provided in the token"
+    A_ROLES_OVERRIDE  -> "keep user configured roles in rudder-user.xml or override them with the one provided in the token",
+    A_PROVISIONING    -> "allows the automatic creation of users in Rudder in they successfully authenticate with OIDC"
   )
 
   def parseAuthenticationMethod(method: String): PureResult[ClientAuthenticationMethod] = {
@@ -213,22 +220,23 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     }
 
     for {
-      name           <- read(A_NAME)
-      clientId       <- read(A_CLIENT_ID)
-      clientSecret   <- read(A_CLIENT_SECRET)
-      clientRedirect <- read(A_CLIENT_REDIRECT)
-      authMethod     <- read(A_AUTH_METHOD).flatMap(parseAuthenticationMethod(_).toIO)
-      grantTypes     <- read(A_GRANT_TYPE).flatMap(parseAuthorizationGrantType(_).toIO)
-      infoMessage    <- read(A_INFO_MESSAGE)
-      scopes         <- read(A_SCOPE).flatMap(parseScope(_))
-      uriAuth        <- read(A_URI_AUTH)
-      uriToken       <- read(A_URI_TOKEN)
-      uriUserInfo    <- read(A_URI_USER_INFO)
-      pivotAttr      <- read(A_PIVOT_ATTR)
-      jwkSetUri      <- read(A_URI_JWK_SET)
-      rolesEnabled   <- read(A_ROLES_ENABLED).catchAll(_ => "false".succeed)
-      rolesAttr      <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
-      rolesOverride  <- read(A_ROLES_OVERRIDE).catchAll(_ => "false".succeed)
+      name                <- read(A_NAME)
+      clientId            <- read(A_CLIENT_ID)
+      clientSecret        <- read(A_CLIENT_SECRET)
+      clientRedirect      <- read(A_CLIENT_REDIRECT)
+      authMethod          <- read(A_AUTH_METHOD).flatMap(parseAuthenticationMethod(_).toIO)
+      grantTypes          <- read(A_GRANT_TYPE).flatMap(parseAuthorizationGrantType(_).toIO)
+      infoMessage         <- read(A_INFO_MESSAGE)
+      scopes              <- read(A_SCOPE).flatMap(parseScope(_))
+      uriAuth             <- read(A_URI_AUTH)
+      uriToken            <- read(A_URI_TOKEN)
+      uriUserInfo         <- read(A_URI_USER_INFO)
+      pivotAttr           <- read(A_PIVOT_ATTR)
+      jwkSetUri           <- read(A_URI_JWK_SET)
+      rolesEnabled        <- read(A_ROLES_ENABLED).catchAll(_ => "false".succeed)
+      rolesAttr           <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
+      rolesOverride       <- read(A_ROLES_OVERRIDE).catchAll(_ => "false".succeed)
+      provisioningAllowed <- read(A_PROVISIONING).catchAll(_ => "false".succeed)
     } yield {
       RudderClientRegistration(
         ClientRegistration
@@ -251,7 +259,8 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
           toBool(rolesEnabled),
           rolesAttr,
           toBool(rolesOverride)
-        )
+        ),
+        toBool(provisioningAllowed)
       )
     }
   }

@@ -8,6 +8,7 @@ import bootstrap.liftweb.UserFileProcessing
 import com.normation.errors.IOResult
 import com.normation.errors.Unexpected
 import com.normation.errors.effectUioUnit
+import com.normation.eventlog.EventActor
 import com.normation.plugins.usermanagement.UserManagementIO.getUserFilePath
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Rights
@@ -16,8 +17,10 @@ import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
+import com.normation.rudder.users._
 import com.normation.zio._
 import java.util.concurrent.TimeUnit
+import org.joda.time.DateTime
 import org.springframework.core.io.{ClassPathResource => CPResource}
 import scala.xml.Elem
 import scala.xml.Node
@@ -191,6 +194,15 @@ object UserManagementService {
     }
   }
 
+}
+
+class UserManagementService(userRepository: UserRepository) {
+  import UserManagementService._
+
+  /*
+   * For now, when we add an user, we always add it in the XML file (and not only in database).
+   * So we let the callback on file reload does what it needs.
+   */
   def add(newUser: User, isPreHashed: Boolean): IOResult[User] = {
     for {
       file       <- getUserFilePath
@@ -216,7 +228,11 @@ object UserManagementService {
     } yield user
   }
 
-  def remove(toDelete: String): IOResult[Unit] = {
+  /*
+   * When we delete an user, it can be from file or auto-added by OIDC or other backend supporting that.
+   * So we need to both remove it (mark "status=delete") from base and from file.
+   */
+  def remove(toDelete: String, actor: EventActor): IOResult[Unit] = {
     for {
       file       <- getUserFilePath
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
@@ -229,9 +245,13 @@ object UserManagementService {
                       }
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
+      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now()))
     } yield ()
   }
 
+  /*
+   * This method will mostly interact with DB in the future.
+   */
   def update(currentUser: String, newUser: User, isPreHashed: Boolean): IOResult[Unit] = {
     for {
       file       <- getUserFilePath

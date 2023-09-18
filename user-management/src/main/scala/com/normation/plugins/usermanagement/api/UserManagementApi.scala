@@ -46,6 +46,7 @@ import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
 import com.normation.rudder.RudderRoles
+import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
@@ -57,7 +58,11 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.users.RudderAccount
+import com.normation.rudder.users.RudderUserDetail
+import com.normation.rudder.users.UserRepository
 import com.normation.zio._
+import com.softwaremill.quicklens._
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -65,6 +70,7 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.Formats
 import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JString
 import net.liftweb.json.JValue
 import net.liftweb.json.NoTypeHints
 import sourcecode.Line
@@ -82,8 +88,8 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     val description    = "Get information about registered users in Rudder"
     val (action, path) = GET / "usermanagement" / "users"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
   }
 
   final case object GetRoles extends UserManagementApi with ZeroParam with StartsAtVersion10 {
@@ -91,8 +97,8 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     val description    = "Get roles and their authorizations"
     val (action, path) = GET / "usermanagement" / "roles"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
   }
 
   /*
@@ -143,8 +149,10 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
 }
 
 class UserManagementApiImpl(
-    restExtractorService: RestExtractorService,
-    userService:          FileUserDetailListProvider
+    userRepo:              UserRepository,
+    restExtractorService:  RestExtractorService,
+    userService:           FileUserDetailListProvider,
+    userManagementService: UserManagementService
 ) extends LiftApiModuleProvider[UserManagementApi] {
   api =>
 
@@ -192,7 +200,26 @@ class UserManagementApiImpl(
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import com.normation.plugins.usermanagement.Serialisation._
-      RestUtils.toJsonResponse(None, userService.authConfig.toJson)(schema.name, params.prettify)
+
+      // This is just a compat hub done so that we can see all users. There will be problems
+      (for {
+        users <- userRepo.getAll()
+      } yield {
+        val file         = userService.authConfig
+        val updatedUsers = users.map(u => {
+          file.users.get(u.id) match {
+            case None    => (u.id, RudderUserDetail(RudderAccount.User(u.id, ""), u.status, Set(), ApiAuthorization.None))
+            case Some(x) => (x.getUsername, x)
+          }
+        })
+        file.modify(_.users).setTo(updatedUsers.toMap)
+
+      }).either.runNow match {
+        case Left(err)       =>
+          RestUtils.toJsonError(None, JString(s"Error when retrieving user list: ${err.fullMsg}"))(schema.name, params.prettify)
+        case Right(authFile) =>
+          RestUtils.toJsonResponse(None, authFile.toJson)(schema.name, params.prettify)
+      }
     }
   }
 
@@ -252,7 +279,7 @@ class UserManagementApiImpl(
         checkExistence <- if (userService.authConfig.users.keySet contains user.username)
                             Failure(s"User '${user.username}' already exists")
                           else Full("ok")
-        added          <- UserManagementService.add(user, isPreHashed).toBox
+        added          <- userManagementService.add(user, isPreHashed).toBox
         _              <- reload().toBox
 
       } yield {
@@ -277,7 +304,7 @@ class UserManagementApiImpl(
       implicit val action = "deleteUser"
 
       val value: Box[JValue] = for {
-        _ <- UserManagementService.remove(id).toBox
+        _ <- userManagementService.remove(id, authzToken.actor).toBox
         _ <- reload().toBox
       } yield {
         "username" -> id
@@ -305,11 +332,14 @@ class UserManagementApiImpl(
         user           <- extractUser(json)
         isPreHashed    <- extractIsHashed(json)
         checkExistence <- if (!(userService.authConfig.users.keySet contains id)) {
-                            Failure(s"'$id' does not exists")
+                            // we may have users that where added by OIDC, and still want to add them in file
+                            userRepo.get(id).toBox.flatMap {
+                              case Some(u) => userManagementService.add(User(u.id, "", Set()), isPreHashed).toBox
+                              case None    => Failure(s"'$id' does not exists")
+                            }
                           } else {
-                            Full("ok")
+                            userManagementService.update(id, user, isPreHashed).toBox
                           }
-        _              <- UserManagementService.update(id, user, isPreHashed).toBox
         _              <- reload().toBox
       } yield {
         Serialization.serializeUser(user)
