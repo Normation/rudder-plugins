@@ -67,10 +67,8 @@ object AuthBackendsLoggerPure extends NamedZioLogger {
  * This is well beyond the scope of that version.
  */
 final case class JsonAuthConfiguration(
-    declaredProviders: String      // order in config file as it is, without any parsing
-    ,
-    computedProviders: Seq[String] // order after resolution (root admin, plugin status, etc)
-    ,
+    declaredProviders: String,      // order in config file as it is, without any parsing
+    computedProviders: Seq[String], // order after resolution (root admin, plugin status, etc)
     adminConfig:       JsonAdminConfig,
     fileConfig:        JsonFileConfig,
     ldapConfig:        JsonLdapConfig
