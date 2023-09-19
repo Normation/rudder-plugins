@@ -1,7 +1,13 @@
-@Library('slack-notification')
-import org.gradiant.jenkins.slack.SlackNotifier
 
-def notifier = new SlackNotifier()
+def failedBuild = false
+def version = "7.3-next"
+
+def changeUrl = env.CHANGE_URL
+def blueUrl = "${env.JOB_DISPLAY_URL}"
+def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
+def job = ""
+def errors = []
+def running = []
 
 
 pipeline {
@@ -13,7 +19,7 @@ pipeline {
 
     environment {
         // TODO: automate
-        RUDDER_VERSION = "7.1"
+        RUDDER_VERSION = "${version}"
         // we want it everywhere for plugins
         MAVEN_ARGS = "--update-snapshots"
     }
@@ -28,6 +34,10 @@ pipeline {
                         }
                     }
                     steps {
+                        script {
+                            running.add("shell scripts")
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
+                        }
                         sh script: './qa-test --shell', label: 'shell scripts lint'
                         sh script: './qa-test --scripts', label: 'shell postinst lint'
                     }
@@ -37,9 +47,17 @@ pipeline {
                             recordIssues enabledForFailure: true, failOnError: true, sourceCodeEncoding: 'UTF-8',
                                          tool: checkStyle(pattern: '.shellcheck/*.log', reportEncoding: 'UTF-8', name: 'Shell scripts')
                         }
+
                         failure {
                             script {
-                                notifier.notifyResult("shell-team")
+                                errors.add("shell scripts")
+                                slackSend(channel: slackResponse.threadId, message: "Check shell scripts on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                            }
+                        }
+                        cleanup {
+                            script {
+                                running.remove("shell scripts")
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -51,12 +69,23 @@ pipeline {
                         }
                     }
                     steps {
+                        script {
+                            running.add("python scripts")
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
+                        }
                         sh script: './qa-test --python', label: 'python scripts lint'
                     }
                     post {
                         failure {
                             script {
-                                notifier.notifyResult("shell-team")
+                                errors.add("python scripts")
+                                slackSend(channel: slackResponse.threadId, message: "Check python scripts on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                            }
+                        }
+                        cleanup {
+                            script {
+                                running.remove("python scripts")
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -69,71 +98,34 @@ pipeline {
                         }
                     }
                     steps {
+                        script {
+                            running.add("check typos")
+                            updateSlack(errors, running, slackResponse, version, changeUrl)
+                        }
                         sh script: './qa-test --typos', label: 'check typos'
                     }
                     post {
                         failure {
                             script {
-                                notifier.notifyResult("shell-team")
+                                errors.add("check typos")
+                                slackSend(channel: slackResponse.threadId, message: "Check typos on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                            }
+                        }
+                        cleanup {
+                            script {
+                                running.remove("check typos")
+                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
                 }
             }
         }
-        stage('Tests plugins') {
-            // Build disabled, test everything
-            //when { changeRequest() }
 
-            agent {
-                dockerfile {
-                    filename 'ci/plugins.Dockerfile'
-                    additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
-                    // set same timezone as some tests rely on it
-                    // and share maven cache
-                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
-                }
-            }
-            steps {
-                script {
-                    def parallelStages = [:]
-                    PLUGINS = sh (
-                        script: 'make plugins-list',
-                        returnStdout: true
-                    ).trim().split(' ')
-                    PLUGINS.each { p ->
-                        parallelStages[p] = {
-                            stage("test ${p}") {
-                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                                    try {
-                                        dir("${p}") {
-                                            // enough to run the mvn tests and package the plugin
-                                            sh script: 'make', label: "build ${p} plugin"
-                                        }
-                                    }
-                                    catch (exc) {
-                                        // Mark the build as failure since it's actually an error
-                                        currentBuild.result = 'FAILURE'
-                                        notifier.notifyResult("scala-team")
-                                        throw exc
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    parallel parallelStages
-                }
-            }
+        stage('Publish plugins commons') {
 
-        }
-        stage('Publish plugins') {
             // only publish nightly on dev branches
-            when {
-                allOf { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' };
-                not { changeRequest() } }
-                // Disabled
-                expression { return false }
-            }
+            when { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' } }
 
             agent {
                 dockerfile {
@@ -145,51 +137,183 @@ pipeline {
                 }
             }
             steps {
+
                 script {
-                    def parallelStages = [:]
-                    PLUGINS = sh (
-                        script: 'make plugins-list',
-                        returnStdout: true
-                    ).trim().split(' ')
-                    PLUGINS.each { p ->
-                        parallelStages[p] = {
-                            stage("publish ${p}") {
-                                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                                    try {
-                                        dir("${p}") {
-                                            sh script: 'make', label: "build ${p} plugin"
-                                            archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                                            sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
-                                        }
-                                    }
-                                    catch (exc) {
-                                        // Mark the build as failure since it's actually an error
-                                        currentBuild.result = 'FAILURE'
-                                        notifier.notifyResult("scala-team")
-                                        throw exc
-                                    }
-                                }
-                            }
+                    running.add("Publish - common plugin")
+                    updateSlack(errors, running, slackResponse, version, changeUrl)
+                }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    dir('plugins-common') {
+                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                            // don't archive jars
+                            options: [artifactsPublisher(disabled: true)]
+                        ) {
+                            // we need to use $MVN_COMMAND to get the settings file path
+                            sh script: 'make'
+                            sh script: '$MVN_CMD --update-snapshots clean install package deploy', label: "common deploy"
                         }
                     }
-                    parallel parallelStages
-                    stage("Publish to repository") {
-                        sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/publish -v \"${RUDDER_VERSION}\" -t plugins -u -m nightly")], verbose:true)])
+                }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    dir('plugins-common-private') {
+                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                            // don't archive jars
+                            options: [artifactsPublisher(disabled: true)]
+                        ) {
+                            // we need to use $MVN_COMMAND to get the settings file path
+                            sh script: 'make'
+                            sh script: '$MVN_CMD --update-snapshots install package deploy', label: "private common deploy"
+                        }
                     }
                 }
-            }
-       }
-        stage('End') {
-            steps {
-                echo 'End of build'
             }
             post {
-                fixed {
+                failure {
                     script {
-                        notifier.notifyResult("everyone")
+                        failedBuild = true
+                        errors.add("Publish - common plugin")
+                        slackSend(channel: slackResponse.threadId, message: "Error while publishing webapp - <${currentBuild.absoluteUrl}|Link>", color: "#CC3421")
+                    }
+                }
+                cleanup {
+                    script {
+                        running.remove("Publish - common plugin")
+                        updateSlack(errors, running, slackResponse, version, changeUrl)
+                    }
+                }
+            }
+        }
+
+        stage('Build plugins') {
+            // only publish nightly on dev branches
+            when { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' }; }
+
+            agent {
+                dockerfile {
+                    filename 'ci/plugins.Dockerfile'
+                    additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
+                    // set same timezone as some tests rely on it
+                    // and share maven cache
+                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
+                }
+            }
+            steps {
+                script {
+                    def stageSuccess = [:]
+                    def parallelStages = [:]
+                    PLUGINS = sh (
+                        script: 'make plugins-list',
+                        returnStdout: true
+                    ).trim().split(' ')
+                    PLUGINS.each { p ->
+                        parallelStages[p] = {
+                            stage("Build ${p}") {
+                                script {
+                                    running.add("Build - ${p}")
+                                    updateSlack(errors, running, slackResponse, version, changeUrl)
+                                    stageSuccess.put(p,false)
+                                }
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+
+                                    dir("${p}") {
+
+                                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                                          // don't archive jars
+                                          options: [artifactsPublisher(disabled: true)]
+                                        ) {
+                                            sh script: 'make licensed', label: "build ${p} plugin"
+                                            if (changeRequest()) {
+                                                archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                                                sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                                            }
+                                        }
+                                    }
+                                    script {
+                                        stageSuccess.put(p,true)
+                                    }
+                                }
+                                script {
+                                    if (! stageSuccess[p]) {
+                                        errors.add("Build - ${p}")
+                                        failedBuild = true
+                                        slackSend(channel: slackResponse.threadId, message: "Error on plugin ${p} build - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                                    }
+                                    running.remove("Build - ${p}")
+                                    updateSlack(errors, running, slackResponse, version, changeUrl)
+                                }
+                            }
+                        }
+                    }
+                    parallel parallelStages
+                }
+
+            }
+       }
+
+        stage("Publish to repository") {
+            when { not { changeRequest() } }
+            agent any
+            steps {
+                script {
+                    running.add("Publish - plugins")
+                    updateSlack(errors, running, slackResponse, version, changeUrl)
+                }
+                sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/publish -v \"${RUDDER_VERSION}\" -t plugins -u -m nightly")], verbose:true)])
+            }   
+            post {
+                failure {
+                    script {
+                        errors.add("Publish - plugins")
+                        slackSend(channel: slackResponse.threadId, message: "Check typos on all plugins failed - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
+                    }
+                }
+                cleanup {
+                    script {
+                        running.remove("Publish - plugins")
+                        updateSlack(errors, running, slackResponse, version, changeUrl)
+                    }
+                }
+            }
+        }
+        stage('End') {
+            steps {
+                script {
+                    if (failedBuild) {
+                        error 'End of build'
+                    } else {
+                        echo 'End of build'
                     }
                 }
             }
         }
     }
+}
+
+def updateSlack(errors, running, slackResponse, version, changeUrl) {
+
+def blueUrl = "${env.JOB_DISPLAY_URL}"
+
+
+def msg ="*${version} - plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>"
+
+if (changeUrl != null) {
+  msg ="*${version} PR - plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue> - <"+changeUrl+"|Pull request>"
+}
+
+def color = "#00A8E1"
+
+if (! errors.isEmpty()) {
+    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
+    color = "#CC3421"
+}
+if (! running.isEmpty()) {
+    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
+}
+
+if (errors.isEmpty() && running.isEmpty()) {
+    msg +=  " => All plugins built! :white_check_mark:"
+	color = "good"
+}
+
+  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
 }
