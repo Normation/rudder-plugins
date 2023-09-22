@@ -67,7 +67,7 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
       (Menu("760-userManagement", <span>User management</span>) /
       "secure" / "plugins" / "UserManagement"
       >> LocGroup("pluginsGroup")
-      >> TestAccess(() => Boot.userIsAllowed("/secure/index", Administration.Read))
+      >> TestAccess(() => Boot.userIsAllowed("/secure/index", Administration.Write))
       >> Template(() => ClasspathTemplates("template" :: "UserManagement" :: Nil) openOr <div>Template not found</div>)).toMenu,
       Some(MenuUtils.administrationMenu)
     ) :: Nil
