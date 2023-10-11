@@ -85,6 +85,9 @@ trait QueryDataSourceService {
    * A version that only query one node - do not use if you want to query several nodes
    */
   def queryOne(datasource: DataSource, nodeId: NodeId, cause: UpdateCause): IOResult[NodeUpdateResult]
+
+  // perhaps should be a different service
+  def resetCache: UIO[Unit]
 }
 
 /**
@@ -98,15 +101,22 @@ class HttpQueryDataSourceService(
     interpolCompiler: InterpolatedValueCompiler,
     onUpdatedHook:    (Set[NodeId], UpdateCause) => IOResult[Unit],
     globalPolicyMode: () => IOResult[GlobalPolicyMode],
+    cacheParam:       Option[CacheParameters],
     clock:            Clock
 ) extends QueryDataSourceService {
 
-  val getHttp = new GetDataset(interpolCompiler)
+  val getHttp = new GetDataset(interpolCompiler, new QueryHttpServiceImpl(cacheParam))
+
+
 
   /*
    * We need a scheduler tailored for I/O, we are mostly doing http requests and
    * database things here
    */
+
+  override def resetCache: UIO[Unit] = {
+    getHttp.resetCache
+  }
 
   override def queryAll(datasource: DataSource, cause: UpdateCause): IOResult[Set[NodeUpdateResult]] = {
     query[Set[NodeUpdateResult]](

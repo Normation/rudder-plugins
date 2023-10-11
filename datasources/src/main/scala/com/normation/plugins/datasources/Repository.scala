@@ -351,6 +351,7 @@ class DataSourceRepoImpl(
 
   override def onUserAskUpdateAllNodes(actor: EventActor): IOResult[Unit] = {
     DataSourceLoggerPure.info(s"Fetching data from data sources for all node because ${actor.name} asked for it") *>
+    fetch.resetCache *>
     fetchAllNode(actor, None)
   }
 
@@ -358,6 +359,7 @@ class DataSourceRepoImpl(
     DataSourceLoggerPure.info(
       s"Fetching data from data source '${datasourceId.value}' for all node because ${actor.name} asked for it"
     ) *>
+    fetch.resetCache *>
     fetchAllNode(actor, Some(datasourceId))
   }
 
@@ -375,6 +377,7 @@ class DataSourceRepoImpl(
     DataSourceLoggerPure.info(
       s"Fetching data from data source for node '${nodeId.value}' because '${actor.name}' asked for it"
     ) *>
+    fetch.resetCache *>
     fetchOneNode(actor, nodeId, None)
   }
 
@@ -382,6 +385,7 @@ class DataSourceRepoImpl(
     DataSourceLoggerPure.info(
       s"Fetching data from data source for node '${nodeId.value}' because '${actor.name}' asked for it"
     ) *>
+    fetch.resetCache *>
     fetchOneNode(actor, nodeId, Some(datasourceId))
   }
 

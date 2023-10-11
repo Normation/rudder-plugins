@@ -53,6 +53,7 @@ import com.normation.zio._
 import com.normation.zio.ZioRuntime
 import net.liftweb.common.Box
 import org.joda.time.DateTime
+import zio.duration._
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -88,6 +89,7 @@ object DatasourcesConf extends RudderPluginModule {
       Cfg.interpolationCompiler,
       regenerationHook.hook _,
       () => Cfg.configService.rudder_global_policy_mode(),
+      Some(CacheParameters(Int.MaxValue, 2.minutes)),
       ZioRuntime.environment
     ),
     Cfg.stringUuidGenerator,

@@ -368,7 +368,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       List.empty
     )
   )
-  val fetch         = new GetDataset(interpolation)
+  val fetch         = new GetDataset(interpolation, new QueryHttpServiceImpl(None))
+  val fetchCached   = new GetDataset(interpolation, new QueryHttpServiceImpl(Some(CacheParameters(10, 1.minute))))
 
   val parameterRepo = new RoParameterRepository() {
     def getAllGlobalParameters()                  = Seq().succeed
@@ -506,6 +507,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       interpolation,
       noPostHook,
       () => alwaysEnforce.succeed,
+      None,
       realClock // this one need a real clock to be able to do the requests
     )
     val uuidGen = new StringUuidGeneratorImpl()
@@ -546,6 +548,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           interpolation,
           noPostHook,
           () => alwaysEnforce.succeed,
+          None,
           realClock
         )
         val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
@@ -579,6 +582,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           interpolation,
           noPostHook,
           () => alwaysEnforce.succeed,
+          None,
           realClock
         )
         val nodeIds = infos.getAll().toBox.openOrThrowException("test shall not throw").keySet
@@ -785,6 +789,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           interpolation,
           noPostHook,
           () => alwaysEnforce.succeed,
+          None,
           realClock
         ),
         MyDatasource.uuidGen,
@@ -825,6 +830,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       interpolation,
       noPostHook,
       () => alwaysEnforce.succeed,
+      None,
       realClock
     )
 
@@ -957,6 +963,24 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
   }
 
+  "Getting a node several time with cache should query only one time" >> {
+    val datasource = httpDatasourceTemplate.copy(
+      url = s"${REST_SERVER_URL}/single_$${rudder.node.id}",
+      path = "$.store.${node.properties[get-that]}[:1]"
+    )
+
+    val res      = fetch.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
+    val resCache =
+      fetchCached.getNode(DataSourceId("test-get-one-node"), datasource, n1, root, alwaysEnforce, Set(), 1.second, 5.seconds)
+
+    // even with two queries, we only hit server one time when cache, two time when no cache
+    ({ NodeDataset.reset(); res.either.runNow } must beRight) and (res.either.runNow must beRight) and
+    (NodeDataset.counterError.get.runNow must_=== 0) and (NodeDataset.counterSuccess.get.runNow must_=== 2) and
+    ({ NodeDataset.reset(); resCache.either.runNow } must beRight) and (resCache.either.runNow must beRight) and
+    (NodeDataset.counterError.get.runNow must_=== 0) and (NodeDataset.counterSuccess.get.runNow must_=== 1)
+
+  }
+
   "The full http service" should {
     val datasource = NewDataSource(
       "test-http-service",
@@ -972,6 +996,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       interpolation,
       noPostHook,
       () => alwaysEnforce.succeed,
+      None,
       realClock
     )
 
@@ -1067,6 +1092,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         interpolation,
         noPostHook,
         () => alwaysEnforce.succeed,
+        None,
         realClock
       )
       val datasource = NewDataSource(propName, url = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)

@@ -50,6 +50,7 @@ import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.services.policies.ParamInterpolationContext
+import com.normation.zio.ZioRuntime
 import com.softwaremill.quicklens._
 import com.typesafe.config.ConfigValue
 import net.minidev.json.JSONArray
@@ -60,6 +61,8 @@ import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
 import zio._
+import zio.cache.Cache
+import zio.cache.Lookup
 import zio.duration._
 import zio.syntax._
 
@@ -80,9 +83,11 @@ import zio.syntax._
  * - parse the json result,
  * - return a rudder property with the content.
  */
-class GetDataset(valueCompiler: InterpolatedValueCompiler) {
+class GetDataset(valueCompiler: InterpolatedValueCompiler, queryHttpService: QueryHttpService) {
 
   val compiler = new InterpolateNode(valueCompiler)
+
+  def resetCache: UIO[Unit] = queryHttpService.resetCache
 
   /**
    * Get the node property for the configured datasource.
@@ -127,7 +132,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
       time_0     <- UIO.effectTotal(System.currentTimeMillis)
-      body       <- QueryHttp
+      body       <- queryHttpService
                       .QUERY(datasource.httpMethod, url, headers, httpParams, datasource.sslCheck, connectionTimeout, readTimeOut)
                       .chainError(s"Error when fetching data from ${url}")
       _          <- DataSourceLoggerPure.Timing.trace(
@@ -169,8 +174,77 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
 
 }
 
+trait QueryHttpService {
+
+  def QUERY(
+      method:            HttpMethod,
+      url:               String,
+      headers:           Map[String, String],
+      params:            Map[String, String],
+      checkSsl:          Boolean,
+      connectionTimeout: Duration,
+      readTimeOut:       Duration
+  ): IOResult[Option[String]]
+
+  def resetCache: UIO[Unit]
+}
+
+final case class CacheParameters(cacheMaxItems: Int, cacheDuration: Duration)
+final case class CacheKey(
+    method:            HttpMethod,
+    url:               String,
+    headers:           Map[String, String],
+    params:            Map[String, String],
+    checkSsl:          Boolean,
+    connectionTimeout: Duration,
+    readTimeOut:       Duration
+)
+
 /*
- * Timeout are given in Milleseconds
+ * This implementation uses a cache for nodes, so that is several datasources use the same URL for a node,
+ * only one query is done. Cache is limited in size (you should not limit that, else cache will be mostly ineffective,
+ * since a set of nodes will evicted before being used in next datasource (update is done by datasource, not by node)
+ */
+class QueryHttpServiceImpl(useCache: Option[CacheParameters]) extends QueryHttpService {
+
+  val cache = useCache.map { p =>
+    val c: Cache[CacheKey, RudderError, Option[String]] = ZioRuntime.unsafeRun(
+      Cache.make(
+        p.cacheMaxItems,
+        p.cacheDuration,
+        Lookup((key: CacheKey) =>
+          QueryHttp.QUERY(key.method, key.url, key.headers, key.params, key.checkSsl, key.connectionTimeout, key.readTimeOut)
+        )
+      )
+    )
+    c
+  }
+
+  override def resetCache: UIO[Unit] = {
+    cache match {
+      case None    => ZIO.unit
+      case Some(c) => c.invalidateAll
+    }
+  }
+
+  override def QUERY(
+      method:            HttpMethod,
+      url:               String,
+      headers:           Map[String, String],
+      params:            Map[String, String],
+      checkSsl:          Boolean,
+      connectionTimeout: Duration,
+      readTimeOut:       Duration
+  ): IOResult[Option[String]] = {
+    cache match {
+      case None    => QueryHttp.QUERY(method, url, headers, params, checkSsl, connectionTimeout, readTimeOut)
+      case Some(c) => c.get(CacheKey(method, url, headers, params, checkSsl, connectionTimeout, readTimeOut))
+    }
+  }
+}
+
+/*
+ * Timeout are given in Milliseconds
  */
 object QueryHttp {
 
@@ -206,6 +280,7 @@ object QueryHttp {
     }
 
     for {
+      _        <- DataSourceLoggerPure.trace(s"Executing datasource request ${method.name} ${url}...")
       response <- IOResult.effect(client.asString)
       result   <- if (response.isSuccess) {
                     Some(response.body).succeed
