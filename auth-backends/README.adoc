@@ -12,7 +12,8 @@ other general information.
 
 = Authentication backends
 
-This plugins allows to use alternative authentication backends for Rudder: *SAMLv2*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
+This plugins allows to use alternative authentication backends for Rudder: *OAuth 2.0*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
+The old *radius module is discountinued* as of Rudder 8.0.
 
 Each authentication method is detailed below. Users are expected to know how an authentication system works independently of Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
 
@@ -446,11 +447,11 @@ Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several norm
 [notice]
 ====
 
-We advise to use OICD over SAMLv2 if possible.
+We advise to use OIDC over OAuth 2.0 if possible.
 
 ====
 
-To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAUTHv2` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider.
+To use these providers, you need to update the `rudder.auth.provider` property with the `oauth2` value for an `OAuth 2.0` identity provider, and with the `oidc` value for an `OpenID Connect` identity provider.
 
 As always, you can have several back-ends configured for fall-back authentication. For example, to use `OIDC` with a fall-back to the Rudder file based authentication, use:
 
@@ -581,7 +582,7 @@ rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
 # enable Rudder user role provisioning by the OIDC IdP. use `true` or `false` (default)
 rudder.auth.oauth2.provider.okta.roles.enabled=true
 #Name of the OIDC token attribute that will hold rudder roles. This is something that you identity provider
-#administrator will give you. The attribute value must be a SAML list of string, ie in the format:
+#administrator will give you. The attribute value must be a OAuth list of string, ie in the format:
 #  attribute: [role-oidc-a, role-oidc-b, etc]
 #Each string will be mapped to a rudder role (or ignored if no matching is found). Default value: empty.
 rudder.auth.oauth2.provider.okta.roles.attribute=rudderroles
