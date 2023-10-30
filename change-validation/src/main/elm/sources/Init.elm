@@ -26,7 +26,7 @@ addToast toast conf  m =
 defaultConfig : Toasty.Config Msg
 defaultConfig =
   Toasty.Defaults.config
-    |> Toasty.delay 3.0
+    |> Toasty.delay 30000
     |> Toasty.containerAttrs
         [ style "position" "fixed"
         , style "top" "50px"
