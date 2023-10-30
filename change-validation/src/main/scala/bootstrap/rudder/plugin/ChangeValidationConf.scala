@@ -44,6 +44,7 @@ import bootstrap.liftweb.RudderConfig.restDataSerializer
 import bootstrap.liftweb.RudderConfig.restExtractorService
 import bootstrap.liftweb.RudderConfig.techniqueRepository
 import bootstrap.liftweb.RudderConfig.workflowLevelService
+
 import com.normation.box._
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
@@ -57,11 +58,11 @@ import com.normation.plugins.changevalidation.NotificationService
 import com.normation.plugins.changevalidation.RoChangeRequestJdbcRepository
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoValidatedUserJdbcRepository
+import com.normation.plugins.changevalidation.RoValidatedUserRepository
 import com.normation.plugins.changevalidation.RoWorkflowJdbcRepository
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
-import com.normation.plugins.changevalidation.UserValidationNeeded
 import com.normation.plugins.changevalidation.ValidatedUserMapper
 import com.normation.plugins.changevalidation.ValidationNeeded
 import com.normation.plugins.changevalidation.WoChangeRequestJdbcRepository
@@ -73,17 +74,13 @@ import com.normation.plugins.changevalidation.api.ChangeRequestApi
 import com.normation.plugins.changevalidation.api.ChangeRequestApiImpl
 import com.normation.plugins.changevalidation.api.SupervisedTargetsApi
 import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
+import com.normation.plugins.changevalidation.api.ValidatedUserApi
 import com.normation.plugins.changevalidation.api.ValidatedUserApiImpl
-import com.normation.rudder.AuthorizationType
-import com.normation.rudder.AuthorizationType.Deployer
-import com.normation.rudder.AuthorizationType.Validator
-import com.normation.rudder.api.ApiAclElement
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.rest.ApiModuleProvider
-import com.normation.rudder.rest.AuthorizationApiMapping
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -93,8 +90,10 @@ import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
+
 import java.nio.file.Paths
 import net.liftweb.common.Box
+import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 
 /*
@@ -105,7 +104,8 @@ class ChangeValidationWorkflowLevelService(
     defaultWorkflowService:    WorkflowService,
     validationWorkflowService: TwoValidationStepsWorkflowServiceImpl,
     validationNeeded:          Seq[ValidationNeeded],
-    workflowEnabledByUser:     () => Box[Boolean]
+    workflowEnabledByUser:     () => Box[Boolean],
+    validatedUserRepo:         RoValidatedUserRepository
 ) extends WorkflowLevelService {
 
   override def workflowLevelAllowsEnable: Boolean = status.isEnabled()
@@ -134,7 +134,8 @@ class ChangeValidationWorkflowLevelService(
   }
 
   /**
-   * Methode to use to combine several validationNeeded check. It's the same for all objects?
+   * Methode to use to combine several validationNeeded check.
+   * Note that a validated user will prevent workflow to be performed, no other validationNeeded check will be executed
    */
   def combine[T](
       checkFn: (ValidationNeeded, EventActor, T) => Box[Boolean],
@@ -142,14 +143,30 @@ class ChangeValidationWorkflowLevelService(
       actor:   EventActor,
       change:  T
   ): Box[WorkflowService] = {
-    getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) {
-      case (shouldValidate, nextCheck) =>
-        shouldValidate.flatMap {
-          // logic is "or": if previous should validate is true, don't check following
-          case true  => Full(true)
-          case false => checkFn(nextCheck, actor, change)
-        }
-    })
+    def getWorkflowAux = {
+      getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) {
+        case (shouldValidate, nextCheck) =>
+          shouldValidate.flatMap {
+            // logic is "or": if previous should validate is true, don't check following
+            case true  => Full(true)
+            case false => checkFn(nextCheck, actor, change)
+          }
+      })
+    }
+
+    /*
+     * Here we check if there is a validated user that should not be subject to any validation workflow
+     * if there is no validated user, we iterate over `checks: Seq[ValidationNeeded]` to verify if there
+     * there is a specific workflow.
+     *
+     * Check why we decided to separate the validated user logic from `ValidationNeeded` objects :
+     * https://issues.rudder.io/issues/22188#note-5
+     */
+    validatedUserRepo.get(actor) match {
+      case Full(Some(e)) => getWorkflow(Full(false))
+      case Full(None)    => getWorkflowAux
+      case eb: EmptyBox => eb ?~ s"Could get user from validated user list when checking validation workflow"
+    }
   }
 
   override def getForRule(actor: EventActor, change: RuleChangeRequest):               Box[WorkflowService] = {
@@ -266,10 +283,10 @@ object ChangeValidationConf extends RudderPluginModule {
           RudderConfig.roRuleRepository,
           RudderConfig.roNodeGroupRepository,
           RudderConfig.nodeInfoService
-        ),
-        new UserValidationNeeded(roValidatedUserRepository)
+        )
       ),
-      () => RudderConfig.configService.rudder_workflow_enabled().toBox
+      () => RudderConfig.configService.rudder_workflow_enabled().toBox,
+      roValidatedUserRepository
     )
   )
 
@@ -305,29 +322,7 @@ object ChangeValidationConf extends RudderPluginModule {
     )
     new LiftApiModuleProvider[EndpointSchema] {
       override def schemas = new ApiModuleProvider[EndpointSchema] {
-        override def endpoints = SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints
-
-        import AuthorizationApiMapping.ToAuthz
-
-        /*
-         * Here, rights are not sufficiently precise: the check need to know the value
-         * of the "status" parameter to decide if a validator (resp a deployer) can do
-         * what he asked for.
-         */
-        override def authorizationApiMapping: AuthorizationApiMapping = new AuthorizationApiMapping {
-          override def mapAuthorization(authz: AuthorizationType): List[ApiAclElement] = {
-            authz match {
-              case Deployer.Read   => ChangeRequestApi.ListChangeRequests.x :: ChangeRequestApi.ChangeRequestsDetails.x :: Nil
-              case Deployer.Write  => ChangeRequestApi.DeclineRequestsDetails.x :: ChangeRequestApi.AcceptRequestsDetails.x :: Nil
-              case Deployer.Edit   => ChangeRequestApi.UpdateRequestsDetails.x :: Nil
-              case Validator.Read  => ChangeRequestApi.ListChangeRequests.x :: ChangeRequestApi.ChangeRequestsDetails.x :: Nil
-              case Validator.Write => ChangeRequestApi.DeclineRequestsDetails.x :: ChangeRequestApi.AcceptRequestsDetails.x :: Nil
-              case Validator.Edit  => ChangeRequestApi.UpdateRequestsDetails.x :: Nil
-
-              case _ => Nil
-            }
-          }
-        }
+        override def endpoints = ValidatedUserApi.endpoints ::: SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints
       }
 
       override def getLiftEndpoints(): List[LiftApiModule] =
