@@ -45,6 +45,8 @@ import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GlobalParameter
+import com.normation.rudder.domain.properties.NodeProperty
+import com.normation.rudder.domain.properties.PropertyProvider
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
@@ -83,6 +85,54 @@ trait QueryDataSourceService {
    * A version that only query one node - do not use if you want to query several nodes
    */
   def queryOne(datasource: DataSource, nodeId: NodeId, cause: UpdateCause): IOResult[NodeUpdateResult]
+
+  /*
+   * We can delete a datasource on all nodes
+   */
+  def deleteAll(datasource: DataSourceId, cause: UpdateCause): IOResult[Set[NodeUpdateResult]]
+}
+
+object QueryService {
+
+  /*
+   * Utility method that handle updating a node with given property value
+   * for given datasource
+   */
+  def updateNode(
+      nodeInfo:          NodeInfo,
+      repository:        WoNodeRepository,
+      optProperty:       Option[NodeProperty],
+      cause:             UpdateCause,
+      enforceSameOrigin: Boolean // for deletion, we want to be able to remove only prop set by datasource provider
+  ): IOResult[NodeUpdateResult] = {
+    optProperty match {
+      // on none, don't update anything, the life is wonderful (because 'none' means 'don't update')
+      case None           => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
+      case Some(property) =>
+        // look for the property value in the node to know if an update is needed.
+        // If enforceSameOrigin is true, we only touch the property if it's default or datasource owned. 
+        nodeInfo.properties.find(_.name == property.name) match {
+          case Some(p) if (p.value == property.value) => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
+          case Some(p)
+              if (enforceSameOrigin && p.provider.getOrElse(PropertyProvider.defaultPropertyProvider) != property.provider
+                .getOrElse(PropertyProvider.defaultPropertyProvider)) =>
+            NodeUpdateResult.Unchanged(nodeInfo.id).succeed
+          case _                                      =>
+            for {
+              newProps    <- CompareProperties.updateProperties(nodeInfo.properties, Some(property :: Nil)).toIO
+              newNode      = nodeInfo.node.copy(properties = newProps)
+              nodeUpdated <-
+                repository
+                  .updateNode(newNode, cause.modId, cause.actor, cause.reason)
+                  .chainError(
+                    s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
+                  )
+            } yield {
+              NodeUpdateResult.Updated(nodeUpdated.id)
+            }
+        }
+    }
+  }
 }
 
 /**
@@ -200,29 +250,7 @@ class HttpQueryDataSourceService(
                         datasource.requestTimeOut,
                         datasource.requestTimeOut
                       )
-      nodeResult   <- optProperty match {
-                        // on none, don't update anything, the life is wonderful (because 'none' means 'don't update')
-                        case None           => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
-                        case Some(property) =>
-                          // look for the property value in the node to know if an update is needed.
-                          // we only care about value here (not provider or other meta-info)
-                          nodeInfo.properties.find(_.name == property.name).map(_.value) match {
-                            case Some(value) if (value == property.value) => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
-                            case _                                        =>
-                              for {
-                                newProps    <- CompareProperties.updateProperties(nodeInfo.properties, Some(property :: Nil)).toIO
-                                newNode      = nodeInfo.node.copy(properties = newProps)
-                                nodeUpdated <-
-                                  nodeRepository
-                                    .updateNode(newNode, cause.modId, cause.actor, cause.reason)
-                                    .chainError(
-                                      s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
-                                    )
-                              } yield {
-                                NodeUpdateResult.Updated(nodeUpdated.id)
-                              }
-                          }
-                      }
+      nodeResult   <- QueryService.updateNode(nodeInfo, nodeRepository, optProperty, cause, enforceSameOrigin = false)
     } yield {
       nodeResult
     }).chainError(
@@ -319,6 +347,17 @@ class HttpQueryDataSourceService(
     } yield {
       updated
     }
+  }
+
+  override def deleteAll(datasource: DataSourceId, cause: UpdateCause): IOResult[Set[NodeUpdateResult]] = {
+    import com.normation.rudder.domain.properties.GenericProperty._
+    val deleteProp = DataSource.nodeProperty(datasource.value, "".toConfigValue)
+    for {
+      nodes <- nodeInfo.getAll()
+      res   <- ZIO.foreach(nodes.values)(node =>
+                 QueryService.updateNode(node, nodeRepository, Some(deleteProp), cause, enforceSameOrigin = true)
+               )
+    } yield res.toSet
   }
 
   def queryNodeByNode(

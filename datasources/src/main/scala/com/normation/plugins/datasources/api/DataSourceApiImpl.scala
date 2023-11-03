@@ -336,7 +336,14 @@ class DataSourceApiImpl(
     ): LiftResponse = {
 
       val res = for {
-        source <- dataSourceRepo.delete(DataSourceId(sourceId))
+        source <- dataSourceRepo.delete(
+                    DataSourceId(sourceId),
+                    UpdateCause(
+                      ModificationId(uuidGen.newUuid),
+                      authzToken.actor,
+                      Some(s"Deletion of datasource '${sourceId}' requested by API")
+                    )
+                  )
       } yield {
         JArray((("id" -> sourceId) ~ ("message" -> s"Data source ${sourceId} deleted")) :: Nil)
       }
