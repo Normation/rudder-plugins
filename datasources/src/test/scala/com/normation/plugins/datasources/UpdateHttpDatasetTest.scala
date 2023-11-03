@@ -70,6 +70,7 @@ import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
 import com.normation.zio._
 import com.normation.zio.ZioRuntime
+import com.softwaremill.quicklens._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import net.liftweb.common._
@@ -277,15 +278,23 @@ object CmdbServer {
         Response.text("""{"foo":"bar"}""")
       }
 
-    case GET -> !! / "server"       =>
+    case GET -> !! / "server" =>
       counterSuccess.update(_ + 1) *>
       ZIO.succeed {
         Response.text("""{"hostname":"server.rudder.local"}""")
       }
+
     case GET -> !! / "hostnameJson" =>
       counterSuccess.update(_ + 1) *>
       ZIO.succeed {
         Response.text(hostnameJson)
+      }
+
+    case GET -> !! / "lifecycle" / id =>
+      counterSuccess.update(_ + 1) *>
+      ZIO.succeed {
+        if (id == "node1") Response.status(Status.NotFound)
+        else Response.text("1")
       }
 
     case GET -> !! / "404" =>
@@ -912,6 +921,63 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     fiberRunning(r11) and (r12 must beEqualTo(Fiber.Status.Done)) and fiberRunning(r21)
+  }
+
+  "a datasource creation, node update, deletion should create properties and then delete them" >> {
+    // set the variable by hand for node1 and node2. Node2 will have it overridden and then deleted, node1 kept (b/c 404 for datasources)
+    val id    = DataSourceId("test-ds-lifecycle")
+    val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo.map {
+      case (NodeId("node1"), n) =>
+        (n.id, n.modify(_.node.properties).using(NodeProperty(id.value, "do not touch".toConfigValue, None, None) :: _))
+      case (NodeId("node2"), n) =>
+        (n.id, n.modify(_.node.properties).using(NodeProperty(id.value, "should be updated".toConfigValue, None, None) :: _))
+      case (k, v)               => (k, v)
+    })
+    val repos = new DataSourceRepoImpl(
+      new MemoryDataSourceRepository(),
+      new HttpQueryDataSourceService(
+        infos,
+        parameterRepo,
+        infos,
+        interpolation,
+        noPostHook,
+        () => alwaysEnforce.succeed
+      ),
+      MyDatasource.uuidGen,
+      AlwaysEnabledPluginStatus
+    )
+
+    def getProps(nodes: Map[NodeId, NodeInfo]) = {
+      nodes.collect {
+        case (k, n) => n.properties.find(_.name == id.value).map(p => (k.value, p.value.unwrapped()))
+      }.flatten.toMap
+    }
+
+    val datasource = NewDataSource(
+      name = id.value,
+      url = s"${REST_SERVER_URL}/lifecycle/$${rudder.node.id}", // this one does not set the prop for node1 else return 1
+      path = "$",
+      schedule = Scheduled(5.minute),
+      onMissing = MissingNodeBehavior.NoChange
+    )
+
+    val p0 = getProps(infos.getAll().runNow)
+
+    val (n1, n2) = (for {
+      _      <- repos.save(datasource) // init
+      _      <- repos.onUserAskUpdateAllNodesFor(actor, id)
+      // check nodes have the property now
+      nodes1 <- infos.getAll()
+      // now delete datasource
+      _      <- repos.delete(datasource.id, UpdateCause(ModificationId("test"), actor, None))
+      // property must be deleted now
+      nodes2 <- infos.getAll()
+    } yield (nodes1, nodes2))
+      .runTimeout(1.minute)
+
+    (p0 must containTheSameElementsAs(List("node1" -> "do not touch", "node2" -> "should be updated"))) and
+    (getProps(n1) must containTheSameElementsAs(List("root" -> "1", "node1" -> "do not touch", "node2" -> "1"))) and
+    (getProps(n2) must containTheSameElementsAs(List("node1" -> "do not touch")))
   }
 
   "querying a lot of nodes" should {
