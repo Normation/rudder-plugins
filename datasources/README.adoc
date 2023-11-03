@@ -172,4 +172,8 @@ You need to choose one behavior among:
 - Do not change the node property corresponding to that data source,
 - Set the node property corresponding to the data source to a configured value. You have access to a field to fill the value, where JSON is accepted. If the field is let empty, the node property is deleted (ie equivalent to first option).
 
+== Deleting a data source
 
+When a data source is deleted, the corresponding properties on nodes will also be deleted if and only if they were set by the data source (ie property
+name is data source `ID` and property `provider` is `datasources` plugin).
+If you don't want to delete properties linked to a data source, you should only disable it in place of deleting it. 
