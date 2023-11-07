@@ -83,7 +83,7 @@ trait DataSourceRepository {
 
   def save(source: DataSource): IOResult[DataSource]
 
-  def delete(id: DataSourceId): IOResult[DataSourceId]
+  def delete(id: DataSourceId, cause: UpdateCause): IOResult[DataSourceId]
 }
 
 /*
@@ -141,7 +141,8 @@ class MemoryDataSourceRepository extends DataSourceRepository {
 
   def save(source: DataSource) = sourcesRef.update(sources => sources + ((source.id, source))) *> source.succeed
 
-  def delete(id: DataSourceId): IOResult[DataSourceId] = sourcesRef.update(sources => sources - (id)) *> id.succeed
+  def delete(id: DataSourceId, cause: UpdateCause): IOResult[DataSourceId] =
+    sourcesRef.update(sources => sources - (id)) *> id.succeed
 }
 
 /**
@@ -297,10 +298,16 @@ class DataSourceRepoImpl(
   /*
    * delete need to clean existing live resource
    */
-  override def delete(id: DataSourceId): IOResult[DataSourceId] = dataSourcesLock.withPermit {
+  override def delete(id: DataSourceId, cause: UpdateCause): IOResult[DataSourceId] = dataSourcesLock.withPermit {
     // start by cleaning
     datasources.delete(id) *>
-    backend.delete(id)
+    backend.delete(id, cause) *>
+    fetch.deleteAll(id, cause) *>
+    DataSourceLoggerPure
+      .info(
+        s"Datasource with id '${id.value}' was correctly deleted and relative node properties deleted. Cause: ${cause}"
+      )
+      .map(_ => id)
   }
 
   ///
@@ -484,7 +491,7 @@ class DataSourceJdbcRepository(
     }
   }
 
-  override def delete(sourceId: DataSourceId): IOResult[DataSourceId] = {
+  override def delete(sourceId: DataSourceId, cause: UpdateCause): IOResult[DataSourceId] = {
     val query = sql"""delete from datasources where id = ${sourceId}"""
     transactIOResult(s"Error when deleting datasource '${sourceId.value}'")(xa =>
       query.update.run.map(_ => sourceId).transact(xa)
