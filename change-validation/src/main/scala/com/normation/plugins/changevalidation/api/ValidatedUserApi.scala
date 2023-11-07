@@ -54,6 +54,8 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.AuthorizationType
+
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
@@ -74,6 +76,7 @@ object ValidatedUserApi       extends ApiModuleProvider[ValidatedUserApi] {
     val (action, path) = GET / "users"
 
     override def dataContainer: Option[String] = None
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
   final case object DeleteValidatedUsersDetails extends ValidatedUserApi with OneParam with StartsAtVersion3 with SortIndex  {
     val z              = implicitly[Line].value

@@ -81,6 +81,7 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     val description    = "Get information about registered users in Rudder"
     val (action, path) = GET / "usermanagement" / "users"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
     override def dataContainer: Option[String] = None
   }
 
@@ -89,6 +90,7 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     val description    = "Get roles and their authorizations"
     val (action, path) = GET / "usermanagement" / "roles"
 
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
     override def dataContainer: Option[String] = None
   }
 

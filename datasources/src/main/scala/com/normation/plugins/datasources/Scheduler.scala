@@ -37,7 +37,6 @@
 
 package com.normation.plugins.datasources
 
-import com.github.ghik.silencer.silent
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
@@ -45,6 +44,7 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.domain.eventlog._
 import com.normation.zio._
+import scala.annotation.nowarn
 import zio._
 import zio.syntax._
 
@@ -83,7 +83,7 @@ class DataSourceScheduler(
   private[this] val semaphore = Semaphore.make(1).runNow
 
   // for that datasource, this is the timer
-    private[datasources] val source: UIO[Unit] = {
+  private[datasources] val source: UIO[Unit] = {
     val never = Schedule.stop
 
     val schedule = datasource.runParam.schedule match {
@@ -93,8 +93,8 @@ class DataSourceScheduler(
             s"Datasource '${datasource.name.value}' (${datasource.id.value}) is enabled and scheduled every ${d.asScala.toMinutes.toString} minutes"
           ) *>
           // This historical semantic is "do a sync immediately and then one spaced every 'd'"
-          Schedule.once.andThen(Schedule.spaced(d)).succeed: @silent(
-            "a type was inferred to be `\\w+`; this may indicate a programming error."
+          Schedule.once.andThen(Schedule.spaced(d)).succeed: @nowarn(
+            "msg=a type was inferred to be `\\w+`; this may indicate a programming error."
           )
 
         } else {
@@ -108,7 +108,7 @@ class DataSourceScheduler(
         never.succeed
     }
 
-    val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value}): ${schedule}"
+    val msg = s"Automatically fetching data for data source '${datasource.name.value}' (${datasource.id.value})"
 
     // The full action with logging. We don't want it to be able to fail, because it would stop
     // future update. So we catch all error and log them (in debug because they are (should) already log in error, we
