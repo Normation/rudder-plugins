@@ -37,11 +37,10 @@
 
 package com.normation.plugins.datasources.api
 
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.HttpAction._
 import com.normation.rudder.rest._
 import com.normation.rudder.rest.EndpointSchema.syntax._
-import com.normation.rudder.AuthorizationType
-
 import sourcecode.Line
 
 sealed trait DataSourceApi extends EndpointSchema with GeneralApi with SortIndex
@@ -114,8 +113,8 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Get the list of all defined datasources"
     val (action, path) = GET / "datasources"
 
-    override def dataContainer: Option[String] = None
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
   final case object GetDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
@@ -123,8 +122,8 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Get information about the given datasource"
     val (action, path) = GET / "datasources" / "{datasourceid}"
 
-    override def dataContainer: Option[String] = None
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
   final case object DeleteDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
