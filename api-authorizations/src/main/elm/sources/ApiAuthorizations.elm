@@ -159,7 +159,9 @@ displayCategory acl cat =
       div [class "acl-category"]
       [ input[type_ "checkbox", id toggleId, class "toggle-checkbox"][]
       , div[class "category-header"]
-        [ i [class "fa fa-caret-down"][]
+        [ label [for toggleId, class "category-toggle-caret"]
+          [ i [class "fa fa-caret-down"][]
+          ]
         , label [for toggleId]
           [ text cat.category
           , span [class ("badge badge-secondary " ++ if nbSelected <= 0 then "empty" else "")][text (String.fromInt nbSelected)]
