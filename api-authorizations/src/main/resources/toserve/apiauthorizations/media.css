@@ -68,13 +68,17 @@
 .acl-category .toggle-checkbox:not(:checked) + .category-header{
   margin-bottom: 8px;
 }
+.acl-category .category-header .category-toggle-caret{
+   flex: 0 1 40px;
+   font-size: inherit;
+}
 .acl-category .category-header label{
   margin: 0;
   text-transform: capitalize;
   font-size: 22px;
   font-weight: normal;
   flex: 1;
-  padding: 4px 0 4px 40px;
+  padding: 4px 0;
   cursor: pointer;
 }
 .acl-category .category-header > label .badge.badge-secondary{
