@@ -37,18 +37,10 @@
 
 package com.normation.plugins.openscappolicies
 
-import bootstrap.liftweb.Boot
 import bootstrap.rudder.plugin.OpenscapPoliciesConf
 import com.normation.plugins._
-import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
 
 class OpenscapPoliciesPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
