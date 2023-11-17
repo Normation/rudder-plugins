@@ -47,11 +47,12 @@ import com.normation.plugins.datasources.api.DataSourceApiImpl
 import com.normation.rudder.batch.AsyncDeploymentActor
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
+import com.normation.rudder.facts.nodes.CoreNodeFactChangeEventCallback
+import com.normation.rudder.facts.nodes.NodeFactChangeEvent
 import com.normation.rudder.services.policies.PromiseGenerationHooks
-import com.normation.rudder.services.servers.NewNodePostAcceptHooks
-import com.normation.zio._
 import net.liftweb.common.Box
 import org.joda.time.DateTime
+import zio._
 
 /*
  * An update hook which triggers a configuration generation if needed
@@ -99,15 +100,17 @@ object DatasourcesConf extends RudderPluginModule {
     }
   })
 
-  Cfg.newNodeManagerHooks.appendPostAcceptCodeHook(new NewNodePostAcceptHooks {
-    override def name: String = {
-      "update-datasource-new-node"
-    }
-
-    override def run(nodeId: NodeId): Unit = {
-      dataSourceRepository.onNewNode(nodeId).runNow
-    }
-  })
+  Cfg.nodeFactRepository.registerChangeCallbackAction(
+    CoreNodeFactChangeEventCallback(
+      "update-datasource-new-node",
+      ev => {
+        ev.event match {
+          case NodeFactChangeEvent.Accepted(node, _) => dataSourceRepository.onNewNode(node.id)
+          case _                                     => ZIO.unit
+        }
+      }
+    )
+  )
 
   val dataSourceApi9 = new DataSourceApiImpl(
     Cfg.restExtractorService,

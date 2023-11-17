@@ -519,7 +519,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
     // NodeInfoService
     def getAll() = synchronized(Full(nodes)).toIO
-    def getNumberOfManagedNodes: Int = nodes.size - 1
+    def getNumberOfManagedNodes: IOResult[Int] = (nodes.size - 1).succeed
     def getAllNodes()                                                                                              = throw new IllegalAccessException("Thou shall not used that method here")
     def getAllSystemNodeIds()                                                                                      = throw new IllegalAccessException("Thou shall not used that method here")
     def getDeletedNodeInfoPure(nodeId: NodeId)                                                                     = throw new IllegalAccessException("Thou shall not used that method here")
