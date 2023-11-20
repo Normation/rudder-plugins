@@ -51,7 +51,7 @@
     <dependency>
       <groupId>com.github.spullara.mustache.java</groupId>
       <artifactId>compiler</artifactId>
-      <version>0.9.10</version>
+      <version>0.9.11</version>
     </dependency>
     <dependency>
       <groupId>com.sun.mail</groupId>
@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.github.davidmoten</groupId>
       <artifactId>subethasmtp</artifactId>
-      <version>6.0.6</version>
+      <version>6.0.7</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

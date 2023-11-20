@@ -112,7 +112,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
 
   val grantTypes = {
     import AuthorizationGrantType._
-    List(AUTHORIZATION_CODE, REFRESH_TOKEN, CLIENT_CREDENTIALS, PASSWORD) // IMPLICIT is deprecated for security reason
+    List(AUTHORIZATION_CODE, REFRESH_TOKEN, CLIENT_CREDENTIALS, new AuthorizationGrantType("password")) // IMPLICIT is deprecated for security reason
   }
 
   val baseProperty = "rudder.auth.oauth2.provider"
