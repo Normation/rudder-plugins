@@ -43,21 +43,30 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueType
 
+trait AuthBackendsRepository {
+
+  /**
+    * Attempt to get the configuration for the authentication backends
+    */
+  def getConfigOption(): JsonAuthConfiguration
+
+}
+
 /*
  * This class handle the translation between configuration files
  * for authentication and information that can be presented to the
  * user.
  */
-class AuthBackendsRepository(
+class AuthBackendsRepositoryImpl(
     authService:      AuthBackendProvidersManager,
     configParameters: Config
-) {
+) extends AuthBackendsRepository {
 
   /**
    * Get all information about the currently configured back-ends in a
    * format that can be understood by client side.
    */
-  def getConfigOption(): Either[Exception, JsonAuthConfiguration] = {
+  def getConfigOption(): JsonAuthConfiguration = {
 
     // utility method which look in "config" for the key and
     // return an ConfigOption for the value, with an empty value
@@ -161,8 +170,6 @@ class AuthBackendsRepository(
 
     val usedOrder = authService.getConfiguredProviders().map(_.name)
 
-    Right(
-      JsonAuthConfiguration(configuredOrder, usedOrder, rootAdmin, file, ldap)
-    )
+    JsonAuthConfiguration(configuredOrder, usedOrder, rootAdmin, file, ldap)
   }
 }

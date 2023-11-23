@@ -61,7 +61,6 @@ object ApiAuthorizationsConf extends RudderPluginModule {
   RudderConfig.apiAuthorizationLevelService.overrideLevel(new AclLevel(pluginStatusService))
 
   lazy val userApi   = new UserApi(
-    RudderConfig.restExtractorService,
     RudderConfig.roApiAccountRepository,
     RudderConfig.woApiAccountRepository,
     RudderConfig.tokenGenerator,

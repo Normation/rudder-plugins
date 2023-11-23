@@ -1,0 +1,65 @@
+description: Get information about current authentication configuration
+method: GET
+url: /secure/api/authbackends/current-configuration
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "getAuthenticationInformation",
+      "result" : "success",
+      "data" : {
+        "declaredProviders" : "provider1, provider2",
+        "computedProviders" : [
+          "provider1",
+          "provider2"
+        ],
+        "adminConfig" : {
+          "description" : "Admin configuration",
+          "login" : {
+            "description" : "Login description",
+            "key" : "loginKey",
+            "value" : "loginValue"
+          },
+          "password" : {
+            "description" : "Password description",
+            "key" : "passwordKey",
+            "value" : "passwordValue"
+          },
+          "enabled" : true
+        },
+        "fileConfig" : {
+          "providerId" : "fileProvider",
+          "description" : "File configuration",
+          "filePath" : "/path/to/file"
+        },
+        "ldapConfig" : {
+          "providerId" : "ldapProvider",
+          "description" : "LDAP configuration",
+          "ldapUrl" : {
+            "description" : "LDAP URL description",
+            "key" : "ldapUrlKey",
+            "value" : "ldapUrlValue"
+          },
+          "bindDn" : {
+            "description" : "Bind DN description",
+            "key" : "bindDnKey",
+            "value" : "bindDnValue"
+          },
+          "bindPassword" : {
+            "description" : "Bind password description",
+            "key" : "bindPasswordKey",
+            "value" : "bindPasswordValue"
+          },
+          "searchBase" : {
+            "description" : "Search base description",
+            "key" : "searchBaseKey",
+            "value" : "searchBaseValue"
+          },
+          "ldapFilter" : {
+            "description" : "LDAP filter description",
+            "key" : "ldapFilterKey",
+            "value" : "ldapFilterValue"
+          }
+        }
+      }
+    }

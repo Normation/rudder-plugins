@@ -1,0 +1,110 @@
+description: Get information about user personal UserApi token
+method: GET
+url: /secure/api/user/api/token
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 200
+  content: >-
+    {
+     "action" : "getApiToken",
+     "result" : "success",
+     "data" : {
+       "accounts" : [
+          {
+            "id" : "user1",
+            "name" : "user1",
+            "token" : "",
+            "tokenGenerationDate" : "2023-10-10T10:10:10Z",
+            "kind" : "system",
+            "description" : "number one user",
+            "creationDate" : "2023-10-10T10:10:10Z",
+            "enabled" : true,
+            "expirationDateDefined" : false
+          }
+        ]
+      }
+    }
+---
+description: Update user personal UserApi token
+method: POST
+url: /secure/api/user/api/token
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "updateApiToken",
+      "result" : "success",
+      "data" : {
+        "accounts" : [
+          {
+            "id" : "user1",
+            "name" : "user1",
+            "token" : "",
+            "tokenGenerationDate" : "2023-10-10T10:10:10Z",
+            "kind" : "system",
+            "description" : "number one user",
+            "creationDate" : "2023-10-10T10:10:10Z",
+            "enabled" : true,
+            "expirationDateDefined" : false
+          }
+        ]
+      }
+    }
+---
+description: Create user personal UserApi token
+method: PUT
+url: /secure/api/user/api/token
+headers:
+  - "Content-Type: application/json"
+body: >-
+  {
+    "name": "user1",
+    "description": "number one user"
+  }
+response:
+  code: 200
+  content: >-
+    {
+     "action" : "createApiToken",
+     "result" : "success",
+     "data" : {
+       "accounts" : [
+          {
+            "id" : "user1",
+            "name" : "user1",
+            "token" : "generated-test-token",
+            "tokenGenerationDate" : "2023-12-12T13:12:12+01:00",
+            "kind" : "user",
+            "description" : "API token for user 'user1'",
+            "creationDate" : "2023-12-12T13:12:12+01:00",
+            "enabled" : true,
+            "expirationDateDefined" : false
+          }
+        ]
+      }
+    }
+---
+description: Delete user personal UserApi token
+method: DELETE
+url: /secure/api/user/api/token
+headers:
+  - "Content-Type: application/json"
+body: >-
+  {
+    "name": "user1"
+  }
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "deleteApiToken",
+      "result" : "success",
+      "data" : {
+        "accounts" : {
+          "id" : "user1"
+        }
+      }
+    }

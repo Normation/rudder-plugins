@@ -47,6 +47,7 @@ import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
+import zio.json._
 
 class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag[ApiAccounts])
     extends PluginExtensionPoint[ApiAccounts] with Loggable {
@@ -76,11 +77,8 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
    */
   def render(xml: NodeSeq) = {
     // get all apis and for public one, and create the structure
-    import net.liftweb.json._
-    import net.liftweb.json.Serialization.write
     import net.liftweb.http.js.JsCmds._
     import net.liftweb.http.js.JE._
-    implicit val formats = Serialization.formats(NoTypeHints)
 
     val categories = ((AllApi.api ++ PluginsInfo.pluginApisDef)
       .filter(x => x.kind == ApiKind.Public || x.kind == ApiKind.General)
@@ -94,7 +92,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
       })
       .toList
       .sortBy(_.category)
-    val json       = write(categories)
+    val json       = categories.toJson
 
     // now, add declaration of a JS variable: var rudderApis = [{ ... }]
     xml ++ Script(JsRaw(s"""var rudderApis = $json;"""))
@@ -159,5 +157,13 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
  * JSON representation of API (grouped in categories).
  * These class must be top-level, else liftweb-json gets mad and capture of outer()...
  */
-final case class JsonApi(name: String, description: String, path: String, verb: String)
-final case class JsonCategory(category: String, apis: List[JsonApi])
+final private case class JsonApi(name: String, description: String, path: String, verb: String)
+final private case class JsonCategory(category: String, apis: List[JsonApi])
+
+private object JsonApi {
+  implicit val encoder: JsonEncoder[JsonApi] = DeriveJsonEncoder.gen[JsonApi]
+}
+
+private object JsonCategory {
+  implicit val encoder: JsonEncoder[JsonCategory] = DeriveJsonEncoder.gen[JsonCategory]
+}

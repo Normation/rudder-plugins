@@ -46,7 +46,7 @@ import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.authbackends.AuthBackendsLogger
 import com.normation.plugins.authbackends.AuthBackendsLoggerPure
 import com.normation.plugins.authbackends.AuthBackendsPluginDef
-import com.normation.plugins.authbackends.AuthBackendsRepository
+import com.normation.plugins.authbackends.AuthBackendsRepositoryImpl
 import com.normation.plugins.authbackends.CheckRudderPluginEnableImpl
 import com.normation.plugins.authbackends.LoginFormRendering
 import com.normation.plugins.authbackends.RudderClientRegistration
@@ -167,8 +167,7 @@ object AuthBackendsConf extends RudderPluginModule {
   lazy val pluginDef = new AuthBackendsPluginDef(AuthBackendsConf.pluginStatusService)
 
   lazy val api = new AuthBackendsApiImpl(
-    RudderConfig.restExtractorService,
-    new AuthBackendsRepository(RudderConfig.authenticationProviders, RudderProperties.config)
+    new AuthBackendsRepositoryImpl(RudderConfig.authenticationProviders, RudderProperties.config)
   )
 
   lazy val loginFormRendering: LoginFormRendering = {
