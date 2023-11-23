@@ -39,11 +39,8 @@ package com.normation.plugins.authbackends
 
 import com.normation.NamedZioLogger
 import net.liftweb.common.Logger
-import net.liftweb.json.Extraction
-import net.liftweb.json.Formats
-import net.liftweb.json.JsonAST.JValue
-import net.liftweb.json.NoTypeHints
 import org.slf4j.LoggerFactory
+import zio.json._
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -112,14 +109,11 @@ final case class JsonLdapConfig(
 )
 
 final object JsonSerialization {
-
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-
-  implicit class ConfigOptionToJson(config: JsonAuthConfiguration) {
-    def toJson(): JValue = {
-      Extraction.decompose(config)
-    }
-  }
+  implicit val configOptionEncoder:    JsonEncoder[ConfigOption]          = DeriveJsonEncoder.gen[ConfigOption]
+  implicit val jsonAdminConfigEncoder: JsonEncoder[JsonAdminConfig]       = DeriveJsonEncoder.gen[JsonAdminConfig]
+  implicit val jsonFileConfigEncoder:  JsonEncoder[JsonFileConfig]        = DeriveJsonEncoder.gen[JsonFileConfig]
+  implicit val jsonLdapConfigEncoder:  JsonEncoder[JsonLdapConfig]        = DeriveJsonEncoder.gen[JsonLdapConfig]
+  implicit val jsonAuthConfigEncoder:  JsonEncoder[JsonAuthConfiguration] = DeriveJsonEncoder.gen[JsonAuthConfiguration]
 }
 
 /*

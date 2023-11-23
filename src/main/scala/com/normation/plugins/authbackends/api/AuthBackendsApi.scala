@@ -37,8 +37,10 @@
 
 package com.normation.plugins.authbackends.api
 
+import com.normation.errors.IOResult
 import com.normation.plugins.authbackends.AuthBackendsRepository
 import com.normation.plugins.authbackends.JsonSerialization
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.rest.ApiModuleProvider
@@ -47,21 +49,16 @@ import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest.InternalApi
-import com.normation.rudder.rest.RestExtractorService
-import com.normation.rudder.rest.RestUtils
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
+import com.normation.rudder.rest.implicits._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.AuthorizationType
-
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json._
-import net.liftweb.json.NoTypeHints
 import sourcecode.Line
 
 /*
@@ -77,20 +74,17 @@ object AuthBackendsApi       extends ApiModuleProvider[AuthBackendsApi] {
     val description    = "Get information about current authentication configuration"
     val (action, path) = GET / "authbackends" / "current-configuration"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[AuthBackendsApi].toList.sortBy(_.z)
 }
 
 class AuthBackendsApiImpl(
-    restExtractorService: RestExtractorService,
-    authRepo:             AuthBackendsRepository
+    authRepo: AuthBackendsRepository
 ) extends LiftApiModuleProvider[AuthBackendsApi] {
   api =>
-
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   def schemas = AuthBackendsApi
 
@@ -110,23 +104,15 @@ class AuthBackendsApiImpl(
    * enabled ones.
    */
   object GetAuthenticationInformation extends LiftApiModule0 {
-    val schema        = AuthBackendsApi.GetAuthenticationInformation
-    val restExtractor = api.restExtractorService
+    val schema = AuthBackendsApi.GetAuthenticationInformation
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-
       import JsonSerialization._
 
-      (for {
-        config <- authRepo.getConfigOption()
-      } yield {
-        config.toJson()
-      }) match {
-        case Right(json) =>
-          RestUtils.toJsonResponse(None, json)(schema.name, params.prettify)
-        case Left(ex)    =>
-          val err = "Error when trying to get group information: " + ex.getMessage()
-          RestUtils.toJsonError(None, JString(err))(schema.name, params.prettify)
-      }
+      IOResult
+        .attempt("Error when trying to get group information")(
+          authRepo.getConfigOption()
+        )
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
