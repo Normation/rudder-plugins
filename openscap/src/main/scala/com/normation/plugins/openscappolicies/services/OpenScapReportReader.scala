@@ -20,17 +20,17 @@ class OpenScapReportReader(
     nodeInfoService:              NodeInfoService,
     directiveRepository:          RoDirectiveRepository,
     pluginDirectiveRepository:    GetActiveTechniqueIds,
-    findExpectedReportRepository: FindExpectedReportRepository
+    findExpectedReportRepository: FindExpectedReportRepository,
+    openScapReportDirPath:        String
 ) {
+  import OpenScapReportReader._
 
-  val OPENSCAP_REPORT_FILENAME = "openscap_report.html"
-  val OPENSCAP_REPORT_PATH     = "/var/rudder/shared-files/root/files/"
+  val openScapReportPath = File(openScapReportDirPath)
 
-  val OPENSCAP_TECHNIQUE_ID = "plugin_openscap_policies"
-  val logger                = OpenscapPoliciesLogger
+  val logger = OpenscapPoliciesLogger
 
   private[this] def computePathFromNodeId(nodeId: NodeId): String = {
-    OPENSCAP_REPORT_PATH + nodeId.value + "/" + OPENSCAP_REPORT_FILENAME
+    (openScapReportPath / nodeId.value / OPENSCAP_REPORT_FILENAME).pathAsString
   }
 
   def checkifOpenScapApplied(nodeId: NodeId): Box[Boolean] = {
@@ -156,4 +156,11 @@ class OpenScapReportReader(
       result
     }
   }
+}
+
+object OpenScapReportReader {
+
+  val OPENSCAP_REPORT_FILENAME = "openscap_report.html"
+  val OPENSCAP_TECHNIQUE_ID    = "plugin_openscap_policies"
+
 }

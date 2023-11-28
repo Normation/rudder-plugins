@@ -109,10 +109,11 @@ object OpenscapPoliciesConf extends RudderPluginModule {
     RudderConfig.nodeInfoService,
     RudderConfig.roDirectiveRepository,
     getActiveTechniqueIds,
-    RudderConfig.findExpectedReportRepository
+    RudderConfig.findExpectedReportRepository,
+    openScapReportDirPath = "/var/rudder/shared-files/root/files/"
   )
 
-  lazy val openScapApiImpl = new OpenScapApiImpl(RudderConfig.restExtractorService, openScapReportReader, reportSanitizer)
+  lazy val openScapApiImpl = new OpenScapApiImpl(openScapReportReader, reportSanitizer)
   // other service instantiation / initialization
   RudderConfig.snippetExtensionRegister.register(
     new OpenScapNodeDetailsExtension(pluginStatusService, openScapReportReader, reportSanitizer)

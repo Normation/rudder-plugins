@@ -55,7 +55,7 @@ object ScalaOutRelayConf extends RudderPluginModule {
 
   lazy val pluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
 
-  lazy val api = new ScaleOutRelayApiImpl(RudderConfig.restExtractorService, scaleOutRelayService)
+  lazy val api = new ScaleOutRelayApiImpl(scaleOutRelayService)
 
   lazy val scaleOutRelayService = new ScaleOutRelayService(
     RudderConfig.nodeInfoService,

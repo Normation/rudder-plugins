@@ -42,7 +42,7 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.PluginVersion
 import com.normation.rudder.web.snippet.Login
-import net.liftweb.common.Full
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
 import scala.reflect.ClassTag
@@ -57,18 +57,18 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
 
   private[this] val confRepo = BrandingPluginConf.brandingConfService
   def display(xml: NodeSeq)  = {
-    val data                      = confRepo.getConf
+    val data                      = confRepo.getConf.either.runNow
     val bar                       = data match {
-      case Full(d) if (d.displayBarLogin) =>
+      case Right(d) if (d.displayBarLogin) =>
         <div id="headerBar">
           <div class="background">
             <span>{if (d.displayLabel) d.labelText}</span>
           </div>
         </div>
-      case _                              => NodeSeq.Empty
+      case _                               => NodeSeq.Empty
     }
     var (customLogo, brandingCss) = data match {
-      case Full(d) =>
+      case Right(d) =>
         (
           d.wideLogo.loginLogo,
           <style>
@@ -90,7 +90,7 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
           }}
           </style>
         )
-      case _       => (<img src="/images/logo-rudder-white.svg" data-lift="with-cached-resource" alt="Rudder"/>, NodeSeq.Empty)
+      case _        => (<img src="/images/logo-rudder-white.svg" data-lift="with-cached-resource" alt="Rudder"/>, NodeSeq.Empty)
     }
     val logoContainer             = {
       <div>
@@ -106,9 +106,9 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
       </div>
     }
     val motd                      = data match {
-      case Full(data) if (data.displayMotd) =>
+      case Right(data) if (data.displayMotd) =>
         <div class="motd enabled" style="margin-bottom: 20px; text-align: center;">{data.motd}</div>
-      case _                                => <div class="motd"></div>
+      case _                                 => <div class="motd"></div>
     }
     (".logo-container" #> logoContainer &
     ".plugin-info" #> bar &

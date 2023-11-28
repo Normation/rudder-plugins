@@ -1,0 +1,59 @@
+description: Promote a node to relay
+method: POST
+url: /api/latest/scaleoutrelay/promote/node1
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 200
+  type: json
+  content: >-
+    {
+      "action": "promoteToRelay",
+      "result": "success",
+      "data": "node1"
+    }
+---
+description: Fail to promote a node to relay when the node does not exist
+method: POST
+url: /api/latest/scaleoutrelay/promote/node_void123
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 500
+  type: json
+  content: >-
+    {
+      "action": "promoteToRelay",
+      "result": "error",
+      "errorDetails": "Error when trying to promote mode node_void123; cause was: Inconsistency: Node with UUID node_void123 is missing and can not be upgraded to relay"
+    }
+---
+description: Demote a relay to a simple node
+method: POST
+url: /api/latest/scaleoutrelay/demote/node1
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 200
+  type: json
+  content: >-
+    {
+      "action": "demoteToNode",
+      "result": "success",
+      "data": "node1"
+    }
+---
+description: Fail to demote a relay to a simple node when the node does not exist
+method: POST
+url: /api/latest/scaleoutrelay/demote/node_void123
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 500
+  type: json
+  content: >-
+    {
+      "action": "demoteToNode",
+      "result": "error",
+      "errorDetails": "Error when trying to demote mode node_void123; cause was: Inconsistency: Relay with UUID node_void123 is missing and can not be demoted to node"
+    }

@@ -37,45 +37,29 @@
 
 package com.normation.plugins.branding.api
 
-import com.normation.box._
-import com.normation.eventlog.EventActor
 import com.normation.plugins.branding.BrandingConf
 import com.normation.plugins.branding.BrandingConfService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest._
+import com.normation.rudder.rest.RudderJsonRequest._
+import com.normation.rudder.rest.implicits._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.utils.StringUuidGenerator
-import net.liftweb.common.Box
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json.JsonAST.JValue
+import zio.json._
 
 class BrandingApi(
-    brandingApiService:   BrandingApiService,
-    restExtractorService: RestExtractorService,
-    uuidGen:              StringUuidGenerator
+    brandingApiService: BrandingApiService,
+    uuidGen:            StringUuidGenerator
 ) extends LiftApiModuleProvider[BrandingApiSchema] {
 
   val dataName = "branding"
 
   def schemas = BrandingApiEndpoints
-
-  def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String])(implicit
-      action:            String
-  ): LiftResponse = {
-    RestUtils.response(restExtractorService, dataName, id)(function, req, errorMessage)
-  }
-
-  type ActionType = RestUtils.ActionType
-
-  def actionResponse(function: Box[ActionType], req: Req, errorMessage: String, id: Option[String], actor: EventActor)(implicit
-      action:                  String
-  ): LiftResponse = {
-    RestUtils.actionResponse2(restExtractorService, dataName, uuidGen, id)(function, req, errorMessage)(action, actor)
-  }
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     modules
@@ -89,55 +73,62 @@ class BrandingApi(
   }
 
   object GetBrandingConf extends LiftApiModule0 {
-    val schema        = BrandingApiEndpoints.GetBrandingConf
-    val restExtractor = restExtractorService
+    val schema = BrandingApiEndpoints.GetBrandingConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "getBrandingConf"
-      response(brandingApiService.getConf(), req, "Could not fetch branding plugin configuration", None)
+      brandingApiService
+        .getConf()
+        .chainError("Could not fetch branding plugin configuration")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
   object ReloadBrandingConf extends LiftApiModule0 {
-    val schema        = BrandingApiEndpoints.ReloadBrandingConf
-    val restExtractor = restExtractorService
+    val schema = BrandingApiEndpoints.ReloadBrandingConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "getBrandingConf"
-      response(brandingApiService.reloadConf(), req, "Could not reload branding plugin configuration", None)
+      brandingApiService
+        .reloadConf()
+        .chainError("Could not reload branding plugin configuration")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
   object UpdateBrandingConf extends LiftApiModule0 {
-    val schema        = BrandingApiEndpoints.UpdateBrandingConf
-    val restExtractor = restExtractorService
+    val schema = BrandingApiEndpoints.UpdateBrandingConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "updateBRandingConf"
-      val result          = for {
-        json    <- req.json
-        newConf <- BrandingConf.parse(json)
-        result  <- brandingApiService.update(newConf).toBox
+      (for {
+        conf   <- req.fromJson[BrandingConf].toIO
+        result <- brandingApiService.update(conf)
       } yield {
         result
-      }
-
-      response(result, req, s"Could not update Branding plugin configuration", None)
+      }).chainError("Could not update Branding plugin configuration").toLiftResponseOne(params, schema, None)
     }
   }
 
 }
 
+object BrandingApiService {
+  final case class RestBrandingResponse(
+      branding: BrandingConf
+  )
+
+  implicit val encoder: JsonEncoder[RestBrandingResponse] = DeriveJsonEncoder.gen[RestBrandingResponse]
+}
+
 class BrandingApiService(
     brandingConfService: BrandingConfService
 ) {
+  import BrandingApiService._
+
   def getConf()                     = {
-    brandingConfService.getConf.map(BrandingConf.serialize)
+    brandingConfService.getConf.map(RestBrandingResponse(_))
   }
   def reloadConf()                  = {
-    brandingConfService.reloadCache.map(BrandingConf.serialize).toBox
+    brandingConfService.reloadCache.map(RestBrandingResponse(_))
   }
   def update(newConf: BrandingConf) = {
-    brandingConfService.updateConf(newConf).map(BrandingConf.serialize)
+    brandingConfService.updateConf(newConf).map(RestBrandingResponse(_))
   }
 }

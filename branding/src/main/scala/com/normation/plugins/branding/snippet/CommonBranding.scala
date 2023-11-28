@@ -41,7 +41,7 @@ import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.web.snippet.CommonLayout
-import net.liftweb.common.Full
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers._
 import scala.reflect.ClassTag
@@ -57,9 +57,9 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
   private[this] val confRepo = BrandingPluginConf.brandingConfService
 
   def display(xml: NodeSeq) = {
-    val data                                          = confRepo.getConf
+    val data                                          = confRepo.getConf.either.runNow
     val bar                                           = data match {
-      case Full(d) if (d.displayBar) =>
+      case Right(d) if (d.displayBar) =>
         <div id="headerBar">
         <div class="background">
           <span>{if (d.displayLabel) d.labelText}</span>
@@ -76,10 +76,10 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
           #headerBar ~ .content-wrapper .rudder-template .template-main > .main-table{{height: calc(100vh - 80px);}}
         </style>
       </div>
-      case _                         => NodeSeq.Empty
+      case _                          => NodeSeq.Empty
     }
     var (customWideLogo, customSmallLogo, rudderLogo) = data match {
-      case Full(d) =>
+      case Right(d) =>
         (
           d.wideLogo.commonWideLogo,
           d.smallLogo.commonSmallLogo, {
@@ -101,7 +101,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
             }
           }
         )
-      case _       =>
+      case _        =>
         (
           <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-nologo.svg" class="rudder-branding-logo-lg"/>,
           <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg"     class="rudder-branding-logo-sm"/>,
@@ -153,13 +153,13 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
       </style>
     }
     val commonBrandingCss: NodeSeq = data match {
-      case Full(d) =>
+      case Right(d) =>
         (d.wideLogo.enable, d.wideLogo.data, d.smallLogo.enable, d.smallLogo.data) match {
           case (true, Some(wideLogoData), _, _)  => style
           case (_, _, true, Some(smallLogoData)) => style
           case _                                 => NodeSeq.Empty
         }
-      case _       => NodeSeq.Empty
+      case _        => NodeSeq.Empty
     }
 
     (".logo-lg *" #> customWideLogo & ".logo-mini *" #> customSmallLogo & ".plugin-info -*" #> rudderLogo & ".plugin-info -*" #> commonBrandingCss)

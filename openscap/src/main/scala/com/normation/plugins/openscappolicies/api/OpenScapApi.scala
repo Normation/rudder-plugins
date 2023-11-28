@@ -22,9 +22,6 @@ import net.liftweb.common.Full
 import net.liftweb.http.InMemoryResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json.Formats
-import net.liftweb.json.JValue
-import net.liftweb.json.NoTypeHints
 import sourcecode.Line
 
 sealed trait OpenScapApi extends EndpointSchema with GeneralApi with SortIndex
@@ -35,7 +32,7 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
     val description    = "Get OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
 
-    override def dataContainer: Option[String] = Some("openscap")
+    override def dataContainer: Option[String] = None
   }
 
   final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
@@ -43,22 +40,19 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
     val description    = "Get sanitized OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
 
-    override def dataContainer: Option[String] = Some("openscap")
+    override def dataContainer: Option[String] = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy(_.z)
 }
 
 class OpenScapApiImpl(
-    restExtractorService: RestExtractorService,
     openScapReportReader: OpenScapReportReader,
     reportSanitizer:      ReportSanitizer
 ) extends LiftApiModuleProvider[OpenScapApi] {
   api =>
 
   val logger = OpenscapPoliciesLogger
-
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   def schemas = OpenScapApi
 
@@ -72,15 +66,8 @@ class OpenScapApiImpl(
     }.toList
   }
 
-  def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String], dataName: String)(implicit
-      action:            String
-  ): LiftResponse = {
-    RestUtils.response(restExtractorService, dataName, id)(function, req, errorMessage)
-  }
-
   object GetOpenScapReport extends LiftApiModule {
-    val schema        = OpenScapApi.GetOpenScapReport
-    val restExtractor = api.restExtractorService
+    val schema = OpenScapApi.GetOpenScapReport
 
     def process(
         version:    ApiVersion,
@@ -123,8 +110,7 @@ class OpenScapApiImpl(
   }
 
   object GetSanitizedOpenScapReport extends LiftApiModule {
-    val schema        = OpenScapApi.GetSanitizedOpenScapReport
-    val restExtractor = api.restExtractorService
+    val schema = OpenScapApi.GetSanitizedOpenScapReport
 
     def process(
         version:    ApiVersion,

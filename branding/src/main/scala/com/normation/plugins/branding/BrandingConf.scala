@@ -37,11 +37,7 @@
 
 package com.normation.plugins.branding
 
-import net.liftweb.common._
-import net.liftweb.json.Formats
-import net.liftweb.json.JsonAST.JValue
-import net.liftweb.json.NoTypeHints
-import net.liftweb.json.Serialization
+import zio.json._
 
 // This case class is serialized with it's parameters directly in json
 // Changing a parameter name impacts Rest api and parsing in Elm app and file format.
@@ -60,7 +56,7 @@ final case class BrandingConf(
 )
 
 // for compat with previous version of plugin
-final case class BrandingConfV5_0(
+final private case class BrandingConfV5_0(
     displayBar:       Boolean,
     barColor:         JsonColor,
     displayLabel:     Boolean,
@@ -97,6 +93,15 @@ final case class JsonColor(
 ) {
   def toRgba = s"rgba(${red * 100}%, ${green * 100}%, ${blue * 100}%, ${alpha})"
 }
+
+object JsonColor {
+  implicit val encoder: JsonEncoder[JsonColor] = DeriveJsonEncoder.gen[JsonColor]
+  implicit val decoder: JsonDecoder[JsonColor] = DeriveJsonDecoder.gen[JsonColor]
+}
+
+// This case class is serialized with it's parameters directly in json
+// Changing a parameter name impacts Rest api and parsing in Elm app and file format.
+// Migration must be done at least for config file format.
 final case class Logo(enable: Boolean, name: Option[String], data: Option[String]) {
   def loginLogo = (enable, data) match {
     case (true, Some(d)) => (<div class="custom-branding-logo" style={"background-image: url(" ++ d ++ ");"}></div>)
@@ -132,17 +137,18 @@ final case class Logo(enable: Boolean, name: Option[String], data: Option[String
   }
 }
 
+object Logo {
+  implicit val encoder: JsonEncoder[Logo] = DeriveJsonEncoder.gen[Logo]
+  implicit val decoder: JsonDecoder[Logo] = DeriveJsonDecoder.gen[Logo]
+}
+
 object BrandingConf {
-  implicit val formats:              Formats           = Serialization.formats(NoTypeHints)
-  def serialize(conf: BrandingConf): JValue            = {
-    import net.liftweb.json.Extraction.decompose
-    decompose(conf)
-  }
-  def parse(jValue: JValue):         Box[BrandingConf] = {
-    import net.liftweb.json.Extraction.extractOpt
-    import net.liftweb.json.prettyRender
-    Box(
-      extractOpt[BrandingConf](jValue).orElse(extractOpt[BrandingConfV5_0](jValue).map(_.toCurrent))
-    ) ?~! s"Could not extract Branding plugin configuration from json: ${prettyRender(jValue)}"
+  implicit val encoder: JsonEncoder[BrandingConf] = DeriveJsonEncoder.gen[BrandingConf]
+
+  // decoding needs compatibility with previous version of plugin when decoding
+  implicit val decoder: JsonDecoder[BrandingConf] = {
+    val brandingConfV5_0Decoder = DeriveJsonDecoder.gen[BrandingConfV5_0]
+    val brandingConfDecoder     = DeriveJsonDecoder.gen[BrandingConf]
+    brandingConfV5_0Decoder.map(_.toCurrent) <> brandingConfDecoder
   }
 }

@@ -37,9 +37,8 @@
 
 package com.normation.rudder.rest
 
-import com.normation.rudder.api.HttpAction._
 import com.normation.rudder.AuthorizationType
-
+import com.normation.rudder.api.HttpAction._
 import sourcecode.Line
 
 /*
@@ -55,7 +54,7 @@ object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
     val z              = implicitly[Line].value
     val description    = "Get branding plugin configuration"
     val (action, path) = GET / "branding"
-    val dataContainer: Option[String] = None
+    val dataContainer:  Option[String]          = None
     override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 

@@ -38,15 +38,13 @@
 package com.normation.plugins.branding
 
 import better.files._
-import com.normation.box._
 import com.normation.errors._
 import com.normation.zio._
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
-import net.liftweb.common._
-import net.liftweb.json.parseOpt
 import zio._
+import zio.json._
 import zio.syntax._
 
 object BrandingConfService {
@@ -88,8 +86,10 @@ class BrandingConfService(configFilePath: String) {
                     content <- IOResult.attempt(s"Error when trying to read file: ${configFilePath}")(
                                  File(configFilePath).contentAsString(StandardCharsets.UTF_8)
                                )
-                    json    <- parseOpt(content).notOptional("Could nor parse correctly Branding plugin configuration file")
-                    conf    <- BrandingConf.parse(json).toIO
+                    conf    <- content
+                                 .fromJson[BrandingConf]
+                                 .toIO
+                                 .chainError("Could nor parse correctly Branding plugin configuration file")
                     ref     <- ref.set(Right(conf))
                   } yield {
                     conf
@@ -109,19 +109,17 @@ class BrandingConfService(configFilePath: String) {
 
   def reloadCache: IOResult[BrandingConf] = reloadCacheInternal(false, cache)
 
-  def getConf: Box[BrandingConf] = {
-    (for {
+  def getConf: IOResult[BrandingConf] = {
+    for {
       c <- cache.get
       r <- c.toIO
     } yield {
       r
-    }).toBox
+    }
   }
 
   // During init, cache doesn't exist yet, so we need the ref to init the cache
   def updateConf(newConf: BrandingConf, ref: Option[Ref[Either[RudderError, BrandingConf]]] = None): IOResult[BrandingConf] = {
-    import net.liftweb.json.prettyRender
-    val content = prettyRender(BrandingConf.serialize(newConf))
     (for {
       _ <- IOResult.attempt {
              val path = Paths.get(configFilePath)
@@ -129,7 +127,7 @@ class BrandingConfService(configFilePath: String) {
                Files.createDirectories(path.getParent)
                Files.createFile(path)
              }
-             Files.write(path, content.getBytes(StandardCharsets.UTF_8))
+             Files.write(path, newConf.toJson.getBytes(StandardCharsets.UTF_8))
            }
       _ <- ref match {
              case None                  => cache.set(Right(newConf))

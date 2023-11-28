@@ -1,0 +1,262 @@
+description: Get branding plugin configuration
+method: GET
+url: /api/latest/branding
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "getBrandingConf",
+      "result" : "success",
+      "data" : {
+        "branding" : {
+          "displayBar" : true,
+          "barColor" : {
+            "red" : 0.0,
+            "green" : 0.0,
+            "blue" : 0.0,
+            "alpha" : 0.0
+          },
+          "displayLabel" : true,
+          "labelText" : "Sample Text",
+          "labelColor" : {
+            "red" : 1.0,
+            "green" : 1.0,
+            "blue" : 1.0,
+            "alpha" : 1.0
+          },
+          "wideLogo" : {
+            "enable" : true,
+            "name" : "logo.png",
+            "data" : "base64encodeddata"
+          },
+          "smallLogo" : {
+            "enable" : true,
+            "name" : "logo.png",
+            "data" : "base64encodeddata"
+          },
+          "displayBarLogin" : false,
+          "displayMotd" : true,
+          "motd" : "Welcome to our application"
+        }
+      }
+    }
+---
+description: Update branding plugin configuration with V5.0 payload format, removing logo name and data
+method: POST
+url: /api/latest/branding
+headers: 
+  - "Content-Type: application/json"
+body: >-
+  {
+    "displayBar": true,
+    "barColor": {
+        "red": 0.5,
+        "green": 0.5,
+        "blue": 0.5,
+        "alpha": 1.0
+    },
+    "displayLabel": true,
+    "labelText": "Test Label",
+    "labelColor": {
+        "red": 0.2,
+        "green": 0.8,
+        "blue": 0.4,
+        "alpha": 1.0
+    },
+    "enableLogo": true,
+    "displayFavIcon": true,
+    "displaySmallLogo": false,
+    "displayBigLogo": false,
+    "displayBarLogin": true,
+    "displayLoginLogo": true,
+    "displayMotd": true,
+    "motd": "Test MOTD"
+  }
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "updateBRandingConf",
+      "result" : "success",
+      "data": {
+        "branding": {
+          "displayBar": true,
+          "barColor": {
+              "red": 0.5,
+              "green": 0.5,
+              "blue": 0.5,
+              "alpha": 1.0
+          },
+          "displayLabel": true,
+          "labelText": "Test Label",
+          "labelColor": {
+              "red": 0.2,
+              "green": 0.8,
+              "blue": 0.4,
+              "alpha": 1.0
+          },
+          "wideLogo": {
+              "enable": false
+          },
+          "smallLogo": {
+              "enable": false
+          },
+          "displayBarLogin": true,
+          "displayMotd": true,
+          "motd": "Test MOTD"
+        }
+      }
+    }
+---
+description: Update branding plugin configuration
+method: POST
+url: /api/latest/branding
+headers:
+  - "Content-Type: application/json"
+body: >-
+  {
+    "displayBar": true,
+    "barColor": {
+        "red": 0.5,
+        "green": 0.5,
+        "blue": 0.5,
+        "alpha": 1.0
+    },
+    "displayLabel": true,
+    "labelText": "Test Label",
+    "labelColor": {
+        "red": 0.2,
+        "green": 0.8,
+        "blue": 0.4,
+        "alpha": 1.0
+    },
+    "wideLogo": {
+        "enable": false,
+        "name": "wide_logo.png"
+    },
+    "smallLogo": {
+        "enable": false,
+        "name": "small_logo.png"
+    },
+    "displayBarLogin": true,
+    "displayMotd": true,
+    "motd": "Test MOTD"
+  }
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "updateBRandingConf",
+      "result" : "success",
+      "data": {
+        "branding": {
+          "displayBar": true,
+          "barColor": {
+              "red": 0.5,
+              "green": 0.5,
+              "blue": 0.5,
+              "alpha": 1.0
+          },
+          "displayLabel": true,
+          "labelText": "Test Label",
+          "labelColor": {
+              "red": 0.2,
+              "green": 0.8,
+              "blue": 0.4,
+              "alpha": 1.0
+          },
+          "wideLogo": {
+              "enable": false,
+              "name": "wide_logo.png"
+          },
+          "smallLogo": {
+              "enable": false,
+              "name": "small_logo.png"
+          },
+          "displayBarLogin": true,
+          "displayMotd": true,
+          "motd": "Test MOTD"
+        }
+      }
+    }
+---
+description: Fail to update branding plugin configuration with invalid payload
+method: POST
+url: /api/latest/branding
+headers: 
+  - "Content-Type: application/json"
+body: >-
+  {
+    "displayBar": true,
+    "barColor": {
+        "red": 0.5,
+        "green": 0.5,
+        "blue": 0.5,
+        "alpha": 1.0
+    },
+    "displayLabel": true,
+    "labelText": "Test Label",
+    "labelColor": {
+        "red": 0.2,
+        "green": 0.8,
+        "blue": 0.4,
+        "alpha": 1.0
+    },
+    "enableLogo": true,
+    "displayFavIcon": true,
+    "displayBarLogin": true,
+    "displayLoginLogo": true,
+    "displayMotd": true,
+    "motd": "Test MOTD"
+  }
+response:
+  code: 500
+  content: >-
+    {
+      "action" : "updateBRandingConf",
+      "result" : "error",
+      "errorDetails" : "Could not update Branding plugin configuration; cause was: Unexpected: .wideLogo(missing)"
+    }
+---
+description: Reload branding plugin configuration from config file
+method: POST
+url: /api/latest/branding/reload
+headers: 
+  - "Content-Type: application/json"
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "getBrandingConf",
+      "result" : "success",
+      "data": {
+        "branding": {
+          "displayBar": true,
+          "barColor": {
+              "red": 0.5,
+              "green": 0.5,
+              "blue": 0.5,
+              "alpha": 1.0
+          },
+          "displayLabel": true,
+          "labelText": "Test Label",
+          "labelColor": {
+              "red": 0.2,
+              "green": 0.8,
+              "blue": 0.4,
+              "alpha": 1.0
+          },
+          "wideLogo": {
+              "enable": false,
+              "name": "wide_logo.png"
+          },
+          "smallLogo": {
+              "enable": false,
+              "name": "small_logo.png"
+          },
+          "displayBarLogin": true,
+          "displayMotd": true,
+          "motd": "Test MOTD"
+        }
+      }
+    }
