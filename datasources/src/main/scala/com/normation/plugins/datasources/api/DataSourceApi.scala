@@ -113,7 +113,7 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Get the list of all defined datasources"
     val (action, path) = GET / "datasources"
 
-    override def dataContainer: Option[String]          = None
+    override def dataContainer: Option[String]          = Some("datasources")
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
@@ -122,7 +122,7 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Get information about the given datasource"
     val (action, path) = GET / "datasources" / "{datasourceid}"
 
-    override def dataContainer: Option[String]          = None
+    override def dataContainer: Option[String]          = Some("datasources")
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
@@ -131,7 +131,7 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Delete given datasource"
     val (action, path) = DELETE / "datasources" / "{datasourceid}"
 
-    override def dataContainer: Option[String] = None
+    override def dataContainer: Option[String] = Some("datasources")
   }
 
   final case object CreateDataSource extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
@@ -139,7 +139,7 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Create given datasource"
     val (action, path) = PUT / "datasources"
 
-    override def dataContainer: Option[String] = None
+    override def dataContainer: Option[String] = Some("datasources")
   }
 
   final case object UpdateDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
@@ -147,7 +147,7 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     val description    = "Update information about the given datasource"
     val (action, path) = POST / "datasources" / "{datasourceid}"
 
-    override def dataContainer: Option[String] = None
+    override def dataContainer: Option[String] = Some("datasources")
   }
 
   def endpoints = ca.mrvisser.sealerate.values[DataSourceApi].toList.sortBy(_.z)

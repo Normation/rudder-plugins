@@ -37,21 +37,28 @@
 
 package com.normation.plugins.datasources
 
-import cats._
+import DataSourceJsonCodec._
 import cats.implicits._
-import com.normation.plugins.datasources.DataSourceSchedule._
-import com.normation.plugins.datasources.HttpRequestMode._
+import com.normation.errors._
 import com.normation.rudder.domain.properties.GenericProperty._
 import com.normation.rudder.repository.json.JsonExtractorUtils
+import com.normation.rudder.rest.RudderJsonRequest._
 import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.ConfigValue
+import io.scalaland.chimney.Patcher
+import io.scalaland.chimney.Transformer
+import io.scalaland.chimney.dsl.PatcherConfiguration
+import io.scalaland.chimney.syntax._
 import java.util.concurrent.TimeUnit
-import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
-import net.liftweb.json._
-import net.liftweb.util.ControlHelpers.tryo
+import net.liftweb.http.Req
 import scala.concurrent.duration.FiniteDuration
+import scala.math.BigDecimal
+import scala.util.chaining._
 import zio._
+import zio.json._
+import zio.json.ast.Json
 
 object Translate {
   implicit class DurationToScala(d: Duration) {
@@ -60,368 +67,519 @@ object Translate {
 }
 import Translate._
 
-object DataSourceJsonSerializer {
-
-  def serialize(source: DataSource): JValue = {
-    import net.liftweb.json.JsonDSL._
-    (("name"           -> source.name.value)
-    ~ ("id"            -> source.id.value)
-    ~ ("description"   -> source.description)
-    ~ ("type"          ->
-    (("name"           -> source.sourceType.name)
-    ~ ("parameters"    -> {
-      source.sourceType match {
-        case DataSourceType.HTTP(url, headers, method, params, checkSsl, path, maxReq, mode, timeOut, missing) =>
-          (("url"             -> url)
-          ~ ("headers"        -> headers.map { case (name, value) => ("name" -> name) ~ ("value" -> value) })
-          ~ ("params"         -> params.map { case (name, value) => ("name" -> name) ~ ("value" -> value) })
-          ~ ("path"           -> path)
-          ~ ("checkSsl"       -> checkSsl)
-          ~ ("maxParallelReq" -> maxReq)
-          ~ ("requestTimeout" -> timeOut.toScala.toSeconds)
-          ~ ("requestMethod"  -> method.name)
-          ~ ("requestMode"    ->
-          (("name"            -> mode.name)
-          ~ {
-            mode match {
-              case OneRequestByNode                           =>
-                JObject(Nil)
-              case OneRequestAllNodes(subPath, nodeAttribute) =>
-                (("path"       -> subPath)
-                ~ ("attribute" -> nodeAttribute))
-            }
-          }))
-          ~ ("onMissing"      -> (missing match {
-            case MissingNodeBehavior.Delete              => ("name" -> MissingNodeBehavior.Delete.name):   JObject
-            case MissingNodeBehavior.NoChange            => ("name" -> MissingNodeBehavior.NoChange.name): JObject
-            case MissingNodeBehavior.DefaultValue(value) =>
-              (("name" -> MissingNodeBehavior.DefaultValue.name) ~
-              ("value" -> parse(value.render(ConfigRenderOptions.concise())))): JObject
-          })))
-      }
-    })))
-    ~ ("runParameters" -> (
-      ("onGeneration"  -> source.runParam.onGeneration)
-      ~ ("onNewNode"   -> source.runParam.onNewNode)
-      ~ ("schedule"    -> (
-        ("type"        -> (source.runParam.schedule match {
-          case _: Scheduled  => "scheduled"
-          case _: NoSchedule => "notscheduled"
-        }))
-        ~ ("duration"  -> source.runParam.schedule.duration.toScala.toSeconds)
-      ))
-    ))
-    ~ ("updateTimeout" -> source.updateTimeOut.toScala.toSeconds)
-    ~ ("enabled"       -> source.enabled))
+/**
+ * All the content of the datasource without it's id
+ * WARNING: this is used to read the datasource representation in the database as json, so its format and the database source must be kept retrocompatible
+ */
+final case class DataSourceProperties(
+    name:                                      DataSourceName,
+    description:                               String,
+    @jsonField("type") sourceType:             FullDataSourceType,
+    @jsonField("runParameters") runParam:      FullDataSourceRunParameters,
+    @jsonField("updateTimeout") updateTimeOut: Duration,
+    enabled:                                   Boolean
+) {
+  def toDataSource(id: DataSourceId): DataSource = {
+    DataSource(
+      id,
+      name,
+      sourceType.transformInto[DataSourceType],
+      runParam.transformInto[DataSourceRunParameters],
+      description,
+      enabled,
+      updateTimeOut
+    )
   }
 }
 
-trait DataSourceExtractor[M[_]] extends JsonExtractorUtils[M] {
+/**
+ * Data representation for a new datasource with all property fields optional. It can be transformed using known default values.
+ * WARNING: any change in this class must be kept retrocompatible with the API request definitions, as it is used to read the request body
+ */
+final case class NewDataSource(
+    id:                                        DataSourceId,
+    name:                                      Option[DataSourceName],
+    description:                               Option[String],
+    @jsonField("type") sourceType:             DataSourceExtractor.PatchDataSourceType,
+    @jsonField("runParameters") runParam:      DataSourceExtractor.PatchDataSourceRunParam,
+    @jsonField("updateTimeout") updateTimeOut: Option[Duration],
+    enabled:                                   Option[Boolean]
+) {
+  def toDataSource: DataSource = {
+    val base = NewDataSource.baseDataSource(id)
+    this.transformInto[DataSourceExtractor.PatchDataSource].withBase(base)
+  }
+}
 
-  case class DataSourceRunParamWrapper(
-      schedule:     M[DataSourceSchedule],
-      onGeneration: M[Boolean],
-      onNewNode:    M[Boolean]
-  ) {
-    def to = {
-      monad.map3(schedule, onGeneration, onNewNode) { case (a, b, c) => DataSourceRunParameters(a, b, c) }
-    }
+object NewDataSource {
+  implicit val transformToPatchDataSource: Transformer[NewDataSource, DataSourceExtractor.PatchDataSource] =
+    Transformer.derive[NewDataSource, DataSourceExtractor.PatchDataSource]
 
-    def withBase(base: DataSourceRunParameters) = {
-      base.copy(
-        getOrElse(schedule, base.schedule),
-        getOrElse(onGeneration, base.onGeneration),
-        getOrElse(onNewNode, base.onNewNode)
-      )
+  // default values
+
+  val defaultDuration = DataSource.defaultDuration
+  val baseSourceType  = DataSourceType.HTTP(
+    "",
+    Map(),
+    HttpMethod.GET,
+    Map(),
+    false,
+    "",
+    DataSourceType.HTTP.defaultMaxParallelRequest,
+    HttpRequestMode.OneRequestByNode,
+    defaultDuration,
+    MissingNodeBehavior.Delete
+  )
+  val baseRunParam    = DataSourceRunParameters.apply(DataSourceSchedule.NoSchedule(defaultDuration), false, false)
+
+  def baseDataSource(id: DataSourceId) =
+    DataSource.apply(id, DataSourceName(""), baseSourceType, baseRunParam, "", false, defaultDuration)
+}
+
+/**
+ * All the content of the datasource that can be serialized to json.
+ * WARNING: this is used to write the datasource representation in the database as json, so its format and the database read format must be kept retrocompatible
+ */
+final case class FullDataSource(
+    name:                                      DataSourceName,
+    id:                                        DataSourceId,
+    description:                               String,
+    @jsonField("type") sourceType:             FullDataSourceType,
+    @jsonField("runParameters") runParam:      FullDataSourceRunParameters,
+    @jsonField("updateTimeout") updateTimeOut: Duration,
+    enabled:                                   Boolean
+)
+
+object FullDataSource {
+  implicit val transformerFrom: Transformer[FullDataSource, DataSource] =
+    Transformer.derive[FullDataSource, DataSource]
+  implicit val transformerTo:   Transformer[DataSource, FullDataSource] =
+    Transformer.derive[DataSource, FullDataSource]
+}
+
+sealed trait FullDataSourceHttpMethod { def name: String }
+object FullDataSourceHttpMethod       {
+  final case object GET  extends FullDataSourceHttpMethod { val name = "GET"  }
+  final case object POST extends FullDataSourceHttpMethod { val name = "POST" }
+
+  implicit val transformerFrom: Transformer[FullDataSourceHttpMethod, HttpMethod] =
+    Transformer.derive[FullDataSourceHttpMethod, HttpMethod]
+  implicit val transformerTo:   Transformer[HttpMethod, FullDataSourceHttpMethod] =
+    Transformer.derive[HttpMethod, FullDataSourceHttpMethod]
+
+  def byName(name: String): Either[String, FullDataSourceHttpMethod] = {
+    name match {
+      case GET.name  => Right(GET)
+      case POST.name => Right(POST)
+      case _         => Left(s"Unknown FullDataSourceHttpMethod: ${name}")
     }
   }
+}
 
-  case class DataSourceTypeWrapper(
-      url:            M[String],
-      headers:        M[Map[String, String]],
-      httpMethod:     M[HttpMethod],
-      params:         M[Map[String, String]],
-      sslCheck:       M[Boolean],
-      path:           M[String],
-      maxParallelReq: M[Int],
-      requestMode:    M[HttpRequestMode],
-      requestTimeout: M[FiniteDuration],
-      onMissing:      M[MissingNodeBehavior]
-  ) {
-    def to = {
-      monad.map10(url, headers, httpMethod, params, sslCheck, path, maxParallelReq, requestMode, requestTimeout, onMissing) {
-        case (a, b, c, d, e, f, g, h, i, j) => DataSourceType.HTTP(a, b, c, d, e, f, g, h, Duration.fromScala(i), j)
+@jsonDiscriminator("name") sealed trait FullDataSourceType
+
+// the data source type is wrapped in "parameters", we need a wrapper for each data source type to create codecs by simple derivation
+@jsonHint("HTTP") final case class FullDataSourceParameterHttp(
+    parameters: FullDataSourceHttpType
+) extends FullDataSourceType
+
+final case class FullDataSourceHttpType(
+    url:                                             String,
+    headers:                                         List[FullDataSourceNameValue],
+    params:                                          List[FullDataSourceNameValue],
+    path:                                            String,
+    @jsonField("checkSsl") sslCheck:                 Boolean,
+    @jsonField("maxParallelReq") maxParallelRequest: FullDataSourceHttpType.MaxParallelRequest,
+    @jsonField("requestTimeout") requestTimeOut:     Duration,
+    @jsonField("requestMethod") httpMethod:          FullDataSourceHttpMethod,
+    requestMode:                                     FullDataSourceMode,
+    @jsonField("onMissing") missingNodeBehavior:     Option[FullDataSourceMissing]
+)
+
+object FullDataSourceType {
+  implicit val transformerFrom: Transformer[FullDataSourceType, DataSourceType] = {
+    Transformer
+      .define[FullDataSourceType, DataSourceType]
+      .withCoproductInstance[FullDataSourceType] {
+        case http: FullDataSourceParameterHttp => http.parameters.transformInto[DataSourceType.HTTP]
       }
-    }
-    def withBase(base: DataSourceType): DataSourceType = {
-      base match {
-        case httpBase: DataSourceType.HTTP =>
-          httpBase.copy(
-            getOrElse(url, httpBase.url),
-            getOrElse(headers, httpBase.headers),
-            getOrElse(httpMethod, httpBase.httpMethod),
-            getOrElse(params, httpBase.params),
-            getOrElse(sslCheck, httpBase.sslCheck),
-            getOrElse(path, httpBase.path),
-            getOrElse(maxParallelReq, httpBase.maxParallelRequest),
-            getOrElse(requestMode, httpBase.requestMode),
-            Duration.fromScala(getOrElse(requestTimeout, httpBase.requestTimeOut.toScala)),
-            getOrElse(onMissing, httpBase.missingNodeBehavior)
-          )
+      .buildTransformer
+  }
+
+  implicit val transformerTo: Transformer[DataSourceType, FullDataSourceType] = {
+    Transformer
+      .define[DataSourceType, FullDataSourceType]
+      .withCoproductInstance[DataSourceType] {
+        case http: DataSourceType.HTTP => FullDataSourceParameterHttp(http.transformInto[FullDataSourceHttpType])
       }
-    }
-  }
-
-  case class DataSourceWrapper(
-      id:            DataSourceId,
-      name:          M[DataSourceName],
-      sourceType:    M[DataSourceTypeWrapper],
-      runParam:      M[DataSourceRunParamWrapper],
-      description:   M[String],
-      enabled:       M[Boolean],
-      updateTimeout: M[FiniteDuration]
-  ) {
-    def to                         = {
-      val unwrapRunParam = monad.flatMap(runParam)(_.to)
-      val unwrapType     = monad.flatMap(sourceType)(_.to)
-      monad.map6(name, unwrapType, unwrapRunParam, description, enabled, updateTimeout) {
-        case (a, b, c, d, e, f) => DataSource(id, a, b, c, d, e, Duration.fromScala(f))
-      }
-    }
-    def withBase(base: DataSource) = {
-      val unwrapRunParam = monad.map(runParam)(_.withBase(base.runParam))
-      val unwrapType     = monad.map(sourceType)(_.withBase(base.sourceType))
-      base.copy(
-        base.id,
-        getOrElse(name, base.name),
-        getOrElse(unwrapType, base.sourceType),
-        getOrElse(unwrapRunParam, base.runParam),
-        getOrElse(description, base.description),
-        getOrElse(enabled, base.enabled),
-        Duration.fromScala(getOrElse(updateTimeout, base.updateTimeOut.toScala))
-      )
-    }
-  }
-
-  def extractDuration(value: BigInt) = tryo(FiniteDuration(value.toLong, TimeUnit.SECONDS))
-
-  def extractDataSource(id: DataSourceId, json: JValue) = {
-    for {
-      params <- extractDataSourceWrapper(id, json)
-    } yield {
-      params.to
-    }
-  }
-
-  def extractDataSourceType(json: JObject) = {
-    for {
-      params <- extractDataSourceTypeWrapper(json)
-    } yield {
-      params.to
-    }
-  }
-
-  def extractDataSourceRunParam(json: JObject) = {
-    for {
-      params <- extractDataSourceRunParameterWrapper(json)
-    } yield {
-      params.to
-    }
-  }
-
-  def extractDataSourceWrapper(id: DataSourceId, json: JValue): Box[DataSourceWrapper] = {
-    for {
-      name        <- extractJsonString(json, "name", x => Full(DataSourceName(x)))
-      description <- extractJsonString(json, "description")
-      sourceType  <- extractJsonObj(json, "type", extractDataSourceTypeWrapper(_))
-      runParam    <- extractJsonObj(json, "runParameters", extractDataSourceRunParameterWrapper(_))
-      timeOut     <- extractJsonBigInt(json, "updateTimeout", extractDuration)
-      enabled     <- extractJsonBoolean(json, "enabled")
-    } yield {
-      DataSourceWrapper(id, name, sourceType, runParam, description, enabled, timeOut)
-    }
-  }
-
-  def extractDataSourceRunParameterWrapper(obj: JObject) = {
-    // the subpart in charge of the Schedule
-    def extractSchedule(obj: JObject) = {
-      for {
-        duration     <- extractJsonBigInt(obj, "duration", extractDuration)
-        scheduleBase <- {
-
-          val t: Box[M[M[DataSourceSchedule]]] = extractJsonString(
-            obj,
-            "type",
-            _ match {
-              case "scheduled"    => Full(monad.map(duration)(d => Scheduled(Duration.fromScala(d))))
-              case "notscheduled" => Full(monad.map(duration)(d => NoSchedule(Duration.fromScala(d))))
-              case _              => Failure("not a valid value for datasource schedule")
-            }
-          )
-          t.map(monad.flatten(_))
-        }
-      } yield {
-        scheduleBase
-      }
-    }
-
-    for {
-      onGeneration <- extractJsonBoolean(obj, "onGeneration")
-      onNewNode    <- extractJsonBoolean(obj, "onNewNode")
-      schedule     <- extractJsonObj(obj, "schedule", extractSchedule(_))
-    } yield {
-      DataSourceRunParamWrapper(monad.flatten(schedule), onGeneration, onNewNode)
-    }
-  }
-
-  // A source type is composed of two fields : "name" and "parameters"
-  // name allow to determine which kind of datasource we are managing and how to extract parameters
-  def extractDataSourceTypeWrapper(obj: JObject): Box[DataSourceTypeWrapper] = {
-
-    obj \ "name" match {
-      case JString(DataSourceType.HTTP.name) =>
-        def extractHttpRequestMode(obj: JObject): Box[M[HttpRequestMode]] = {
-          obj \ "name" match {
-            case JString(OneRequestByNode.name)   =>
-              Full(monad.pure(OneRequestByNode))
-            case JString(OneRequestAllNodes.name) =>
-              for {
-                attribute <- extractJsonString(obj, "attribute")
-                path      <- extractJsonString(obj, "path")
-              } yield {
-                monad.map2(path, attribute) { case (a, b) => OneRequestAllNodes(a, b) }
-              }
-            case x                                => Failure(s"Cannot extract request type from: ${x}")
-          }
-        }
-
-        def extractNameValueObjectArray(json: JValue, key: String): Box[M[List[(String, String)]]] = {
-          import com.normation.utils.Control.sequence
-          json \ key match {
-            case JArray(values) =>
-              for {
-                converted <- sequence(values) { v =>
-                               for {
-                                 name  <- extractJsonString(v, "name", boxedIdentity)
-                                 value <- extractJsonString(v, "value", boxedIdentity)
-                               } yield {
-                                 monad.tuple2(name, value)
-                               }
-                             }
-              } yield {
-                Traverse[List].sequence(converted.toList)
-              }
-
-            case JNothing => emptyValue(key)
-            case x        => Failure(s"Invalid json to extract a json array, current value is: ${compactRender(x)}")
-          }
-        }
-
-        // we need to special case JNothing to take care of previous version of
-        // the plugin that could be missing the attribute
-        def extractMissingNodeBehavior(json: JValue): Box[M[MissingNodeBehavior]] = {
-          val onMissing: Box[MissingNodeBehavior] = (json \ "onMissing" match {
-            case JNothing => Full(MissingNodeBehavior.Delete)
-            case obj: JObject =>
-              (obj \ "name") match {
-                case JString(MissingNodeBehavior.Delete.name)       =>
-                  Full(MissingNodeBehavior.Delete)
-                case JString(MissingNodeBehavior.NoChange.name)     =>
-                  Full(MissingNodeBehavior.NoChange)
-                case JString(MissingNodeBehavior.DefaultValue.name) =>
-                  (obj \ "value") match {
-                    case JNothing => Failure("Missing 'value' field for default value in data source")
-                    case value    => Full(MissingNodeBehavior.DefaultValue(fromJsonValue(value)))
-                  }
-                case _                                              =>
-                  Failure(s"Can not extract onMissingNode behavior from fields ${compactRender(obj)}")
-              }
-            case x => Failure(s"Can not extract onMissingNode behavior from ${compactRender(x)}")
-          })
-          onMissing.map(x => monad.pure(x))
-        }
-
-        def HttpDataSourceParameters(obj: JObject) = {
-          for {
-            url         <- extractJsonString(obj, "url")
-            path        <- extractJsonString(obj, "path")
-            method      <- extractJsonString(obj, "requestMethod", s => Box(HttpMethod.values.find(_.name == s)))
-            checkSsl    <- extractJsonBoolean(obj, "checkSsl")
-            maxParReq   <- Full(monad.point(obj \ "maxParallelReq" match {
-                             case JInt(n) if (n > BigInt(0) || n < BigInt(Int.MaxValue)) => n.intValue
-                             case _                                                      => DataSourceType.HTTP.defaultMaxParallelRequest // if not int or key absent => default value
-                           }))
-            timeout     <- extractJsonBigInt(obj, "requestTimeout", extractDuration)
-            params      <- extractNameValueObjectArray(obj, "params")
-            headers     <- extractNameValueObjectArray(obj, "headers")
-            requestMode <- extractJsonObj(obj, "requestMode", extractHttpRequestMode(_))
-            onMissing   <- extractMissingNodeBehavior(obj)
-          } yield {
-
-            val headersM   = monad.map(headers)(_.toMap)
-            val paramsM    = monad.map(params)(_.toMap)
-            val unwrapMode = monad.flatten(requestMode)
-
-            (
-              url,
-              headersM,
-              method,
-              paramsM,
-              checkSsl,
-              path,
-              maxParReq,
-              unwrapMode,
-              timeout,
-              onMissing
-            )
-          }
-        }
-
-        for {
-          parameters <- extractJsonObj(obj, "parameters", HttpDataSourceParameters)
-          url         = monad.flatMap(parameters)(_._1)
-          headers     = monad.flatMap(parameters)(_._2)
-          method      = monad.flatMap(parameters)(_._3)
-          params      = monad.flatMap(parameters)(_._4)
-          checkSsl    = monad.flatMap(parameters)(_._5)
-          path        = monad.flatMap(parameters)(_._6)
-          maxParReq   = monad.flatMap(parameters)(_._7)
-          mode        = monad.flatMap(parameters)(_._8)
-          timeout     = monad.flatMap(parameters)(_._9)
-          onMissing   = monad.flatMap(parameters)(_._10)
-        } yield {
-          DataSourceTypeWrapper(
-            url,
-            headers,
-            method,
-            params,
-            checkSsl,
-            path,
-            maxParReq,
-            mode,
-            timeout,
-            onMissing
-          )
-        }
-
-      case x => Failure(s"Cannot extract a data source type from: ${x}")
-    }
+      .buildTransformer
   }
 
 }
 
+object FullDataSourceHttpType {
+  final case class MaxParallelRequest(value: Int) extends AnyVal
+  object MaxParallelRequest {
+    val default = MaxParallelRequest(DataSourceType.HTTP.defaultMaxParallelRequest)
+  }
+
+  implicit val transformerFrom: Transformer[FullDataSourceHttpType, DataSourceType.HTTP] = {
+    Transformer
+      .define[FullDataSourceHttpType, DataSourceType.HTTP]
+      .withFieldComputed(_.headers, _.headers.map(x => (x.name, x.value)).toMap)
+      .withFieldComputed(_.params, _.params.map(x => (x.name, x.value)).toMap)
+      .withFieldComputed(
+        _.missingNodeBehavior,
+        // default value is Delete
+        _.missingNodeBehavior.getOrElse(FullDataSourceMissing.Delete).transformInto[MissingNodeBehavior]
+      )
+      .buildTransformer
+  }
+  implicit val transformerTo:   Transformer[DataSourceType.HTTP, FullDataSourceHttpType] = {
+    Transformer
+      .define[DataSourceType.HTTP, FullDataSourceHttpType]
+      .withFieldComputed(_.headers, _.headers.toList.map(x => FullDataSourceNameValue(x._1, x._2)))
+      .withFieldComputed(_.params, _.params.toList.map(x => FullDataSourceNameValue(x._1, x._2)))
+      .buildTransformer
+  }
+}
+
+final case class FullDataSourceNameValue(
+    name:  String,
+    value: String
+)
+
+@jsonDiscriminator("name") sealed trait FullDataSourceMode
+
+object FullDataSourceMode {
+  @jsonHint(HttpRequestMode.OneRequestByNode.name) case object OneRequestByNode extends FullDataSourceMode
+  @jsonHint(HttpRequestMode.OneRequestAllNodes.name) case class OneRequestAllNodes(
+      @jsonField("path") matchingPath:       String,
+      @jsonField("attribute") nodeAttribute: String
+  ) extends FullDataSourceMode
+
+  implicit val transformerFrom: Transformer[FullDataSourceMode, HttpRequestMode] =
+    Transformer.derive[FullDataSourceMode, HttpRequestMode]
+  implicit val transformerTo:   Transformer[HttpRequestMode, FullDataSourceMode] =
+    Transformer.derive[HttpRequestMode, FullDataSourceMode]
+}
+
+@jsonDiscriminator("name") sealed trait FullDataSourceMissing
+
+object FullDataSourceMissing {
+  @jsonHint(MissingNodeBehavior.Delete.name) final case object Delete                                extends FullDataSourceMissing
+  @jsonHint(MissingNodeBehavior.NoChange.name) final case object NoChange                            extends FullDataSourceMissing
+  @jsonHint(MissingNodeBehavior.DefaultValue.name) final case class DefaultValue(value: ConfigValue) extends FullDataSourceMissing
+
+  implicit val transformerFrom: Transformer[FullDataSourceMissing, MissingNodeBehavior] =
+    Transformer.derive[FullDataSourceMissing, MissingNodeBehavior]
+  implicit val transformerTo:   Transformer[MissingNodeBehavior, FullDataSourceMissing] =
+    Transformer.derive[MissingNodeBehavior, FullDataSourceMissing]
+}
+
+final case class FullDataSourceRunParameters(
+    onGeneration: Boolean,
+    onNewNode:    Boolean,
+    schedule:     FullDataSourceSchedule
+)
+
+object FullDataSourceRunParameters {
+  implicit val transformerFrom: Transformer[FullDataSourceRunParameters, DataSourceRunParameters] =
+    Transformer.derive[FullDataSourceRunParameters, DataSourceRunParameters]
+  implicit val transformerTo:   Transformer[DataSourceRunParameters, FullDataSourceRunParameters] =
+    Transformer.derive[DataSourceRunParameters, FullDataSourceRunParameters]
+}
+
+@jsonDiscriminator("type") sealed trait FullDataSourceSchedule
+
+object FullDataSourceSchedule {
+  @jsonHint("scheduled") final case class Scheduled(
+      duration: Duration
+  ) extends FullDataSourceSchedule
+  @jsonHint("notscheduled") final case class NoSchedule(
+      @jsonField("duration") savedDuration: Duration
+  ) extends FullDataSourceSchedule
+
+  implicit val transformerFrom: Transformer[FullDataSourceSchedule, DataSourceSchedule] =
+    Transformer.derive[FullDataSourceSchedule, DataSourceSchedule]
+
+  implicit val transformerTo: Transformer[DataSourceSchedule, FullDataSourceSchedule] =
+    Transformer.derive[DataSourceSchedule, FullDataSourceSchedule]
+}
+
+object DataSourceJsonCodec {
+  // encode seconds as Long, decode seconds as BigInt (kept retrocompatibility from lift-json migration)
+  implicit val durationEncoder: JsonEncoder[Duration] = JsonEncoder[Long].contramap(_.toScala.toSeconds)
+  implicit val durationDecoder: JsonDecoder[Duration] =
+    JsonDecoder[BigInt].map(v => Duration.fromScala(FiniteDuration(v.toLong, TimeUnit.SECONDS)))
+
+  implicit val maxParallelRequestEncoder: JsonEncoder[FullDataSourceHttpType.MaxParallelRequest] =
+    JsonEncoder[Int].contramap(_.value)
+  implicit val maxParallelRequestDecoder: JsonDecoder[FullDataSourceHttpType.MaxParallelRequest] = JsonDecoder[Option[Json]].map {
+    case Some(Json.Num(n)) if (BigDecimal(n).pipe(i => i > 0 && i.isValidInt)) =>
+      FullDataSourceHttpType.MaxParallelRequest(BigDecimal(n).toIntExact)
+    case _                                                                     =>
+      FullDataSourceHttpType.MaxParallelRequest.default // if not int or key absent => default value
+  }
+
+  implicit val dataSourceNameEncoder:              JsonEncoder[DataSourceName]              = JsonEncoder[String].contramap(_.value)
+  implicit val dataSourceIdEncoder:                JsonEncoder[DataSourceId]                = JsonEncoder[String].contramap(_.value)
+  implicit val fullDataSourceNameValueEncoder:     JsonEncoder[FullDataSourceNameValue]     =
+    DeriveJsonEncoder.gen[FullDataSourceNameValue]
+  implicit val fullDataSourceModeEncoder:          JsonEncoder[FullDataSourceMode]          = DeriveJsonEncoder.gen[FullDataSourceMode]
+  implicit val configValueEncoder:                 JsonEncoder[ConfigValue]                 = {
+    JsonEncoder[Json].contramap(
+      _.render(ConfigRenderOptions.concise()).fromJson[Json].toOption.get
+    ) // such rending always return valid json
+  }
+  implicit val fullDataSourceMissingEncoder:       JsonEncoder[FullDataSourceMissing]       = DeriveJsonEncoder.gen[FullDataSourceMissing]
+  implicit val fullDataSourceScheduleEncoder:      JsonEncoder[FullDataSourceSchedule]      = DeriveJsonEncoder.gen[FullDataSourceSchedule]
+  implicit val fullDataSourceRunParametersEncoder: JsonEncoder[FullDataSourceRunParameters] =
+    DeriveJsonEncoder.gen[FullDataSourceRunParameters]
+  implicit val fullDataSourceHttpMethodEncoder:    JsonEncoder[FullDataSourceHttpMethod]    = JsonEncoder[String].contramap(_.name)
+  implicit val fullDataSourceHttpTypeEncoder:      JsonEncoder[FullDataSourceHttpType]      =
+    DeriveJsonEncoder.gen[FullDataSourceHttpType]
+  implicit val fullDataSourceParameterHttpEncoder: JsonEncoder[FullDataSourceParameterHttp] =
+    DeriveJsonEncoder.gen[FullDataSourceParameterHttp]
+  implicit val fullDataSourceTypeEncoder:          JsonEncoder[FullDataSourceType]          = DeriveJsonEncoder.gen[FullDataSourceType]
+  implicit val fullDataSourceEncoder:              JsonEncoder[FullDataSource]              = DeriveJsonEncoder.gen[FullDataSource]
+
+  // Decoders
+  implicit val dataSourceNameDecoder:              JsonDecoder[DataSourceName]              = JsonDecoder[String].map(DataSourceName(_))
+  implicit val dataSourceIdDecoder:                JsonDecoder[DataSourceId]                = JsonDecoder[String].map(DataSourceId(_))
+  implicit val fullDataSourceNameValueDecoder:     JsonDecoder[FullDataSourceNameValue]     =
+    DeriveJsonDecoder.gen[FullDataSourceNameValue]
+  implicit val fullDataSourceModeDecoder:          JsonDecoder[FullDataSourceMode]          = DeriveJsonDecoder.gen[FullDataSourceMode]
+  implicit val configValueDecoder:                 JsonDecoder[ConfigValue]                 = JsonDecoder[Json].map(fromZioJson(_))
+  implicit val fullDataSourceMissingDecoder:       JsonDecoder[FullDataSourceMissing]       = DeriveJsonDecoder.gen[FullDataSourceMissing]
+  implicit val fullDataSourceScheduleDecoder:      JsonDecoder[FullDataSourceSchedule]      = DeriveJsonDecoder.gen[FullDataSourceSchedule]
+  implicit val fullDataSourceRunParametersDecoder: JsonDecoder[FullDataSourceRunParameters] =
+    DeriveJsonDecoder.gen[FullDataSourceRunParameters]
+  implicit val fullDataSourceHttpMethodDecoder:    JsonDecoder[FullDataSourceHttpMethod]    =
+    JsonDecoder[String].mapOrFail(FullDataSourceHttpMethod.byName(_))
+  implicit val fullDataSourceHttpTypeDecoder:      JsonDecoder[FullDataSourceHttpType]      =
+    DeriveJsonDecoder.gen[FullDataSourceHttpType]
+  implicit val fullDataSourceParameterHttpDecoder: JsonDecoder[FullDataSourceParameterHttp] =
+    DeriveJsonDecoder.gen[FullDataSourceParameterHttp]
+  implicit val fullDataSourceTypeDecoder:          JsonDecoder[FullDataSourceType]          = DeriveJsonDecoder.gen[FullDataSourceType]
+  implicit val fullDataSourceDecoder:              JsonDecoder[FullDataSource]              = DeriveJsonDecoder.gen[FullDataSource]
+  implicit val dataSourcePayloadDecoder:           JsonDecoder[DataSourceProperties]        = DeriveJsonDecoder.gen[DataSourceProperties]
+  implicit val newDataSourceDecoder:               JsonDecoder[NewDataSource]               = DeriveJsonDecoder.gen[NewDataSource]
+
+}
+
+// API response with "id" and "message" json object in data
+final case class RestResponseMessage(
+    id:      DataSourceId,
+    message: String
+)
+
+object RestResponseMessage {
+  implicit val encoder: JsonEncoder[RestResponseMessage] = DeriveJsonEncoder.gen[RestResponseMessage]
+}
+
+/**
+ * Set of patch classes and utilities to extract and decode values.
+ * For patch classes, fields from the full class are made optional, but and the json representation is kept,
+ * hence the similarity in the ADT structures.
+ */
 object DataSourceExtractor {
-  object OptionalJson extends DataSourceExtractor[Option] {
+
+  // For patching we have the strategy of not overriding the base value if the patch value is None
+  // see https://chimney.readthedocs.io/en/0.8.3/supported-patching/ and "the cookbook" for scala 3 migration
+  // (or more verbose solution : define the Patcher with the .ignoreNoneInPatch option instead of deriving)
+  implicit protected val patchCfg: PatcherConfiguration[_] = PatcherConfiguration.default.ignoreNoneInPatch
+
+  case class PatchDataSourceRunParam(
+      onGeneration: Option[Boolean],
+      onNewNode:    Option[Boolean],
+      schedule:     Option[FullDataSourceSchedule]
+  ) {
+    def withBase(base: DataSourceRunParameters): DataSourceRunParameters = base.patchUsing(this)
+  }
+
+  object PatchDataSourceRunParam {
+    implicit val patcher: Patcher[DataSourceRunParameters, PatchDataSourceRunParam] =
+      Patcher.derive[DataSourceRunParameters, PatchDataSourceRunParam]
+    implicit val decoder: JsonDecoder[PatchDataSourceRunParam]                      = DeriveJsonDecoder.gen[PatchDataSourceRunParam]
+
+    def empty: PatchDataSourceRunParam = PatchDataSourceRunParam(None, None, None)
+  }
+
+  @jsonDiscriminator("name") sealed trait PatchDataSourceType {
+    def withBase(base: DataSourceType): DataSourceType = {
+      base.patchUsing(this)
+    }
+  }
+
+  // the data source type is wrapped in "parameters", we need a wrapper to have the same structure as the full data source type
+  @jsonHint("HTTP") final case class PatchDataSourceParameterHttp(
+      parameters: PatchDataSourceHttpType
+  ) extends PatchDataSourceType
+
+  final case class PatchDataSourceHttpType(
+      url:                                             Option[String],
+      headers:                                         Option[List[FullDataSourceNameValue]],
+      params:                                          Option[List[FullDataSourceNameValue]],
+      path:                                            Option[String],
+      @jsonField("checkSsl") sslCheck:                 Option[Boolean],
+      @jsonField("maxParallelReq") maxParallelRequest: Option[FullDataSourceHttpType.MaxParallelRequest],
+      @jsonField("requestTimeout") requestTimeOut:     Option[Duration],
+      @jsonField("requestMethod") httpMethod:          Option[FullDataSourceHttpMethod],
+      requestMode:                                     Option[FullDataSourceMode],
+      @jsonField("onMissing") missingNodeBehavior:     Option[FullDataSourceMissing]
+  )
+
+  object PatchDataSourceType {
+    implicit val httpPatcher: Patcher[DataSourceType.HTTP, PatchDataSourceHttpType] =
+      Patcher.derive[DataSourceType.HTTP, PatchDataSourceHttpType]
+
+    implicit val patcher: Patcher[DataSourceType, PatchDataSourceType] = {
+      case (obj: DataSourceType.HTTP, patch: PatchDataSourceParameterHttp) => httpPatcher.patch(obj, patch.parameters)
+    }
+
+    implicit val httpDecoder: JsonDecoder[PatchDataSourceHttpType] = DeriveJsonDecoder.gen[PatchDataSourceHttpType]
+    implicit val decoder:     JsonDecoder[PatchDataSourceType]     = DeriveJsonDecoder.gen[PatchDataSourceType]
+
+    def empty: PatchDataSourceType = PatchDataSourceParameterHttp(
+      PatchDataSourceHttpType(
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None
+      )
+    )
+
+  }
+
+  /**
+   * Data representation used for update of datasource, simply a DataSourceProperties with all property fields optional
+   * WARNING: any change in this class must be kept retrocompatible with the API request definitions, as it is used to read the request body
+   */
+  case class PatchDataSource(
+      name:                                      Option[DataSourceName],
+      description:                               Option[String],
+      @jsonField("type") sourceType:             PatchDataSourceType,
+      @jsonField("runParameters") runParam:      PatchDataSourceRunParam,
+      @jsonField("updateTimeout") updateTimeOut: Option[Duration],
+      enabled:                                   Option[Boolean]
+  ) {
+    def withBase(base: DataSource): DataSource = {
+      // chimney patcher was not possible to derive due to nested Patch (requested feature from chimney)
+      base.copy(
+        name = name.getOrElse(base.name),
+        description = description.getOrElse(base.description),
+        sourceType = sourceType.withBase(base.sourceType),
+        runParam = runParam.withBase(base.runParam),
+        updateTimeOut = updateTimeOut.getOrElse(base.updateTimeOut),
+        enabled = enabled.getOrElse(base.enabled)
+      )
+    }
+  }
+
+  private object PatchDataSource {
+    implicit val decoder: JsonDecoder[PatchDataSource] = DeriveJsonDecoder.gen[PatchDataSource]
+  }
+
+  /**
+   * Utilities to extract values from params Map
+   */
+  implicit class Extract(params: Map[String, List[String]]) {
+    def optGet(key: String):                               Option[String]        = params.get(key).flatMap(_.headOption)
+    def parse[A: JsonDecoder](key: String):                PureResult[Option[A]] = {
+      optGet(key) match {
+        case None    => Right(None)
+        case Some(x) => JsonDecoder[A].decodeJson(x).map(Some(_)).left.map(Unexpected)
+      }
+    }
+    def parseString[A](key: String, decoder: String => A): PureResult[Option[A]] = {
+      optGet(key) match {
+        case None    => Right(None)
+        case Some(x) => Some(decoder(x)).asRight
+      }
+    }
+  }
+
+  /**
+    * API of extractor for patched JSON : extract field updates, all fields are thus optional
+    * We need extraction when knowning the concrete type param of the data source extractor, because we need derivation
+    */
+  object OptionalJson extends JsonExtractorUtils[Option] {
     def monad                                      = implicitly
     def emptyValue[T](id: String)                  = Full(None)
     def getOrElse[T](value: Option[T], default: T) = value.getOrElse(default)
+
+    def extractNewDataSource(req: Req): PureResult[DataSource] = {
+      if (req.json_?) {
+        req
+          .fromJson[NewDataSource]
+          .map(_.toDataSource)
+      } else {
+        extractDataSourceFromParams(req.params, None)
+      }
+    }
+
+    // base : a data source to patch
+    def extractDataSource(req: Req, base: DataSource): PureResult[DataSource] = {
+      if (req.json_?) {
+        req
+          .fromJson[PatchDataSource]
+          .map(_.withBase(base))
+      } else {
+        extractDataSourceFromParams(req.params, Some(base))
+      }
+    }
+
+    // Fails (is a left) if "id" is not present in params but is required to create a new data source
+    private def extractDataSourceFromParams(
+        params: Map[String, List[String]],
+        base:   Option[DataSource]
+    ): PureResult[DataSource] = {
+      for {
+        name          <- params.parseString("name", DataSourceName.apply)
+        sourceType    <- params.parse[PatchDataSourceType]("sourceType").map(_.getOrElse(PatchDataSourceType.empty))
+        runParam      <- params.parse[PatchDataSourceRunParam]("runParam").map(_.getOrElse(PatchDataSourceRunParam.empty))
+        description   <- params.parseString("description", identity)
+        enabled       <- params.parse[Boolean]("enabled")
+        updateTimeout <- params.parse[Duration]("updateTimeout")
+
+        res <- base match {
+                 case Some(toPatch) =>
+                   PatchDataSource(name, description, sourceType, runParam, updateTimeout, enabled)
+                     .withBase(toPatch)
+                     .asRight
+                 case None          =>
+                   params
+                     .parseString("id", DataSourceId.apply)
+                     .flatMap(_.toRight(Unexpected("Datasource 'id' parameter is mandatory")))
+                     .map(NewDataSource(_, name, description, sourceType, runParam, updateTimeout, enabled).toDataSource)
+
+               }
+      } yield res
+    }
+
   }
 
   type Id[X] = X
 
-  object CompleteJson extends DataSourceExtractor[Id] {
+  /**
+   * API of extractor for complete JSON : extract all fields, all fields are thus mandatory
+   */
+  object CompleteJson extends JsonExtractorUtils[Id] {
     def monad                              = implicitly
     def emptyValue[T](id: String)          = Failure(s"parameter '${id}' cannot be empty")
     def getOrElse[T](value: T, default: T) = value
+
+    // Extract all fields of a DataSource from the JSON
+    def extractDataSource(json: String): Either[String, DataSource] = {
+      json.fromJson[FullDataSource].map(_.transformInto[DataSource])
+    }
   }
+
 }

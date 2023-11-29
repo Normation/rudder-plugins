@@ -37,59 +37,43 @@
 
 package com.normation.plugins.datasources.api
 
-import com.normation.box._
-import com.normation.eventlog.EventActor
+import com.normation.errors._
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.datasources.DataSource
 import com.normation.plugins.datasources.DataSourceId
-import com.normation.plugins.datasources.DataSourceJsonSerializer
-import com.normation.plugins.datasources.DataSourceName
+import com.normation.plugins.datasources.DataSourceJsonCodec._
 import com.normation.plugins.datasources.DataSourceRepository
-import com.normation.plugins.datasources.DataSourceRunParameters
-import com.normation.plugins.datasources.DataSourceSchedule
-import com.normation.plugins.datasources.DataSourceType
 import com.normation.plugins.datasources.DataSourceUpdateCallbacks
-import com.normation.plugins.datasources.HttpMethod
-import com.normation.plugins.datasources.HttpRequestMode
-import com.normation.plugins.datasources.MissingNodeBehavior
+import com.normation.plugins.datasources.FullDataSource
 import com.normation.plugins.datasources.NodeUpdateResult
+import com.normation.plugins.datasources.RestResponseMessage
 import com.normation.plugins.datasources.UpdateCause
 import com.normation.plugins.datasources.api.{DataSourceApi => API}
 import com.normation.rudder.api.ApiVersion
-import com.normation.rudder.apidata.RestDataSerializer
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GenericProperty._
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.rest._
-import com.normation.rudder.rest.RestUtils._
+import com.normation.rudder.rest.implicits._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.utils.Control
 import com.normation.utils.StringUuidGenerator
-import com.normation.zio._
-import net.liftweb.common.Box
-import net.liftweb.common.EmptyBox
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
+import io.scalaland.chimney.syntax._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json.JsonAST.JArray
-import net.liftweb.json.JsonAST.JString
-import net.liftweb.json.JValue
-import zio._
+import zio.syntax._
 
 class DataSourceApiImpl(
-    extractor:          RestExtractorService,
-    restDataSerializer: RestDataSerializer,
-    dataSourceRepo:     DataSourceRepository with DataSourceUpdateCallbacks,
-    nodeInfoService:    NodeInfoService,
-    nodeRepos:          WoNodeRepository,
-    uuidGen:            StringUuidGenerator
+    extractor:       RestExtractorService,
+    dataSourceRepo:  DataSourceRepository with DataSourceUpdateCallbacks,
+    nodeInfoService: NodeInfoService,
+    nodeRepos:       WoNodeRepository,
+    uuidGen:         StringUuidGenerator
 ) extends LiftApiModuleProvider[API] {
   api =>
 
@@ -97,22 +81,9 @@ class DataSourceApiImpl(
 
   def schemas = API
 
-  def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String])(implicit
-      action:            String
-  ): LiftResponse = {
-    RestUtils.response(extractor, kind, id)(function, req, errorMessage)
-  }
-
   type ActionType = RestUtils.ActionType
-  def actionResponse(function: Box[ActionType], req: Req, errorMessage: String, id: Option[String], actor: EventActor)(implicit
-      action:                  String
-  ): LiftResponse = {
-    RestUtils.actionResponse2(extractor, kind, uuidGen, id)(function, req, errorMessage)(action, actor)
-  }
 
   import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson._
-  import extractor._
-  import net.liftweb.json.JsonDSL._
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints
@@ -145,11 +116,11 @@ class DataSourceApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       // reloadData OneNode All datasources
-      dataSourceRepo.onUserAskUpdateNode(authzToken.actor, NodeId(nodeId)).forkDaemon.runNow
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for all configured data sources, is going to be updated"))(
-        schema.name,
-        params.prettify
-      )
+      dataSourceRepo
+        .onUserAskUpdateNode(authzToken.actor, NodeId(nodeId))
+        .forkDaemon
+        .as(s"Data for node '${nodeId}', for all configured data sources, is going to be updated")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -165,11 +136,11 @@ class DataSourceApiImpl(
         authzToken:   AuthzToken
     ): LiftResponse = {
       // reloadData AllNodes One datasources
-      dataSourceRepo.onUserAskUpdateAllNodesFor(authzToken.actor, DataSourceId(datasourceId)).forkDaemon.runNow
-      toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', are going to be updated"))(
-        schema.name,
-        params.prettify
-      )
+      dataSourceRepo
+        .onUserAskUpdateAllNodesFor(authzToken.actor, DataSourceId(datasourceId))
+        .forkDaemon
+        .as(s"Data for all nodes, for data source '${datasourceId}', are going to be updated")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -185,12 +156,12 @@ class DataSourceApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       val (datasourceId, nodeId) = ids
-      // reload Data One Node One datasource
-      dataSourceRepo.onUserAskUpdateNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId)).forkDaemon.runNow
-      toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated"))(
-        schema.name,
-        params.prettify
-      )
+      // reloadData OneNode One datasource
+      dataSourceRepo
+        .onUserAskUpdateNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId))
+        .forkDaemon
+        .as(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -210,26 +181,13 @@ class DataSourceApiImpl(
       def cause(nodeId: NodeId) =
         UpdateCause(modId, authzToken.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
 
-      val res: Box[Seq[NodeUpdateResult]] = for {
-        nodes   <- nodeInfoService.getAllNodes().toBox
-        updated <- Control.bestEffort(nodes.values.toSeq) { node =>
-                     erase(cause(node.id), node, DataSourceId(datasourceId)).toBox
-                   }
-      } yield {
-        updated
-      }
-      res match {
-        case Full(_) =>
-          toJsonResponse(None, JString(s"Data for all nodes, for data source '${datasourceId}', cleared"))(
-            schema.name,
-            params.prettify
-          )
-        case eb: EmptyBox =>
-          toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))(
-            schema.name,
-            params.prettify
-          )
-      }
+      (for {
+        nodes <- nodeInfoService.getAllNodes()
+        _     <- nodes.values.accumulate(node => erase(cause(node.id), node, DataSourceId(datasourceId)))
+        res    = s"Data for all nodes, for data source '${datasourceId}', cleared"
+      } yield res)
+        .chainError(s"Could not clear data source property '${datasourceId}'")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -251,29 +209,15 @@ class DataSourceApiImpl(
         Some(s"API request to clear '${datasourceId}' on node '${nodeId}'"),
         false
       )
-      val res: Box[NodeUpdateResult] = for {
-        optNode <- nodeInfoService.getNodeInfo(NodeId(nodeId)).toBox
-        node    <- optNode match {
-                     case None    => Failure(s"Node with ID '${nodeId}' was not found")
-                     case Some(x) => Full(x)
-                   }
-        updated <- erase(cause, node.node, DataSourceId(datasourceId)).toBox
-      } yield {
-        updated
-      }
 
-      res match {
-        case Full(_) =>
-          toJsonResponse(None, JString(s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"))(
-            schema.name,
-            params.prettify
-          )
-        case eb: EmptyBox =>
-          toJsonError(None, JString((eb ?~! s"Could not clear data source property '${datasourceId}'").messageChain))(
-            schema.name,
-            params.prettify
-          )
-      }
+      (for {
+        optNode <- nodeInfoService.getNodeInfo(NodeId(nodeId))
+        node    <- optNode.notOptional(s"Node with ID '${nodeId}' was not found")
+        updated <- erase(cause, node.node, DataSourceId(datasourceId))
+        res      = s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"
+      } yield res)
+        .chainError(s"Could not clear data source property '${datasourceId}'")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -282,11 +226,11 @@ class DataSourceApiImpl(
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       // reloadData All Nodes All Datasources
-      dataSourceRepo.onUserAskUpdateAllNodes(authzToken.actor).forkDaemon.runNow
-      toJsonResponse(None, JString("Data for all nodes, for all configured data sources are going to be updated"))(
-        schema.name,
-        params.prettify
-      )
+      dataSourceRepo
+        .onUserAskUpdateAllNodes(authzToken.actor)
+        .forkDaemon
+        .as("Data for all nodes, for all configured data sources are going to be updated")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -294,12 +238,13 @@ class DataSourceApiImpl(
     val schema        = API.GetAllDataSources
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val res = for {
+      (for {
         sources <- dataSourceRepo.getAll
       } yield {
-        JArray(sources.values.map(DataSourceJsonSerializer.serialize(_)).toList)
-      }
-      response(res.toBox, req, "Could not get data sources", None)(schema.name)
+        sources.values.map(_.transformInto[FullDataSource]).toList
+      })
+        .chainError("Could not get data sources")
+        .toLiftResponseList(params, schema)
     }
   }
 
@@ -314,12 +259,12 @@ class DataSourceApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      val res = for {
+      (for {
         source <- dataSourceRepo.get(DataSourceId(sourceId)).notOptional(s"Data source ${sourceId} does not exist.")
       } yield {
-        JArray(DataSourceJsonSerializer.serialize(source) :: Nil)
-      }
-      response(res.toBox, req, s"Could not get data sources from '${sourceId}'", None)(schema.name)
+        List(source.transformInto[FullDataSource])
+      }).chainError(s"Could not get data sources from '${sourceId}'")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -334,8 +279,7 @@ class DataSourceApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-
-      val res = for {
+      (for {
         source <- dataSourceRepo.delete(
                     DataSourceId(sourceId),
                     UpdateCause(
@@ -345,10 +289,9 @@ class DataSourceApiImpl(
                     )
                   )
       } yield {
-        JArray((("id" -> sourceId) ~ ("message" -> s"Data source ${sourceId} deleted")) :: Nil)
-      }
-
-      response(res.toBox, req, s"Could not delete data sources '${sourceId}'", None)(schema.name)
+        RestResponseMessage(DataSourceId(sourceId), s"Data source ${sourceId} deleted")
+      }).chainError(s"Could not delete data sources '${sourceId}'")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -356,31 +299,13 @@ class DataSourceApiImpl(
     val schema        = API.CreateDataSource
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val defaultDuration = DataSource.defaultDuration
-      val baseSourceType  = DataSourceType.HTTP(
-        "",
-        Map(),
-        HttpMethod.GET,
-        Map(),
-        false,
-        "",
-        DataSourceType.HTTP.defaultMaxParallelRequest,
-        HttpRequestMode.OneRequestByNode,
-        defaultDuration,
-        MissingNodeBehavior.Delete
-      )
-      val baseRunParam    = DataSourceRunParameters.apply(DataSourceSchedule.NoSchedule(defaultDuration), false, false)
-      val res: Box[JValue] = for {
-        sourceId <- extractId(req) { a =>
-                      val id = DataSourceId(a); Full(id)
-                    }.flatMap(Box(_) ?~! "You need to define datasource id to create it via api")
-        base      = DataSource.apply(sourceId, DataSourceName(""), baseSourceType, baseRunParam, "", false, defaultDuration)
-        source   <- extractReqDataSource(req, base)
-        _        <- dataSourceRepo.save(source).toBox
+      (for {
+        source <- extractNewDataSource(req).toIO
+        _      <- dataSourceRepo.save(source)
       } yield {
-        DataSourceJsonSerializer.serialize(source) :: Nil
-      }
-      response(res, req, "Could not create data source", None)(schema.name)
+        source.transformInto[FullDataSource]
+      }).chainError(s"Could not create data source")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -395,49 +320,23 @@ class DataSourceApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      val res: Box[JValue] = for {
-        base    <- dataSourceRepo.get(DataSourceId(sourceId)).toBox.flatMap {
-                     Box(_) ?~! s"Cannot update data source '${sourceId}', because it does not exist"
-                   }
-        updated <- extractReqDataSource(req, base)
-        _       <- dataSourceRepo.save(updated).toBox
+      (for {
+        optBase <- dataSourceRepo
+                     .get(DataSourceId(sourceId))
+        base    <- optBase.notOptional(
+                     s"Cannot update data source '${sourceId}', because it does not exist"
+                   )
+        updated <- extractDataSource(req, base).toIO
+        _       <- dataSourceRepo.save(updated)
       } yield {
-        DataSourceJsonSerializer.serialize(updated) :: Nil
-      }
-      response(res, req, s"Could not update data source '${sourceId}'", None)(schema.name)
+        updated.transformInto[FullDataSource]
+      }).chainError(s"Could not update data source '${sourceId}'")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
   /// utilities ///
-
-  def extractReqDataSource(req: Req, base: DataSource): Box[DataSource] = {
-    req.json match {
-      case Full(json) =>
-        extractDataSourceWrapper(base.id, json).map(_.withBase(base))
-      case _          =>
-        for {
-          name        <- extractString("name")(req)(x => Full(DataSourceName(x)))
-          description <- extractString("description")(req)(boxedIdentity)
-          sourceType  <- extractObj("type")(req)(extractDataSourceTypeWrapper(_))
-          runParam    <- extractObj("runParameters")(req)(extractDataSourceRunParameterWrapper(_))
-          timeOut     <- extractInt("updateTimeout")(req)(extractDuration)
-          enabled     <- extractBoolean("enabled")(req)(identity)
-        } yield {
-          base.copy(
-            name = name.getOrElse(base.name),
-            sourceType = getOrElse(sourceType.map(_.withBase(base.sourceType)), base.sourceType),
-            description = description.getOrElse(base.description),
-            enabled = enabled.getOrElse(base.enabled),
-            updateTimeOut = timeOut.map(Duration.fromScala).getOrElse(base.updateTimeOut),
-            runParam = getOrElse(runParam.map(_.withBase(base.runParam)), base.runParam)
-          )
-        }
-    }
-  }
-
-  private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId) = {
-    import com.normation.errors._
-    import zio.syntax._
+  private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId): IOResult[NodeUpdateResult] = {
     val newProp = DataSource.nodeProperty(datasourceId.value, "".toConfigValue)
     node.properties.find(_.name == newProp.name) match {
       case None    => NodeUpdateResult.Unchanged(node.id).succeed

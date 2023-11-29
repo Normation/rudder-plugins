@@ -45,7 +45,6 @@ import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.datasources.DataSourceSchedule._
 import com.normation.rudder.db.Doobie
-import com.normation.rudder.db.Doobie._
 import com.normation.rudder.domain.eventlog._
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.properties.GlobalParameter
@@ -53,9 +52,11 @@ import com.normation.utils.StringUuidGenerator
 import com.normation.zio._
 import doobie._
 import doobie.implicits._
+import io.scalaland.chimney.syntax._
 import org.joda.time.DateTime
 import zio._
 import zio.interop.catz._
+import zio.json._
 import zio.syntax._
 
 final case class PartialNodeUpdate(
@@ -425,32 +426,13 @@ class DataSourceJdbcRepository(
 
   import doobie._
 
-  implicit val dataSourceRead:  Read[DataSource]  = {
-    import net.liftweb.json.parse
-    Read[(DataSourceId, String)].map(tuple => {
-      DataSourceExtractor.CompleteJson.extractDataSource(tuple._1, parse(tuple._2)) match {
-        case net.liftweb.common.Full(s) => s
-        case eb: net.liftweb.common.EmptyBox =>
-          val fail = eb ?~! s"Error when deserializing data source ${tuple._1} from following data: ${tuple._2}"
-          throw new RuntimeException(fail.messageChain)
-      }
-    })
-  }
-  implicit val dataSourceWrite: Write[DataSource] = {
-    import com.normation.plugins.datasources.DataSourceJsonSerializer._
-    import net.liftweb.json.compactRender
-    Write[(DataSourceId, String)].contramap(source => (source.id, compactRender(serialize(source))))
-  }
-
   override def getAllIds: IOResult[Set[DataSourceId]] = {
-    transactIOResult("Error when getting datasource IDs")(xa =>
-      query[DataSourceId]("""select id from datasources""").to[Set].transact(xa)
-    )
+    transactIOResult("Error when getting datasource IDs")(xa => DataSourceJdbcRepository.getIdsSQL.to[Set].transact(xa))
   }
 
   override def getAll: IOResult[Map[DataSourceId, DataSource]] = {
     transactIOResult("Error when getting datasource")(xa => {
-      query[DataSource]("""select id, properties from datasources""")
+      DataSourceJdbcRepository.getAllSQL
         .to[Vector]
         .map(_.map(ds => (ds.id, ds)).toMap)
         .transact(xa)
@@ -459,22 +441,21 @@ class DataSourceJdbcRepository(
 
   override def get(sourceId: DataSourceId): IOResult[Option[DataSource]] = {
     transactIOResult(s"Error when getting datasource '${sourceId.value}'")(xa =>
-      sql"""select id, properties from datasources where id = ${sourceId.value}""".query[DataSource].option.transact(xa)
+      DataSourceJdbcRepository.getSQL(sourceId).option.transact(xa)
     )
   }
 
   override def save(source: DataSource): IOResult[DataSource] = {
-    import net.liftweb.json.compactRender
-    val json   = compactRender(DataSourceJsonSerializer.serialize(source))
-    val insert = """insert into datasources (id, properties) values (?, ?)"""
-    val update = s"""update datasources set properties = ? where id = ?"""
+    val fullDataSource = source.transformInto[FullDataSource]
+    def insert         = DataSourceJdbcRepository.insertDataSourceSQL(source.id, fullDataSource)
+    def update         = DataSourceJdbcRepository.updateDataSourceSQL(source.id, fullDataSource)
     import cats.implicits._
-    val sql    = for {
-      rowsAffected <- Update[(String, String)](update).run((json, source.id.value))
+    val sql            = for {
+      rowsAffected <- update.run
       result       <- rowsAffected match {
                         case 0 =>
                           DataSourceLogger.debug(s"source ${source.id} is not present in database, creating it")
-                          Update[DataSource](insert).run(source)
+                          insert.run
                         case 1 => 1.pure[ConnectionIO]
                         case n => throw new RuntimeException(s"Expected 0 or 1 change, not ${n} for ${source.id}")
                       }
@@ -492,10 +473,46 @@ class DataSourceJdbcRepository(
   }
 
   override def delete(sourceId: DataSourceId, cause: UpdateCause): IOResult[DataSourceId] = {
-    val query = sql"""delete from datasources where id = ${sourceId}"""
     transactIOResult(s"Error when deleting datasource '${sourceId.value}'")(xa =>
-      query.update.run.map(_ => sourceId).transact(xa)
+      DataSourceJdbcRepository.deleteSQL(sourceId).run.map(_ => sourceId).transact(xa)
     )
   }
 
+}
+
+object DataSourceJdbcRepository {
+  import com.normation.plugins.datasources.DataSourceJsonCodec._
+
+  // Datasource properties is stored as a string in the database column
+  implicit val dataSourceGet: Get[DataSourceProperties] = Get[String].temap(_.fromJson[DataSourceProperties])
+  // The 'id' is also written in the fields of the datasource properties (we keep writing it for compatibility but we may use the same format as for the read)
+  implicit val dataSourcePut: Put[FullDataSource]       = Put[String].contramap(_.toJson)
+
+  implicit private val dataSourceRead: Read[DataSource] = {
+    Read[(DataSourceId, DataSourceProperties)].map { case (id, ds) => ds.toDataSource(id) }
+  }
+
+  def getIdsSQL = {
+    sql"""select id from datasources""".query[DataSourceId]
+  }
+
+  def getAllSQL = {
+    sql"""select id, properties from datasources""".query[DataSource]
+  }
+
+  def getSQL(id: DataSourceId) = {
+    sql"""select id, properties from datasources where id = ${id}""".query[DataSource]
+  }
+
+  def insertDataSourceSQL(id: DataSourceId, fullDataSource: FullDataSource) = {
+    sql"""insert into datasources (id, properties) values (${id}, ${fullDataSource})""".update
+  }
+
+  def updateDataSourceSQL(id: DataSourceId, fullDataSource: FullDataSource) = {
+    sql"""update datasources set properties = ${fullDataSource} where id = ${id}""".update
+  }
+
+  def deleteSQL(id: DataSourceId) = {
+    sql"""delete from datasources where id = ${id}""".update
+  }
 }

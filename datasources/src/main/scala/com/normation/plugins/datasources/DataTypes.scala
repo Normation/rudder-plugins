@@ -43,7 +43,6 @@ import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
 import com.typesafe.config.ConfigValue
 import net.liftweb.common.Logger
-import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import zio._
 
@@ -191,33 +190,6 @@ final case class DataSourceRunParameters(
     onNewNode:    Boolean
 )
 
-final case class DataSourceStatus(
-    lastRunDate: Option[DateTime],
-    nodesStatus: Map[NodeId, DataSourceUpdateStatus]
-)
-
-sealed trait DataSourceUpdateStatus {
-  def state:       String
-  def lastRunDate: DateTime
-}
-
-final case object DataSourceUpdateStatus {
-
-  final case class Success(
-      lastRunDate: DateTime
-  ) extends DataSourceUpdateStatus {
-    val state = "success"
-  }
-
-  final case class Failure(
-      lastRunDate:     DateTime,
-      message:         String,
-      lastSuccessDate: Option[String]
-  ) extends DataSourceUpdateStatus {
-    val state = "failure"
-  }
-}
-
 final case class DataSource(
     id:            DataSourceId,
     name:          DataSourceName,
@@ -226,9 +198,7 @@ final case class DataSource(
     description:   String,
     enabled:       Boolean,
     updateTimeOut: Duration
-) {
-  val scope = "all"
-}
+)
 
 /*
  * A data type to track which nodes were updated and which one were not touched.

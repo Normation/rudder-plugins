@@ -441,13 +441,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def toScala = scala.concurrent.duration.FiniteDuration(d.toMillis, "millis")
   }
 
-  // utility to compact render a json string
-  // will throws exceptions if errors
-  def compact(json: String): String = {
-    import net.liftweb.json._
-    compactRender(parse(json))
-  }
-
   implicit class RunNowTimeout[A](effect: ZIO[Annotations with zio.test.Live, RudderError, A]) {
     def runTimeout(d: Duration) =
       effect.timeout(d).notOptional(s"The test timed-out after ${d}").provideLayer(zio.test.testEnvironment).runNow

@@ -114,7 +114,6 @@ object DatasourcesConf extends RudderPluginModule {
 
   val dataSourceApi9 = new DataSourceApiImpl(
     Cfg.restExtractorService,
-    Cfg.restDataSerializer,
     dataSourceRepository,
     Cfg.nodeInfoService,
     Cfg.woNodeRepository,
