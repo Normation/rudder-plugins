@@ -37,8 +37,9 @@
 
 package com.normation.plugins.changevalidation.api
 
-import com.normation.box._
 import com.normation.plugins.changevalidation._
+import com.normation.plugins.changevalidation.RudderJsonMapping._
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
@@ -49,24 +50,20 @@ import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.EndpointSchema.syntax._
 import com.normation.rudder.rest.InternalApi
-import com.normation.rudder.rest.RestExtractorService
-import com.normation.rudder.rest.RestUtils
-import com.normation.rudder.rest.RestUtils.toJsonError
+import com.normation.rudder.rest.RudderJsonRequest._
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
+import com.normation.rudder.rest.implicits._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.AuthorizationType
-
-import net.liftweb.common._
+import java.nio.charset.StandardCharsets
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json._
-import net.liftweb.json.NoTypeHints
 import sourcecode.Line
+import zio.ZIO
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -82,8 +79,8 @@ object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi
     val description    = "Get all available node groups with their role in change request validation"
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
 
-    override def dataContainer: Option[String] = None
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
   final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -97,13 +94,9 @@ object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi
 }
 
 class SupervisedTargetsApiImpl(
-    restExtractorService:     RestExtractorService,
     unsupervisedTargetsRepos: UnsupervisedTargetsRepository,
     nodeGroupRepository:      RoNodeGroupRepository
 ) extends LiftApiModuleProvider[SupervisedTargetsApi] {
-  api =>
-
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   def schemas = SupervisedTargetsApi
 
@@ -136,26 +129,21 @@ class SupervisedTargetsApiImpl(
    * }
    */
   object GetAllTargets extends LiftApiModule0 {
-    val schema        = SupervisedTargetsApi.GetAllTargets
-    val restExtractor = api.restExtractorService
+    val schema = SupervisedTargetsApi.GetAllTargets
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import com.normation.plugins.changevalidation.RudderJsonMapping._
 
       (for {
-        groups       <- nodeGroupRepository.getFullGroupLibrary().toBox
+        groups       <- nodeGroupRepository.getFullGroupLibrary()
         unsupervised <- unsupervisedTargetsRepos.load()
         supervised    = UnsupervisedTargetsRepository.invertTargets(unsupervised, groups)
         jsonRootCat   = groups.toJson(supervised)
       } yield {
         jsonRootCat
-      }) match {
-        case Full(jsonRootCat) =>
-          RestUtils.toJsonResponse(None, Extraction.decompose(jsonRootCat))(schema.name, params.prettify)
-        case eb: EmptyBox =>
-          val err = (eb ?~! "Error when trying to get group information").messageChain
-          ChangeValidationLogger.error(err)
-          RestUtils.toJsonError(None, JString(err))(schema.name, params.prettify)
-      }
+      })
+        .chainError("Error when trying to get group information")
+        .onError(err => ZIO.foreach(err.failureOption.map(_.fullMsg))(ChangeValidationLoggerPure.error(_)))
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -169,33 +157,23 @@ class SupervisedTargetsApiImpl(
 
     // from the JSON, etract the list of target name to supervise
 
-    val schema        = SupervisedTargetsApi.UpdateSupervisedTargets
-    val restExtractor = api.restExtractorService
+    val schema = SupervisedTargetsApi.UpdateSupervisedTargets
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      if (req.json_?) {
-        val res = for {
-          json    <- req.json
-          targets <- Ser.parseSupervisedTarget(json)
-          groups  <- nodeGroupRepository.getFullGroupLibrary().toBox
-          saved   <- unsupervisedTargetsRepos.save(UnsupervisedTargetsRepository.invertTargets(targets, groups))
-        } yield {
-          ()
-        }
-
-        res match {
-          case Full(x) =>
-            RestUtils.toJsonResponse(None, JString("Set of target needing validation has been updated"))(
-              schema.name,
-              params.prettify
+      (for {
+        targets <-
+          req
+            .fromJson[SupervisedSimpleTargets]
+            .toIO
+            .chainError(
+              s"Error when trying to parse JSON content ${new String(req.body.getOrElse(Array.empty), StandardCharsets.UTF_8)} as a set of rule target."
             )
-          case eb: EmptyBox =>
-            val msg = (eb ?~! "An error occurred when trying to save the set of rule target which needs validation").messageChain
-            ChangeValidationLogger.error(msg)
-            toJsonError(None, JString(msg))("updateRule", restExtractor.extractPrettify(req.params))
-        }
-      } else {
-        toJsonError(None, JString("No Json data sent"))("updateRule", restExtractor.extractPrettify(req.params))
-      }
+        groups  <- nodeGroupRepository.getFullGroupLibrary()
+        saved   <- unsupervisedTargetsRepos.save(UnsupervisedTargetsRepository.invertTargets(targets.supervised, groups))
+        res      = "Set of target needing validation has been updated"
+      } yield res)
+        .chainError("An error occurred when trying to save the set of rule target which needs validation")
+        .onError(err => ZIO.foreach(err.failureOption.map(_.fullMsg))(ChangeValidationLoggerPure.error(_)))
+        .toLiftResponseOne(params, schema, None)
     }
   }
 }

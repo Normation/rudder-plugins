@@ -46,6 +46,7 @@ import com.normation.rudder.AuthorizationType
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.web.services.CurrentUser
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.Empty
 import net.liftweb.common.Full
 import net.liftweb.http.ClasspathTemplates
@@ -85,7 +86,7 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
     }
 
     // init directory to save JSON
-    ChangeValidationConf.unsupervisedTargetRepo.checkPathAndInitRepos()
+    ChangeValidationConf.unsupervisedTargetRepo.checkPathAndInitRepos().runNow
   }
 
   override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(ChangeValidationConf.api)

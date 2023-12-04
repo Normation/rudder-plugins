@@ -1,6 +1,7 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.box._
+import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
@@ -54,7 +55,7 @@ trait ValidationNeeded {
  * Note that a validated user will always bypass this validation (see https://issues.rudder.io/issues/22188#note-5)
  */
 class NodeGroupValidationNeeded(
-    supervisedTargets: () => Box[Set[SimpleTarget]],
+    supervisedTargets: () => IOResult[Set[SimpleTarget]],
     repos:             RoChangeRequestRepository,
     ruleLib:           RoRuleRepository,
     groupLib:          RoNodeGroupRepository,
@@ -72,14 +73,14 @@ class NodeGroupValidationNeeded(
    */
   override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
     val start = System.currentTimeMillis()
-    val res   = for {
-      groups     <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo   <- nodeInfoService.getAll().toBox
+    val res   = (for {
+      groups     <- groupLib.getFullGroupLibrary()
+      nodeInfo   <- nodeInfoService.getAll()
       supervised <- supervisedTargets()
     } yield {
       val targets = Set(change.newRule) ++ change.previousRule.toSet
       checkNodeTargetByRule(groups, nodeInfo, supervised, targets)
-    }
+    }).toBox
     ChangeValidationLogger.Metrics.debug(
       s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System
           .currentTimeMillis() - start}ms"
@@ -131,11 +132,11 @@ class NodeGroupValidationNeeded(
 
     val start = System.currentTimeMillis()
 
-    val res = for {
-      groups      <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo <- nodeInfoService.getAll().toBox
-      groups      <- groupLib.getFullGroupLibrary().toBox
-      allNodeInfo <- nodeInfoService.getAll().toBox
+    val res = (for {
+      groups      <- groupLib.getFullGroupLibrary()
+      allNodeInfo <- nodeInfoService.getAll()
+      groups      <- groupLib.getFullGroupLibrary()
+      allNodeInfo <- nodeInfoService.getAll()
       supervised  <- supervisedTargets()
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
@@ -148,7 +149,7 @@ class NodeGroupValidationNeeded(
         )
       }
       exists.nonEmpty
-    }
+    }).toBox
     ChangeValidationLogger.Metrics.debug(
       s"Check group '${change.newGroup.name}' [${change.newGroup.id.serialize}] change requestion need for validation in ${System
           .currentTimeMillis() - start}ms"
@@ -163,16 +164,16 @@ class NodeGroupValidationNeeded(
     // in a change, the old directive id and the new one is the same.
     val directiveId = change.newDirective.id
     val start       = System.currentTimeMillis()
-    val res         = for {
-      rules      <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId))).toBox
+    val res         = (for {
+      rules      <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId)))
       // we need to add potentially new rules applied to that directive that the previous request does not cover
       newRules    = change.updatedRules
       supervised <- supervisedTargets()
-      groups     <- groupLib.getFullGroupLibrary().toBox
-      nodeInfo   <- nodeInfoService.getAll().toBox
+      groups     <- groupLib.getFullGroupLibrary()
+      nodeInfo   <- nodeInfoService.getAll()
     } yield {
       checkNodeTargetByRule(groups, nodeInfo, supervised, (rules ++ newRules).toSet)
-    }
+    }).toBox
     ChangeValidationLogger.Metrics.debug(
       s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.serialize}] change requestion need for validation in ${System
           .currentTimeMillis() - start}ms"

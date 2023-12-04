@@ -1,19 +1,16 @@
 package com.normation.plugins.changevalidation
 
+import better.files.File
+import com.normation.errors._
+import com.normation.plugins.changevalidation.ChangeValidationLoggerPure
+import com.normation.plugins.changevalidation.RudderJsonMapping._
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.FullNodeGroupCategory
-import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-import net.liftweb.common.Box
-import net.liftweb.common.Empty
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
-import net.liftweb.json.Formats
-import net.liftweb.json.NoTypeHints
-import net.liftweb.json.Serialization
-import org.apache.commons.io.FileUtils
-import scala.util.control.NonFatal
+import scala.collection.immutable.SortedSet
+import zio.ZIO
+import zio.json._
 
 /*
  * This service save the list of target (only their id) in a
@@ -43,79 +40,72 @@ class UnsupervisedTargetsRepository(
     directory: Path,
     filename:  String
 ) {
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-  private[this] val path = new File(directory.toFile, filename)
+  private[this] val path = File(directory) / filename
 
   /*
    * Check that the directory path exists and is writable.
    * If it doesn't exists, try to create it.
    */
-  def checkPathAndInitRepos(): Unit = {
-    val f = directory.toFile
-    if (f.exists()) {
-      if (f.canWrite) {
-        ChangeValidationLogger.debug(s"Directory '${directory.toString()}' exists and is writable: ok")
-      } else {
-        ChangeValidationLogger.error(
-          s"Directory '${directory.toString()}' exists but is not writable. Please correct rights on that directory."
-        )
-      }
-    } else {
-      // try to create it
-      val msg = s"Error when creating directory '${directory.toString()}'. Please correct the problem."
-      try {
-        f.mkdirs()
-      } catch {
-        case NonFatal(ex) => ChangeValidationLogger.error(msg + " Error was: " + ex.getMessage)
-      }
-    }
-    // also check the file
-    if (path.exists()) {
-      // ok
-      ChangeValidationLogger.debug(s"Supervised target repository file '${path.toString()}' exists: ok")
-    } else { // create it
-      ChangeValidationLogger.debug(s"Initializing supervised target repository file '${path.toString()}'.")
-      save(Set())
-    }
+  def checkPathAndInitRepos(): IOResult[Unit] = {
+    val f = File(directory)
+    for {
+      exists     <- IOResult.attempt(f.exists)
+      isWritable <- IOResult.attempt(f.isWritable)
+      _          <- if (exists) {
+                      if (isWritable) ChangeValidationLoggerPure.debug(s"Directory '$directory' exists and is writable: ok")
+                      else {
+                        ChangeValidationLoggerPure.error(
+                          s"Directory '$directory' exists but is not writable. Please correct rights on that directory."
+                        )
+                      }
+                    } else {
+                      // try to create it
+                      IOResult
+                        .attempt(s"Error when creating directory '$directory'. Please correct the problem.")(
+                          f.createDirectory()
+                        )
+                        .onError(err => ZIO.foreach(err.failureOption.map(_.fullMsg))(ChangeValidationLoggerPure.error(_)))
+                    }
+
+      fileExists <- IOResult.attempt(path.exists())
+      _          <- if (fileExists) { // ok
+                      ChangeValidationLoggerPure.debug(s"Supervised target repository file '$path' exists: ok")
+                    } else { // create it
+                      ChangeValidationLoggerPure.debug(s"Initializing supervised target repository file '$path'.") *>
+                      save(Set())
+                    }
+    } yield ()
   }
 
-  def save(groups: Set[SimpleTarget]): Box[Unit] = {
+  def save(groups: Set[SimpleTarget]): IOResult[Unit] = {
 
     // Always save by replacing the whole file.
     // Sort by name.
-    val targets    = UnsupervisedTargetIds(groups.toList.map(_.target).sorted) // natural sort on string
-    val jsonString = Serialization.writePretty[UnsupervisedTargetIds](targets)
+    val targets = UnsupervisedTargetIds(SortedSet.from(groups)) // natural sort on string
 
     // write file
-    try {
-      FileUtils.writeStringToFile(path, jsonString, StandardCharsets.UTF_8)
-      Full(())
-    } catch {
-      case NonFatal(ex) =>
-        val msg = s"Error when saving list of group which trigger a change validation request from '${path.getAbsolutePath}'"
-        ChangeValidationLogger.error(msg)
-        Failure(msg, Full(ex), Empty)
-    }
+    IOResult
+      .attempt(
+        path.writeByteArray(StandardCharsets.UTF_8.encode(targets.toJson).array())
+      )
+      .unit
+      .chainError("Error when saving list of group which trigger a change validation request")
   }
 
-  def load(): Box[Set[SimpleTarget]] = {
+  def load(): IOResult[Set[SimpleTarget]] = {
 
-    def read(): Box[String] = {
-      try {
-        Full(FileUtils.readFileToString(path, StandardCharsets.UTF_8))
-      } catch {
-        case NonFatal(ex) =>
-          val msg = s"Error when reading list of group which trigger a change validation request from '${path.getAbsolutePath}'"
-          ChangeValidationLogger.error(msg)
-          Failure(msg, Full(ex), Empty)
-      }
+    def read(): IOResult[String] = {
+      IOResult
+        .attempt(s"Error when reading list of group which trigger a change validation request from '${path}'")(
+          path.contentAsString(StandardCharsets.UTF_8)
+        )
     }
 
     for {
       content <- read()
-      targets <- Ser.parseTargetIds(content)
+      targets <- content.fromJson[UnsupervisedTargetIds].toIO
     } yield {
-      targets
+      targets.unsupervised
     }
   }
 }

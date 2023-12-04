@@ -38,74 +38,63 @@
 package bootstrap.rudder.plugin
 
 import better.files.File
-import com.normation.box._
-import com.normation.plugins.changevalidation.ChangeValidationLogger
+import com.normation.errors._
+import com.normation.plugins.changevalidation.ChangeValidationLoggerPure
+import com.normation.plugins.changevalidation.OldFileFormat
+import com.normation.plugins.changevalidation.SupervisedSimpleTargets
 import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
-import com.normation.rudder.domain.policies.RuleTarget
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.RoNodeGroupRepository
+import io.scalaland.chimney.syntax._
 import java.nio.charset.StandardCharsets
-import net.liftweb.common._
-import net.liftweb.json.Formats
-import net.liftweb.json.NoTypeHints
-
-final case class OldfileFormat(supervised: List[String])
+import java.nio.file.Path
+import zio.ZIO
+import zio.json._
 
 /*
  * The validation workflow level
  */
 class MigrateSupervisedGroups(
     groupRepository:  RoNodeGroupRepository,
-    unsupervisedRepo: UnsupervisedTargetsRepository
+    unsupervisedRepo: UnsupervisedTargetsRepository,
+    directory:        Path,
+    oldFilename:      String
 ) {
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-  val directory   = "/var/rudder/plugin-resources/change-validation"
-  val oldFilename = "supervised-targets.json"
+  private[this] val old = File(directory) / oldFilename
 
-  def migrate(): Unit = {
-    Box.tryo {
-      val path = directory + "/" + oldFilename
-      val old  = File(path)
-      if (!old.exists) { // ok, plugin installed in new version
-        ChangeValidationLogger.debug("No migration needed from supervised to unsupervised groups")
-      } else { // migration needed
-        ChangeValidationLogger.info(s"Old file format for supervised target found: '${path}': migrating")
-        val oldTargetStrings = net.liftweb.json.Serialization.read[OldfileFormat](old.contentAsString(StandardCharsets.UTF_8))
-        val targets          = oldTargetStrings.supervised
-          .flatMap(t => {
-            RuleTarget.unser(t).flatMap {
-              case t: SimpleTarget => Some(t)
-              case _ => None
-            }
-          })
-          .toSet
-        val unsupervised: Set[SimpleTarget] = (
-          for {
-            groups <- groupRepository.getFullGroupLibrary().toBox
-          } yield {
-            UnsupervisedTargetsRepository.invertTargets(targets, groups)
-          }
-        ) match {
-          case Full(t) => t
-          case e: EmptyBox =>
-            val msg = (e ?~! s"Error when retrieving group library for migration: all groups will be supervised").messageChain
-            ChangeValidationLogger.warn(msg)
-            Set()
-        }
-        unsupervisedRepo.save(unsupervised) match {
-          case Full(_) =>
-            old.renameTo(oldFilename + "_migrated")
-            ChangeValidationLogger.info(s"Migration of old supervised group file format done")
-          case e: EmptyBox =>
-            val msg = (e ?~! s"Error when saving supervised group. Please check you configuration")
-            ChangeValidationLogger.warn(msg)
-        }
-      }
-    } match {
-      case Full(_) => () // done
-      case e: EmptyBox =>
-        val msg = (e ?~! s"Error when migrating supervised group. Please check you configuration")
-        ChangeValidationLogger.warn(msg)
-    }
+  def migrate(): IOResult[Unit] = {
+    (for {
+      exists <- IOResult.attempt(old.exists)
+
+      _ <- if (!exists) { // ok, plugin installed in new version
+             ChangeValidationLoggerPure.debug("No migration needed from supervised to unsupervised groups")
+           } else { // migration needed
+             (for {
+               _ <-
+                 ChangeValidationLoggerPure.info(s"Old file format for supervised target found: '${old}': migrating")
+
+               oldTargetStrings <- old.contentAsString(StandardCharsets.UTF_8).fromJson[OldFileFormat].toIO
+               targets           = oldTargetStrings.transformInto[SupervisedSimpleTargets].supervised
+               unsupervised     <-
+                 groupRepository
+                   .getFullGroupLibrary()
+                   .map(groups => UnsupervisedTargetsRepository.invertTargets(targets, groups))
+                   .catchAll[Any, RudderError, Set[SimpleTarget]](_ => {
+                     ChangeValidationLoggerPure
+                       .warn("Error when retrieving group library for migration: all groups will be supervised")
+                       .as(Set.empty)
+                   })
+
+               _ <-
+                 (unsupervisedRepo.save(unsupervised) *>
+                 IOResult.attempt(old.renameTo(oldFilename + "_migrated")) *>
+                 ChangeValidationLoggerPure.info(s"Migration of old supervised group file format done"))
+                   .chainError("Error when saving supervised group. Please check you configuration")
+
+             } yield ())
+           }
+    } yield ())
+      .chainError("Error when migrating supervised group. Please check you configuration")
+      .onError(err => ZIO.foreach(err.failureOption.map(_.fullMsg))(ChangeValidationLoggerPure.error(_)))
   }
 }

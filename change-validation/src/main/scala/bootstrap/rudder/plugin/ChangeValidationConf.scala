@@ -44,7 +44,6 @@ import bootstrap.liftweb.RudderConfig.restDataSerializer
 import bootstrap.liftweb.RudderConfig.restExtractorService
 import bootstrap.liftweb.RudderConfig.techniqueRepository
 import bootstrap.liftweb.RudderConfig.workflowLevelService
-
 import com.normation.box._
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
@@ -63,7 +62,6 @@ import com.normation.plugins.changevalidation.RoWorkflowJdbcRepository
 import com.normation.plugins.changevalidation.TopBarExtension
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
-import com.normation.plugins.changevalidation.ValidatedUserMapper
 import com.normation.plugins.changevalidation.ValidationNeeded
 import com.normation.plugins.changevalidation.WoChangeRequestJdbcRepository
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
@@ -90,10 +88,9 @@ import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
-
+import com.normation.zio.UnsafeRun
 import java.nio.file.Paths
 import net.liftweb.common.Box
-import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 
 /*
@@ -162,11 +159,14 @@ class ChangeValidationWorkflowLevelService(
      * Check why we decided to separate the validated user logic from `ValidationNeeded` objects :
      * https://issues.rudder.io/issues/22188#note-5
      */
-    validatedUserRepo.get(actor) match {
-      case Full(Some(e)) => getWorkflow(Full(false))
-      case Full(None)    => getWorkflowAux
-      case eb: EmptyBox => eb ?~ s"Could get user from validated user list when checking validation workflow"
-    }
+    validatedUserRepo
+      .get(actor)
+      .chainError("Could get user from validated user list when checking validation workflow")
+      .toBox
+      .flatMap {
+        case Some(e) => getWorkflow(Full(false))
+        case None    => getWorkflowAux
+      }
   }
 
   override def getForRule(actor: EventActor, change: RuleChangeRequest):               Box[WorkflowService] = {
@@ -211,11 +211,15 @@ class ChangeValidationWorkflowLevelService(
  * Actual configuration of the plugin logic
  */
 object ChangeValidationConf extends RudderPluginModule {
+  val directory = Paths.get("/var/rudder/plugin-resources/" + pluginDef.shortName)
 
-  val migration = new MigrateSupervisedGroups(RudderConfig.roNodeGroupRepository, unsupervisedTargetRepo)
+  val migration =
+    new MigrateSupervisedGroups(RudderConfig.roNodeGroupRepository, unsupervisedTargetRepo, directory, "supervised-targets.json")
   // look if we were using supervised groups and need to use unsupervised ones.
   // can be removed in Rudder 8.0 since Rudder 7.3 only knows about unsupervised groups.
-  migration.migrate()
+  migration.migrate().runNow
+
+  lazy val fileUserDetailListProvider = RudderConfig.rudderUserListProvider
 
   lazy val notificationService = new NotificationService(
     new EmailNotificationService(),
@@ -245,7 +249,7 @@ object ChangeValidationConf extends RudderPluginModule {
   )
 
   lazy val unsupervisedTargetRepo = new UnsupervisedTargetsRepository(
-    directory = Paths.get("/var/rudder/plugin-resources/" + pluginDef.shortName),
+    directory = directory,
     filename = "unsupervised-targets.json"
   )
   lazy val roChangeRequestRepository: RoChangeRequestRepository = {
@@ -257,17 +261,17 @@ object ChangeValidationConf extends RudderPluginModule {
   }
 
   lazy val roValidatedUserRepository: RoValidatedUserJdbcRepository = {
-    new RoValidatedUserJdbcRepository(doobie, validatedUserMapper)
+    new RoValidatedUserJdbcRepository(doobie, fileUserDetailListProvider)
   }
 
   lazy val woValidatedUserRepository: WoValidatedUserRepository = {
-    new WoValidatedUserJdbcRepository(doobie, validatedUserMapper, roValidatedUserRepository)
+    new WoValidatedUserJdbcRepository(doobie, roValidatedUserRepository)
   }
 
   val loadSupervisedTargets = () => {
     for {
       u <- unsupervisedTargetRepo.load()
-      g <- RudderConfig.roNodeGroupRepository.getFullGroupLibrary().toBox
+      g <- RudderConfig.roNodeGroupRepository.getFullGroupLibrary()
     } yield UnsupervisedTargetsRepository.invertTargets(u, g)
   }
 
@@ -293,13 +297,10 @@ object ChangeValidationConf extends RudderPluginModule {
   lazy val changeRequestMapper =
     new ChangeRequestMapper(RudderConfig.changeRequestChangesUnserialisation, RudderConfig.changeRequestChangesSerialisation)
 
-  lazy val validatedUserMapper = new ValidatedUserMapper()
-
   lazy val pluginDef = new ChangeValidationPluginDef(pluginStatusService)
 
   lazy val api = {
     val api1 = new SupervisedTargetsApiImpl(
-      RudderConfig.restExtractorService,
       unsupervisedTargetRepo,
       RudderConfig.roNodeGroupRepository
     )
@@ -315,10 +316,8 @@ object ChangeValidationConf extends RudderPluginModule {
       restDataSerializer
     )
     val api3 = new ValidatedUserApiImpl(
-      restExtractorService,
       roValidatedUserRepository,
-      woValidatedUserRepository,
-      restDataSerializer
+      woValidatedUserRepository
     )
     new LiftApiModuleProvider[EndpointSchema] {
       override def schemas = new ApiModuleProvider[EndpointSchema] {

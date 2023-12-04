@@ -38,23 +38,17 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.NamedZioLogger
+import com.normation.eventlog.EventActor
 import com.normation.rudder.domain.policies.FullRuleTargetInfo
 import com.normation.rudder.domain.policies.RuleTarget
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.FullNodeGroupCategory
-import com.normation.utils.Control
-import net.liftweb.common.Box
-import net.liftweb.common.Empty
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
+import io.scalaland.chimney.Transformer
 import net.liftweb.common.Logger
-import net.liftweb.json.Formats
-import net.liftweb.json.JsonAST.JArray
-import net.liftweb.json.JValue
-import net.liftweb.json.NoTypeHints
-import net.liftweb.json.parse
 import org.slf4j.LoggerFactory
-import scala.util.control.NonFatal
+import scala.annotation.nowarn
+import scala.collection.immutable.SortedSet
+import zio.json._
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -69,12 +63,33 @@ object ChangeValidationLogger extends Logger {
 
 object ChangeValidationLoggerPure extends NamedZioLogger {
 
-  override val loggerName: String = "change-validation"
+  override def loggerName: String = "change-validation"
 
   object Metrics extends NamedZioLogger {
     override def loggerName: String = "change-validation.metrics"
   }
 }
+
+/**
+  * Case class used for serializing and deserializing the list of supervised targets from 
+  * the old file format.
+  */
+final case class OldFileFormat(supervised: List[String])
+
+object OldFileFormat {
+  implicit val decoder: JsonDecoder[OldFileFormat] = DeriveJsonDecoder.gen[OldFileFormat]
+  implicit val encoder: JsonEncoder[OldFileFormat] = DeriveJsonEncoder.gen[OldFileFormat]
+
+  implicit val transformer: Transformer[OldFileFormat, SupervisedSimpleTargets] = old =>
+    SupervisedSimpleTargets(old.supervised.flatMap(s => RuleTarget.unser(s).collect { case t: SimpleTarget => t }).toSet)
+
+}
+
+/**
+ * The supervised simple targets.
+ * This is also used to decode API requests.
+ */
+final case class SupervisedSimpleTargets(supervised: Set[SimpleTarget])
 
 /*
  * What is a group in the API ?
@@ -92,7 +107,7 @@ final case class JsonTarget(
  * with the list of targets
  */
 final case class UnsupervisedTargetIds(
-    unsupervised: List[String]
+    unsupervised: SortedSet[SimpleTarget]
 )
 
 /*
@@ -104,10 +119,70 @@ final case class JsonCategory(
     targets:    List[JsonTarget]
 )
 
+/**
+  * Case class used to represent the state of a user in the workflow of validation.
+  * @param isValidated indicates if a user is validated i.e. stored in validated user list
+  * @param userExists indicates if a user is present in user file description
+  * WARNING: this class is used to serialize data to JSON, so changing fields may break API compatibility
+  */
+case class WorkflowUsers(@jsonField("username") actor: EventActor, isValidated: Boolean, userExists: Boolean)
+
+final case class JsonValidatedUsers(validatedUsers: List[EventActor])
+
+trait EventActorJsonCodec {
+  implicit val eventActorEncoder: JsonEncoder[EventActor] = JsonEncoder[String].contramap(_.name)
+  implicit val eventActorDecoder: JsonDecoder[EventActor] = JsonDecoder[String].map(EventActor.apply(_))
+}
+
+trait WorkflowUsersJsonCodec extends EventActorJsonCodec {
+  implicit val workflowUsersEncoder:  JsonEncoder[WorkflowUsers]      = DeriveJsonEncoder.gen[WorkflowUsers]
+  implicit val validatedUsersDecoder: JsonDecoder[JsonValidatedUsers] = DeriveJsonDecoder.gen[JsonValidatedUsers]
+}
+
+trait TargetJsonCodec {
+  implicit val jsonTargetEncoder:        JsonEncoder[JsonTarget]   = DeriveJsonEncoder.gen[JsonTarget]
+  implicit lazy val jsonCategoryEncoder: JsonEncoder[JsonCategory] = DeriveJsonEncoder.gen[JsonCategory]
+
+  implicit val simpleTargetEncoder: JsonEncoder[SimpleTarget] = JsonEncoder[String].contramap(_.target)
+
+  // provides a natural ordering for SimpleTarget in order to derive codec for ordered collections
+  implicit val orderedSimpleTarget: Ordering[SimpleTarget] = Ordering.by(_.target)
+
+  implicit val unsupervisedTargetIdsEncoder: JsonEncoder[UnsupervisedTargetIds] = DeriveJsonEncoder.gen[UnsupervisedTargetIds]
+  implicit val unsupervisedTargetIdsDecoder: JsonDecoder[UnsupervisedTargetIds] = {
+    @nowarn implicit val simpleTargetDecoder: JsonDecoder[SimpleTarget] = JsonDecoder[String].mapOrFail(s => {
+      RuleTarget
+        .unser(s)
+        .collect { case t: SimpleTarget => t }
+        .toRight(s"Error: the string '${s}' can not parsed as a valid rule target")
+    })
+    DeriveJsonDecoder.gen[UnsupervisedTargetIds]
+  }
+
+  implicit val supervisedSimpleTargetsDecoder: JsonDecoder[SupervisedSimpleTargets] = {
+    @nowarn implicit val loggedSimpleTargetDecoder: JsonDecoder[SimpleTarget] = {
+      JsonDecoder[String].mapOrFail(s => {
+        RuleTarget
+          .unser(s)
+          .collect { case t: SimpleTarget => t }
+          .toRight(s"Error: the string '${s}' can not parsed as a valid rule target")
+          .left
+          .map(err => {
+            ChangeValidationLogger.error(err)
+            err
+          })
+      })
+    }
+
+    DeriveJsonDecoder.gen[SupervisedSimpleTargets]
+  }
+}
+
 /*
- * Mapping between Rudder category/group and json one
+ * Mapping between Rudder category/group and json one.
+ * Defines extension methods to convert to json, and provides json codecs for data types.
  */
-object RudderJsonMapping {
+object RudderJsonMapping extends TargetJsonCodec with WorkflowUsersJsonCodec {
 
   implicit class TargetToJson(target: FullRuleTargetInfo) {
 
@@ -139,94 +214,4 @@ object RudderJsonMapping {
     )
   }
 
-}
-
-/*
- * Ser utils
- */
-object Ser {
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-
-  /*
-   * Parse a string as a simple target ID
-   */
-  def parseTargetId(s: String): Box[SimpleTarget] = {
-    RuleTarget.unser(s) match {
-      case Some(x: SimpleTarget) => Full(x)
-      case _                     =>
-        val msg = s"Error: the string '${s}' can not parsed as a valid rule target"
-        ChangeValidationLogger.error(msg)
-        Failure(msg, Empty, Empty)
-    }
-  }
-
-  // used from API
-  def parseSupervisedTarget(json: JValue): Box[Set[SimpleTarget]] = {
-    /*
-     * Here, for some reason, JNothing.extractOpt[UnsupervisedTargetIds] returns Some(UnsupervisedTargetIds(Nil)).
-     * Which is not what we want, obviously. So the workaround.
-     */
-    for {
-      list    <- parseSupervised(json)
-      targets <- Control.sequence(list)(parseTargetId)
-    } yield {
-      targets.toSet
-    }
-  }
-
-  def parseSupervised(json: JValue): Box[List[String]] = {
-    (json \ "supervised") match {
-      case JArray(list) => Control.sequence(list)(s => Box(s.extractOpt[String])).map(_.toList)
-      case _            =>
-        val msg = s"Error when trying to parse JSON content ${json.toString} as a set of rule target."
-        ChangeValidationLogger.error(msg)
-        Failure("Error when trying to parse JSON content as a set of rule target.", Empty, Empty)
-    }
-  }
-
-  /*
-   * Transform a JSON value
-   */
-  def parseJsonTargets(json: JValue): Box[Set[SimpleTarget]] = {
-    /*
-     * Here, for some reason, JNothing.extractOpt[UnsupervisedTargetIds] returns Some(UnsupervisedTargetIds(Nil)).
-     * Which is not what we want, obviously. So the workaround.
-     */
-    for {
-      list    <- parseUnsupervised(json)
-      targets <- Control.sequence(list)(parseTargetId)
-    } yield {
-      targets.toSet
-    }
-  }
-
-  def parseUnsupervised(json: JValue): Box[List[String]] = {
-    (json \ "unsupervised") match {
-      case JArray(list) => Control.sequence(list)(s => Box(s.extractOpt[String])).map(_.toList)
-      case _            =>
-        val msg = s"Error when trying to parse JSON content ${json.toString} as a set of rule target."
-        ChangeValidationLogger.error(msg)
-        Failure("Error when trying to parse JSON content as a set of rule target.", Empty, Empty)
-    }
-  }
-
-  /*
-   * Parse a string, expecting to be the JSON representation
-   * of UnsupervisedTargetIds
-   */
-  def parseTargetIds(source: String): Box[Set[SimpleTarget]] = {
-    for {
-      json    <- try {
-                   Full(parse(source))
-                 } catch {
-                   case NonFatal(ex) =>
-                     val msg = s"Error when trying to parse source document as JSON ${source}"
-                     ChangeValidationLogger.error(msg)
-                     Failure(s"Error when trying to parse source document as JSON.", Full(ex), Empty)
-                 }
-      targets <- parseJsonTargets(json)
-    } yield {
-      targets
-    }
-  }
 }

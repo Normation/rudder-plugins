@@ -1,0 +1,89 @@
+description: Get all available node groups with their role in change request validation
+method: GET
+url: /secure/api/changevalidation/supervised/targets
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "getAllTargets",
+      "result" : "success",
+      "data" : {
+        "name" : "GroupRoot",
+        "categories" : [
+          {
+            "name" : "category 1",
+            "categories" : [],
+            "targets" : []
+          }
+        ],
+        "targets" : [
+          {
+            "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
+            "name" : "",
+            "description" : "",
+            "supervised" : false
+          },
+          {
+            "id" : "group:1111f5d3-8c61-4d20-88a7-bb947705ba8a",
+            "name" : "",
+            "description" : "",
+            "supervised" : true
+          }
+        ]
+      }
+    }
+---
+description: Save the updated list of groups
+method: POST
+url: /secure/api/changevalidation/supervised/targets
+headers:
+  - "Content-Type: application/json"
+body: >-
+  {
+    "supervised": [
+      "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a"
+    ]
+  }
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "updateSupervisedTargets",
+      "result" : "success",
+      "data" : "Set of target needing validation has been updated"
+    }
+---
+description: Get all available node groups after update
+method: GET
+url: /secure/api/changevalidation/supervised/targets
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "getAllTargets",
+      "result" : "success",
+      "data" : {
+        "name" : "GroupRoot",
+        "categories" : [
+          {
+            "name" : "category 1",
+            "categories" : [],
+            "targets" : []
+          }
+        ],
+        "targets" : [
+          {
+            "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
+            "name" : "",
+            "description" : "",
+            "supervised" : true
+          },
+          {
+            "id" : "group:1111f5d3-8c61-4d20-88a7-bb947705ba8a",
+            "name" : "",
+            "description" : "",
+            "supervised" : false
+          }
+        ]
+      }
+    }
