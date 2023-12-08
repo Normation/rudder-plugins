@@ -2,7 +2,7 @@
   "devDependencies": {
     "better-npm-audit": "^3.7.3",
     "del": "^6.1.1",
-    "elm": "^0.19.1-5",
+    "elm": "^0.19.1-6",
     "gulp": "^4.0.2",
     "gulp-elm": "^0.8.2",
     "gulp-mode": "^1.1.0",
