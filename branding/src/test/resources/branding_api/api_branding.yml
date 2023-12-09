@@ -44,7 +44,7 @@ response:
 description: Update branding plugin configuration with V5.0 payload format, removing logo name and data
 method: POST
 url: /api/latest/branding
-headers: 
+headers:
   - "Content-Type: application/json"
 body: >-
   {
@@ -76,7 +76,7 @@ response:
   code: 200
   content: >-
     {
-      "action" : "updateBRandingConf",
+      "action" : "updateBrandingConf",
       "result" : "success",
       "data": {
         "branding": {
@@ -146,7 +146,7 @@ response:
   code: 200
   content: >-
     {
-      "action" : "updateBRandingConf",
+      "action" : "updateBrandingConf",
       "result" : "success",
       "data": {
         "branding": {
@@ -183,7 +183,7 @@ response:
 description: Fail to update branding plugin configuration with invalid payload
 method: POST
 url: /api/latest/branding
-headers: 
+headers:
   - "Content-Type: application/json"
 body: >-
   {
@@ -213,7 +213,7 @@ response:
   code: 500
   content: >-
     {
-      "action" : "updateBRandingConf",
+      "action" : "updateBrandingConf",
       "result" : "error",
       "errorDetails" : "Could not update Branding plugin configuration; cause was: Unexpected: .wideLogo(missing)"
     }
@@ -221,13 +221,13 @@ response:
 description: Reload branding plugin configuration from config file
 method: POST
 url: /api/latest/branding/reload
-headers: 
+headers:
   - "Content-Type: application/json"
 response:
   code: 200
   content: >-
     {
-      "action" : "getBrandingConf",
+      "action" : "reloadBrandingConf",
       "result" : "success",
       "data": {
         "branding": {

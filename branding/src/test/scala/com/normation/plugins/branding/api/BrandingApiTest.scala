@@ -4,8 +4,8 @@ import better.files._
 import com.normation.plugins.branding.api.BrandingApi
 import com.normation.plugins.branding.api.BrandingApiService
 import com.normation.rudder.api.ApiVersion
-import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.utils.StringUuidGeneratorImpl
 import java.nio.file.Files
 import net.liftweb.common.Loggable
 import org.junit.runner.RunWith
@@ -16,8 +16,6 @@ import org.specs2.specification.AfterAll
 @RunWith(classOf[JUnitRunner])
 class BrandingApiTest extends Specification with TraitTestApiFromYamlFiles with Loggable with AfterAll {
   sequential
-
-  val restTestSetUp = RestTestSetUp.newEnv
 
   val tmpDir: File = File(Files.createTempDirectory("rudder-test-"))
   override def yamlSourceDirectory  = "branding_api"
@@ -63,7 +61,7 @@ class BrandingApiTest extends Specification with TraitTestApiFromYamlFiles with 
       new BrandingApiService(
         new BrandingConfService(brandingConfFile.pathAsString)
       ),
-      restTestSetUp.uuidGen
+      new StringUuidGeneratorImpl()
     )
   )
 
