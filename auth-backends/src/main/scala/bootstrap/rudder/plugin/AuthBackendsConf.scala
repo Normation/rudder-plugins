@@ -402,7 +402,7 @@ class RudderClientRegistrationRepository(val registrations: Map[String, RudderCl
 }
 
 final class RudderOidcDetails(oidc: OidcUser, rudder: RudderUserDetail)
-    extends RudderUserDetail(rudder.account, rudder.roles, rudder.apiAuthz) with OidcUser {
+    extends RudderUserDetail(rudder.account, rudder.roles, rudder.apiAuthz, rudder.nodePerms) with OidcUser {
   override def getClaims:     util.Map[String, AnyRef] = oidc.getClaims
   override def getUserInfo:   OidcUserInfo             = oidc.getUserInfo
   override def getIdToken:    OidcIdToken              = oidc.getIdToken
@@ -411,7 +411,7 @@ final class RudderOidcDetails(oidc: OidcUser, rudder: RudderUserDetail)
 }
 
 final class RudderOauth2Details(oauth2: OAuth2User, rudder: RudderUserDetail)
-    extends RudderUserDetail(rudder.account, rudder.roles, rudder.apiAuthz) with OAuth2User {
+    extends RudderUserDetail(rudder.account, rudder.roles, rudder.apiAuthz, rudder.nodePerms) with OAuth2User {
   override def getAttributes: util.Map[String, AnyRef] = oauth2.getAttributes
   override def getName:       String                   = oauth2.getName
 }

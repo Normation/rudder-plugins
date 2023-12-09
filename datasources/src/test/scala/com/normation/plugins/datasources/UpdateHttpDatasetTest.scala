@@ -528,7 +528,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def getPendingNodeInfos()                                                                                      = throw new IllegalAccessException("Thou shall not used that method here")
 
     override def getAllNodesIds():                   IOResult[Set[NodeId]]      = ???
-    override def getDeletedNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
     override def getPendingNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
 
     override def deleteNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
