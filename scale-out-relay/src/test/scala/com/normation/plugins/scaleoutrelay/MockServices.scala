@@ -71,9 +71,8 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
       nodesRef.update(_ - node.id).map(_ => node)
     }
 
-    override def getNodeInfos(nodeIds: Set[NodeId]):                                                       IOResult[Set[NodeInfo]]         = ???
     override def getNodeInfosSeq(nodeIds: Seq[NodeId]):                                                    IOResult[Seq[NodeInfo]]         = ???
-    override def getNumberOfManagedNodes:                                                                  Int                             = ???
+    override def getNumberOfManagedNodes:                                                                  IOResult[Int]                   = ???
     override def getAll():                                                                                 IOResult[Map[NodeId, NodeInfo]] = ???
     override def getAllNodesIds():                                                                         IOResult[Set[NodeId]]           = ???
     override def getAllNodes():                                                                            IOResult[Map[NodeId, Node]]     = ???
@@ -81,8 +80,6 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
     override def getAllSystemNodeIds():                                                                    IOResult[Seq[NodeId]]           = ???
     override def getPendingNodeInfos():                                                                    IOResult[Map[NodeId, NodeInfo]] = ???
     override def getPendingNodeInfo(nodeId: NodeId):                                                       IOResult[Option[NodeInfo]]      = ???
-    override def getDeletedNodeInfos():                                                                    IOResult[Map[NodeId, NodeInfo]] = ???
-    override def getDeletedNodeInfo(nodeId: NodeId):                                                       IOResult[Option[NodeInfo]]      = ???
     override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node]                  =
       ???
     override def updateNodeKeyInfo(
