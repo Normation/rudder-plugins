@@ -113,11 +113,15 @@ class EmailNotificationService {
   }
 }
 
-class NotificationService(
+trait NotificationService {
+  def sendNotification(step: WorkflowNode, cr: ChangeRequest): IOResult[Unit]
+}
+
+class NotificationServiceImpl(
     emailService:   EmailNotificationService,
     linkUtil:       LinkUtil,
     configMailPath: String
-) {
+) extends NotificationService {
 
   // we want all our string to be trimmed
   implicit class ConfigExtension(config: Config) {
@@ -154,7 +158,7 @@ class NotificationService(
 
   val logger = NamedZioLogger("plugin.change-validation")
 
-  def sendNotification(step: WorkflowNode, cr: ChangeRequest): IOResult[Unit] = {
+  override def sendNotification(step: WorkflowNode, cr: ChangeRequest): IOResult[Unit] = {
     for {
       serverConfig <- getSMTPConf(configMailPath)
       _            <- ZIO.when(serverConfig.smtpHostServer.nonEmpty) {

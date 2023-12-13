@@ -65,6 +65,7 @@ import scala.xml.Elem
 import zio.interop.catz._
 
 trait RoChangeRequestJdbcRepositorySQL {
+
   final val ruleIdXPath:        String   = "/changeRequest/rules/rule/@id"
   final val ruleIdXPathFr:      Fragment = Fragment.const(s"'${ruleIdXPath}'")
   final val directiveIdXPath:   String   = "/changeRequest/directives/directive/@id"
@@ -78,6 +79,35 @@ trait RoChangeRequestJdbcRepositorySQL {
 
   implicit val readCRWithState: Read[Box[(ChangeRequest, WorkflowNodeId)]] = {
     Read[(Box[ChangeRequest], WorkflowNodeId)].map { case (cr, state) => cr.map((_, state)) }
+  }
+
+  def getAllSQL: Query0[Box[ChangeRequest]] =
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest".query[Box[ChangeRequest]]
+
+  def getSQL(changeRequestId: ChangeRequestId): Query0[Box[ChangeRequest]] = {
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId}"
+      .query[Box[ChangeRequest]]
+  }
+
+  def getByContributorSQL(actor: EventActor): Query0[Box[ChangeRequest]] = {
+    val actorName = Array(actor.name)
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where cast( xpath('//firstChange/change/actor/text()',content) as character varying[]) = ${actorName}"
+      .query[Box[ChangeRequest]]
+  }
+
+  def getChangeRequestsByXpathContentSQL(
+      xpath:        Fragment,
+      shouldEquals: String,
+      onlyPending:  Boolean
+  ): Query0[Box[ChangeRequest]] = {
+    val param = Array(shouldEquals)
+    if (onlyPending) {
+      sql"""SELECT CR.id, name, description, content, modificationId FROM changeRequest CR LEFT JOIN workflow W on CR.id = W.id where cast( xpath(${xpath}, content) as character varying[]) = ${param} and state like 'Pending%'"""
+        .query[Box[ChangeRequest]]
+    } else {
+      sql"""SELECT id, name, description, content, modificationId FROM ChangeRequest where cast( xpath(${xpath}, content) as character varying[]) = ${param}"""
+        .query[Box[ChangeRequest]]
+    }
   }
 
   def getByFiltersSQL(
@@ -94,20 +124,34 @@ trait RoChangeRequestJdbcRepositorySQL {
       }
     )).query[Box[(ChangeRequest, WorkflowNodeId)]]
   }
+
 }
+
+trait WoChangeRequestJdbcRepositorySQL {
+  def createChangeRequestSQL(name: Option[String], desc: Option[String], xml: Elem, modId: Option[String]): Update0 = {
+    sql"""insert into ChangeRequest (name, description, creationTime, content, modificationId)
+          values (${name}, ${desc}, ${DateTime.now}, ${xml}, ${modId})
+       """.update
+  }
+
+  def updateChangeRequestSQL(
+      name:  Option[String],
+      desc:  Option[String],
+      xml:   Elem,
+      modId: Option[String],
+      id:    ChangeRequestId
+  ): Update0 = sql"""update ChangeRequest set name = ${name}, description = ${desc}, content = ${xml}, modificationId = ${modId}
+                                 where id = ${id}""".update
+}
+
+object WoChangeRequestJdbcRepositorySQL extends WoChangeRequestJdbcRepositorySQL
 
 class RoChangeRequestJdbcRepository(
     doobie:                           Doobie,
     override val changeRequestMapper: ChangeRequestMapper
 ) extends RoChangeRequestRepository with RoChangeRequestJdbcRepositorySQL with Loggable {
 
-  import changeRequestMapper.ChangeRequestRead
   import doobie._
-
-  val SELECT_SQL = "SELECT id, name, description, content, modificationId FROM ChangeRequest"
-
-  val SELECT_SQL_JOIN_WORKFLOW =
-    "SELECT CR.id, name, description, content, modificationId FROM changeRequest CR LEFT JOIN workflow W on CR.id = W.id"
 
   // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
   private[this] def execQuery(q: Query0[Box[ChangeRequest]]): Box[Vector[ChangeRequest]] = {
@@ -123,52 +167,46 @@ class RoChangeRequestJdbcRepository(
   }
 
   override def getAll(): Box[Vector[ChangeRequest]] = {
-    val q = query[Box[ChangeRequest]](SELECT_SQL)
-    execQuery(q)
+    execQuery(getAllSQL)
   }
 
   override def get(changeRequestId: ChangeRequestId): Box[Option[ChangeRequest]] = {
-    val q = Query[ChangeRequestId, Box[ChangeRequest]](SELECT_SQL + " where id = ?", None).toQuery0(changeRequestId)
-    transactRunBox(xa => q.option.map(_.flatMap(_.toOption)).transact(xa))
-
+    transactRunBox(xa => getSQL(changeRequestId).option.map(_.flatMap(_.toOption)).transact(xa))
   }
 
   // Get every change request where a user add a change
   override def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]] = {
-
-    val actorName = Array(actor.name)
-    val q         = (Fragment.const(
-      SELECT_SQL
-    ) ++ sql"""where cast( xpath('//firstChange/change/actor/text()',content) as character varying[]) = ${actorName}""")
-      .query[Box[ChangeRequest]]
-    execQuery(q)
+    execQuery(getByContributorSQL(actor))
   }
 
   override def getByDirective(id: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
-    getChangeRequestsByXpathContent(
-      "/changeRequest/directives/directive/@id",
-      id.value,
-      s"could not fetch change request for directive with id ${id.value}",
-      onlyPending
-    )
+    execQuery(
+      getChangeRequestsByXpathContentSQL(
+        directiveIdXPathFr,
+        id.value,
+        onlyPending
+      )
+    ) ?~! s"could not fetch change request for directive with id ${id.value}"
   }
 
   override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
-    getChangeRequestsByXpathContent(
-      "/changeRequest/groups/group/@id",
-      id.serialize,
-      s"could not fetch change request for group with id ${id.serialize}",
-      onlyPending
-    )
+    execQuery(
+      getChangeRequestsByXpathContentSQL(
+        groupIdXPathFr,
+        id.serialize,
+        onlyPending
+      )
+    ) ?~! s"could not fetch change request for group with id ${id.serialize}"
   }
 
   override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
-    getChangeRequestsByXpathContent(
-      "/changeRequest/rules/rule/@id",
-      id.value,
-      s"could not fetch change request for rule with id ${id.value}",
-      onlyPending
-    )
+    execQuery(
+      getChangeRequestsByXpathContentSQL(
+        ruleIdXPathFr,
+        id.value,
+        onlyPending
+      )
+    ) ?~! s"could not fetch change request for rule with id ${id.value}"
   }
 
   override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
@@ -190,42 +228,13 @@ class RoChangeRequestJdbcRepository(
     transactIOResult(errorMsg)(filteredQuery.to[Vector].map(_.flatten).transact(_))
   }
 
-  /**
-   * Retrieve a sequence of change request based on one XML
-   * element value.
-   * The xpath query must match only one element.
-   * We want to be able to find only pending change request without having to request the state of each change request
-   * Maybe this function should be in Workflow repository/service instead
-   */
-  private[this] def getChangeRequestsByXpathContent(
-      xpath:        String,
-      shouldEquals: String,
-      errorMessage: String,
-      onlyPending:  Boolean
-  ): Box[Vector[ChangeRequest]] = {
-
-    val param = Array(shouldEquals)
-    val q     = {
-      if (onlyPending) {
-        (Fragment.const(
-          s"""${SELECT_SQL_JOIN_WORKFLOW} where cast( xpath('${xpath}', content) as character varying[])"""
-        ) ++ sql""" = ${param} and state like 'Pending%'""").query[Box[ChangeRequest]]
-      } else {
-        (Fragment.const(
-          s"""${SELECT_SQL} where cast( xpath('${xpath}', content) as character varying[])"""
-        ) ++ sql""" = ${param}""").query[Box[ChangeRequest]]
-      }
-    }
-    execQuery(q)
-  }
-
 }
 
 class WoChangeRequestJdbcRepository(
     doobie: Doobie,
     mapper: ChangeRequestMapper,
     roRepo: RoChangeRequestRepository
-) extends WoChangeRequestRepository with Loggable {
+) extends WoChangeRequestRepository with Loggable with WoChangeRequestJdbcRepositorySQL {
 
   import doobie._
 
@@ -254,12 +263,8 @@ class WoChangeRequestJdbcRepository(
 
     val (name, desc, xml, modId) = getAtom(changeRequest)
 
-    val q = sql"""insert into ChangeRequest (name, description, creationTime, content, modificationId)
-          values (${name}, ${desc}, ${DateTime.now}, ${xml}, ${modId})
-       """.update.withUniqueGeneratedKeys[Int]("id")
-
     for {
-      id <- transactRunBox(xa => q.transact(xa))
+      id <- transactRunBox(xa => createChangeRequestSQL(name, desc, xml, modId).withUniqueGeneratedKeys[Int]("id").transact(xa))
       cr <- roRepo.get(ChangeRequestId(id)).flatMap {
               case None    =>
                 val msg = s"The newly saved change request with ID ${id} was not found back in data base"
@@ -300,9 +305,7 @@ class WoChangeRequestJdbcRepository(
                  }
       update  <- {
         val (name, desc, xml, modId) = getAtom(changeRequest)
-        val q                        = sql"""update ChangeRequest set name = ${name}, description = ${desc}, content = ${xml}, modificationId = ${modId}
-                                 where id = ${changeRequest.id}"""
-        transactRunBox(xa => q.update.run.transact(xa))
+        transactRunBox(xa => updateChangeRequestSQL(name, desc, xml, modId, changeRequest.id).run.transact(xa))
       }
       updated <- roRepo.get(changeRequest.id).flatMap {
                    case None    =>
@@ -315,7 +318,6 @@ class WoChangeRequestJdbcRepository(
       updated
     }
   }
-
 }
 
 // doobie mapping, must be done here because of TechniqueRepo in ChangeRequestChangesUnserialisation impl

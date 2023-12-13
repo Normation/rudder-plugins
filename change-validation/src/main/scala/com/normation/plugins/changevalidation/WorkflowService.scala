@@ -56,7 +56,7 @@ import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
-import com.normation.rudder.users.CurrentUser
+import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.common._
 import zio._
@@ -118,23 +118,6 @@ object TwoValidationStepsWorkflowServiceImpl {
   }
 
   val steps: List[WorkflowNode] = List(Validation, Deployment, Deployed, Cancelled)
-
-  /*
-   * Validation rule logic:
-   * - check for self validation (only needed if current user is the CR author)
-   * - check for current user rights.
-   *   WARNING: WE ARE SIDE STEPPING authz check until https://issues.rudder.io/issues/22595 is solved
-   */
-  private def canValidate(isCreator: Boolean, selfValidation: () => Box[Boolean]): Boolean = {
-    val correctActor = selfValidation().getOrElse(false) || !isCreator
-    correctActor && CurrentUser.checkRights(AuthorizationType.Validator.Edit)
-  }
-
-  private def canDeploy(isCreator: Boolean, selfDeployment: () => Box[Boolean]): Boolean = {
-    val correctActor = selfDeployment().getOrElse(false) || isCreator
-    correctActor && CurrentUser.checkRights(AuthorizationType.Deployer.Edit)
-  }
-
 }
 
 class TwoValidationStepsWorkflowServiceImpl(
@@ -148,6 +131,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     val roChangeRequestRepository: RoChangeRequestRepository,
     woChangeRequestRepository:     WoChangeRequestRepository,
     notificationService:           NotificationService,
+    userService:                   UserService,
     workflowEnable:                () => Box[Boolean],
     selfValidation:                () => Box[Boolean],
     selfDeployment:                () => Box[Boolean]
@@ -227,8 +211,8 @@ class TwoValidationStepsWorkflowServiceImpl(
       case Deployment.id     =>
         val deploymentAction = {
           (if (canDeploy(isCreator, selfValidation)) {
-            Seq((Deployment.id, stepDeploymentToDeployed _))
-          } else Seq()) ++ deployAction
+             Seq((Deployment.id, stepDeploymentToDeployed _))
+           } else Seq()) ++ deployAction
         }
         WorkflowAction("Deploy", deploymentAction)
       case Deployed.id       => NoWorkflowAction
@@ -266,7 +250,8 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean = {
-    val authorizedRoles = currentUserRights.filter(role => role == Role.BuiltinName.Validator.value || role == Role.BuiltinName.Deployer.value)
+    val authorizedRoles =
+      currentUserRights.filter(role => role == Role.BuiltinName.Validator.value || role == Role.BuiltinName.Deployer.value)
     currentStep match {
       case Validation.id     => authorizedRoles.contains(Role.BuiltinName.Validator.value) || isCreator
       case Deployment.id     => authorizedRoles.contains(Role.BuiltinName.Deployer.value)
@@ -335,6 +320,22 @@ class TwoValidationStepsWorkflowServiceImpl(
         ChangeValidationLogger.error(e.messageChain)
         e
     }
+  }
+
+  /*
+   * Validation rule logic:
+   * - check for self validation (only needed if current user is the CR author)
+   * - check for current user rights.
+   *   WARNING: WE ARE SIDE STEPPING authz check until https://issues.rudder.io/issues/22595 is solved
+   */
+  private def canValidate(isCreator: Boolean, selfValidation: () => Box[Boolean]): Boolean = {
+    val correctActor = selfValidation().getOrElse(false) || !isCreator
+    correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Validator.Edit)
+  }
+
+  private def canDeploy(isCreator: Boolean, selfDeployment: () => Box[Boolean]): Boolean = {
+    val correctActor = selfDeployment().getOrElse(false) || isCreator
+    correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Edit)
   }
 
   /**
@@ -442,13 +443,12 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   private[this] def stepDeploymentToDeployed(
-    changeRequestId: ChangeRequestId,
-    actor:           EventActor,
-    reason:          Option[String]
+      changeRequestId: ChangeRequestId,
+      actor:           EventActor,
+      reason:          Option[String]
   ): Box[WorkflowNodeId] = {
     onSuccessWorkflow(Deployment, changeRequestId, actor, reason)
   }
-
 
   // this THE workflow that needs external validation.
   override def needExternalValidation(): Boolean = true
