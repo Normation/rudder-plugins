@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import ch.qos.logback.classic.Level
-import com.github.ghik.silencer.silent
 import com.normation.BoxSpecMatcher
 import com.normation.box._
 import com.normation.errors._
@@ -71,6 +70,7 @@ import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
 import com.normation.zio._
 import com.normation.zio.ZioRuntime
+import com.softwaremill.quicklens._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import net.liftweb.common._
@@ -82,6 +82,7 @@ import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
 import org.specs2.specification.core.Fragment
+import scala.annotation.nowarn
 import scala.util.Random
 import zhttp.http._
 import zhttp.http.Method._
@@ -92,7 +93,6 @@ import zio.{System => _, _}
 import zio.syntax._
 import zio.test.Annotations
 import zio.test.TestClock
-
 
 /**
  *  This is just an example test server to run by hand and see how things work.
@@ -157,7 +157,7 @@ object TestingZioHttpServer {
 /**
  * This is just a test program to see how test clock works
  */
-@silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
+@nowarn("msg=a type was inferred to be `\\w+`; this may indicate a programming error.")
 object TestingSpacedClock {
 
   val makeTestClock = TestClock.default.build
@@ -278,15 +278,23 @@ object CmdbServer {
         Response.text("""{"foo":"bar"}""")
       }
 
-    case GET -> !! / "server"       =>
+    case GET -> !! / "server" =>
       counterSuccess.update(_ + 1) *>
       ZIO.succeed {
         Response.text("""{"hostname":"server.rudder.local"}""")
       }
+
     case GET -> !! / "hostnameJson" =>
       counterSuccess.update(_ + 1) *>
       ZIO.succeed {
         Response.text(hostnameJson)
+      }
+
+    case GET -> !! / "lifecycle" / id =>
+      counterSuccess.update(_ + 1) *>
+      ZIO.succeed {
+        if (id == "node1") Response.status(Status.NotFound)
+        else Response.text("1")
       }
 
     case GET -> !! / "404" =>
@@ -414,7 +422,7 @@ object CmdbServer {
   }
 }
 
-@silent("a type was inferred to be `\\w+`; this may indicate a programming error.")
+@nowarn("msg=a type was inferred to be `\\w+`; this may indicate a programming error.")
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
   import com.normation.plugins.datasources.Data._
@@ -805,29 +813,19 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     }
 
     "create a new schedule from data source information" in {
-//<<<<<<< HEAD
-//      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO
-//        .scoped(makeTestClock.flatMap { testClock =>
-//=======
-      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO.scoped(makeTestClock.flatMap {
-        testClock =>
-//>>>>>>> branches/rudder/7.2*/
+      val (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) = ZIO
+        .scoped(makeTestClock.flatMap { testClock =>
           // testClock need to know what fibers are doing something, and it' seems to be done easily with a queue.
           val queue = Queue.unbounded[Unit].runNow
 
           val dss = new DataSourceScheduler(
-            datasource.copy(name = DataSourceName("create a new schedule")), 
-            //<<<<<<< HEAD
-//=======
-         //   testClock,
-//>>>>>>> branches/rudder/7.2*/
+            datasource.copy(name = DataSourceName("create a new schedule")),
             Enabled,
             () => ModificationId(MyDatasource.uuidGen.newUuid),
             testAction(queue)
           )
 
           // reset counter
-//<<<<<<< HEAD
           CmdbServer.reset()
           for {
             // before start, nothing is done
@@ -870,106 +868,116 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
           } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m)
         })
         .runTimeout(1.minute)
-/*=======
-          CmdbServer.reset()
-          for {
-            // before start, nothing is done
-            _       <- queue.failIfNonEmpty
-            ce_0    <- CmdbServer.counterError.get
-            cs_0    <- CmdbServer.counterSuccess.get
-            total_0  = ce_0 + cs_0
-            f1      <- dss.scheduledTask.get
-            _       <- dss.restartScheduleTask()
-            // now we have a stored fiber
-            f2      <- dss.scheduledTask.get.notOptional("Fiber reference not defined")
-            r1      <- f2.fold(r => r.status, s => Unexpected(s"f2 should not be a synthetic fiber").fail)
-            // then just after, we have the first exec - it still need at least a ms to tick
-            // still nothing here
-            _       <- testClock.get[TestClock].adjust(1.second)
-            // here we have results
-            _       <- queue.take
-            ce_0s   <- CmdbServer.counterError.get
-            cs_0s   <- CmdbServer.counterSuccess.get
-            total_0s = ce_0s + cs_0s
-            // then nothing happens before 5 minutes
-            _       <- testClock.get[TestClock].adjust(1.second)
-            _       <- queue.failIfNonEmpty
-            ce_1s   <- CmdbServer.counterError.get
-            cs_1s   <- CmdbServer.counterSuccess.get
-            total_1s = ce_1s + cs_1s
-            _       <- testClock.get[TestClock].adjust(4.minutes)
-            _       <- queue.failIfNonEmpty
-            ce_4m   <- CmdbServer.counterError.get
-            cs_4m   <- CmdbServer.counterSuccess.get
-            total_4m = ce_4m + cs_4m
-            // then all the nodes gets their info
-            _       <- testClock.get[TestClock].adjust(1.minutes) // 5 minutes
-            _       <- queue.take
-            ce_5m   <- CmdbServer.counterError.get
-            cs_5m   <- CmdbServer.counterSuccess.get
-            total_5m = ce_5m + cs_5m
-            // then nothing happen anymore
-            _       <- testClock.get[TestClock].adjust(3.minutes) // 8 minutes
-            _       <- queue.failIfNonEmpty
-            ce_8m   <- CmdbServer.counterError.get
-            cs_8m   <- CmdbServer.counterSuccess.get
-            _       <- dss.cancel()
-            // write again fiber
-            r2      <- f2.fold(r => r.status, s => Unexpected(s"f2 should not be a synthetic fiber").fail)
-            total_8m = ce_8m + cs_8m
-          } yield (total_0, total_0s, total_1s, total_4m, total_5m, total_8m, f1, f2, r1, r2)
-      }).runTimeout(1.minute)
-//>>>>>>> branches/rudder/7.2*/
 
       val size = NodeConfigData.allNodesInfo.size
-      (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo((0, size, size, size, size * 2, size * 2))// and
-      //(f1 must beEqualTo(None)) and (r1 === Fiber.Status.Running(interrupting = false)) and (r2 === Fiber.Status.Done)
+      (total_0, total_0s, total_1s, total_4m, total_5m, total_8m) must beEqualTo((0, size, size, size, size * 2, size * 2)) // and
+      // (f1 must beEqualTo(None)) and (r1 === Fiber.Status.Running(interrupting = false)) and (r2 === Fiber.Status.Done)
     }
   }
 
-  "operation from repository" should {
+  "When we update a datasource with repo operation, its live instance must be reloaded (old fiber killed)" >> {
+    val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
+    val repos = new DataSourceRepoImpl(
+      new MemoryDataSourceRepository(),
+      new HttpQueryDataSourceService(
+        infos,
+        parameterRepo,
+        infos,
+        interpolation,
+        noPostHook,
+        () => alwaysEnforce.succeed
+      ),
+      MyDatasource.uuidGen,
+      AlwaysEnabledPluginStatus
+    )
 
-    "saving rom repos should kill the old fiber" in {
-      val id = DataSourceId("test-repos-save")
+    val id = DataSourceId("test-repos-save")
 
-      val datasource = NewDataSource(
-        name = id.value,
-        url = s"${REST_SERVER_URL}/$${rudder.node.id}",
-        path = "$.hostname",
-        schedule = Scheduled(5.minute)
-      )
+    val datasource = NewDataSource(
+      name = id.value,
+      url = s"${REST_SERVER_URL}/$${rudder.node.id}",
+      path = "$.hostname",
+      schedule = Scheduled(5.minute)
+    )
 
-      val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
-      val repos = new DataSourceRepoImpl(
-        new MemoryDataSourceRepository(),
-        new HttpQueryDataSourceService(
-          infos,
-          parameterRepo,
-          infos,
-          interpolation,
-          noPostHook,
-          () => alwaysEnforce.succeed
-        ),
-        MyDatasource.uuidGen,
-        AlwaysEnabledPluginStatus
-      )
+    val (r11, r12, r21) = RunNowTimeout(
+      for {
+        _   <- repos.save(datasource) // init
+        f1  <- repos.datasources.all().flatMap(_(id).scheduledTask.get).notOptional("error in test: f1 is none")
+        // here, it can be either Running (if the init takes some time) or Suspended (if init ended and won't run before 5 minutes)
+        r11 <- f1.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
+        _   <- repos.save(datasource.copy(name = DataSourceName("updated name")))
+        f2  <- repos.datasources.all().flatMap(_(id).scheduledTask.get).notOptional("error in test: f2 is none")
+        // here, since we updated repos, f1 was terminated
+        r12 <- f1.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
+        // and f2 is running or suspended (if waiting for next schedule)
+        r21 <- f2.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
+      } yield (r11, r12, r21)
+    ).runTimeout(1.minute)
 
-      val (r11, r12) = RunNowTimeout(
-        for {
-          _   <- repos.save(datasource)
-          f1  <- repos.datasources.all().flatMap(_(id).scheduledTask.get).notOptional("error in test: f1 is none")
-          // here, it should be Suspended because it won't run before 5 minutes
-          r11 <- f1.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
-          _   <- repos.save(datasource.copy(name = DataSourceName("updated name")))
-          _   <- repos.datasources.all().flatMap(_(id).scheduledTask.get).notOptional("error in test: f2 is none")
-          r12 <- f1.fold(_.status, _ => Unexpected("Datasource scheduler fiber should not be synthetic").fail)
-        } yield (r11, r12)
-      ).runTimeout(1.minute)
-
-      (r11 must beLike {
-        case Fiber.Status.Suspended( _, _, _) => ok
-      }) and (r12 === Fiber.Status.Done)
+    def fiberRunning(fs: Fiber.Status) = fs must beLike {
+      case Fiber.Status.Running(_, _)      => ok
+      case Fiber.Status.Suspended(_, _, _) => ok
     }
+
+    fiberRunning(r11) and (r12 must beEqualTo(Fiber.Status.Done)) and fiberRunning(r21)
+  }
+
+  "a datasource creation, node update, deletion should create properties and then delete them" >> {
+    // set the variable by hand for node1 and node2. Node2 will have it overridden and then deleted, node1 kept (b/c 404 for datasources)
+    val id    = DataSourceId("test-ds-lifecycle")
+    val infos = new TestNodeRepoInfo(NodeConfigData.allNodesInfo.map {
+      case (NodeId("node1"), n) =>
+        (n.id, n.modify(_.node.properties).using(NodeProperty(id.value, "do not touch".toConfigValue, None, None) :: _))
+      case (NodeId("node2"), n) =>
+        (n.id, n.modify(_.node.properties).using(NodeProperty(id.value, "should be updated".toConfigValue, None, None) :: _))
+      case (k, v)               => (k, v)
+    })
+    val repos = new DataSourceRepoImpl(
+      new MemoryDataSourceRepository(),
+      new HttpQueryDataSourceService(
+        infos,
+        parameterRepo,
+        infos,
+        interpolation,
+        noPostHook,
+        () => alwaysEnforce.succeed
+      ),
+      MyDatasource.uuidGen,
+      AlwaysEnabledPluginStatus
+    )
+
+    def getProps(nodes: Map[NodeId, NodeInfo]) = {
+      nodes.collect {
+        case (k, n) => n.properties.find(_.name == id.value).map(p => (k.value, p.value.unwrapped()))
+      }.flatten.toMap
+    }
+
+    val datasource = NewDataSource(
+      name = id.value,
+      url = s"${REST_SERVER_URL}/lifecycle/$${rudder.node.id}", // this one does not set the prop for node1 else return 1
+      path = "$",
+      schedule = Scheduled(5.minute),
+      onMissing = MissingNodeBehavior.NoChange
+    )
+
+    val p0 = getProps(infos.getAll().runNow)
+
+    val (n1, n2) = (for {
+      _      <- repos.save(datasource) // init
+      _      <- repos.onUserAskUpdateAllNodesFor(actor, id)
+      // check nodes have the property now
+      nodes1 <- infos.getAll()
+      // now delete datasource
+      _      <- repos.delete(datasource.id, UpdateCause(ModificationId("test"), actor, None))
+      // property must be deleted now
+      nodes2 <- infos.getAll()
+    } yield (nodes1, nodes2))
+      .runTimeout(1.minute)
+
+    (p0 must containTheSameElementsAs(List("node1" -> "do not touch", "node2" -> "should be updated"))) and
+    (getProps(n1) must containTheSameElementsAs(List("root" -> "1", "node1" -> "do not touch", "node2" -> "1"))) and
+    (getProps(n2) must containTheSameElementsAs(List("node1" -> "do not touch")))
   }
 
   "querying a lot of nodes" should {
