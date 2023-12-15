@@ -12,7 +12,7 @@ other general information.
 
 = Authentication backends
 
-This plugins allows to use alternative authentication backends for Rudder: *OAuth 2.0*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
+This plugin allows using alternative authentication backends for Rudder: *OAuth 2.0*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
 The old *radius module is deprecated* and will be totally removed in a future version.
 
 Each authentication method is detailed below. Users are expected to know how an authentication system works independently of Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
@@ -40,7 +40,7 @@ Rudder try to give you helpful information for that task:
 
 == Centralized user authorization management with OIDC
 
-In addition to alternative authentication provider, the OIDC backends allow to provide Rudder roles through the OIDC token so that you can control your Rudder user authorisation directly from your identity provider.
+In addition to alternative authentication provider, the OIDC backends allow providing Rudder roles through the OIDC token so that you can control your Rudder user authorisation directly from your identity provider.
 See OIDC chapter below for more information.
 
 == Configure login form rendering
@@ -55,7 +55,7 @@ Possible values are:
 
 * `show` [default]: show Rudder login form as usual
 * `hide`: hide the login form below a toggle button. This is a good option if you want to let your user only see SSO links by default, but still have access to the login form for special cases (like, typically, for emergency admin access when the SSO or network to it is down)
-* `remove`: completly remove Rudder login form.
+* `remove`: completely remove Rudder login form.
 
 For example, with an OpenID Connect service configured and the `hide` value chosen, your login form will be updated to look like:
 
@@ -96,7 +96,7 @@ systemctl restart rudder-jetty
 When set to external provider like 'ldap', passwords in rudder-users.xml are ignored and the
 authentication is delegated to the LDAP or radius server configured.
 
-By convention, when LDAP authentication is enable, 'password' field in
+By convention, when LDAP authentication is enabled, 'password' field in
 `rudder-users.xml` are set to 'LDAP'.
 
 
@@ -444,10 +444,11 @@ These protocols delegate the actual authentication to an identity provider (IdP)
 
 Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
 
-[notice]
+[NOTE]
+
 ====
 
-We advise to use OIDC over OAuth 2.0 if possible.
+We advise using OIDC over OAuth 2.0 if possible.
 
 ====
 
@@ -605,8 +606,8 @@ You can use the log level for `auth-backends` in `/opt/rudder/etc/logback.xml`:
 
 ==== Common Oauth2/OIDC error cases
 
-It can be a bit challenging to understand what is not correct in a Oauth2 or OIDC configuration.
-Here are some guide lines to help address possible configuration problems.
+It can be a bit challenging to understand what is not correct in an Oauth2 or OIDC configuration.
+Here are some guidelines to help address possible configuration problems.
 
 *I don't see the list of Identity Provider in login form*
 
@@ -633,7 +634,7 @@ set for property `rudder.auth.oauth2.provider.${registrationKey}.client.id`
 
 *After login on Identity Provider, I get a "login error" message in Rudder login page*
 
-This can have several cause and we will need to analyse Rudder log to understand what happened.
+This can have several cause, and we will need to analyse Rudder log to understand what happened.
 
 **Bad token URL**
 
@@ -731,7 +732,7 @@ authentication backend.
 For convenience, the part under "---- add in rudder-web.properties----" can
 be directly added in your `/opt/rudder/etc/rudder-web.properties` file.
 
-Note that key `rudder.auth.provider` is likelly to already exists. In
+Note that key `rudder.auth.provider` is likely to already exists. In
 that case, just update it with the sequence of authentication backend
 you want to try.
 
