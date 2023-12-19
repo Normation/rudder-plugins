@@ -445,3 +445,6 @@ ul > li.rudder-form > .input-group.disabled *{
   border-radius: 4px;
   line-height: 1.6em;
 }
+.text-info {
+  margin-bottom:10px;
+}
