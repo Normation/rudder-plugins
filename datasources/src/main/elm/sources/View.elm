@@ -29,11 +29,11 @@ view model =
           h1 [] [
             span [] [ text "Data sources" ]
           ]
-        ]
-      , div [ class "header-buttons" ] [
-          button [ class "btn btn-success", onClick NewDataSource ] [
-            text "Add data source "
-          , i [ class "add-icon ion ion-android-add-circle" ] []
+          , div [ class "header-buttons" ] [
+              button [ class "btn btn-success", onClick NewDataSource ] [
+                text "Create "
+              , i [ class "add-icon ion ion-android-add-circle" ] []
+              ]
           ]
         ]
       ]
@@ -62,7 +62,7 @@ view model =
             ]
           , p [] [
               button [ class "btn btn-success btn-lg", type_ "button", onClick NewDataSource ] [
-              text "Add data source "
+              text "Create "
             , i [ class "add-icon ion ion-android-add-circle" ] []
             ]
           ]
