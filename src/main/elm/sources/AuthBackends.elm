@@ -275,7 +275,7 @@ displayBackendId id =
 backendDescription : String -> Html Msg
 backendDescription desc =
     p [ class "col-xs-12 callout-fade callout-info" ]
-        [ div [ class "marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+        [ div [ class "marker" ] [ span [ class "fa fa-info-circle" ] [] ]
         , text desc
         ]
 
@@ -303,7 +303,7 @@ displayProvidConfig config =
     div [ class "col-xs-12" ]
         [ h4 [] [ text "Currently configured provider sequence" ]
         , div [ class "col-xs-12 callout-fade callout-info" ]
-            [ div [ class "marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+            [ div [ class "marker" ] [ span [ class "fa fa-info-circle" ] [] ]
             , p []
                 [ text """Rudder relies on authentication providers to decide if an user can log in
                    into the application.
