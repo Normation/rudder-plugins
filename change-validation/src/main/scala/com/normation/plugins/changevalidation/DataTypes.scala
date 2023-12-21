@@ -38,9 +38,13 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.NamedZioLogger
+import com.normation.rudder.domain.nodes.NodeGroupUid
+import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.FullRuleTargetInfo
 import com.normation.rudder.domain.policies.RuleTarget
+import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.policies.SimpleTarget
+import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.utils.Control
 import net.liftweb.common.Box
@@ -54,6 +58,7 @@ import net.liftweb.json.NoTypeHints
 import net.liftweb.json.parse
 import org.slf4j.LoggerFactory
 import scala.util.control.NonFatal
+import zio.NonEmptyChunk
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -73,6 +78,18 @@ object ChangeValidationLoggerPure extends NamedZioLogger {
   object Metrics extends NamedZioLogger {
     override def loggerName: String = "change-validation.metrics"
   }
+}
+
+final case class ChangeRequestFilter(
+    status: Option[NonEmptyChunk[WorkflowNodeId]],
+    by:     Option[ChangeRequestFilter.ByFilter]
+)
+
+object ChangeRequestFilter {
+  sealed trait ByFilter
+  final case class ByRule(ruleId: RuleUid)                extends ByFilter
+  final case class ByDirective(directiveId: DirectiveUid) extends ByFilter
+  final case class ByNodeGroup(nodeGroupId: NodeGroupUid) extends ByFilter
 }
 
 /*
@@ -144,7 +161,7 @@ object RudderJsonMapping {
  * Ser utils
  */
 object Ser {
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: net.liftweb.json.Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
   /*
    * Parse a string as a simple target ID

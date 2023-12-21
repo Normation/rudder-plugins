@@ -42,7 +42,7 @@ class UnsupervisedTargetsRepository(
     directory: Path,
     filename:  String
 ) {
-  implicit val formats   = net.liftweb.json.Serialization.formats(NoTypeHints)
+  implicit val formats: net.liftweb.json.Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
   private[this] val path = new File(directory.toFile, filename)
 
   /*

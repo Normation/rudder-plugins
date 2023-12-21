@@ -57,9 +57,9 @@ class MigrateSupervisedGroups(
     groupRepository:  RoNodeGroupRepository,
     unsupervisedRepo: UnsupervisedTargetsRepository
 ) {
-  implicit val formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-  val directory        = "/var/rudder/plugin-resources/change-validation"
-  val oldFilename      = "supervised-targets.json"
+  implicit val formats: net.liftweb.json.Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
+  val directory   = "/var/rudder/plugin-resources/change-validation"
+  val oldFilename = "supervised-targets.json"
 
   def migrate(): Unit = {
     Box.tryo {
