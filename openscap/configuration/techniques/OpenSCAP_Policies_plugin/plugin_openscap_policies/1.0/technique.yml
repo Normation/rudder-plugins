@@ -1,0 +1,120 @@
+id: plugin_openscap_policies
+name: Plugin Openscap policies
+version: '1.0'
+category: OpenSCAP_Policies_plugin
+documentation: |-
+  ## Summary
+
+  This technique triggers an OpenSCAP audit every day, between 2:00 and 8:00 by default, and sends the report to the Rudder Server to be displayed on the Node Details.
+  ## Usage
+  This Technique takes 2 parameters:
+  * *profile*: name of the profile to check (e.g. RHEL6-Default)
+  * *scap_file*: XCCDF Checklist file (e.g XCCDF Checklist)
+  When a Directive based on this Technique is applied on a Node, a new tab _OpenSCAP_ is available for this node, displaying a sanitized (no JS, no CSS) version of the reports, plus a link to download the raw version.
+  ## Resource
+  An introduction to OpenSCAP is available [here](https://www.open-scap.org/getting-started/) that explains the concepts of profile, and checklist file
+items:
+- name: OpenSCAP packages
+  items:
+  - name: Variable iterator
+    condition: debian
+    params:
+      prefix: openscap
+      value: ssg-base,ssg-debderived,ssg-debian,ssg-nondebian,ssg-applications
+      name: packages
+      separator: ','
+    method: variable_iterator
+    id: f2b48700-3413-47bf-bf6d-d0bd606a0958
+    reporting:
+      mode: enabled
+  - name: Variable iterator
+    condition: redhat
+    params:
+      value: scap-security-guide,openscap-scanner
+      name: packages
+      separator: ','
+      prefix: openscap
+    method: variable_iterator
+    id: 2d9be4dd-13d7-44d4-8874-6bd795abe85a
+    reporting:
+      mode: enabled
+  - name: Variable iterator
+    condition: SuSE.!sles_10
+    params:
+      name: packages
+      value: openscap
+      separator: ','
+      prefix: openscap
+    method: variable_iterator
+    id: 0311ea21-932c-42c0-9780-6fe439159f8f
+    reporting:
+      mode: enabled
+  - name: Package present
+    params:
+      name: ${openscap.packages}
+      architecture: ''
+      version: ''
+      provider: ''
+    method: package_present
+    id: 604c3811-c39c-490e-b6c3-f5fbd164f945
+    reporting:
+      mode: enabled
+  id: c5ea616f-59e0-4be3-b779-3dc34bb9cf4d
+  reporting:
+    mode: focus
+    id: 604c3811-c39c-490e-b6c3-f5fbd164f945
+- name: Schedule OpenSCAP report between 02:00 and 08:00
+  params:
+    periodicity_minutes: '0'
+    periodicity_days: '1'
+    max_execution_delay_hours: '6'
+    start_on_minutes: '0'
+    mode: nodups
+    job_id: openscap
+    agent_periodicity: ${system_common.agent_run_interval}
+    max_execution_delay_minutes: '0'
+    start_on_day_of_week: '0'
+    start_on_hours: '2'
+    periodicity_hours: '0'
+  method: schedule_simple
+  id: 68abad26-673a-4145-abf5-08de37c24b75
+  reporting:
+    mode: enabled
+- condition: schedule_simple_openscap_repaired
+  name: Run OpenSCAP scan
+  items:
+  - name: Run OpenSCAP scan
+    params:
+      command: oscap xccdf eval --profile ${profile} --report /var/rudder/tmp/openscap_report.html ${scap_file}
+      repaired_codes: '254'
+      kept_codes: 0,2
+    method: command_execution_result
+    id: 27321cd9-abe9-4680-80cd-2d47064bec27
+    reporting:
+      mode: enabled
+  - name: Send OpenSCAP report to server
+    params:
+      file_id: openscap_report.html
+      file_path: /var/rudder/tmp/openscap_report.html
+      remote_node: root
+      ttl: 1d
+    method: sharedfile_to_node
+    id: bcaa4e93-920f-4bab-9916-4962913f2a9e
+    reporting:
+      mode: enabled
+  id: 8418d7dd-15b3-4778-a7cd-0d92ddea4024
+  reporting:
+    mode: weighted
+params:
+- id: 2628fa31-e0cf-4eba-b1ad-697aa30b4c03
+  name: profile
+  description: Name of the profile to check (e.g. RHEL7-Default)
+  type: multiline-string
+  constraints:
+    allow_empty: false
+- id: d6f77639-b49f-4024-a27b-6462b2fd0469
+  name: scap_file
+  description: XCCDF Checklist file (e.g. /path/to//U_RHEL_7_V2R7_STIG_SCAP_1-2_Benchmark.xml)
+  type: multiline-string
+  constraints:
+    allow_empty: false
