@@ -162,7 +162,7 @@ class ChangeValidationSettings extends DispatchSnippet {
         case Full(_) =>
           val tooltipid = Helpers.nextFuncName
           <span class="tooltipable" tooltipid={tooltipid} title="">
-              <span class="glyphicon glyphicon-info-sign info"></span>
+              <span class="fa fa-info-circle info"></span>
             </span>
             <div class="tooltipContent" id={tooltipid}>
               Allow users to validate Change Requests they created themselves? Validating is moving a Change Request to the "<b>Pending deployment</b>" status
@@ -176,7 +176,7 @@ class ChangeValidationSettings extends DispatchSnippet {
         case Full(_) =>
           val tooltipid = Helpers.nextFuncName
           <span class="tooltipable" tooltipid={tooltipid} title="">
-              <span class="glyphicon glyphicon-info-sign info"></span>
+              <span class="fa fa-info-circle info"></span>
             </span>
             <div class="tooltipContent" id={tooltipid}>
               Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the "<b>Pending deployment</b>" status.

@@ -304,7 +304,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
           .openOr(<div class="error">Cannot find the status of this change request</div>)
       ) &
       SetHtml("changeRequestChanges", new ChangeRequestChangesForm(cr).dispatch("changes")(NodeSeq.Empty)) &
-      JsRaw("""$('#changeStatePopup').bsModal('hide');""")
+      JsRaw("""hideBsModal('popupContent');""")
     }
 
     var nextChosen                                                = nextSteps.head
@@ -313,7 +313,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         nextSteps.map(v => (v, v._1.value)),
         Full(nextChosen),
         { t: (WorkflowNodeId, stepChangeFunction) => nextChosen = t }
-      ) % ("class" -> "form-control space-bottom")
+      ) % ("class" -> "form-select space-bottom")
     }
 
     def buildReasonField(mandatory: Boolean, containerClass: String) = {
@@ -412,7 +412,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
           case Full(next) =>
             SetHtml("workflowActionButtons", displayActionButton(cr, next)) &
             SetHtml("newStatus", Text(next.value)) &
-            closePopup & JsRaw(""" callPopupWithTimeout(200, "successWorkflow"); """)
+            closePopup & JsRaw(""" initBsModal("successWorkflow"); """)
           case eb: EmptyBox =>
             val fail = eb ?~! "could not change Change request step"
             formTracker.addFormError(error(fail.msg))
@@ -424,7 +424,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     }
 
     SetHtml("popupContent", content(nextChosen)) &
-    JsRaw("createPopup('popupContent')")
+    JsRaw("initBsModal('popupContent')")
 
   }
 }

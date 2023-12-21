@@ -308,7 +308,7 @@ jsonPathForm httpData =
              div [ class "form-group clearfix"] [
                 label [ for "jsonpath", class "optional" ] [
                   text "JSON path"
-                , span [ class "fa fa-question-circle icon-info"] [] --, ng-mouseover "toggleInfo($event, 'show')", ng-mouseout "toggleInfo($event, 'hide')", data-toggle "popover", data-placement "right", data-content "You can also use Rudder variable expansion here. See help for URL above.",></span ] [
+                , span [ class "fa fa-question-circle icon-info", attribute "data-bs-toggle" "tooltip", attribute "data-bs-container" "body", title "You can also use Rudder variable expansion here. See help for URL above."] []
                 ]
               , div [ class "input-group" ] [
                   label [ class "input-group-addon addon has-example-help", for "jsonpath"] [text "$."]

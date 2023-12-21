@@ -156,7 +156,7 @@ h3 {
   width            : 26px;
   height           : 26px;
   border-radius    : 3px;
-  background-color : #9bc832;
+  background-color : #13BEB7;
   display          : inline-flex;
   align-items      : center;
   font-size        : 20px;
@@ -401,7 +401,7 @@ h3 {
 
 .addBtn {
   margin           : 5px 0 0 10px;
-  background-color : #9bc832;
+  background-color : #13BEB7;
   color            : white;
   padding          : 2px;
   font-size        : 10;

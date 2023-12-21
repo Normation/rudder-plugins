@@ -182,8 +182,8 @@ label.optional.option-span > span:after{
 .datasource-bloc .bloc-body .btn-radio.active{
   cursor:default;
   color:#fff;
-  background-color: #9bc832;
-  border-color: #7b9e28;
+  background-color: #13BEB7;
+  border-color: #109f9a;
   box-shadow: none;
 }
 .datasource-bloc .bloc-body .btn-radio.active[disabled]{
@@ -380,9 +380,6 @@ ul > li.rudder-form > .input-group .input-group-addon{
 }
 ul.list-sm > li.rudder-form > .input-group .input-group-addon{
   padding: 0 7px;
-}
-ul > li.rudder-form > .input-group label.form-control .glyphicon.info{
-  top:3px;
 }
 ul > li.rudder-form:last-child > .input-group label.form-control{
   border-bottom-right-radius:4px;

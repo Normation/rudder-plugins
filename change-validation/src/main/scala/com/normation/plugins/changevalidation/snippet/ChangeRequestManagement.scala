@@ -208,7 +208,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
         SHtml.ajaxSubmit(
           "",
           () => SetHtml("actualFilter", transform(value)),
-          ("class", "expand hide")
+          ("class", "expand visually-hidden")
         )
       }
 
@@ -223,7 +223,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
         (multipleValues ::: selectValues).map { case (a, b) => SelectableOption(a, b) },
         Full(default),
         list => value = list,
-        ("class", "form-control"),
+        ("class", "form-select w-auto mb-3 ms-2 me-2"),
         ("id", "select-status")
       )
       (s"value='${default}' [selected]" #> "selected").apply(("select *" #> {

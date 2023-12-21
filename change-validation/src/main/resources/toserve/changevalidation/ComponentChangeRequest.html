@@ -21,7 +21,7 @@
 </component-header>
 
 <component-details>
-  <div id="detailsForm" class="col-lg-6 col-xs-12">
+  <div id="detailsForm" class="col-lg-6 col-xs-12 pe-3 ps-3">
     <div id="formError"></div>
     <div id="CRName"></div>
     <div class="form-group">
@@ -49,7 +49,7 @@
 <component-warnUnmergeable>
   <div class="callout-fade callout-warning">
     <div class="marker">
-      <span class="glyphicon glyphicon-info-sign"></span>
+      <span class="fa fa-info-circle"></span>
     </div>
     <div>
       <p>Configuration state of the object modified by this change request has change since the
@@ -83,20 +83,16 @@
 
 <component-popup>
   <div id="changeStatePopup">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="close" data-dismiss="modal">
-                        <span aria-hidden="true">&times;</span>
-                        <span class="sr-only">Close</span>
-                    </div>
-                    <h4 class="modal-title">Change Request state</h4>
-                </div>
-                <div id="form"></div>
-            </div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Change Request state</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div id="form"></div>
+      </div>
     </div>
-</div>
+  </div>
 </component-popup>
 
 <component-popupContent>
@@ -116,7 +112,7 @@
     <div id ="reason" class="space-top"></div>
 </div>
 <div class="modal-footer">
-    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-default" data-bs-dismiss="modal" aria-label="Close">Cancel</button>
     <button type="button" class="btn" id="confirm">Confirm</button>
 </div>
 </component-popupContent>
@@ -126,6 +122,6 @@
     <div id="backStep" ></div>
     <div id="nextStep" style="float:right"></div>
   </div>
-  <div id="popupContent" class="modal fade" data-keyboard="true" tabindex="-1"></div>
+  <div id="popupContent" class="modal fade" data-bs-keyboard="true" tabindex="-1" data-bs-backdrop="false"></div>
 </component-actionbuttons>
 </xml:group>

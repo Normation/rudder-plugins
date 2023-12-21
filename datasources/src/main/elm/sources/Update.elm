@@ -4,7 +4,7 @@ import APICalls exposing (deleteDataSource, saveDataSource)
 import Model exposing (..)
 import List.Extra
 import Messages exposing (..)
-import Port exposing (errorNotification)
+import Port exposing (..)
 import Utils exposing (errorMessage)
 
 
@@ -17,12 +17,12 @@ update msg model =
   in
   case msg of
     UpdateUI ui ->
-      ({ model | ui = ui}, Cmd.none)
+      ({ model | ui = ui}, initTooltips "")
 
     SelectDataSource dataSource ->
-      ({ model | mode = ShowDatasource dataSource (Just dataSource)}, Cmd.none)
+      ({ model | mode = ShowDatasource dataSource (Just dataSource)}, initTooltips "")
     NewDataSource ->
-      ({ model | mode = ShowDatasource newDataSource Nothing}, Cmd.none)
+      ({ model | mode = ShowDatasource newDataSource Nothing}, initTooltips "")
 
     UpdateDataSource dataSource ->
       case model.mode of
@@ -75,7 +75,7 @@ update msg model =
     GetDataSources result ->
       case result of
           Ok dataSources ->
-            ({ model | dataSources = dataSources}, Cmd.none)
+            ({ model | dataSources = dataSources}, initTooltips "")
           Err e ->
             (model, errorNotification (errorMessage e))
 

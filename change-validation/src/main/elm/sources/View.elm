@@ -15,9 +15,9 @@ createInfoTootlip : String -> String -> Html msg
 createInfoTootlip content placement =
   span
   [
-      class "glyphicon glyphicon-exclamation-sign center-box-element input-icon bstool"
-    , attribute "data-toggle" "tooltip"
-    , attribute "data-placement" placement
+      class "fa fa-exclamation-triangle center-box-element input-icon bstool"
+    , attribute "data-bs-toggle" "tooltip"
+    , attribute "data-bs-placement" placement
     , attribute "title" content
   ][]
 
@@ -198,13 +198,13 @@ displayArrows model =
       [
         button [ onClick LeftToRight, class rightArrowBtnType, disabled (isEmpty model.leftChecked) ]
         [
-          span [ class "glyphicon glyphicon-chevron-right" ][]
+          span [ class "fa fa-chevron-right" ][]
         ],
         br [] [],
         br [] [],
         button [ onClick RightToLeft,class leftArrowBtnType, disabled (isEmpty model.rightChecked)]
         [
-          span [ class "glyphicon glyphicon-chevron-left" ] []
+          span [ class "fa fa-chevron-left" ] []
         ]
       ]
 

@@ -35,32 +35,27 @@ view model =
 
 showDeleteModal : String -> Html Msg
 showDeleteModal username =
-                  div [ tabindex -1, class "modal fade in", style "z-index" "1050", style "display" "block" ]
-                  [
-                      div [class "modal-dialog"]
-                      [
-                          div [class "modal-content"]
-                          [
-                              div [class "modal-header"]
-                              [
-                                div [class "close", attribute "data-dismiss" "modal", onClick CloseDeleteModal][i [class "fa fa-times"][]]
-                              , h4 [class "modal-title"][text "Delete a user"]
-                              ]
-                            , div [class "modal-body"]
-                              [
-                                div [class "row"]
-                                [
-                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text "?"]
-                                ]
-                              ]
-                            , div [class "modal-footer"]
-                              [
-                                button [class "btn btn-default", onClick CloseDeleteModal][text "Cancel"]
-                              , button [class "btn btn-danger", onClick (CallApi ( deleteUser username ))][text "Delete"]
-                              ]
-                          ]
-                      ]
-                  ]
+  div [ tabindex -1, class "modal fade show", style "z-index" "1050", style "display" "block" ]
+  [ div [class "modal-backdrop fade show", onClick CloseDeleteModal][]
+  , div [class "modal-dialog"]
+    [ div [class "modal-content"]
+      [ div [class "modal-header"]
+        [ h5 [class "modal-title"][text "Delete a user"]
+        , button [type_ "button", class "btn-close", attribute "data-bs-dismiss" "modal", attribute "aria-label" "Close", onClick CloseDeleteModal][]
+        ]
+      , div [class "modal-body"]
+        [ div [class "row"]
+          [ h5 [class "text-center"][text "Are you sure you want to delete user " , b[][text username] , text "?"]
+          ]
+        ]
+      , div [class "modal-footer"]
+        [ button [class "btn btn-default", onClick CloseDeleteModal][text "Cancel"]
+        , button [class "btn btn-danger", onClick (CallApi ( deleteUser username ))][text "Delete"]
+        ]
+      ]
+    ]
+  ]
+
 hashPasswordMenu : Bool -> Html Msg
 hashPasswordMenu isHashedPasswd =
     let
@@ -283,7 +278,7 @@ displayUsersConf model u =
                     ]
                     , div [ class "callout-fade callout-info" ]
                     [
-                          div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+                          div [ class "marker marker" ] [ span [ class "fa fa-info-circle" ] [] ]
                         , text msgProvider
                         , lstOfExtProviders
                         , (displayRoleListOverrideWarning model.roleListOverride)

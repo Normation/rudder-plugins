@@ -106,48 +106,39 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
   }
 
   def body(xml: NodeSeq): NodeSeq = {
-    print("ok")
     ("#acl-app" #>
-    <div>
+      <div>
         <head_merge>
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
           <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/rudder-apiauthorizations.js"></script>
         </head_merge>
-        <div id="acl-configuration" ng-if="myNewAccount.authorizationType === 'acl'">
-          <!-- load elm app -->
-          <div id="apiauthorization-app">
-            <div id="apiauthorization-content"/>
-          </div>
-          <script>
-          //<![CDATA[
-            var appAcl;
-            $(document).ready(function(){
-              app.ports.initAcl.subscribe(function(){
-                // init elm app
-                var node = document.getElementById("apiauthorization-app");
-                var main = document.getElementById("apiauthorization-content");
+        <script>
+        //<![CDATA[
+          var appAcl;
+          $(document).ready(function(){
+            app.ports.initAcl.subscribe(function(){
+              // init elm app
+              var node = document.getElementById("apiauthorization-content");
+              var initValues = {
+                  contextPath : contextPath
+                , token: { id: "account.id", acl: []}
+                , rudderApis: rudderApis
+              };
 
-                var initValues = {
-                    contextPath : contextPath
-                  , token: { id: "account.id", acl: []}
-                  , rudderApis: rudderApis
-                };
+              appAcl = Elm.ApiAuthorizations.init({node: node, flags: initValues});
 
-                appAcl = Elm.ApiAuthorizations.init({node: main, flags: initValues});
-
-                //set back selected acl to the API accounts app
-                appAcl.ports.giveAcl.subscribe(function(acl) {
-                  app.ports.getCheckedAcl.send(acl)
-                });
-              });
-              //get the acl list of the selected account
-              app.ports.shareAcl.subscribe(function(acl){
-                appAcl.ports.getToken.send(acl)
+              //set back selected acl to the API accounts app
+              appAcl.ports.giveAcl.subscribe(function(acl) {
+                app.ports.getCheckedAcl.send(acl)
               });
             });
-          // ]]>
-          </script>
-        </div>
+            //get the acl list of the selected account
+            app.ports.shareAcl.subscribe(function(acl){
+              appAcl.ports.getToken.send(acl)
+            });
+          });
+        // ]]>
+        </script>
       </div>).apply(xml)
   }
 

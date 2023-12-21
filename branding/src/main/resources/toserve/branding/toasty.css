@@ -20,17 +20,17 @@
 }
 
 .toasty-success {
-    background-color: rgba(155, 200, 50, .9);
-    border: 1px solid #a4c74e
+    background-color: #13BEB7;
+    border: 1px solid #109f9a;
 ;}
 
 .toasty-warning {
-    background-color: #ff851b
+    background-color: #EF9600;
 }
 
 .toasty-error {
-    background-color: rgba(200, 0, 4, .9);
-    border: 1px solid #c3000e;
+    background-color: #DA291C;
+    border: 1px solid #ac2925;
 }
 
 .animated {

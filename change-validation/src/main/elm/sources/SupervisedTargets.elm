@@ -338,7 +338,7 @@ displayCategory category =
         [ div [ class "panel panel-default" ]
             [ div [ class "panel-heading", Html.Attributes.id listGroupHeadingId ]
                 [ h4 [ class "panel-title" ]
-                    [ a [ Html.Attributes.href ("#" ++ listGroupId), Html.Attributes.attribute "role" "button", Html.Attributes.attribute "data-toggle" "collapse", Html.Attributes.attribute "aria-expanded" "true", Html.Attributes.attribute "aria-controls" listGroupId ]
+                    [ a [ Html.Attributes.href ("#" ++ listGroupId), Html.Attributes.attribute "role" "button", Html.Attributes.attribute "data-bs-toggle" "collapse", Html.Attributes.attribute "aria-expanded" "true", Html.Attributes.attribute "aria-controls" listGroupId ]
                         [ span [ class "fa fa-folder" ] []
                         , text category.name
                         ]

@@ -175,16 +175,15 @@ fileField msg inputId txt =
 createPanel : String -> String -> List (Html msg) -> Html msg
 createPanel panelTitle panelId bodyContent =
     let
-        hrefId =
-            "#" ++ panelId
+        hrefId = "#" ++ panelId
     in
     div [ class "panel panel-default" ]
         [ div [ class "panel-heading" ]
-            [ h2 [ class "panel-title" ]
-                [ a [ attribute "data-toggle" "collapse", attribute "data-target" hrefId, href hrefId ] [ text panelTitle ]
+            [ h4 [ class "panel-title" ]
+                [ a [ attribute "data-bs-toggle" "collapse", attribute "data-bs-target" hrefId, href hrefId ] [ text panelTitle ]
                 ]
             ]
-        , div [ id panelId, class "panel-collapse collapse in" ]
+        , div [ id panelId, class "panel-collapse collapse show" ]
             [ div [ class "panel-body" ] bodyContent ]
         ]
 

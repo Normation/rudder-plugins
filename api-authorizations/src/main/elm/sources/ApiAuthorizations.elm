@@ -140,10 +140,10 @@ apiSelect listAcl api =
 displayApi : Api -> Html Msg
 displayApi api =
     div [  ]
-        [ h4 []
-            [ b [ class api.verb ] [ text api.verb ]
-            , text (" " ++ api.path)
-            ]
+        [ h5 []
+          [ b [ class api.verb ] [ text api.verb ]
+          , text (" " ++ api.path)
+          ]
         , div [] [ text (api.name ++ ": " ++ api.description) ]
         ]
 

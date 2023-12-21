@@ -47,7 +47,7 @@ class OpenScapNodeDetailsExtension(
                   <h3 class="page-title">OpenSCAP reporting</h3>
                   <div class="col-xs-12 callout-fade callout-info">
                     <div class="marker">
-                      <span class="glyphicon glyphicon-info-sign"></span>
+                      <span class="fa fa-info-circle"></span>
                     </div>
                     <p>That tab gives access to OpenSCAP report configured for that node.</p>
                     <br/>
@@ -106,7 +106,7 @@ class OpenScapNodeDetailsExtension(
         <h3 class="page-title">OpenSCAP reporting</h3>
         <div class="col-xs-12 callout-fade callout-info">
           <div class="marker">
-            <span class="glyphicon glyphicon-info-sign"></span>
+            <span class="fa fa-info-circle"></span>
           </div>
           <p>That tab gives access to OpenSCAP report configured for that node. Below is the raw report as sent by the node.</p>
           <br/>

@@ -62,17 +62,12 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   override val defaultHtml = NodeSeq.Empty
 
   val layout = {
-    <li class="dropdown notifications-menu">
-      <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+    <li class="nav-item dropdown notifications-menu">
+      <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
         <span>CR</span>
         <span id="number" class="badge rudder-badge"></span>
-        <i class="fa fa-angle-down" style="margin-left:15px;"></i>
       </a>
-      <ul class="dropdown-menu" role="menu">
-        <li>
-          <ul class="menu"></ul>
-        </li>
-      </ul>
+      <ul class="dropdown-menu" role="menu"></ul>
     </li>
   }
 
@@ -90,10 +85,10 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
           if (workflowEnabled && (isValidator || isDeployer)) {
             {
               if (isValidator) pendingModifications
-              else ".menu *+" #> NodeSeq.Empty
+              else ".dropdown-menu *+" #> NodeSeq.Empty
             } & {
               if (isDeployer) pendingDeployment
-              else ".menu *+" #> NodeSeq.Empty
+              else ".dropdown-menu *+" #> NodeSeq.Empty
             } &
             "#number *" #> requestCount(workflowService)
           } else {
@@ -124,7 +119,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   def pendingModifications = {
     val xml = pendingModificationRec(workflowService)
 
-    ".menu *+" #> xml
+    ".dropdown-menu *+" #> xml
   }
 
   private[this] def pendingModificationRec(workflowService: WorkflowService): NodeSeq = {
@@ -151,7 +146,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   def pendingDeployment = {
     val xml = pendingDeploymentRec(workflowService)
 
-    ".menu *+" #> xml
+    ".dropdown-menu *+" #> xml
   }
 
   private[this] def pendingDeploymentRec(workflowService: WorkflowService): NodeSeq = {

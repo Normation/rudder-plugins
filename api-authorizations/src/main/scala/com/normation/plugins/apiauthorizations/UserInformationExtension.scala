@@ -20,7 +20,7 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
       <li class="user user-menu">
         <a href="#">
           <span>
-            <span class="hidden-xs glyphicon glyphicon-user"></span>
+            <span class="hidden-xs fa fa-user"></span>
             admin
           </span>
         </a>
@@ -30,9 +30,9 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
      * We want to do:
 
      <li class="dropdown user user-menu ">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+        <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
           <span>
-            <span class="hidden-xs glyphicon glyphicon-user"></span>
+            <span class="hidden-xs fa fa-user"></span>
             admin
           </span>
           <i class="fa fa-angle-down" style="margin-left:15px;"></i>
@@ -80,7 +80,7 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
       "#user-menu [class+]" #> "dropdown notifications-menu"
       & "#user-menu-action [style+]" #> "cursor:pointer"
       & "#user-menu-action [class+]" #> "dropdown-toggle"
-      & "#user-menu-action [data-toggle+]" #> "dropdown"
+      & "#user-menu-action [data-bs-toggle+]" #> "dropdown"
       & "#user-menu-action *+" #> <i class="fa fa-angle-down" style="margin-left:15px;"></i>
       andThen "#user-menu *+" #> embedAppXml // need to be andThen, else other children mod are erased :/
     ).apply(xml)
