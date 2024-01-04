@@ -167,7 +167,7 @@ object Ser {
      */
     for {
       list    <- parseSupervised(json)
-      targets <- Control.sequence(list)(parseTargetId)
+      targets <- Control.traverse(list)(parseTargetId)
     } yield {
       targets.toSet
     }
@@ -175,7 +175,7 @@ object Ser {
 
   def parseSupervised(json: JValue): Box[List[String]] = {
     (json \ "supervised") match {
-      case JArray(list) => Control.sequence(list)(s => Box(s.extractOpt[String])).map(_.toList)
+      case JArray(list) => Control.traverse(list)(s => Box(s.extractOpt[String])).map(_.toList)
       case _            =>
         val msg = s"Error when trying to parse JSON content ${json.toString} as a set of rule target."
         ChangeValidationLogger.error(msg)
@@ -193,7 +193,7 @@ object Ser {
      */
     for {
       list    <- parseUnsupervised(json)
-      targets <- Control.sequence(list)(parseTargetId)
+      targets <- Control.traverse(list)(parseTargetId)
     } yield {
       targets.toSet
     }
@@ -201,7 +201,7 @@ object Ser {
 
   def parseUnsupervised(json: JValue): Box[List[String]] = {
     (json \ "unsupervised") match {
-      case JArray(list) => Control.sequence(list)(s => Box(s.extractOpt[String])).map(_.toList)
+      case JArray(list) => Control.traverse(list)(s => Box(s.extractOpt[String])).map(_.toList)
       case _            =>
         val msg = s"Error when trying to parse JSON content ${json.toString} as a set of rule target."
         ChangeValidationLogger.error(msg)

@@ -296,11 +296,11 @@ trait DataSourceExtractor[M[_]] extends JsonExtractorUtils[M] {
         }
 
         def extractNameValueObjectArray(json: JValue, key: String): Box[M[List[(String, String)]]] = {
-          import com.normation.utils.Control.sequence
+          import com.normation.utils.Control.traverse
           json \ key match {
             case JArray(values) =>
               for {
-                converted <- sequence(values) { v =>
+                converted <- traverse(values) { v =>
                                for {
                                  name  <- extractJsonString(v, "name", boxedIdentity)
                                  value <- extractJsonString(v, "value", boxedIdentity)
