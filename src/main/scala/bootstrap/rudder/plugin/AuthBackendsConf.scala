@@ -149,7 +149,7 @@ object AuthBackendsConf extends RudderPluginModule {
 
     override def allowedToUseBackend(name: String): Boolean = {
       // same behavior for all authentication backends: only depends on the plugin status
-      pluginStatusService.isEnabled
+      pluginStatusService.isEnabled()
     }
   }
 
@@ -159,7 +159,7 @@ object AuthBackendsConf extends RudderPluginModule {
     override def authenticationBackends:            Set[String] = oauthBackendNames
     override def name:                              String      =
       s"Oauth2 and OpenID Connect authentication backends provider: '${authenticationBackends.mkString("','")}"
-    override def allowedToUseBackend(name: String): Boolean     = pluginStatusService.isEnabled
+    override def allowedToUseBackend(name: String): Boolean     = pluginStatusService.isEnabled()
   })
 
   lazy val isOauthConfiguredByUser = {
