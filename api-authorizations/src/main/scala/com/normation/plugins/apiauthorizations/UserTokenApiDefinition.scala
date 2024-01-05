@@ -87,9 +87,9 @@ class UserApi(
     val schema = API.GetApiToken
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi
-        .getById(ApiAccountId(authzToken.actor.name))
+        .getById(ApiAccountId(authzToken.qc.actor.name))
         .map(RestAccountsResponse.fromRedacted(_))
-        .chainError(s"Error when trying to get user '${authzToken.actor.name}' API token")
+        .chainError(s"Error when trying to get user '${authzToken.qc.actor.name}' API token")
         .toLiftResponseOne(params, schema, None)
     }
   }
@@ -101,20 +101,20 @@ class UserApi(
       val secret  = ApiToken.generate_secret(tokenGenerator)
       val hash    = ApiToken.hash(secret)
       val account = ApiAccount(
-        ApiAccountId(authzToken.actor.name),
+        ApiAccountId(authzToken.qc.actor.name),
         ApiAccountKind.User,
-        ApiAccountName(authzToken.actor.name),
+        ApiAccountName(authzToken.qc.actor.name),
         ApiToken(hash),
-        s"API token for user '${authzToken.actor.name}'",
+        s"API token for user '${authzToken.qc.actor.name}'",
         isEnabled = true,
         now,
         now
       )
 
       writeApi
-        .save(account, ModificationId(uuidGen.newUuid), authzToken.actor)
+        .save(account, ModificationId(uuidGen.newUuid), authzToken.qc.actor)
         .map(RestAccountsResponse.fromUnredacted(_, secret))
-        .chainError(s"Error when trying to save user '${authzToken.actor.name}' API token")
+        .chainError(s"Error when trying to save user '${authzToken.qc.actor.name}' API token")
         .toLiftResponseOne(params, schema, None)
     }
   }
@@ -123,9 +123,9 @@ class UserApi(
     val schema = API.DeleteApiToken
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       writeApi
-        .delete(ApiAccountId(authzToken.actor.name), ModificationId(uuidGen.newUuid), authzToken.actor)
+        .delete(ApiAccountId(authzToken.qc.actor.name), ModificationId(uuidGen.newUuid), authzToken.qc.actor)
         .map(RestAccountIdResponse(_))
-        .chainError(s"Error when trying to delete user '${authzToken.actor.name}' API token")
+        .chainError(s"Error when trying to delete user '${authzToken.qc.actor.name}' API token")
         .toLiftResponseOne(params, schema, None)
     }
   }
@@ -134,9 +134,9 @@ class UserApi(
     val schema = API.UpdateApiToken
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi
-        .getById(ApiAccountId(authzToken.actor.name))
+        .getById(ApiAccountId(authzToken.qc.actor.name))
         .map(RestAccountsResponse.fromRedacted(_))
-        .chainError(s"Error when trying to get user '${authzToken.actor.name}' API token")
+        .chainError(s"Error when trying to get user '${authzToken.qc.actor.name}' API token")
         .toLiftResponseOne(params, schema, None)
     }
   }

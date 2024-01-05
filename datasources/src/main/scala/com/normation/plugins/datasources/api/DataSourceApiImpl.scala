@@ -117,7 +117,7 @@ class DataSourceApiImpl(
     ): LiftResponse = {
       // reloadData OneNode All datasources
       dataSourceRepo
-        .onUserAskUpdateNode(authzToken.actor, NodeId(nodeId))
+        .onUserAskUpdateNode(authzToken.qc.actor, NodeId(nodeId))
         .forkDaemon
         .as(s"Data for node '${nodeId}', for all configured data sources, is going to be updated")
         .toLiftResponseOne(params, schema, None)
@@ -137,7 +137,7 @@ class DataSourceApiImpl(
     ): LiftResponse = {
       // reloadData AllNodes One datasources
       dataSourceRepo
-        .onUserAskUpdateAllNodesFor(authzToken.actor, DataSourceId(datasourceId))
+        .onUserAskUpdateAllNodesFor(authzToken.qc.actor, DataSourceId(datasourceId))
         .forkDaemon
         .as(s"Data for all nodes, for data source '${datasourceId}', are going to be updated")
         .toLiftResponseOne(params, schema, None)
@@ -158,7 +158,7 @@ class DataSourceApiImpl(
       val (datasourceId, nodeId) = ids
       // reloadData OneNode One datasource
       dataSourceRepo
-        .onUserAskUpdateNodeFor(authzToken.actor, NodeId(nodeId), DataSourceId(datasourceId))
+        .onUserAskUpdateNodeFor(authzToken.qc.actor, NodeId(nodeId), DataSourceId(datasourceId))
         .forkDaemon
         .as(s"Data for node '${nodeId}', for data source '${datasourceId}', is going to be updated")
         .toLiftResponseOne(params, schema, None)
@@ -179,7 +179,7 @@ class DataSourceApiImpl(
 
       val modId                 = ModificationId(uuidGen.newUuid)
       def cause(nodeId: NodeId) =
-        UpdateCause(modId, authzToken.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
+        UpdateCause(modId, authzToken.qc.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
 
       (for {
         nodes <- nodeInfoService.getAllNodes()
@@ -205,7 +205,7 @@ class DataSourceApiImpl(
       val (datasourceId, nodeId) = ids
       val cause                  = UpdateCause(
         ModificationId(uuidGen.newUuid),
-        authzToken.actor,
+        authzToken.qc.actor,
         Some(s"API request to clear '${datasourceId}' on node '${nodeId}'"),
         false
       )
@@ -227,7 +227,7 @@ class DataSourceApiImpl(
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       // reloadData All Nodes All Datasources
       dataSourceRepo
-        .onUserAskUpdateAllNodes(authzToken.actor)
+        .onUserAskUpdateAllNodes(authzToken.qc.actor)
         .forkDaemon
         .as("Data for all nodes, for all configured data sources are going to be updated")
         .toLiftResponseOne(params, schema, None)
@@ -284,7 +284,7 @@ class DataSourceApiImpl(
                     DataSourceId(sourceId),
                     UpdateCause(
                       ModificationId(uuidGen.newUuid),
-                      authzToken.actor,
+                      authzToken.qc.actor,
                       Some(s"Deletion of datasource '${sourceId}' requested by API")
                     )
                   )

@@ -286,7 +286,7 @@ object ChangeValidationConf extends RudderPluginModule {
           roChangeRequestRepository,
           RudderConfig.roRuleRepository,
           RudderConfig.roNodeGroupRepository,
-          RudderConfig.nodeInfoService
+          RudderConfig.nodeFactRepository
         )
       ),
       () => RudderConfig.configService.rudder_workflow_enabled().toBox,

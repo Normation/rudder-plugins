@@ -72,7 +72,7 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.web.services.CurrentUser
-import com.normation.utils.Control.boxSequence
+import com.normation.utils.Control.sequence
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
@@ -228,7 +228,7 @@ class ChangeRequestApiImpl(
 
             for {
               crIds <- readWorkflow.getAllByState(status) ?~ ("Could not fetch ChangeRequests")
-              crs   <- boxSequence(crIds.map(readChangeRequest.get)).map(_.flatten) ?~ ("Could not fetch ChangeRequests")
+              crs   <- sequence(crIds.map(readChangeRequest.get)).map(_.flatten) ?~ ("Could not fetch ChangeRequests")
             } yield {
               val result = JArray(crs.map(serialize(_, status, version)).toList)
               Full(result)
@@ -241,8 +241,8 @@ class ChangeRequestApiImpl(
           checkWorkflow match {
             case Full(_) =>
               (for {
-                res     <- boxSequence(statuses.map(listChangeRequestsByStatus)) ?~ ("Could not fetch ChangeRequests")
-                results <- boxSequence(res) ?~ ("Could not fetch ChangeRequests") ?~ ("Could not fetch ChangeRequests")
+                res     <- sequence(statuses.map(listChangeRequestsByStatus)) ?~ ("Could not fetch ChangeRequests")
+                results <- sequence(res) ?~ ("Could not fetch ChangeRequests") ?~ ("Could not fetch ChangeRequests")
               } yield {
                 val res: JValue = (results foldRight JArray(List()))(concatenateJArray)
                 toJsonResponse(None, res)
@@ -344,7 +344,7 @@ class ChangeRequestApiImpl(
                   )
                 )
             reason    <- restExtractor.extractReason(req) ?~ "There was an error while extracting reason message"
-            result    <- func(crId, authzToken.actor, reason) ?~! (s"Could not decline ChangeRequest ${id}")
+            result    <- func(crId, authzToken.qc.actor, reason) ?~! (s"Could not decline ChangeRequest ${id}")
           } yield {
             val jsonChangeRequest = List(serialize(changeRequest, result, version))
             toJsonResponse(Some(id.toString), ("changeRequests" -> JArray(jsonChangeRequest)))
@@ -417,7 +417,7 @@ class ChangeRequestApiImpl(
                       )
                     )
                 reason    <- restExtractor.extractReason(req) ?~ "There was an error while extracting reason message"
-                result    <- func(crId, authzToken.actor, reason) ?~! (s"Could not accept ChangeRequest ${id}")
+                result    <- func(crId, authzToken.qc.actor, reason) ?~! (s"Could not accept ChangeRequest ${id}")
               } yield {
                 val jsonChangeRequest = List(serialize(changeRequest, result, version))
                 toJsonResponse(Some(id), ("changeRequests" -> JArray(jsonChangeRequest)))
@@ -502,7 +502,7 @@ class ChangeRequestApiImpl(
               toJsonError(Some(id), message)
             } else {
               val newCR = ChangeRequest.updateInfo(changeRequest, newInfo)
-              writeChangeRequest.updateChangeRequest(newCR, authzToken.actor, None) match {
+              writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None) match {
                 case Full(cr) =>
                   val jsonChangeRequest = List(serialize(cr, status, version))
                   toJsonResponse(Some(id), ("changeRequests" -> JArray(jsonChangeRequest)))

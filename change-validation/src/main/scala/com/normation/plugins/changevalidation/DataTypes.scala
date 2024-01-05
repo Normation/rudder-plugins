@@ -71,7 +71,7 @@ object ChangeValidationLoggerPure extends NamedZioLogger {
 }
 
 /**
-  * Case class used for serializing and deserializing the list of supervised targets from 
+  * Case class used for serializing and deserializing the list of supervised targets from
   * the old file format.
   */
 final case class OldFileFormat(supervised: List[String])

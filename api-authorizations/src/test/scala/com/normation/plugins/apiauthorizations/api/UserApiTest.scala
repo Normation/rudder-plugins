@@ -12,6 +12,7 @@ import com.normation.rudder.api.ApiAccountName
 import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.api.ApiToken
 import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import java.nio.file.Files
@@ -59,6 +60,7 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
       val account                              = RudderAccount.Api(accounts(ApiAccountId("user1")))
       def checkRights(auth: AuthorizationType) = true
       def getApiAuthz                          = ApiAuthorization.RW
+      def nodePerms                            = NodeSecurityContext.All
     }
     val getCurrentUser = user1
   }
