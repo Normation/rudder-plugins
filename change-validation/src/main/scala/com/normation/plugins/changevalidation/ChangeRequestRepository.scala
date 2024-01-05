@@ -37,12 +37,14 @@
 
 package com.normation.plugins.changevalidation
 
+import com.normation.errors._
 import com.normation.eventlog.EventActor
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
+import com.normation.rudder.domain.workflows.WorkflowNodeId
 import net.liftweb.common.Box
 
 /**
@@ -61,6 +63,9 @@ trait RoChangeRequestRepository {
   def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]]
 
   def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]]
+
+  def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]]
+
 }
 
 /**
@@ -71,9 +76,14 @@ class EitherRoChangeRequestRepository(
     whenTrue:  RoChangeRequestRepository,
     whenFalse: RoChangeRequestRepository
 ) extends RoChangeRequestRepository {
+
   // remove some boilerplate to make following proxy implementation more readable, just exposing the actual method to call
   private[this] def condApply[T](method: RoChangeRequestRepository => Box[T]): Box[T] = {
     cond().flatMap(if (_) method(whenTrue) else method(whenFalse))
+  }
+
+  private[this] def condApply[T](method: RoChangeRequestRepository => IOResult[T]): IOResult[T] = {
+    cond().toIO.flatMap(if (_) method(whenTrue) else method(whenFalse))
   }
 
   def getAll(): Box[Vector[ChangeRequest]] = condApply(_.getAll())
@@ -91,6 +101,10 @@ class EitherRoChangeRequestRepository(
   def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = condApply(_.getByRule(id, onlyPending))
 
   def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]] = condApply(_.getByContributor(actor))
+
+  def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = condApply(
+    _.getByFilter(filter)
+  )
 }
 
 /**

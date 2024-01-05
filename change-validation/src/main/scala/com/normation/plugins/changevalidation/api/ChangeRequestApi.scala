@@ -37,7 +37,9 @@
 
 package com.normation.plugins.changevalidation.api
 
+import com.normation.box._
 import com.normation.cfclerk.services.TechniqueRepository
+import com.normation.plugins.changevalidation.ChangeRequestFilter
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
@@ -49,6 +51,9 @@ import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.apidata.RestDataSerializer
+import com.normation.rudder.domain.nodes.NodeGroupUid
+import com.normation.rudder.domain.policies.DirectiveUid
+import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
@@ -72,7 +77,6 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.web.services.CurrentUser
-import com.normation.utils.Control.sequence
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
@@ -84,6 +88,7 @@ import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json.JString
 import sourcecode.Line
+import zio.NonEmptyChunk
 
 sealed trait ChangeRequestApi extends EndpointSchema with GeneralApi with SortIndex
 object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
@@ -93,40 +98,55 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     val description    = "List all change requests"
     val (action, path) = GET / "changeRequests"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
+    override def dataContainer: Option[String]          = None
   }
   final case object ChangeRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
     val z              = implicitly[Line].value
     val description    = "Get information about given change request"
     val (action, path) = GET / "changeRequests" / "{id}"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
+    override def dataContainer: Option[String]          = None
   }
   final case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
     val z              = implicitly[Line].value
     val description    = "Decline given change request"
     val (action, path) = DELETE / "changeRequests" / "{id}"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Write, AuthorizationType.Deployer.Edit, AuthorizationType.Validator.Write, AuthorizationType.Validator.Edit)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(
+      AuthorizationType.Deployer.Write,
+      AuthorizationType.Deployer.Edit,
+      AuthorizationType.Validator.Write,
+      AuthorizationType.Validator.Edit
+    )
+    override def dataContainer: Option[String]          = None
   }
   final case object AcceptRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
     val z              = implicitly[Line].value
     val description    = "Accept given change request"
     val (action, path) = POST / "changeRequests" / "{id}" / "accept"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Write, AuthorizationType.Deployer.Edit, AuthorizationType.Validator.Write, AuthorizationType.Validator.Edit)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(
+      AuthorizationType.Deployer.Write,
+      AuthorizationType.Deployer.Edit,
+      AuthorizationType.Validator.Write,
+      AuthorizationType.Validator.Edit
+    )
+    override def dataContainer: Option[String]          = None
   }
   final case object UpdateRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
     val z              = implicitly[Line].value
     val description    = "Update information about given change request"
     val (action, path) = POST / "changeRequests" / "{id}"
 
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Write, AuthorizationType.Deployer.Edit, AuthorizationType.Validator.Write, AuthorizationType.Validator.Edit)
-    override def dataContainer: Option[String] = None
+    override def authz:         List[AuthorizationType] = List(
+      AuthorizationType.Deployer.Write,
+      AuthorizationType.Deployer.Edit,
+      AuthorizationType.Validator.Write,
+      AuthorizationType.Validator.Edit
+    )
+    override def dataContainer: Option[String]          = None
   }
 
   def endpoints = ca.mrvisser.sealerate.values[ChangeRequestApi].toList.sortBy(_.z)
@@ -219,18 +239,16 @@ class ChangeRequestApiImpl(
     val schema        = API.ListChangeRequests
     val restExtractor = restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      restExtractor.extractWorkflowStatus(req.params) match {
-        case Full(statuses) =>
+      extractFilters(req.params) match {
+        case Full(filter) =>
           implicit val action   = "listChangeRequests"
           implicit val prettify = restExtractor.extractPrettify(req.params)
 
-          def listChangeRequestsByStatus(status: WorkflowNodeId) = {
-
+          def listChangeRequestsByFilter(filter: ChangeRequestFilter) = {
             for {
-              crIds <- readWorkflow.getAllByState(status) ?~ ("Could not fetch ChangeRequests")
-              crs   <- sequence(crIds.map(readChangeRequest.get)).map(_.flatten) ?~ ("Could not fetch ChangeRequests")
+              crs <- readChangeRequest.getByFilter(filter).toBox ?~ ("Could not fetch ChangeRequests")
             } yield {
-              val result = JArray(crs.map(serialize(_, status, version)).toList)
+              val result = JArray(crs.map { case (cr, status) => serialize(cr, status, version) }.toList)
               Full(result)
             }
           }
@@ -241,8 +259,7 @@ class ChangeRequestApiImpl(
           checkWorkflow match {
             case Full(_) =>
               (for {
-                res     <- sequence(statuses.map(listChangeRequestsByStatus)) ?~ ("Could not fetch ChangeRequests")
-                results <- sequence(res) ?~ ("Could not fetch ChangeRequests") ?~ ("Could not fetch ChangeRequests")
+                results <- listChangeRequestsByFilter(filter) ?~ ("Could not fetch ChangeRequests")
               } yield {
                 val res: JValue = (results foldRight JArray(List()))(concatenateJArray)
                 toJsonResponse(None, res)
@@ -540,6 +557,18 @@ class ChangeRequestApiImpl(
           val message = s"Could not update ChangeRequest ${id} details cause is: ${fail.messageChain}."
           toJsonError(None, JString(message))("updateChangeRequest", restExtractor.extractPrettify(req.params))
       }
+    }
+  }
+
+  private[this] def extractFilters(params: Map[String, List[String]]): Box[ChangeRequestFilter] = {
+    import ChangeRequestFilter._
+    for {
+      status     <- restExtractorService.extractWorkflowStatus(params)
+      byRule      = params.get("ruleId").flatMap(_.headOption).map(id => ByRule(RuleUid(id)))
+      byDirective = params.get("directiveId").flatMap(_.headOption).map(id => ByDirective(DirectiveUid(id)))
+      byNodeGroup = params.get("nodeGroupId").flatMap(_.headOption).map(id => ByNodeGroup(NodeGroupUid(id)))
+    } yield {
+      ChangeRequestFilter(NonEmptyChunk.fromIterableOption(status), byRule orElse byDirective orElse byNodeGroup)
     }
   }
 
