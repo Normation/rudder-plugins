@@ -39,15 +39,20 @@ package com.normation.plugins.changevalidation
 
 import com.normation.NamedZioLogger
 import com.normation.eventlog.EventActor
+import com.normation.rudder.domain.nodes.NodeGroupUid
+import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.FullRuleTargetInfo
 import com.normation.rudder.domain.policies.RuleTarget
+import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.policies.SimpleTarget
+import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.repository.FullNodeGroupCategory
 import io.scalaland.chimney.Transformer
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
 import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
+import zio.NonEmptyChunk
 import zio.json._
 
 /**
@@ -83,6 +88,18 @@ object OldFileFormat {
   implicit val transformer: Transformer[OldFileFormat, SupervisedSimpleTargets] = old =>
     SupervisedSimpleTargets(old.supervised.flatMap(s => RuleTarget.unser(s).collect { case t: SimpleTarget => t }).toSet)
 
+}
+
+final case class ChangeRequestFilter(
+    status: Option[NonEmptyChunk[WorkflowNodeId]],
+    by:     Option[ChangeRequestFilter.ByFilter]
+)
+
+object ChangeRequestFilter {
+  sealed trait ByFilter
+  final case class ByRule(ruleId: RuleUid)                extends ByFilter
+  final case class ByDirective(directiveId: DirectiveUid) extends ByFilter
+  final case class ByNodeGroup(nodeGroupId: NodeGroupUid) extends ByFilter
 }
 
 /**

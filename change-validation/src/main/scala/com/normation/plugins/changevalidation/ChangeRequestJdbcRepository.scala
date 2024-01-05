@@ -37,6 +37,9 @@
 
 package com.normation.plugins.changevalidation
 
+import cats.data.NonEmptyList
+import cats.syntax.reducible._
+import com.normation.errors._
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.Doobie
@@ -48,24 +51,58 @@ import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ChangeRequestInfo
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
+import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
 import com.normation.rudder.services.marshalling.ChangeRequestChangesUnserialisation
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
+import doobie.util.fragments
 import net.liftweb.common._
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.xml.Elem
 import zio.interop.catz._
 
-class RoChangeRequestJdbcRepository(
-    doobie: Doobie,
-    mapper: ChangeRequestMapper
-) extends RoChangeRequestRepository with Loggable {
+trait RoChangeRequestJdbcRepositorySQL {
+  final val ruleIdXPath:        String   = "/changeRequest/rules/rule/@id"
+  final val ruleIdXPathFr:      Fragment = Fragment.const(s"'${ruleIdXPath}'")
+  final val directiveIdXPath:   String   = "/changeRequest/directives/directive/@id"
+  final val directiveIdXPathFr: Fragment = Fragment.const(s"'${directiveIdXPath}'")
+  final val groupIdXPath:       String   = "/changeRequest/groups/group/@id"
+  final val groupIdXPathFr:     Fragment = Fragment.const(s"'${groupIdXPath}'")
 
+  val changeRequestMapper: ChangeRequestMapper
+
+  import changeRequestMapper._
+
+  implicit val readCRWithState: Read[Box[(ChangeRequest, WorkflowNodeId)]] = {
+    Read[(Box[ChangeRequest], WorkflowNodeId)].map { case (cr, state) => cr.map((_, state)) }
+  }
+
+  def getByFiltersSQL(
+      statuses:       Option[NonEmptyList[WorkflowNodeId]],
+      xpathWithValue: Option[(Fragment, String)] // (xpath, value)
+  ): Query0[Box[(ChangeRequest, WorkflowNodeId)]] = {
+    (fr"SELECT CR.id, CR.name, CR.description, CR.content, CR.modificationId, W.state FROM ChangeRequest CR LEFT JOIN workflow W on CR.id = W.id" ++
+    fragments.whereAndOpt(
+      statuses.map(fragments.in(fr"state", _)),
+      xpathWithValue.map {
+        case (xpath, value) =>
+          val param = Array(value)
+          fr"cast( xpath(${xpath}, content) as character varying[]) = ${param}"
+      }
+    )).query[Box[(ChangeRequest, WorkflowNodeId)]]
+  }
+}
+
+class RoChangeRequestJdbcRepository(
+    doobie:                           Doobie,
+    override val changeRequestMapper: ChangeRequestMapper
+) extends RoChangeRequestRepository with RoChangeRequestJdbcRepositorySQL with Loggable {
+
+  import changeRequestMapper.ChangeRequestRead
   import doobie._
-  import mapper.ChangeRequestRead
 
   val SELECT_SQL = "SELECT id, name, description, content, modificationId FROM ChangeRequest"
 
@@ -132,6 +169,25 @@ class RoChangeRequestJdbcRepository(
       s"could not fetch change request for rule with id ${id.value}",
       onlyPending
     )
+  }
+
+  override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
+
+    import ChangeRequestFilter._
+    val errorMsg = s"Could not get change request by filter ${filter}"
+
+    def getXPathWithValue(by: ByFilter): (Fragment, String) = by match {
+      case ByRule(ruleId)         => (ruleIdXPathFr, ruleId.value)
+      case ByDirective(directive) => (directiveIdXPathFr, directive.value)
+      case ByNodeGroup(groupId)   => (groupIdXPathFr, groupId.value)
+    }
+
+    val filteredQuery = filter match {
+      case ChangeRequestFilter(statuses, by) =>
+        getByFiltersSQL(statuses.map(_.toNonEmptyList), by.map(getXPathWithValue))
+    }
+
+    transactIOResult(errorMsg)(filteredQuery.to[Vector].map(_.flatten).transact(_))
   }
 
   /**
