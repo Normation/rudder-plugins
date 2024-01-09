@@ -3,13 +3,13 @@ package com.normation.plugins.changevalidation
 import better.files.File
 import better.files.Resource
 import bootstrap.liftweb.FileUserDetailListProvider
-import bootstrap.liftweb.UserAuthorisationLevel
 import bootstrap.liftweb.UserFile
 import cats.syntax.apply._
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.DBCommon
 import com.normation.rudder.rest.AuthorizationApiMapping
 import com.normation.rudder.rest.RoleApiMapping
+import com.normation.rudder.users.UserAuthorisationLevel
 import com.normation.zio.UnsafeRun
 import doobie.Transactor
 import doobie.implicits._
