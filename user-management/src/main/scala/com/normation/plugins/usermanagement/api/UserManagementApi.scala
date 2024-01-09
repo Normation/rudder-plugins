@@ -51,6 +51,7 @@ import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
+import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.repository.json.DataExtractor.CompleteJson
 import com.normation.rudder.rest._
 import com.normation.rudder.rest.EndpointSchema.syntax._
@@ -208,7 +209,11 @@ class UserManagementApiImpl(
         val file         = userService.authConfig
         val updatedUsers = users.map(u => {
           file.users.get(u.id) match {
-            case None    => (u.id, RudderUserDetail(RudderAccount.User(u.id, ""), u.status, Set(), ApiAuthorization.None))
+            case None    =>
+              (
+                u.id,
+                RudderUserDetail(RudderAccount.User(u.id, ""), u.status, Set(), ApiAuthorization.None, NodeSecurityContext.None)
+              )
             case Some(x) => (x.getUsername, x)
           }
         })
@@ -304,7 +309,7 @@ class UserManagementApiImpl(
       implicit val action = "deleteUser"
 
       val value: Box[JValue] = for {
-        _ <- userManagementService.remove(id, authzToken.actor).toBox
+        _ <- userManagementService.remove(id, authzToken.qc.actor).toBox
         _ <- reload().toBox
       } yield {
         "username" -> id

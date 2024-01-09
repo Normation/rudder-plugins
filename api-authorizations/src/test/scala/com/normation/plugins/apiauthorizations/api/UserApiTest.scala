@@ -2,9 +2,6 @@ package com.normation.plugins.apiauthorizations
 
 import better.files._
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.RudderAccount
-import com.normation.rudder.User
-import com.normation.rudder.UserService
 import com.normation.rudder.api.ApiAccount
 import com.normation.rudder.api.ApiAccountId
 import com.normation.rudder.api.ApiAccountKind
@@ -15,6 +12,9 @@ import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.rudder.users.AuthenticatedUser
+import com.normation.rudder.users.RudderAccount
+import com.normation.rudder.users.UserService
 import java.nio.file.Files
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
@@ -56,7 +56,7 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
 
   val userService: UserService = new UserService {
     // use an user that has access to the api, we do not test authorization checks in this file
-    val user1          = new User {
+    val user1          = new AuthenticatedUser {
       val account                              = RudderAccount.Api(accounts(ApiAccountId("user1")))
       def checkRights(auth: AuthorizationType) = true
       def getApiAuthz                          = ApiAuthorization.RW

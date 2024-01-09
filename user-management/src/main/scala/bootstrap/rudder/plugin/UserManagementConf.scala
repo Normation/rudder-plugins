@@ -38,13 +38,13 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
-import bootstrap.liftweb.UserAuthorisationLevel
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.usermanagement.CheckRudderPluginEnableImpl
 import com.normation.plugins.usermanagement.UserManagementPluginDef
 import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.plugins.usermanagement.api.UserManagementApiImpl
+import com.normation.rudder.users.UserAuthorisationLevel
 
 /*
  * The user authorization level
