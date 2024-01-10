@@ -61,7 +61,14 @@
       <artifactId>neko-htmlunit</artifactId>
       <version>3.9.0</version>
     </dependency>
-     
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+    
   </dependencies>
 
   <!-- Below is an horrible if/then/else in maven. You shouldn't have anything to change here -->
