@@ -63,36 +63,59 @@ trait WoWorkflowRepository {
   def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Box[WorkflowNodeId]
 }
 
-class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with Loggable {
+trait RoWorkflowJdbcRepositorySQL {
+  def getAllByStateSQL(state: WorkflowNodeId): Query0[ChangeRequestId] = {
+    sql"select id from workflow where state = $state".query[ChangeRequestId]
+  }
 
+  def getStateOfChangeRequestSQL(crId: ChangeRequestId): Query0[WorkflowNodeId] = {
+    sql"select state from workflow where id = $crId".query[WorkflowNodeId]
+  }
+
+  def getAllChangeRequestsStateSQL: Query0[(ChangeRequestId, WorkflowNodeId)] = {
+    sql"select id, state from workflow".query[(ChangeRequestId, WorkflowNodeId)]
+  }
+}
+
+trait WoWorkflowJdbcRepositorySQL {
+  def createWorkflowSQL(crId: ChangeRequestId, state: WorkflowNodeId): Update0 = {
+    sql"insert into workflow (id, state) values ($crId, $state)".update
+  }
+
+  def updateStateSQL(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Update0 = {
+    sql"update workflow set state = $state where id = $crId".update
+  }
+}
+object WorkflowJdbcRepositorySQL extends RoWorkflowJdbcRepositorySQL with WoWorkflowJdbcRepositorySQL {}
+
+class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with Loggable {
+  import WorkflowJdbcRepositorySQL._
   import doobie._
 
-  val SELECT_SQL = fr"SELECT id, state FROM Workflow "
-
   def getAllByState(state: WorkflowNodeId): Box[Seq[ChangeRequestId]] = {
-    transactRunBox(xa => sql"""select id from workflow where state = ${state}""".query[ChangeRequestId].to[Vector].transact(xa))
+    transactRunBox(xa => getAllByStateSQL(state).to[Vector].transact(xa))
   }
 
   def getStateOfChangeRequest(crId: ChangeRequestId): Box[WorkflowNodeId] = {
-    transactRunBox(xa => sql"""select state from workflow where id = ${crId}""".query[WorkflowNodeId].unique.transact(xa))
+    transactRunBox(xa => getStateOfChangeRequestSQL(crId).unique.transact(xa))
   }
 
   def getAllChangeRequestsState(): Box[Map[ChangeRequestId, WorkflowNodeId]] = {
-    transactRunBox(xa => sql"select id, state from workflow".query[(ChangeRequestId, WorkflowNodeId)].to[Vector].transact(xa))
+    transactRunBox(xa => getAllChangeRequestsStateSQL.to[Vector].transact(xa))
       .map(_.toMap)
   }
 }
 
 class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with Loggable {
-
+  import WorkflowJdbcRepositorySQL._
   import doobie._
 
   def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
     val process = {
       for {
-        exists  <- sql"""select state from workflow where id = ${crId}""".query[WorkflowNodeId].option
+        exists  <- getStateOfChangeRequestSQL(crId).option
         created <- exists match {
-                     case None    => sql"""insert into workflow (id, state) values (${crId},${state})""".update.run.attempt
+                     case None    => createWorkflowSQL(crId, state).run.attempt
                      case Some(s) =>
                        val msg =
                          s"Cannot start a workflow for Change Request id ${crId.value}, as it is already part of a workflow in state '${s}'"
@@ -109,11 +132,15 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
   def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
     val process = {
       for {
-        exists  <- sql"""select state from workflow where id = ${crId}""".query[WorkflowNodeId].option
+        exists  <- getStateOfChangeRequestSQL(crId).option
         created <- exists match {
                      case Some(s) =>
                        if (s == from) {
-                         sql"""update workflow set state = ${state} where id = ${crId}""".update.run.attempt
+                         updateStateSQL(
+                           crId,
+                           from,
+                           state
+                         ).run.attempt // swallows any "constraint violation" error if CrId is not in the ChangeRequest table
                        } else {
                          val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' " +
                            s"but we were expecting '${from.value}'. Perhaps someone else changed it concurrently?"

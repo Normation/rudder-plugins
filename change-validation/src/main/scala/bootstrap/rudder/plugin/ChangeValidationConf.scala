@@ -40,9 +40,6 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderConfig.commitAndDeployChangeRequest
 import bootstrap.liftweb.RudderConfig.doobie
-import bootstrap.liftweb.RudderConfig.restDataSerializer
-import bootstrap.liftweb.RudderConfig.restExtractorService
-import bootstrap.liftweb.RudderConfig.techniqueRepository
 import bootstrap.liftweb.RudderConfig.workflowLevelService
 import com.normation.box._
 import com.normation.eventlog.EventActor
@@ -53,7 +50,7 @@ import com.normation.plugins.changevalidation.ChangeValidationPluginDef
 import com.normation.plugins.changevalidation.CheckRudderPluginEnableImpl
 import com.normation.plugins.changevalidation.EmailNotificationService
 import com.normation.plugins.changevalidation.NodeGroupValidationNeeded
-import com.normation.plugins.changevalidation.NotificationService
+import com.normation.plugins.changevalidation.NotificationServiceImpl
 import com.normation.plugins.changevalidation.RoChangeRequestJdbcRepository
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoValidatedUserJdbcRepository
@@ -221,7 +218,7 @@ object ChangeValidationConf extends RudderPluginModule {
 
   lazy val fileUserDetailListProvider = RudderConfig.rudderUserListProvider
 
-  lazy val notificationService = new NotificationService(
+  lazy val notificationService = new NotificationServiceImpl(
     new EmailNotificationService(),
     RudderConfig.linkUtil,
     "/opt/rudder/etc/plugins/change-validation.conf"
@@ -243,6 +240,7 @@ object ChangeValidationConf extends RudderPluginModule {
     roChangeRequestRepository,
     woChangeRequestRepository,
     notificationService,
+    RudderConfig.userService,
     () => Full(RudderConfig.workflowLevelService.workflowEnabled),
     () => RudderConfig.configService.rudder_workflow_self_validation().toBox,
     () => RudderConfig.configService.rudder_workflow_self_deployment().toBox
@@ -305,15 +303,15 @@ object ChangeValidationConf extends RudderPluginModule {
       RudderConfig.roNodeGroupRepository
     )
     val api2 = new ChangeRequestApiImpl(
-      restExtractorService,
+      RudderConfig.diffService,
+      RudderConfig.techniqueRepository,
       roChangeRequestRepository,
       woChangeRequestRepository,
       roWorkflowRepository,
-      woWorkflowRepository,
-      techniqueRepository,
       workflowLevelService,
       commitAndDeployChangeRequest,
-      restDataSerializer
+      RudderConfig.userPropertyService,
+      RudderConfig.userService
     )
     val api3 = new ValidatedUserApiImpl(
       roValidatedUserRepository,

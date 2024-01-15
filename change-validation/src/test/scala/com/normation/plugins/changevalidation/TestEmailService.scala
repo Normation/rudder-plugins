@@ -88,7 +88,7 @@ class TestEmailService extends Specification with BeforeAfterAll {
     Resource.getAsStream(f).pipeTo((testDir / f).newOutputStream).close()
   )
   val notification =
-    new NotificationService(new EmailNotificationService(), new LinkUtil(null, null, null, null), conf.pathAsString)
+    new NotificationServiceImpl(new EmailNotificationService(), new LinkUtil(null, null, null, null), conf.pathAsString)
 
   override def beforeAll(): Unit = {
     smtpServer.start()
