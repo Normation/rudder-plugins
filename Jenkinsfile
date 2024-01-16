@@ -194,7 +194,7 @@ pipeline {
                     additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
                     // set same timezone as some tests rely on it
                     // and share maven cache
-                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm'
+                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
                 }
             }
             steps {
