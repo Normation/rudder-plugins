@@ -221,7 +221,7 @@ pipeline {
                                           // don't archive jars
                                           options: [artifactsPublisher(disabled: true)]
                                         ) {
-                                            sh script: 'make licensed-only', label: "build ${p} plugin"
+                                            sh script: 'export PATH=$MVN_CMD_DIR:$PATH && make licensed', label: "build ${p} plugin"
                                             if (changeRequest()) {
                                                 archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
                                                 sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
