@@ -1,7 +1,7 @@
 
 def failedBuild = false
-def version = "7.3"
-
+def minor_version = "7.3"
+def version = "${minor_version}"
 def changeUrl = env.CHANGE_URL
 def blueUrl = "${env.JOB_DISPLAY_URL}"
 def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
@@ -19,7 +19,7 @@ pipeline {
 
     environment {
         // TODO: automate
-        RUDDER_VERSION = "${version}"
+        RUDDER_VERSION = "${minor_version}"
         // we want it everywhere for plugins
         MAVEN_ARGS = "--update-snapshots"
     }
