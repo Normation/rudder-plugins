@@ -39,6 +39,7 @@ package com.normation.plugins.datasources
 
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.zio._
 
 final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends LicensedPluginCheck {
   // here are processed variables
@@ -47,5 +48,5 @@ final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extend
   def pluginDeclaredVersion   = "${plugin-declared-version}"
   def pluginId                = "${plugin-fullname}"
 
-  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes
+  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes.runNow
 }
