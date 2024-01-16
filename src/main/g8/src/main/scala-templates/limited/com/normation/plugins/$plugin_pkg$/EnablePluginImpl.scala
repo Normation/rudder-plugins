@@ -39,6 +39,7 @@ package com.normation.plugins.$plugin_pkg$
 
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.zio._
 
 /*
  * This template file will processed at build time to choose
@@ -54,6 +55,6 @@ final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extend
   def pluginDeclaredVersion   = "\${plugin-declared-version}"
   def pluginId                = "\${plugin-fullname}"
 
-  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes
+  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes.runNow
 }
 
