@@ -1,7 +1,7 @@
 
 def failedBuild = false
 def minor_version = "8.1"
-def version = "${minor_version}"
+def version = "${minor_version}-next"
 def changeUrl = env.CHANGE_URL
 def blueUrl = "${env.JOB_DISPLAY_URL}"
 def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
