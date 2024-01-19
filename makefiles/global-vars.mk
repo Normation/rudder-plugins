@@ -4,6 +4,7 @@
 
 MAIN_BUILD      = $(shell  [ -f main-build.conf ] && echo '.' || echo '..')/main-build.conf
 RUDDER_VERSION  = $(shell sed -ne '/^rudder-version=/s/rudder-version=//p' $(MAIN_BUILD))
+MINOR_VERSION   = $(shell echo "$(RUDDER_VERSION)" | grep -Po '^\d+.\d+')
 BRANCH_TYPE     = $(shell sed -ne '/^branch-type=/s/branch-type=//p' $(MAIN_BUILD))
 COMMON_VERSION  = $(shell sed -ne '/^common-version=/s/common-version=//p' $(MAIN_BUILD))
 PRIVATE_VERSION = $(shell sed -ne '/^private-version=/s/private-version=//p' $(MAIN_BUILD))
