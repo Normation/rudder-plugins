@@ -53,8 +53,8 @@ pipeline {
                                             sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${branch} -d /home/publisher/tmp/${plugin_name}-${branch}", remoteDirectory: "${plugin_name}-${branch}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                             }
                                         }
-                                    }
                                     running.remove("Build")
+                                    }
                                 }
             post {
                 failure {
