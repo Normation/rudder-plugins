@@ -12,7 +12,7 @@ SCRIPTS = postinst
 include ../makefiles/common-scala-plugin.mk
 
 target/rudderc:
-	wget https://repository.rudder.io/tools/rudderc/8.0/rudderc-linux-x86_64 -O target/rudderc
+	wget https://repository.rudder.io/tools/rudderc/${MINOR_VERSION}/rudderc-linux-x86_64 -O target/rudderc
 	chmod +x target/rudderc
 
 target/openscap_technique.zip: target/rudderc
