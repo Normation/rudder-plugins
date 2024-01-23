@@ -536,12 +536,21 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
             val custom = {
               try {
                 import scala.jdk.CollectionConverters._
-                user
-                  .getAttribute[java.util.ArrayList[String]](reg.roles.attributeName)
-                  .asScala
-                  .map(r => RudderRoles.findRoleByName(r).runNow)
-                  .flatten
-                  .toSet
+                if (user.getAttributes.containsKey(reg.roles.attributeName)) {
+                  user
+                    .getAttribute[java.util.ArrayList[String]](reg.roles.attributeName)
+                    .asScala
+                    .map(r => RudderRoles.findRoleByName(r).runNow)
+                    .flatten
+                    .toSet
+                } else {
+                  AuthBackendsLogger.warn(
+                    s"User '${rudder.getUsername}' returned information does not contain an attribute '${reg.roles.attributeName}' " +
+                    s"which is the one configured for custom role provisioning (see 'rudder.auth.oauth2.provider.$${idpID}.roles.attribute'" +
+                    s" value). Please check that the attribute name is correct and that requested scope provides that attribute."
+                  )
+                  Set.empty[Role]
+                }
               } catch {
                 case ex: Exception =>
                   AuthBackendsLogger.warn(
