@@ -10,5 +10,10 @@
     "gulp-terser": "^2.1.0",
     "merge-stream": "^2.0.0",
     "through2": "^4.0.2"
+  },
+  "dependencies": {
+    "gulp-sass": "^5.1.0",
+    "gulp-sourcemaps": "^3.0.0",
+    "sass": "^1.70.0"
   }
 }
