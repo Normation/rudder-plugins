@@ -39,6 +39,7 @@ package com.normation.plugins.changevalidation.api
 
 import com.normation.box._
 import com.normation.plugins.changevalidation._
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
@@ -59,8 +60,6 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.AuthorizationType
-
 import net.liftweb.common._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -82,8 +81,8 @@ object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi
     val description    = "Get all available node groups with their role in change request validation"
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
 
-    override def dataContainer: Option[String] = None
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
   final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
