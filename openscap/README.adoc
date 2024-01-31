@@ -17,7 +17,7 @@ The plugin provides a Technique to execute the OpenSCAP tool at regular interval
 == Installation
 
 * Your Rudder server must have python-requests and rudder-api-client installed
-* Install the plugin on the Rudder Server with `rudder package`
+* Install the plugin on the Rudder Server with `rudder package install openscap`
 
 == Usage
 
