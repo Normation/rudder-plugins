@@ -1,7 +1,7 @@
 
 def failedBuild = false
-def version = "8.0"
-
+def minor_version = "8.0"
+def version = "${minor_version}"
 def changeUrl = env.CHANGE_URL
 def blueUrl = "${env.JOB_DISPLAY_URL}"
 def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
@@ -19,7 +19,7 @@ pipeline {
 
     environment {
         // TODO: automate
-        RUDDER_VERSION = "${version}"
+        RUDDER_VERSION = "${minor_version}"
         // we want it everywhere for plugins
         MAVEN_ARGS = "--update-snapshots"
     }
@@ -221,7 +221,7 @@ pipeline {
                                           // don't archive jars
                                           options: [artifactsPublisher(disabled: true)]
                                         ) {
-                                            sh script: 'make licensed-only', label: "build ${p} plugin"
+                                            sh script: 'export PATH=$MVN_CMD_DIR:$PATH && make licensed', label: "build ${p} plugin"
                                             if (changeRequest()) {
                                                 archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
                                                 sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
