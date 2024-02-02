@@ -37,24 +37,34 @@
 
 package com.normation.plugins.usermanagement.api
 
+import bootstrap.liftweb.AuthBackendProvidersManager
 import bootstrap.liftweb.FileUserDetailListProvider
-import com.normation.box._
 import com.normation.errors._
-import com.normation.plugins.usermanagement.Serialization
+import com.normation.plugins.usermanagement.JsonAddedUser
+import com.normation.plugins.usermanagement.JsonCoverage
+import com.normation.plugins.usermanagement.JsonDeletedUser
+import com.normation.plugins.usermanagement.JsonReloadResult
+import com.normation.plugins.usermanagement.JsonRole
+import com.normation.plugins.usermanagement.JsonRoleAuthorizations
+import com.normation.plugins.usermanagement.JsonUpdatedUser
+import com.normation.plugins.usermanagement.JsonUserFormData
+import com.normation.plugins.usermanagement.Serialisation._
 import com.normation.plugins.usermanagement.User
 import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
+import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
 import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
+import com.normation.rudder.apidata.ZioJsonExtractor
 import com.normation.rudder.facts.nodes.NodeSecurityContext
-import com.normation.rudder.repository.json.DataExtractor.CompleteJson
 import com.normation.rudder.rest._
 import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.implicits._
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
@@ -62,19 +72,13 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserRepository
-import com.normation.zio._
 import com.softwaremill.quicklens._
-import net.liftweb.common.Box
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
+import io.scalaland.chimney.syntax._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json.Formats
-import net.liftweb.json.JsonDSL._
-import net.liftweb.json.JString
-import net.liftweb.json.JValue
-import net.liftweb.json.NoTypeHints
 import sourcecode.Line
+import zio.ZIO
+import zio.syntax._
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -151,29 +155,13 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
 
 class UserManagementApiImpl(
     userRepo:              UserRepository,
-    restExtractorService:  RestExtractorService,
     userService:           FileUserDetailListProvider,
+    authProvider:          AuthBackendProvidersManager,
     userManagementService: UserManagementService
 ) extends LiftApiModuleProvider[UserManagementApi] {
   api =>
 
-  implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
-
   override def schemas = UserManagementApi
-
-  def extractUser(json: JValue): Box[User] = {
-    for {
-      username    <- CompleteJson.extractJsonString(json, "username")
-      password    <- CompleteJson.extractJsonString(json, "password")
-      permissions <- CompleteJson.extractJsonListString(json, "permissions")
-    } yield {
-      User(username, password, permissions.toSet)
-    }
-  }
-
-  def extractIsHashed(json: JValue): Box[Boolean] = {
-    CompleteJson.extractJsonBoolean(json, "isPreHashed")
-  }
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
     UserManagementApi.endpoints.map {
@@ -187,18 +175,11 @@ class UserManagementApiImpl(
     }.toList
   }
 
-  def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String], dataName: String)(implicit
-      action:            String
-  ): LiftResponse = {
-    RestUtils.response(restExtractorService, dataName, id)(function, req, errorMessage)
-  }
-
   /*
    * Return a Json Object that list users with their authorizations
    */
   object GetUserInfo extends LiftApiModule0 {
-    val schema        = UserManagementApi.GetUserInfo
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.GetUserInfo
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import com.normation.plugins.usermanagement.Serialisation._
 
@@ -217,52 +198,46 @@ class UserManagementApiImpl(
             case Some(x) => (x.getUsername, x)
           }
         })
-        file.modify(_.users).setTo(updatedUsers.toMap)
-
-      }).either.runNow match {
-        case Left(err)       =>
-          RestUtils.toJsonError(None, JString(s"Error when retrieving user list: ${err.fullMsg}"))(schema.name, params.prettify)
-        case Right(authFile) =>
-          RestUtils.toJsonResponse(None, authFile.toJson)(schema.name, params.prettify)
-      }
+        val authFile     = file.modify(_.users).setTo(updatedUsers.toMap)
+        authFile.serialize(authProvider)
+      }).chainError("Error when retrieving user list").toLiftResponseOne(params, schema, None)
     }
   }
 
   object GetRoles extends LiftApiModule0 {
-    val schema        = UserManagementApi.GetRoles
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.GetRoles
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val allRoleAndAuthz: Map[String, List[String]] = RudderRoles.getAllRoles.runNow.values
-        .map(role => role.name -> role.rights.authorizationTypes.map(_.id).toList.sorted)
-        .map {
-          case (k, v) => {
-            val authz_all  = v
-              .map(_.split("_").head)
-              .map(authz => if (v.count(_.split("_").head == authz) == 3) s"${authz}_all" else authz)
-              .filter(_.contains("_"))
-              .distinct
-            val authz_type = v.filter(x => !authz_all.map(_.split("_").head).contains(x.split("_").head))
-            k -> (authz_type ++ authz_all)
-          }
-        }
-        .toMap
-      RestUtils.toJsonResponse(None, Serialization.serializeRoleInfo(allRoleAndAuthz))(schema.name, params.prettify)
+      (for {
+        allRoles <- RudderRoles.getAllRoles
+        roles     = allRoles.values.toList
+
+        json = roles.map(role => {
+                 val displayAuthz = role.rights.authorizationTypes.map(_.id).toList.sorted
+                 val authz_all    = displayAuthz
+                   .map(_.split("_").head)
+                   .map(authz => if (displayAuthz.count(_.split("_").head == authz) == 3) s"${authz}_all" else authz)
+                   .filter(_.contains("_"))
+                   .distinct
+                 val authz_type   = displayAuthz.filter(x => !authz_all.map(_.split("_").head).contains(x.split("_").head))
+                 JsonRole(role.name, authz_type ++ authz_all)
+               })
+
+      } yield {
+        json
+      }).toLiftResponseOne(params, schema, None)
     }
   }
 
   object ReloadUsersConf extends LiftApiModule0 {
-    val schema        = UserManagementApi.ReloadUsersConf
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.ReloadUsersConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "reloadUserConf"
-
-      val value: Box[JValue] = for {
-        response <- reload().toBox
+      (for {
+        _ <- reload()
       } yield {
-        "status" -> "Done"
-      }
-      response(value, req, "Could not reload user's configuration", None, "reload")
+        JsonReloadResult.Done
+      }).chainError("Could not reload user's configuration")
+        .toLiftResponseOne(params, schema, None)
     }
   }
 
@@ -271,32 +246,26 @@ class UserManagementApiImpl(
   }
 
   object AddUser extends LiftApiModule0 {
-    val schema        = UserManagementApi.AddUser
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.AddUser
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      implicit val action = "addUser"
 
-      val value: Box[JValue] = for {
-        json           <- req.json ?~! "No JSON data sent"
-        user           <- extractUser(json)
-        isPreHashed    <- extractIsHashed(json)
-        checkExistence <- if (userService.authConfig.users.keySet contains user.username)
-                            Failure(s"User '${user.username}' already exists")
-                          else Full("ok")
-        added          <- userManagementService.add(user, isPreHashed).toBox
-        _              <- reload().toBox
+      (for {
+        user  <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
+        _     <- ZIO.when(userService.authConfig.users.keySet contains user.username) {
+                   Inconsistency(s"User '${user.username}' already exists").fail
+                 }
+        added <- userManagementService.add(user.transformInto[User], user.isPreHashed)
+        _     <- reload()
 
       } yield {
-        Serialization.serializeUser(added)
-      }
-      response(value, req, "Could not add user", None, "addedUser")
+        added.transformInto[JsonAddedUser]
+      }).chainError("Could not add user").toLiftResponseOne(params, schema, None)
     }
   }
 
   object DeleteUser extends LiftApiModule {
-    val schema        = UserManagementApi.DeleteUser
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.DeleteUser
 
     def process(
         version:    ApiVersion,
@@ -306,21 +275,18 @@ class UserManagementApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val action = "deleteUser"
 
-      val value: Box[JValue] = for {
-        _ <- userManagementService.remove(id, authzToken.qc.actor).toBox
-        _ <- reload().toBox
+      (for {
+        _ <- userManagementService.remove(id, authzToken.qc.actor)
+        _ <- reload()
       } yield {
-        "username" -> id
-      }
-      response(value, req, s"Could not delete user ${id}", None, "deletedUser")
+        id.transformInto[JsonDeletedUser]
+      }).chainError(s"Could not delete user ${id}").toLiftResponseOne(params, schema, None)
     }
   }
 
   object UpdateUserInfos extends LiftApiModule {
-    val schema        = UserManagementApi.UpdateUserInfos
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.UpdateUserInfos
 
     def process(
         version:    ApiVersion,
@@ -330,32 +296,26 @@ class UserManagementApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val action = "updateInfosUser"
-
-      val value: Box[JValue] = for {
-        json           <- req.json ?~! "No JSON data sent"
-        user           <- extractUser(json)
-        isPreHashed    <- extractIsHashed(json)
+      (for {
+        user           <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
         checkExistence <- if (!(userService.authConfig.users.keySet contains id)) {
                             // we may have users that where added by OIDC, and still want to add them in file
-                            userRepo.get(id).toBox.flatMap {
-                              case Some(u) => userManagementService.add(User(u.id, "", Set()), isPreHashed).toBox
-                              case None    => Failure(s"'$id' does not exists")
+                            userRepo.get(id).flatMap {
+                              case Some(u) => userManagementService.add(User(u.id, "", Set()), user.isPreHashed)
+                              case None    => Inconsistency(s"'$id' does not exists").fail
                             }
                           } else {
-                            userManagementService.update(id, user, isPreHashed).toBox
+                            userManagementService.update(id, user.transformInto[User], user.isPreHashed)
                           }
-        _              <- reload().toBox
+        _              <- reload()
       } yield {
-        Serialization.serializeUser(user)
-      }
-      response(value, req, s"Could not update user '$id''", None, "updatedUser")
+        user.transformInto[User].transformInto[JsonUpdatedUser]
+      }).chainError(s"Could not update user '$id'").toLiftResponseOne(params, schema, None)
     }
   }
 
   object RoleCoverage extends LiftApiModule {
-    val schema        = UserManagementApi.RoleCoverage
-    val restExtractor = api.restExtractorService
+    val schema = UserManagementApi.RoleCoverage
 
     def process(
         version:    ApiVersion,
@@ -365,20 +325,22 @@ class UserManagementApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val action = "rolesCoverageOnRights"
-
-      val value: Box[JValue] = for {
-        permissions <- restExtractorService.extractList("permissions")(req)(json => Full(json))
-        authzs      <- restExtractorService.extractList("authz")(req)(json => Full(json))
-        parsed      <- RudderRoles.parseRoles(permissions).toBox
-        coverage    <- UserManagementService.computeRoleCoverage(
-                         parsed.toSet,
-                         authzs.flatMap(a => AuthorizationType.parseRight(a).getOrElse(Set())).toSet ++ Role.ua
-                       )
+      (for {
+        data          <- ZioJsonExtractor.parseJson[JsonRoleAuthorizations](req).toIO
+        parsed        <- RudderRoles.parseRoles(data.permissions)
+        coverage      <- UserManagementService
+                           .computeRoleCoverage(
+                             parsed.toSet,
+                             data.authz.flatMap(a => AuthorizationType.parseRight(a).getOrElse(Set())).toSet ++ Role.ua
+                           )
+                           .notOptional("Could not compute role's coverage")
+        roleAndCustoms = coverage.partitionMap {
+                           case c: Custom => Right(c)
+                           case r => Left(r)
+                         }
       } yield {
-        Serialization.serializeRole(coverage)
-      }
-      response(value, req, s"Could not get role's coverage user from request", None, "coverage")
+        roleAndCustoms.transformInto[JsonCoverage]
+      }).chainError(s"Could not get role's coverage user from request").toLiftResponseOne(params, schema, None)
     }
   }
 }
