@@ -43,10 +43,12 @@ import net.liftweb.http.DispatchSnippet
 import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds._
 import scala.xml.NodeSeq
+import zio.json._
 
 class UserPlugin extends DispatchSnippet {
 
-  private[this] val userService = RudderConfig.rudderUserListProvider
+  private[this] val userService         = RudderConfig.rudderUserListProvider
+  private[this] val authProviderManager = RudderConfig.authenticationProviders
 
   def dispatch = { case "getAuthzConfig" => getAuthzConfig }
 
@@ -54,6 +56,6 @@ class UserPlugin extends DispatchSnippet {
 
   def getAuthzConfig: NodeSeq => NodeSeq = { xml: NodeSeq =>
     import com.normation.plugins.usermanagement.Serialisation._
-    Script(JsRaw(s"""var authzConfig = ${userService.authConfig.toJson};"""))
+    Script(JsRaw(s"""var authzConfig = ${userService.authConfig.serialize(authProviderManager).toJson};"""))
   }
 }
