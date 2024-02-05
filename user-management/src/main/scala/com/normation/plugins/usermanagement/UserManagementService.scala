@@ -111,14 +111,11 @@ object UserManagementIO {
     }
   }
 
-  def getUserFilePath: IOResult[File] = {
-    val resources: IOResult[UserFile] = UserFileProcessing.getUserResourceFile()
-    resources.map { r =>
-      if (r.name.startsWith("classpath:"))
-        File(new CPResource(UserFileProcessing.DEFAULT_AUTH_FILE_NAME).getPath)
-      else
-        File(r.name)
-    }
+  def getUserFilePath(resourceFile: UserFile): File = {
+    if (resourceFile.name.startsWith("classpath:"))
+      File(new CPResource(UserFileProcessing.DEFAULT_AUTH_FILE_NAME).getPath)
+    else
+      File(resourceFile.name)
   }
 }
 
@@ -196,7 +193,7 @@ object UserManagementService {
 
 }
 
-class UserManagementService(userRepository: UserRepository) {
+class UserManagementService(userRepository: UserRepository, getUserResourceFile: IOResult[UserFile]) {
   import UserManagementService._
 
   /*
@@ -205,7 +202,7 @@ class UserManagementService(userRepository: UserRepository) {
    */
   def add(newUser: User, isPreHashed: Boolean): IOResult[User] = {
     for {
-      file       <- getUserFilePath
+      file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
       userXML    <- IOResult.attempt(parsedFile.document().children)
       user       <- (userXML \\ "authentication").head match {
@@ -234,7 +231,7 @@ class UserManagementService(userRepository: UserRepository) {
    */
   def remove(toDelete: String, actor: EventActor): IOResult[Unit] = {
     for {
-      file       <- getUserFilePath
+      file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
       userXML    <- IOResult.attempt(parsedFile.document().children)
       toUpdate    = (userXML \\ "authentication").head
@@ -254,7 +251,7 @@ class UserManagementService(userRepository: UserRepository) {
    */
   def update(currentUser: String, newUser: User, isPreHashed: Boolean): IOResult[Unit] = {
     for {
-      file       <- getUserFilePath
+      file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
       userXML    <- IOResult.attempt(parsedFile.document().children)
       toUpdate    = (userXML \\ "authentication").head
@@ -285,7 +282,7 @@ class UserManagementService(userRepository: UserRepository) {
 
   def getAll: IOResult[UserFileInfo] = {
     for {
-      file       <- getUserFilePath
+      file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
       userXML    <- IOResult.attempt(parsedFile.document().children)
       res        <- (userXML \\ "authentication").head match {
