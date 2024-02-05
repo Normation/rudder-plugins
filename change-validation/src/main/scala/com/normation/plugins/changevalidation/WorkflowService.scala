@@ -330,7 +330,7 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   private def canDeploy(isCreator: Boolean, selfDeployment: () => Box[Boolean]): Boolean = {
-    val correctActor = selfDeployment().getOrElse(false) || isCreator
+    val correctActor = selfDeployment().getOrElse(false) || !isCreator
     correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Edit)
   }
 
