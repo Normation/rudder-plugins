@@ -49,7 +49,7 @@ datasourceForm model datasource origin =
                         div [ class "btn-group" ] [
                           if (isNew) then text ""
                           else
-                          button [ type_ "button", class "btn btn-danger" ] [--, ng-click "deleteDatasource()", ng-if "!selectedDatasource.isNew",
+                          button [ type_ "button", class "btn btn-danger", onClick (OpenDeleteModal datasource)] [
                             text "Delete "
                           , i [ class "fa fa-times-circle" ] []
                           ]
