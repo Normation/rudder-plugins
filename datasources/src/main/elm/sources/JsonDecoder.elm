@@ -122,3 +122,6 @@ decodeDataSource =
     |> required "runParameters" decodeRunParameters
     |> required "type" decodeType
 
+decodeDelete : List String -> Decoder String
+decodeDelete path =
+  at path (index 0 ((at ["id"] string)))

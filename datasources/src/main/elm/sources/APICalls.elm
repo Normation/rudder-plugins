@@ -3,7 +3,6 @@ module APICalls exposing (..)
 
 import Model exposing (DataSource, Model)
 import Http exposing (..)
-import Json.Decode
 import JsonDecoder exposing (..)
 import JsonEncoder exposing (encodeDataSource)
 import Messages exposing (..)
@@ -54,7 +53,7 @@ deleteDataSource  model datasource =
         , headers = []
         , url     = getUrl model ("datasources/" ++ datasource.id)
         , body    = emptyBody
-        , expect  = expectJson DeleteDataSource (decodeData Json.Decode.string [ "datasources", "id" ]  )
+        , expect  = expectJson DeleteDataSource (decodeDelete ["data", "datasources"])
         , timeout = Nothing
         , tracker = Nothing
         }
