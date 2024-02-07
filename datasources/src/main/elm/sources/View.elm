@@ -91,10 +91,13 @@ view model =
             , div [ class "modal-footer" ] [
                 button [ class "btn btn-default", onClick (UpdateUI {ui | deleteModal = Nothing}) ]
                 [ text "Cancel " ]
-              , button [ class "btn btn-danger", onClick (DeleteCall datasource)]
-                [ text "Delete "
-                , i [ class "fa fa-times-circle" ] []
+              , if model.hasWriteRights then
+                  button [ class "btn btn-danger", onClick (DeleteCall datasource)] [
+                    text "Delete "
+                  , i [ class "fa fa-times-circle" ] []
                 ]
+                else
+                  text ""
               ]
             ]
           ]
