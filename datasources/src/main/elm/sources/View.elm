@@ -78,23 +78,15 @@ view model =
 
   , case model.ui.deleteModal of
       Just datasource ->
-        div [ class "modal fade datasource-modal", id "deleteModal", tabindex -1] [
-          div [ class "modal-dialog"] [
+        div [ tabindex -1, class "modal fade in", style "z-index" "1050", style "display" "block" ]
+        [ div [class "modal-backdrop fade in"][]
+        , div [ class "modal-dialog" ] [
             div [ class "modal-content" ] [
-            div [ class "modal-header" ] [
-              button [ type_ "button", class "close", onClick (UpdateUI {ui | deleteModal = Nothing}) ] [
-                span [] [ --aria-hidden "true", [] [
-                  text "&times;"
-                ]
+              div [ class "modal-header" ] [
+                h3 [ class "modal-title" ] [ text ("Delete " ++ datasource.name)]
               ]
-            , h5 [ class "modal-title"] [
-                text ("Delete " ++ datasource.name)
-              ]
-              ]
-          , div [ class "modal-body" ] [
-              h4 [ class "text-center" ] [
-                (text "Are your sure you want to delete datasource '"++ datasource.name ++"'?")
-              ]
+            , div [ class "modal-body" ]
+              [ h4 [class "text-center"][text ("Are you sure you want to delete datasource '"++ datasource.name ++"'?")]
               ]
             , div [ class "modal-footer" ] [
                 button [ class "btn btn-default", onClick (UpdateUI {ui | deleteModal = Nothing}) ]
@@ -103,7 +95,7 @@ view model =
                   button [ class "btn btn-danger", onClick (DeleteCall datasource)] [
                     text "Delete "
                   , i [ class "fa fa-times-circle" ] []
-                ]
+                  ]
                 else
                   text ""
               ]
