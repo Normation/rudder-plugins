@@ -38,21 +38,23 @@ pipeline {
                 script {
                   running.add("Build")
                   updateSlack(errors, running, slackResponse, message, changeUrl)
-
-                                    dir("${plugin_name}") {
-
-                                        withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
-                                          // don't archive jars
-                                          options: [artifactsPublisher(disabled: true)]
-                                        ) {
-                                            sh script: 'export PATH=$MVN_CMD_DIR:$PATH && make licensed'
-                                            archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                                            sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${branch} -d /home/publisher/tmp/${plugin_name}-${branch}", remoteDirectory: "${plugin_name}-${branch}", sourceFiles: '**/*.rpkg')], verbose:true)])
-                                            }
-                                        }
-                                    running.remove("Build")
-                                    }
-                                }
+                  makeTarget = "licensed"
+                  if (plugin_name == "cis"  || plugin_name == "openscap") {
+                    makeTarget = ""
+                  }
+                  dir("${plugin_name}") {
+                      withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                        // don't archive jars
+                        options: [artifactsPublisher(disabled: true)]
+                      ) {
+                          sh script: "export PATH=$MVN_CMD_DIR:$PATH && make ${makeTarget}"
+                          archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                          sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${branch} -d /home/publisher/tmp/${plugin_name}-${branch}", remoteDirectory: "${plugin_name}-${branch}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                      }
+                  }
+                  running.remove("Build")
+                }
+            }
             post {
                 failure {
                     script {
