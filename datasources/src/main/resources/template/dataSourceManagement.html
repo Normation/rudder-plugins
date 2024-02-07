@@ -26,6 +26,9 @@
       app.ports.errorNotification.subscribe(function(str) {
         createErrorNotification(str)
       });
+      app.ports.successNotification.subscribe(function(str) {
+        createSuccessNotification(str)
+      });
     })
   </script>
 </lift:surround>

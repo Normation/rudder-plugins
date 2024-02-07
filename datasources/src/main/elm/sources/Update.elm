@@ -5,6 +5,7 @@ import Model exposing (..)
 import List.Extra
 import Messages exposing (..)
 import Port exposing (errorNotification)
+import Port exposing (successNotification)
 import Utils exposing (errorMessage)
 
 
@@ -58,16 +59,35 @@ update msg model =
           (model,Cmd.none)
 
     SaveCall d ->
-      case model.mode of
-        ShowDatasource _ Nothing ->
-          let
-            dataSource = {d | id = if String.isEmpty d.id then d.name else d.id }
-          in
-            (model, saveDataSource model True dataSource)
-        ShowDatasource _ (Just _) ->
-          (model, saveDataSource model False d)
-        _ ->
-          (model, Cmd.none)
+      let
+         listDatasources = model.dataSources
+      in
+        case model.mode of
+          -- Creation scenario
+          ShowDatasource _ Nothing ->
+            let
+              dataSource = {d | id = if String.isEmpty d.id then d.name else d.id }
+            in
+              ( { model | dataSources = dataSource :: listDatasources }
+              , Cmd.batch [saveDataSource model True dataSource, successNotification ("Datasource '"++ dataSource.name ++"' successfully created") ]
+              )
+          -- Update scenario
+          ShowDatasource _ (Just _) ->
+            ( { model | dataSources = if(List.any (\dts -> dts.id == d.id) listDatasources) then listDatasources else d :: listDatasources}
+            , Cmd.batch [saveDataSource model False d, successNotification ("Datasource '"++ d.name ++"' successfully updated") ]
+            )
+          _ ->
+            (model, Cmd.none)
+
+
+    OpenDeleteModal datasource ->
+      let
+        shouldDeleteModalOpened =
+          case baseUi.deleteModal of
+            Just d  -> Nothing
+            Nothing -> Just datasource
+      in
+        ({ model | ui = { baseUi | deleteModal = shouldDeleteModalOpened}}, Cmd.none)
 
     DeleteCall d ->
       (model, deleteDataSource model d)
@@ -84,6 +104,7 @@ update msg model =
       case result of
           Ok dataSource ->
             let
+              testMode = ShowDatasource dataSource (Just dataSource)
               newMode =
                 case model.mode of
                     ShowDatasource d o ->
@@ -93,7 +114,7 @@ update msg model =
                         ShowDatasource d o
                     other -> other
             in
-              ({ model | mode = newMode, dataSources = List.Extra.updateIf (.id >> (==) dataSource.id) (always dataSource) model.dataSources}, Cmd.none)
+              ({ model | mode = testMode, dataSources = List.Extra.updateIf (.id >> (==) dataSource.id) (always dataSource) model.dataSources}, Cmd.none)
           Err e ->
             (model, errorNotification (errorMessage e))
 
@@ -110,7 +131,13 @@ update msg model =
                         ShowDatasource d o
                     other -> other
             in
-              ({ model | mode = newMode, dataSources = List.filter (.id >> (/=) id)  model.dataSources}, Cmd.none)
+              ( { model
+                | mode = newMode
+                , dataSources = List.filter (.id >> (/=) id)  model.dataSources
+                , ui = { baseUi | deleteModal = Nothing}
+                }
+              , successNotification ("Successfully deleted datasource '" ++ id ++ "'")
+              )
           Err e ->
             (model, errorNotification (errorMessage e))
 
