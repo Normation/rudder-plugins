@@ -42,6 +42,7 @@ import bootstrap.liftweb.AuthenticationMethods
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
+import com.normation.errors.IOResult
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.authbackends.AuthBackendsLogger
 import com.normation.plugins.authbackends.AuthBackendsLoggerPure
@@ -61,6 +62,7 @@ import com.normation.rudder.domain.logger.PluginLogger
 import com.normation.rudder.users._
 import com.normation.zio._
 import com.typesafe.config.ConfigException
+import java.net.URI
 import java.util
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -81,6 +83,7 @@ import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMap
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider
 import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler
@@ -195,7 +198,6 @@ object AuthBackendsConf extends RudderPluginModule {
       new Oauth2LoginBanner(pluginStatusService, pluginDef.version, oauth2registrations)
     )
   }
-
 }
 
 /*
@@ -245,6 +247,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         authenticationFilter.setAuthenticationFailureHandler(
           applicationContext.getBean("rudderWebAuthenticationFailureHandler").asInstanceOf[AuthenticationFailureHandler]
         )
+
         (authorizationRequestFilter, authenticationFilter)
       }
 
@@ -278,6 +281,8 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       applicationContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "mainHttpSecurityFilters")
     }
   }
+
+  @Bean def userRepository: UserRepository = RudderConfig.userRepository
 
   @Bean def rudderOauth2AuthSuccessHandler: AuthenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler(
     "/secure/index.html"
@@ -550,8 +555,6 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
                   user
                     .getAttribute[java.util.ArrayList[String]](reg.roles.attributeName)
                     .asScala
-                    .map(r => RudderRoles.findRoleByName(r).runNow)
-                    .flatten
                     .toSet
                 } else {
                   AuthBackendsLogger.warn(
@@ -559,20 +562,53 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
                     s"which is the one configured for custom role provisioning (see 'rudder.auth.oauth2.provider.$${idpID}.roles.attribute'" +
                     s" value). Please check that the attribute name is correct and that requested scope provides that attribute."
                   )
-                  Set.empty[Role]
+                  Set.empty[String]
                 }
               } catch {
                 case ex: Exception =>
                   AuthBackendsLogger.warn(
                     s"Unable to get custom roles for user '${rudder.getUsername}' when looking for attribute '${reg.roles.attributeName}' :${ex.getMessage}'"
                   )
-                  Set.empty[Role]
+                  Set.empty[String]
               }
             }
 
-            if (custom.nonEmpty) {
+            // check if we have role mapping or restriction
+            val filteredRoles = if (reg.restrictRoleMapping) {
+              val f = custom.filter(r => reg.roleMapping.keySet.contains(r))
+              AuthBackendsLogger.debug(
+                s"IdP configuration enforce restriction to mapped role, resulting filtered list: [${f.mkString(", ")}]"
+              )
+              f
+            } else custom
+            AuthBackendsLogger.trace(
+              s"IdP configuration has registered role mapping: [${reg.roleMapping.toList.sorted.map(x => s"${x._1 -> x._2}").mkString("; ")}]"
+            )
+            val mappedRoles: Set[Role] = filteredRoles.flatMap { r =>
+              val role = reg.roleMapping.get(r) match {
+                // if the role is not in the mapping, use the provided name as is.
+                case None    => RudderRoles.findRoleByName(r)
+                case Some(m) =>
+                  AuthBackendsLogger.debug(
+                    s"Principal '${rudder.getUsername}': mapping IdP provided role '${r}' to Rudder role '${m}' "
+                  )
+                  RudderRoles
+                    .findRoleByName(m)
+                    .map(_.map(x => Role.Alias(x, r, s"Alias from ${reg.registration.getRegistrationId} IdP")))
+              }
+              role.runNow.orElse {
+                AuthBackendsLogger.debug(
+                  s"Role '${r}' does not match any Rudder role, ignoring it for user ${rudder.getUsername}"
+                )
+                None
+              }
+            }
+
+            if (mappedRoles.nonEmpty) {
               ApplicationLoggerPure.Authz.logEffect.info(
-                s"Principal '${rudder.getUsername}' role list extended with ${protocolName} provided roles: [${custom.toList.map(_.name).sorted.mkString(", ")}] (override: ${reg.roles.over})"
+                s"Principal '${rudder.getUsername}' role list extended with ${protocolName} provided roles: [${Role
+                    .toDisplayNames(mappedRoles)
+                    .mkString(", ")}] (override: ${reg.roles.over})"
               )
             } else {
               AuthBackendsLogger.debug(
@@ -582,9 +618,9 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
 
             val roles = if (reg.roles.over) {
               // override means: don't use user role configured in rudder-users.xml
-              custom
+              mappedRoles
             } else {
-              rudder.roles ++ custom
+              rudder.roles ++ mappedRoles
             }
             AuthBackendsLogger.debug(
               s"Principal '${rudder.getUsername}' final list of roles: [${roles.map(_.name).mkString(", ")}]"
@@ -637,6 +673,42 @@ class RudderOAuth2UserService(
       userRequest,
       new RudderOauth2Details(_, _)
     )
+  }
+}
+
+/*
+ * An utility to help build logout request to IdP
+ */
+object BuildLogout {
+  // will call by GET the given string and happening if possible "id_token_hint=${id_token}"
+  def build(registrationId: String, url: String, logoutRedirect: Option[String]): Authentication => IOResult[Option[URI]] = {
+    (authentication: Authentication) =>
+      {
+        authentication match {
+          case oauth2Token: OAuth2AuthenticationToken =>
+            for {
+              queryParam <- oauth2Token.getPrincipal match {
+                              case oidc: OidcUser =>
+                                val redirect = logoutRedirect match {
+                                  case None    => ""
+                                  case Some(u) => s"&post_logout_redirect_uri=${u}"
+                                }
+                                s"?id_token_hint=${oidc.getIdToken.getTokenValue}${redirect}".succeed
+                              case x =>
+                                AuthBackendsLoggerPure.debug(
+                                  s"That user kind of oauth2 token (${x}) does not provide a token_id"
+                                ) *>
+                                "".succeed
+                            }
+              // query IdP
+              fullUrl     = url + queryParam
+              _          <- AuthBackendsLoggerPure.debug(s"OAuth2/OIDC logout: calling remote URL for '${registrationId}': ${fullUrl}")
+              uri        <- IOResult.attempt(s"Error: bad redirect URL")(URI.create(fullUrl))
+            } yield Some(uri)
+          case x =>
+            AuthBackendsLoggerPure.debug(s"That kind of authentication (${x}) does not support remote logout") *> None.succeed
+        }
+      }
   }
 }
 
