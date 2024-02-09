@@ -6,9 +6,15 @@
 .DEFAULT_GOAL := all
 
 # define those variable before including
-#OTHER_ARCHIVES = 
 #SCRIPTS = postinst
+# To include the package scripts in the rpkg, they will be added to the scripts.txz archive
 #FILES = 
+# To include files in the files.txz archive in the rpkg, scala plugins always add target/$(NAME)
+# by default in the variable
+#OTHER_ARCHIVES = 
+# To include other txz archives in the rpkg
+#OTHER_TARGETS= 
+# To trigger targets before the rpkg build, they will not be automatically included in any archive
 
 include ../makefiles/global-vars.mk 
 
@@ -23,7 +29,7 @@ licensed: licensed-files $(FULL_NAME)-$(VERSION).rpkg
 
 licensed-only: licensed-files-only $(FULL_NAME)-$(VERSION).rpkg
 
-$(FULL_NAME)-$(VERSION).rpkg: target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
+$(FULL_NAME)-$(VERSION).rpkg: $(OTHER_TARGETS) target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
 	ar r $(FULL_NAME)-$(VERSION).rpkg target/metadata target/files.txz target/scripts.txz $(OTHER_ARCHIVES)
 
 target/scripts.txz: $(addprefix packaging/,$(SCRIPTS))
