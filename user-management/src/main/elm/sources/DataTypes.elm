@@ -87,7 +87,7 @@ type alias Model =
     , login : String
     , isHashedPasswd : Bool
     , isValidInput : StateInput
-    , rolesToAddOnSave : List String --TODO: it's roles and not "authz" here
+    , rolesToAddOnSave : List String
     , providers : List String
     , userForcePasswdInput : Bool
     , openDeleteModal : Bool

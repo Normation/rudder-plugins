@@ -219,7 +219,7 @@ displayCoverageRoles user =
                 , div [class "callout-fade callout-info"]
                 [
                       div[class "marker"][span[class "glyphicon glyphicon-info-sign"][]]
-                    , text "Roles that are also included with the authorizations of this user. You can add them explicitly to user roles without changing user authorizations."
+                    , text "Roles that are also included with the authorizations of this user. You can add them explicitly to user roles, and user authorizations will remain the same."
                 ]
                 , div [class "role-management-wrapper"] 
                 [
@@ -239,7 +239,7 @@ displayAuthorizations user =
             div [class "row-foldable row-folded"]
             [
                   h4 [class "role-title"][text "Authorizations"]
-                , text "Current rights of the user."
+                , text "Current rights of the user :"
                 , div [class "role-management-wrapper"]
                 [
                     div[id "input-role"](userAuthz)
