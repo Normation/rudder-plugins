@@ -14,27 +14,78 @@ response:
         "users" : [
           {
             "login" : "user1",
-            "authz" : [],
+            "authz" : [
+              "configuration_edit",
+              "configuration_read",
+              "configuration_write",
+              "directive_edit",
+              "directive_read",
+              "directive_write",
+              "group_edit",
+              "group_read",
+              "group_write",
+              "node_edit",
+              "node_read",
+              "node_write",
+              "parameter_edit",
+              "parameter_read",
+              "parameter_write",
+              "rule_edit",
+              "rule_read",
+              "rule_write",
+              "technique_edit",
+              "technique_read",
+              "technique_write",
+              "userAccount_edit",
+              "userAccount_read",
+              "userAccount_write"
+            ],
             "permissions" : [
+              "user"
+            ],
+            "rolesCoverage" : [
               "inventory",
               "configuration",
               "rule_only",
               "user"
-            ]
+            ],
+            "customRights" : []
           },
           {
             "login" : "user2",
-            "authz" : [],
+            "authz" : [
+              "administration_read",
+              "compliance_read",
+              "configuration_read",
+              "deployer_read",
+              "deployment_read",
+              "directive_read",
+              "group_read",
+              "node_read",
+              "parameter_read",
+              "rule_read",
+              "technique_read",
+              "userAccount_edit",
+              "userAccount_read",
+              "userAccount_write",
+              "validator_read"
+            ],
             "permissions" : [
+              "read_only"
+            ],
+            "rolesCoverage" : [
               "inventory",
               "read_only",
               "rule_only"
-            ]
+            ],
+            "customRights" : []
           },
           {
             "login" : "user3",
             "authz" : [],
-            "permissions" : []
+            "permissions" : [],
+            "rolesCoverage" : [],
+            "customRights" : []
           }
         ]
       }

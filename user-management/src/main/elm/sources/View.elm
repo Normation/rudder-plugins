@@ -1,7 +1,7 @@
 module View exposing (..)
 
 import ApiCalls exposing (deleteUser)
-import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleConf, RoleListOverride(..), Roles, StateInput(..), User, Username, Users, UsersConf, takeFirstExtProvider)
+import DataTypes exposing (Model, Msg(..), NewUser, PanelMode(..), RoleListOverride(..), Roles, StateInput(..), User, Users, takeFirstExtProvider)
 import Dict exposing (keys)
 import Html exposing (..)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, required, style, tabindex, type_)
@@ -11,6 +11,7 @@ import String exposing (isEmpty)
 import Toasty
 import Toasty.Defaults
 import List
+import Set
 
 view : Model -> Html Msg
 view model =
@@ -164,7 +165,7 @@ displayRightPanelAddUser model =
            [
                  input [id emptyUsername, class "form-control username-input", type_ "text", placeholder "Username", onInput Login, required True] []
                , displayPasswordBlock model
-               , div [class "btn-container"] [ button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitNewUser (User model.login [] []))][ i[ class "fa fa-download"][] ]  ]
+               , div [class "btn-container"] [ button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitNewUser (NewUser model.login [] []))][ i[ class "fa fa-download"][] ]  ]
            ]
        ]
    ]
@@ -172,8 +173,8 @@ displayRightPanelAddUser model =
 displayRoleListOverrideWarning : RoleListOverride -> Html Msg
 displayRoleListOverrideWarning rlo =
   case rlo of
-      None -> div [][]
-      x    ->
+      None -> text ""
+      _    ->
         div [class "msg-providers"][
           i [class "fa fa-exclamation-triangle warning-icon"][]
         , span [][text " Be careful! Displayed user roles originate from Rudder static configuration file, but providers currently configured can change them. This property can be check in provider configuration options."]
@@ -186,26 +187,67 @@ getDiffRoles total sample =
     in
         (List.filter (\r -> (List.all (\r2 -> r /= r2) sample)) t)
 
-displayDropdownRoleList : List String -> Html Msg
-displayDropdownRoleList roles =
+displayDropdownRoleList : Model -> User -> Html Msg
+displayDropdownRoleList model user =
     let
-        tokens = List.map (\r -> a [href "#", onClick (AddRole r)][text r]) roles
-    in
-    div [class "dropdown-content"] tokens
-
-displayRightPanel : Model -> Html Msg
-displayRightPanel model =
-    let
-        user = case model.panelMode of
-            EditMode u -> u
-            _ -> User "" [] []
-        availableRoles = getDiffRoles model.roles (user.authz ++ model.authzToAddOnSave)
+        availableRoles = getDiffRoles model.roles (user.roles ++ model.rolesToAddOnSave)
+        tokens = List.map (\r -> a [href "#", onClick (AddRole r)][text r]) availableRoles
         addBtn =
             if List.isEmpty availableRoles then
                 button [id "addBtn-disabled", class "addBtn", disabled True][i [class "fa fa-plus"][]]
             else
                 button [class "addBtn"][i [class "fa fa-plus"][]]
     in
+        div [class "dropdown"]
+        [
+              addBtn
+            , div [class "dropdown-content"] tokens
+        ]
+    
+displayCoverageRoles : User -> Html Msg
+displayCoverageRoles user = 
+    let
+        inferredRoles = Set.diff (Set.fromList user.rolesCoverage) (Set.fromList user.roles)
+    in
+        if Set.isEmpty inferredRoles
+        then 
+            text ""
+        else
+            div []
+            [
+                  h4 [class "role-title"][text "Inferred roles"]
+                , div [class "callout-fade callout-info"]
+                [
+                      div[class "marker"][span[class "glyphicon glyphicon-info-sign"][]]
+                    , text "Roles that are also included with the authorizations of this user. You can add them explicitly to user roles without changing user authorizations."
+                ]
+                , div [class "role-management-wrapper"] 
+                [
+                    div[id "input-role"](List.map (\x -> span [ class "auth" ][text x]) (Set.toList inferredRoles))
+                ]
+            ]
+
+displayAuthorizations : User -> Html Msg
+displayAuthorizations user =
+    let
+        userAuthz = List.map (\x -> span [ class "auth" ] [ text x ]) (user.authz)
+    in
+        if List.isEmpty user.authz
+        then 
+            text ""
+        else
+            div [class "row-foldable row-folded"]
+            [
+                  h4 [class "role-title"][text "Authorizations"]
+                , text "Current rights of the user."
+                , div [class "role-management-wrapper"]
+                [
+                    div[id "input-role"](userAuthz)
+                ]
+            ]
+
+displayRightPanel : Model -> User -> Html Msg
+displayRightPanel model user =
     div [class "panel-wrap"]
     [
         div [class "panel"]
@@ -221,17 +263,17 @@ displayRightPanel model =
            , (displayRoleListOverrideWarning model.roleListOverride)
            , div [class "role-management-wrapper"]
            [
-                  div [id "input-role"][(displayAddAuth model user)]
-                , div [class "dropdown"]
-                [
-                      addBtn
-                    , (displayDropdownRoleList availableRoles)
-                ]
+                  div [id "input-role"](displayAddRole model user)
+                , displayDropdownRoleList model user
            ]
            , div[class "btn-container"]
              [ button [class "btn btn-sm btn-danger btn-delete" , onClick (OpenDeleteModal user.login)] [text "Delete"]
-             , button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitUpdatedInfos {user | permissions = user.permissions ++ model.authzToAddOnSave})][ i[ class "fa fa-download"][] ]
+             , button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitUpdatedInfos {user | roles = user.roles ++ model.rolesToAddOnSave})][ i[ class "fa fa-download"][] ]
              ]
+           , hr [][]
+            -- Additional RO information
+           , displayCoverageRoles user
+           , displayAuthorizations user
         ]
     ]
 
@@ -239,20 +281,20 @@ displayUsersConf : Model -> Users -> Html Msg
 displayUsersConf model u =
     let
         users =
-            (List.map (\(name, rights) -> (User name rights.custom rights.permissions)) (Dict.toList u)) |> List.map (\user -> displayUser user)
+            Dict.values u |> List.map (\user -> displayUser user)
         newUserMenu =
             if model.panelMode == AddMode then
                 displayRightPanelAddUser model
             else
-                div [] []
+                text ""
         panel =
             case model.panelMode of
-                EditMode _    -> displayRightPanel model
-                _             -> div [][]
+                EditMode user    -> displayRightPanel model user
+                _             -> text ""
         hasExternal =  (takeFirstExtProvider model.providers)
         lstOfExtProviders = case hasExternal of
             Nothing ->
-                div [][]
+                text ""
             Just _ ->
                 div [class "provider-list"](List.map (\s -> span [class "providers"][text s]) model.providers)
         msgProvider = case hasExternal of
@@ -283,7 +325,7 @@ displayUsersConf model u =
                     ]
                     , div [ class "callout-fade callout-info" ]
                     [
-                          div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+                          div [ class "marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
                         , text msgProvider
                         , lstOfExtProviders
                         , (displayRoleListOverrideWarning model.roleListOverride)
@@ -302,18 +344,18 @@ displayUser user =
         div [class "user-card"]
         [
               div [class "user-card-inner"][h3 [id "name"][text user.login]]
-            , displayAuth  user
+            , displayRoles user
         ]
     ]
 
-displayAddAuth : Model -> User -> Html Msg
-displayAddAuth model user  =
+displayAddRole : Model -> User -> List (Html Msg)
+displayAddRole model user  =
     let
         newAddedRole =
          List.map (
              \x ->
                  span [ class "auth-added" ][ text x ]
-         ) (model.authzToAddOnSave)
+         ) (model.rolesToAddOnSave)
 
         userRoles =
             List.map (
@@ -324,22 +366,18 @@ displayAddAuth model user  =
                         , div [id "remove-role",class "fa fa-times", onClick (RemoveRole user x)] []
                     ]
 
-            ) (user.permissions ++ user.authz)
-        roles = userRoles ++ newAddedRole
+            ) (user.roles)
     in
-    if (List.isEmpty roles) then
-        span[class "list-auths"][]
-    else
-        span[class "list-auths"](userRoles ++ newAddedRole)
+        userRoles ++ newAddedRole
 
-displayAuth : User -> Html Msg
-displayAuth user  =
+displayRoles : User -> Html Msg
+displayRoles user  =
     let
         userRoles =
             List.map (
                 \x ->
                     span [ class "auth" ][text x]
-            ) (user.permissions ++ user.authz)
+            ) (user.roles)
     in
     if (List.isEmpty userRoles) then
         span[class "list-auths-empty"]

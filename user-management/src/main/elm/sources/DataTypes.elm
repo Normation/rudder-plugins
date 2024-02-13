@@ -7,7 +7,7 @@ import Toasty
 import Toasty.Defaults
 
 type alias Roles = Dict String (List String)
-type alias Users = Dict Username Authorization
+type alias Users = Dict Username User
 type alias Username = String
 type alias Password = String
 type alias RoleConf = List Role
@@ -23,15 +23,18 @@ type alias Role =
     , rights: List String
     }
 
-type alias Authorization =
-    { permissions : List String
-    , custom: List String
-    }
-
 type alias User =
     { login : String
     , authz : List String
-    , permissions : List String
+    , roles : List String
+    , rolesCoverage : List String
+    , customRights : List String
+    }
+
+type alias NewUser = 
+    { login : String
+    , authz : List String
+    , roles : List String
     }
 
 -- does the configured list of provider allows to change the list of user roles, and how (extend only, or override?)
@@ -51,6 +54,9 @@ userProviders providers =
 takeFirstExtProvider: List String -> Maybe String
 takeFirstExtProvider providers =
     List.head (List.filter (\p -> p /= "file" && p /= "rootAdmin") providers)
+
+newUserToUser : NewUser -> User
+newUserToUser {login, authz, roles} = {login = login, authz = authz, roles = roles, rolesCoverage = [], customRights = []}
 
 type alias UsersConf =
     { digest : String
@@ -75,14 +81,13 @@ type alias Model =
     , roles: Roles
     , rolesConf : RoleConf  -- from API
     , roleListOverride: RoleListOverride
-    , authorizations : Authorization
     , toasties : Toasty.Stack Toasty.Defaults.Toast
     , panelMode : PanelMode
     , password : String
     , login : String
     , isHashedPasswd : Bool
     , isValidInput : StateInput
-    , authzToAddOnSave : List String
+    , rolesToAddOnSave : List String --TODO: it's roles and not "authz" here
     , providers : List String
     , userForcePasswdInput : Bool
     , openDeleteModal : Bool
@@ -93,7 +98,6 @@ type Msg
     | GetRoleConf (Result Error RoleConf)
     | PostReloadUserInfo (Result Error String) -- also returns the updated list
     | SendReload -- ask for API call to reload user list
-    | ComputeRoleCoverage (Result Error Authorization)
     | AddUser (Result Error String)
     | DeleteUser (Result Error String)
     | UpdateUser (Result Error String)
@@ -106,7 +110,7 @@ type Msg
     | AddRole String
     | RemoveRole User String
     | SubmitUpdatedInfos User
-    | SubmitNewUser User
+    | SubmitNewUser NewUser
     | PreHashedPasswd Bool
     | AddPasswdAnyway
     | OpenDeleteModal String

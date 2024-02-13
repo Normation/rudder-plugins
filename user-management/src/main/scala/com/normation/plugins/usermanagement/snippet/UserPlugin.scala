@@ -39,6 +39,10 @@ package com.normation.plugins.usermanagement.snippet
 
 import better.files.Resource
 import bootstrap.liftweb.RudderConfig
+import bootstrap.rudder.plugin.UserManagementConf
+import com.normation.plugins.usermanagement.Serialisation._
+import com.normation.rudder.RudderRoles
+import com.normation.zio._
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.http.js.JE._
 import net.liftweb.http.js.JsCmds._
@@ -49,13 +53,18 @@ class UserPlugin extends DispatchSnippet {
 
   private[this] val userService         = RudderConfig.rudderUserListProvider
   private[this] val authProviderManager = RudderConfig.authenticationProviders
+  private[this] val userManagementApi   = UserManagementConf.api
 
-  def dispatch = { case "getAuthzConfig" => getAuthzConfig }
+  def dispatch = { case "getAuthzConfig" => _ => getAuthzConfig }
 
   val t = Resource.getAsString("demo-rudder-users.xml")
 
-  def getAuthzConfig: NodeSeq => NodeSeq = { xml: NodeSeq =>
-    import com.normation.plugins.usermanagement.Serialisation._
-    Script(JsRaw(s"""var authzConfig = ${userService.authConfig.serialize(authProviderManager).toJson};"""))
+  def getAuthzConfig: NodeSeq = {
+    val allRoles = RudderRoles.getAllRoles.runNow.values.toSet
+    Script(
+      JsRaw(
+        s"""var authzConfig = ${userManagementApi.serialize(userService.authConfig, allRoles)(authProviderManager).toJson};"""
+      )
+    )
   }
 }

@@ -1,8 +1,8 @@
 module UserManagement exposing (processApiError, update)
 
-import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
+import ApiCalls exposing (addUser, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
-import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), StateInput(..), User, Username, Users, userProviders)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), newUserToUser, userProviders)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, createSuccessNotification, defaultConfig, init, subscriptions)
@@ -10,6 +10,7 @@ import String exposing (isEmpty)
 import Toasty
 import View exposing (view)
 import List
+import List.FlatMap
 
 main =
     Browser.element
@@ -18,14 +19,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-getUser: Username -> Users -> Maybe User
-getUser username users =
-    case (Dict.get username users) of
-        Just a ->
-           Just (User username a.custom a.permissions)
-        Nothing ->
-            Nothing
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -38,9 +31,20 @@ update msg model =
                 Ok u ->
                     let
                         recordUser =
-                            List.map (\x -> (x.login, (Authorization x.authz  x.permissions))) u.users
+                            List.map (\x -> (x.login, x)) u.users
+                        users = fromList recordUser
+                        newPanelMode =
+                            case model.panelMode of
+                                EditMode user ->
+                                    case Dict.get user.login users of
+                                        Just u_ ->
+                                            EditMode u_
+                                        Nothing ->
+                                            Closed
+                                _ ->
+                                    Closed
                         newModel =
-                            { model | roleListOverride = u.roleListOverride, users = fromList recordUser, digest = u.digest, providers = (userProviders u.authenticationBackends)}
+                            { model | roleListOverride = u.roleListOverride, users = users, panelMode = newPanelMode, digest = u.digest, providers = (userProviders u.authenticationBackends)}
 
                     in
                     ( newModel, getRoleConf model )
@@ -78,28 +82,21 @@ update msg model =
 
         ActivePanelAddUser ->
             if model.panelMode == AddMode then
-                ({model | panelMode = Closed, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
+                ({model | panelMode = Closed, rolesToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
             else
-                ({model | panelMode = AddMode, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
+                ({model | panelMode = AddMode, rolesToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
         ActivePanelSettings user ->
             case model.panelMode of
                 EditMode u ->
                     if u.login == user.login then
-                        ({model | panelMode = Closed, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
+                        ({model | panelMode = Closed, rolesToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
                     else
-                        ({model |authzToAddOnSave = [], password = "", panelMode = EditMode user, userForcePasswdInput = False }, Cmd.none)
+                        ({model |rolesToAddOnSave = [], password = "", panelMode = EditMode user, userForcePasswdInput = False }, Cmd.none)
                 _          ->
                     ({model | panelMode = EditMode user}, Cmd.none)
 
         DeactivatePanel ->
-            ({model | isValidInput = ValidInputs, panelMode = Closed, authzToAddOnSave = [], password = "", userForcePasswdInput = False}, Cmd.none)
-
-        ComputeRoleCoverage result ->
-            case result of
-                Ok _ ->
-                    (model, computeRoleCoverage model model.authorizations)
-                Err err ->
-                    processApiError err model
+            ({model | isValidInput = ValidInputs, panelMode = Closed, rolesToAddOnSave = [], password = "", userForcePasswdInput = False}, Cmd.none)
 
         AddUser result ->
              case result of
@@ -127,12 +124,25 @@ update msg model =
                        processApiError err model
 
         AddRole r ->
-            ({model | authzToAddOnSave = r :: model.authzToAddOnSave}, Cmd.none)
+            ({model | rolesToAddOnSave = r :: model.rolesToAddOnSave}, Cmd.none)
         RemoveRole user r ->
             let
-                newRoles = List.filter (\x -> r /= x) user.permissions
-                newAuthz = List.filter (\x -> r /= x) user.authz
-                newUser = {user | permissions = newRoles, authz = newAuthz}
+                -- remove role, and also authz that are associated to the role but not associated with any other remaining role
+                newRoles = user.roles |> List.filter (\x -> r /= x) 
+                newAuthz = 
+                    -- keep authz if it is found in any authz of newRoles
+                    -- keep authz if it's in custom authz of the user
+                    let
+                        allAuthz = Dict.toList model.roles |> List.FlatMap.flatMap (\(role, authz) -> if List.member role newRoles then authz else [])
+                    in 
+                        user.customRights ++ List.filter (\x ->
+                            case model.roles |> Dict.get x of
+                                Just _ -> True
+                                Nothing -> 
+                                    newRoles
+                                    |> List.any (\y -> List.member y allAuthz)
+                        ) user.authz
+                newUser = {user | roles = newRoles, authz = newAuthz}
             in
             ({model | panelMode = EditMode newUser}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.isHashedPasswd))
         Notification subMsg ->
@@ -143,7 +153,7 @@ update msg model =
         Login newLogin ->
             ({model | isValidInput = ValidInputs, login = newLogin}, Cmd.none)
         SubmitUpdatedInfos u ->
-            ({model | authzToAddOnSave = [], password = "", userForcePasswdInput = False, login = "", panelMode = Closed}, updateUser model u.login (DataTypes.AddUserForm { u | login = model.login} model.password model.isHashedPasswd))
+            ({model | rolesToAddOnSave = [], password = "", userForcePasswdInput = False, login = ""}, updateUser model u.login (DataTypes.AddUserForm { u | login = u.login} model.password model.isHashedPasswd))
         SubmitNewUser u  ->
             if(isEmpty u.login) then
               ({model | isValidInput = InvalidUsername}, Cmd.none)
@@ -155,9 +165,9 @@ update msg model =
                , userForcePasswdInput = False
                , isHashedPasswd         = True
                , isValidInput         = ValidInputs
-               , authzToAddOnSave     = []
+               , rolesToAddOnSave     = []
                }
-               , addUser model (DataTypes.AddUserForm u model.password model.isHashedPasswd)
+               , addUser model (DataTypes.AddUserForm (newUserToUser u) model.password model.isHashedPasswd)
                )
 
         PreHashedPasswd bool ->

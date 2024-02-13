@@ -1,6 +1,6 @@
 module JsonDecoder exposing (..)
 
-import DataTypes exposing (Authorization, Role, RoleConf, RoleListOverride(..), User, UsersConf)
+import DataTypes exposing (Role, RoleConf, RoleListOverride(..), User, UsersConf)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 
@@ -43,21 +43,8 @@ decodeUser =
         |> required "login" D.string
         |> required "authz" (D.list <| D.string)
         |> required "permissions" (D.list <| D.string)
-
-decodeApiRoleCoverage : Decoder Authorization
-decodeApiRoleCoverage =
-    D.at [ "data" ] decodeRoleCoverage
-
-decodeRoleCoverage : Decoder Authorization
-decodeRoleCoverage =
-    let
-        response =
-            D.succeed Authorization
-                |> required "permissions" (D.list <| D.string)
-                |> required "custom" (D.list <| D.string)
-    in
-        D.at [ "coverage" ] response
-
+        |> required "rolesCoverage" (D.list <| D.string)
+        |> required "customRights" (D.list <| D.string)
 
 decodeApiAddUserResult : Decoder String
 decodeApiAddUserResult =

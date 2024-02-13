@@ -6,10 +6,10 @@ module ApiCalls exposing (..)
 -- API call to get the category tree
 
 
-import DataTypes exposing (AddUserForm, Authorization, Model, Msg(..), User)
+import DataTypes exposing (AddUserForm, Model, Msg(..))
 import Http exposing (emptyBody, expectJson, jsonBody, request, send)
-import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiRoleCoverage, decodeApiUpdateUserResult, decodeGetRoleApiResult)
-import JsonEncoder exposing (encodeAddUser, encodeAuthorization)
+import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiUpdateUserResult, decodeGetRoleApiResult)
+import JsonEncoder exposing (encodeAddUser)
 
 getUrl: DataTypes.Model -> String -> String
 getUrl m url =
@@ -47,22 +47,6 @@ postReloadConf model =
                 }
     in
     send PostReloadUserInfo req
-
-computeRoleCoverage : Model -> Authorization -> Cmd Msg
-computeRoleCoverage model authorizations =
-    let
-        req =
-            request
-                { method          = "POST"
-                , headers         = []
-                , url             = getUrl model "/usermanagement/coverage"
-                , body            = jsonBody (encodeAuthorization authorizations)
-                , expect          = expectJson decodeApiRoleCoverage
-                , timeout         = Nothing
-                , withCredentials = False
-                }
-    in
-    send ComputeRoleCoverage req
 
 addUser : Model -> AddUserForm -> Cmd Msg
 addUser model userForm =

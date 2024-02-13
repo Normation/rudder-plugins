@@ -94,6 +94,13 @@ h3 {
   margin-right   : auto;
 }
 
+.list-auths {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 5px;
+}
+
 .list-auths-empty {
   color   : grey;
   opacity : 0.3;
@@ -108,7 +115,7 @@ h3 {
   padding          : 5px;
   text-align       : center;
   text-decoration  : none;
-  margin           : 5px;
+  margin           : 0 5px;
   border-radius    : 3px;
 }
 
@@ -324,6 +331,7 @@ h3 {
   display: flex;
   flex-direction: row;
   justify-content: end;
+  margin-top: 60px;
 }
 .btn-container .btn-save .fa{
   margin-left: 6px;
@@ -367,10 +375,6 @@ h3 {
   margin  : 10px 0 25px 0;
 }
 
-#input-role > .auth {
-  margin-bottom : 0;
-}
-
 .role-title {
   margin-top:45px;
 }
@@ -384,7 +388,8 @@ h3 {
   border-radius : 3px;
   display       : flex;
   flex-flow     : row wrap;
-
+  row-gap       : 5px;
+  padding       : 5px 0;
 }
 .card-header {
   padding : 5px;
@@ -514,4 +519,8 @@ h3 {
 }
 .hash-type {
   display:inline-block;
+}
+
+.panel hr {
+  margin-top: 40px;
 }
