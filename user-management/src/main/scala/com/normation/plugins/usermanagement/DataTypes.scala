@@ -98,7 +98,7 @@ object JsonRights {
   * @param getUsername The identifier/username
   * @param authz All authorizations for the user
   * @param permissions All role names for the user
-  * @param rolesCoverage All roles names that are infered from all authz of the user
+  * @param rolesCoverage All roles names that are inferred from all authz of the user
   * @param customRights All custom rights for the user
   */
 final case class JsonUser(
