@@ -39,14 +39,18 @@ package com.normation.plugins.usermanagement.api
 
 import bootstrap.liftweb.AuthBackendProvidersManager
 import bootstrap.liftweb.FileUserDetailListProvider
+import bootstrap.liftweb.PasswordEncoder
+import bootstrap.liftweb.ValidatedUserList
 import com.normation.errors._
 import com.normation.plugins.usermanagement.JsonAddedUser
+import com.normation.plugins.usermanagement.JsonAuthConfig
 import com.normation.plugins.usermanagement.JsonCoverage
 import com.normation.plugins.usermanagement.JsonDeletedUser
 import com.normation.plugins.usermanagement.JsonReloadResult
 import com.normation.plugins.usermanagement.JsonRole
 import com.normation.plugins.usermanagement.JsonRoleAuthorizations
 import com.normation.plugins.usermanagement.JsonUpdatedUser
+import com.normation.plugins.usermanagement.JsonUser
 import com.normation.plugins.usermanagement.JsonUserFormData
 import com.normation.plugins.usermanagement.Serialisation._
 import com.normation.plugins.usermanagement.User
@@ -180,11 +184,11 @@ class UserManagementApiImpl(
   object GetUserInfo extends LiftApiModule0 {
     val schema = UserManagementApi.GetUserInfo
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import com.normation.plugins.usermanagement.Serialisation._
 
       // This is just a compat hub done so that we can see all users. There will be problems
       (for {
-        users <- userRepo.getAll()
+        users    <- userRepo.getAll()
+        allRoles <- RudderRoles.getAllRoles
       } yield {
         val file         = userService.authConfig
         val updatedUsers = users.map(u => {
@@ -198,7 +202,7 @@ class UserManagementApiImpl(
           }
         })
         val authFile     = file.modify(_.users).setTo(updatedUsers.toMap)
-        authFile.serialize(authProvider)
+        serialize(authFile, allRoles.values.toSet)(authProvider)
       }).chainError("Error when retrieving user list").toLiftResponseOne(params, schema, _ => None)
     }
   }
@@ -340,6 +344,46 @@ class UserManagementApiImpl(
       } yield {
         roleAndCustoms.transformInto[JsonCoverage]
       }).chainError(s"Could not get role's coverage user from request").toLiftResponseOne(params, schema, _ => None)
+    }
+  }
+
+  def serialize(auth: ValidatedUserList, allRoles: Set[Role])(authProviderManager: AuthBackendProvidersManager) = {
+    val encoder: String = PassEncoderToString(auth)
+    val authBackendsProvider = authProviderManager.getConfiguredProviders().map(_.name).toSet
+
+    // for now, we can only guess if the role list can be extended/overridden (and only guess for the worse).
+    // The correct solution is to get that from rudder, but it will be done along with other enhancement about
+    // user / roles management.
+    // Also, until then, we need to update that test is other backend get that possibility
+    val roleListOverride = if (authBackendsProvider.contains("oidc") || authBackendsProvider.contains("oauth2")) {
+      "override" // should be a type provided by rudder core
+    } else {
+      "none"
+    }
+
+    // NoRights and AnyRights directly map to known user permissions. AnyRights takes precedence over NoRights.
+    val transformUser: RudderUserDetail => JsonUser = {
+      case u if u.authz.authorizationTypes.contains(AuthorizationType.AnyRights)                                      =>
+        JsonUser.anyRights(u.getUsername)
+      case u if u.authz.authorizationTypes.isEmpty || u.authz.authorizationTypes.contains(AuthorizationType.NoRights) =>
+        JsonUser.noRights(u.getUsername)
+      case u                                                                                                          =>
+        JsonUser.fromUser(u)(allRoles)
+    }
+
+    val jUser = auth.users.values.toList.sortBy(_.getUsername).map(transformUser(_))
+    val json  = JsonAuthConfig(encoder, roleListOverride, authBackendsProvider, jUser)
+    json
+  }
+
+  private def PassEncoderToString(auth: ValidatedUserList): String = {
+    auth.encoder match {
+      case PasswordEncoder.MD5    => "MD5"
+      case PasswordEncoder.SHA1   => "SHA-1"
+      case PasswordEncoder.SHA256 => "SHA-256"
+      case PasswordEncoder.SHA512 => "SHA-512"
+      case PasswordEncoder.BCRYPT => "BCRYPT"
+      case _                      => "plain text"
     }
   }
 }
