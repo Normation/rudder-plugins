@@ -44,6 +44,12 @@
   font-size   : 14px;
 }
 
+.user-list {
+  display        : flex;
+  flex-wrap      : wrap;
+  justify-content: flex-start;
+}
+
 .user-card {
   float          : left;
   width          : 49%;
@@ -52,7 +58,7 @@
   border-line    : 2px;
   padding-bottom : 10px;
   border-radius  : 8px;
-  width          : 300px;
+  width          : 100%;
   background     : #fff;
   text-align     : center;
   box-shadow     : 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
@@ -64,7 +70,8 @@
 }
 
 .user-card-wrapper {
-  cursor:pointer;
+  width : 300px;
+  cursor : pointer;
 }
 
 .user-card-inner {
@@ -88,7 +95,6 @@ h3 {
   color          : #3a3a3a;
   padding-bottom : 15px;
   word-wrap      : break-word;
-  width          : 260px;
   text-align     : center;
   margin-left    : auto;
   margin-right   : auto;

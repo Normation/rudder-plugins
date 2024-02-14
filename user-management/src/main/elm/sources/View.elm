@@ -287,12 +287,12 @@ displayUsersConf model u =
                 , newUserMenu
                 , panel
             ]
-            , div [ class "col-xs-12 user-list" ][ div [ class "row " ] users ]
+            , div [ class "col-xs-12" ][ div [ class "row user-list" ] users ]
         ]
 
 displayUser : User -> Html Msg
 displayUser user =
-    div [class "user-card-wrapper", onClick (ActivePanelSettings user)]
+    div [class "user-card-wrapper col-xs-6 col-md-4 col-lg-3", onClick (ActivePanelSettings user)]
     [
         div [class "user-card"]
         [
