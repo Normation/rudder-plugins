@@ -120,8 +120,7 @@ class ChangeRequestChangesForm(
                   cr.rules.values.map(_.changes).toList,
                   cr.globalParams.values.map(_.changes).toList
                 ))(form) ++
-                Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");
-                                 $$( "#changeDisplay" ).tabs();"""))
+                Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");"""))
 
               case eb: EmptyBox =>
                 val e = eb ?~! "An error occurred when trying to get data from base. "

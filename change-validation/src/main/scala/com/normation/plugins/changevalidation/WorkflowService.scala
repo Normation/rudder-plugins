@@ -193,7 +193,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       isCreator:         Boolean
   ): WorkflowAction = {
 
-    def deployAction(action : (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]) = {
+    def deployAction(action: (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]) = {
       if (canDeploy(isCreator, selfDeployment))
         Seq((Deployed.id, action))
       else Seq()
@@ -208,7 +208,7 @@ class TwoValidationStepsWorkflowServiceImpl(
         }
         WorkflowAction("Validate", validatorActions)
 
-      case Deployment.id     =>
+      case Deployment.id =>
         WorkflowAction("Deploy", deployAction(stepDeploymentToDeployed))
 
       case Deployed.id       => NoWorkflowAction
