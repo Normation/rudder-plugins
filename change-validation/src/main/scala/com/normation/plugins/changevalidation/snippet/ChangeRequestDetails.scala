@@ -313,7 +313,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         nextSteps.map(v => (v, v._1.value)),
         Full(nextChosen),
         { t: (WorkflowNodeId, stepChangeFunction) => nextChosen = t }
-      ) % ("class" -> "form-select space-bottom")
+      ) % ("class" -> "form-select mb-3")
     }
 
     def buildReasonField(mandatory: Boolean, containerClass: String) = {
@@ -371,16 +371,15 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     }
 
     val introMessage                                           = {
-      <div>
-        <h4 class="col-lg-12 col-sm-12 col-xs-12 text-center">{
+      <h5 class="text-center">
+        {
         nextSteps match {
           case Nil              => "You can't confirm"
           case (next, _) :: Nil => s"The change request will be sent to the '${next}' status"
           case list             => s"Please, choose the next state for this Change request"
         }
       }
-        </h4>
-     </div>
+     </h5>
     }
     def content(default: (WorkflowNodeId, stepChangeFunction)) = {
       val classForButton = action match {
@@ -401,7 +400,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
     def updateForm(default: (WorkflowNodeId, stepChangeFunction)) = SetHtml("popupContent", content(default))
 
-    def error(msg: String) = <span class="col-lg-12 errors-container">{msg}</span>
+    def error(msg: String) = <div class="alert alert-danger">{msg}</div>
 
     def confirm(): JsCmd = {
       if (formTracker.hasErrors) {

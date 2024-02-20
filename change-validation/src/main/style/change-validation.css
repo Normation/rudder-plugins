@@ -72,7 +72,7 @@ ul.clipboard-list > li:last-child{
 
 #actualFilter > form{
   display: flex;
-  align-items: flex-start;
+  align-items: center;
 }
 #actualFilter > form select.form-control{
   width: auto;
@@ -130,6 +130,7 @@ ul.clipboard-list > li:last-child{
 #changesContainer > div:last-child{
   flex: 1;
   border-left: 2px solid #E5E5E5;
+  padding: 0 15px;
 }
 #diff {
   padding: 10px;
@@ -434,19 +435,19 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
 }
 
 #changeRequestHeader .header-title > div > #CRStatus {
-  background-color: #eeeeee;
+  background-color: #eef1f9;
   min-width: 160px;
-  line-height: 50px;
   min-height: 50px;
-  color: #36474E;
+  color: #36474e;
   float: right;
-  font-size: 15px;
   font-weight: bold;
   cursor: default;
-  text-align: center;
   position: relative;
   margin-top: -15px;
   margin-right: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 #changeRequestHeader .header-title > div > #CRStatus:before {
   position: absolute;
@@ -455,9 +456,9 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
   height: 0;
   border-left: 80px solid transparent;
   border-right: 80px solid transparent;
-  border-top: 20px solid #eeeeee;
+  border-top: 20px solid #eef1f9;
   left: 0;
-  top: 50px;
+  bottom: -20px;
 }
 #CRSave{
   margin-top: 10px;

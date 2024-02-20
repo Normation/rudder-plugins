@@ -174,7 +174,7 @@ displayCategory acl cat =
       , div [class "category-body"]
         (cat.apis
           |> List.map (\api ->
-            label [ class "label-acl" ]
+            label [ class "label-acl mb-2" ]
             [ apiSelect acl api
             , displayApi api
             ]
