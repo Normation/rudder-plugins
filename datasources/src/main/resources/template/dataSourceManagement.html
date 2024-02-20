@@ -30,6 +30,7 @@
         setTimeout(function(){
           initBsTooltips();
         }, 400);
+      });
       app.ports.successNotification.subscribe(function(str) {
         createSuccessNotification(str)
       });

@@ -110,7 +110,7 @@ object QueryService {
       case None           => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
       case Some(property) =>
         // look for the property value in the node to know if an update is needed.
-        // If enforceSameOrigin is true, we only touch the property if it's default or datasource owned. 
+        // If enforceSameOrigin is true, we only touch the property if it's default or datasource owned.
         nodeInfo.properties.find(_.name == property.name) match {
           case Some(p) if (p.value == property.value) => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
           case Some(p)

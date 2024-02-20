@@ -120,23 +120,13 @@ update msg model =
     DeleteDataSource result ->
       case result of
           Ok id ->
-            let
-              newMode =
-                case model.mode of
-                    ShowDatasource d o ->
-                      if (d.id == id) then
-                        Init
-                      else
-                        ShowDatasource d o
-                    other -> other
-            in
-              ( { model
-                | mode = newMode
-                , dataSources = List.filter (.id >> (/=) id)  model.dataSources
-                , ui = { baseUi | deleteModal = Nothing}
-                }
-              , successNotification ("Successfully deleted datasource '" ++ id ++ "'")
-              )
+            ( { model
+              | mode = Init
+              , dataSources = List.filter (.id >> (/=) id)  model.dataSources
+              , ui = { baseUi | deleteModal = Nothing}
+              }
+            , successNotification ("Successfully deleted datasource '" ++ id ++ "'")
+            )
           Err e ->
             (model, errorNotification (errorMessage e))
 
