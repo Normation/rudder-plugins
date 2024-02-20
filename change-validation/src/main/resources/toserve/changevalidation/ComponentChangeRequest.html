@@ -67,15 +67,21 @@
       </div>
     </div>
     <div id="changeDisplay">
-      <ul id="changeRequestTabMenu">
-          <li><a href="#historyTab">Change history</a></li>
-          <li><a href="#diffTab">Diff</a></li>
+      <ul id="changeRequestTabMenu" class="nav nav-underline">
+          <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#historyTab" type="button" role="tab" aria-controls="historyTab" aria-selected="true">Change history</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#diffTab" type="button" role="tab" aria-controls="diffTab" aria-selected="false">Diff</button>
+          </li>
       </ul>
-      <div id="historyTab" style ="max-height:345px; overflow: auto; margin: -1px;">
-        <div id="history"></div>
-      </div>
-      <div id="diffTab" style="max-height:345px; overflow: auto; margin-top: -10px;">
-        <div id="diff" ></div>
+      <div class="tab-content my-3">
+        <div id="historyTab" class="tab-pane active" style ="max-height:345px; overflow: auto;">
+          <div id="history"></div>
+        </div>
+        <div id="diffTab" class="tab-pane" style="max-height:345px; overflow: auto; margin-top: -10px;">
+          <div id="diff" ></div>
+        </div>
       </div>
     </div>
   </div>
@@ -97,19 +103,15 @@
 
 <component-popupContent>
 <div class="modal-body">
-    <div class="row">
-        <div class="col-lg-12 text-center" id="intro"></div>
-    </div>
-    <div id="formError"></div>
-    <div class="space-top">
-        <b class="col-lg-3 col-sm-12 col-xs-12 text-right">Next state </b>
-        <div class="col-lg-9 col-sm-12 col-xs-12">
-            <span id="next">
-                Here comes change request status
-            </span>
-        </div>
-    </div>
-    <div id ="reason" class="space-top"></div>
+  <div id="intro"></div>
+  <div id="formError"></div>
+  <div class="mt-3 from-group">
+    <label><b>Next state </b></label>
+    <span id="next">
+      Here comes change request status
+    </span>
+  </div>
+  <div id ="reason" class="mt-3"></div>
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-default" data-bs-dismiss="modal" aria-label="Close">Cancel</button>
