@@ -342,7 +342,7 @@ displayUsersConf : Model -> Users -> Html Msg
 displayUsersConf model u =
     let
         users =
-            Dict.values u |> List.map (\user -> displayUser user)
+            Dict.values u |> List.filter (\user -> user.status /= Deleted) |> List.map (\user -> displayUser user)
         newUserMenu =
             if model.panelMode == AddMode then
                 displayRightPanelAddUser model
