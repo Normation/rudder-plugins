@@ -5,6 +5,9 @@ import better.files.Resource
 import bootstrap.liftweb.AuthBackendProvidersManager
 import com.normation.plugins.usermanagement.MockServices
 import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.rest.AuthorizationApiMapping
+import com.normation.rudder.rest.ExtensibleAuthorizationApiMapping
+import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import com.normation.rudder.users.UserInfo
 import com.normation.rudder.users.UserStatus
@@ -36,7 +39,7 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
       UserInfo( // user3 not in the file will get empty permissions and authz
         "user3",
         DateTime.parse("2024-02-01T01:01:01Z"),
-        UserStatus.Active,
+        UserStatus.Disabled,
         "manager",
         None,
         None,
@@ -48,7 +51,7 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
         "user2",
         DateTime.parse("2024-02-01T01:01:01Z"),
         UserStatus.Active,
-        "manager",
+        "file",
         None,
         None,
         None,
@@ -59,7 +62,7 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
         "user1",
         DateTime.parse("2024-02-01T01:01:01Z"),
         UserStatus.Active,
-        "manager",
+        "file",
         None,
         None,
         None,
@@ -74,7 +77,8 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
       mockServices.userRepo,
       mockServices.userService,
       new AuthBackendProvidersManager(),
-      mockServices.userManagementService
+      mockServices.userManagementService,
+      new RoleApiMapping(new ExtensibleAuthorizationApiMapping(AuthorizationApiMapping.Core :: Nil))
     )
   )
 

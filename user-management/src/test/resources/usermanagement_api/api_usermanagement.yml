@@ -11,9 +11,11 @@ response:
         "digest" : "BCRYPT",
         "roleListOverride" : "none",
         "authenticationBackends" : [],
+        "providerProperties" : {},
         "users" : [
           {
             "login" : "user1",
+            "status" : "active",
             "authz" : [
               "configuration_edit",
               "configuration_read",
@@ -49,10 +51,49 @@ response:
               "rule_only",
               "user"
             ],
-            "customRights" : []
+            "customRights" : [],
+            "providers" : [
+              "file"
+            ],
+            "providersInfo" : {
+              "file" : {
+                "provider" : "file",
+                "authz" : [
+                  "configuration_edit",
+                  "configuration_read",
+                  "configuration_write",
+                  "directive_edit",
+                  "directive_read",
+                  "directive_write",
+                  "group_edit",
+                  "group_read",
+                  "group_write",
+                  "node_edit",
+                  "node_read",
+                  "node_write",
+                  "parameter_edit",
+                  "parameter_read",
+                  "parameter_write",
+                  "rule_edit",
+                  "rule_read",
+                  "rule_write",
+                  "technique_edit",
+                  "technique_read",
+                  "technique_write",
+                  "userAccount_edit",
+                  "userAccount_read",
+                  "userAccount_write"
+                ],
+                "roles" : [
+                  "user"
+                ],
+                "customRights" : []
+              }
+            }
           },
           {
             "login" : "user2",
+            "status" : "active",
             "authz" : [
               "administration_read",
               "compliance_read",
@@ -78,14 +119,55 @@ response:
               "read_only",
               "rule_only"
             ],
-            "customRights" : []
+            "customRights" : [],
+            "providers" : [
+              "file"
+            ],
+            "providersInfo" : {
+              "file" : {
+                "provider" : "file",
+                "authz" : [
+                  "administration_read",
+                  "compliance_read",
+                  "configuration_read",
+                  "deployer_read",
+                  "deployment_read",
+                  "directive_read",
+                  "group_read",
+                  "node_read",
+                  "parameter_read",
+                  "rule_read",
+                  "technique_read",
+                  "userAccount_edit",
+                  "userAccount_read",
+                  "userAccount_write",
+                  "validator_read"
+                ],
+                "roles" : [
+                  "read_only"
+                ],
+                "customRights" : []
+              }
+            }
           },
           {
             "login" : "user3",
+            "status" : "disabled",
             "authz" : [],
             "permissions" : [],
             "rolesCoverage" : [],
-            "customRights" : []
+            "customRights" : [],
+            "providers" : [
+              "manager"
+            ],
+            "providersInfo" : {
+              "manager" : {
+                "provider" : "manager",
+                "authz" : [],
+                "roles" : [],
+                "customRights" : []
+              }
+            }
           }
         ]
       }
@@ -384,6 +466,90 @@ response:
       "action" : "updateUserInfos",
       "result" : "error",
       "errorDetails" : "Could not update user 'hello+world'; cause was: Inconsistency: 'hello+world' does not exists"
+    }
+---
+description: Activate an already active user
+method: PUT
+url: /api/latest/usermanagement/status/activate/user1
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "activateUser",
+      "id" : "user1",
+      "result" : "success",
+      "data" : {
+        "status" : "active"
+      }
+    }
+---
+description: Activate a disabled user
+method: PUT
+url: /api/latest/usermanagement/status/activate/user3
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "activateUser",
+      "id" : "user3",
+      "result" : "success",
+      "data" : {
+        "status" : "active"
+      }
+    }
+---
+description: Activate a non-existing user
+method: PUT
+url: /api/latest/usermanagement/status/activate/unknownuser
+response:
+  code: 500
+  content: >-
+    {
+      "action" : "activateUser",
+      "result" : "error",
+      "errorDetails" : "Could not activate user 'unknownuser'; cause was: Inconsistency: User 'unknownuser' does not exist therefore cannot be activated"
+    }
+---
+description: Disable an already disabled user
+method: PUT
+url: /api/latest/usermanagement/status/disable/user3
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "disableUser",
+      "id" : "user3",
+      "result" : "success",
+      "data" : {
+        "status" : "disabled"
+      }
+    }
+---
+description: Disable an active user
+method: PUT
+url: /api/latest/usermanagement/status/disable/user1
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "disableUser",
+      "id" : "user1",
+      "result" : "success",
+      "data" : {
+        "status" : "disabled"
+      }
+    }
+---
+description: Disable a non-existing user
+method: PUT
+url: /api/latest/usermanagement/status/disable/unknownuser
+response:
+  code: 500
+  content: >-
+    {
+      "action" : "disableUser",
+      "result" : "error",
+      "errorDetails" : "Could not disable user 'unknownuser'; cause was: Inconsistency: User 'unknownuser' does not exist therefore cannot be disabled"
     }
 ---
 description: Get the coverage of roles over rights

@@ -1,8 +1,8 @@
 module UserManagement exposing (processApiError, update)
 
-import ApiCalls exposing (addUser, getRoleConf, getUsersConf, postReloadConf, updateUser)
+import ApiCalls exposing (activateUser, addUser, disableUser, getRoleConf, getUsersConf, postReloadConf, updateUser)
 import Browser
-import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), newUserToUser, userProviders)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), userProviders)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, createSuccessNotification, defaultConfig, init, subscriptions)
@@ -44,7 +44,7 @@ update msg model =
                                 _ ->
                                     Closed
                         newModel =
-                            { model | roleListOverride = u.roleListOverride, users = users, panelMode = newPanelMode, digest = u.digest, providers = (userProviders u.authenticationBackends)}
+                            { model | roleListOverride = u.roleListOverride, users = users, panelMode = newPanelMode, digest = u.digest, providers = (userProviders u.authenticationBackends), providersProperties = u.providersProperties}
 
                     in
                     ( newModel, getRoleConf model )
@@ -123,12 +123,21 @@ update msg model =
                   Err err ->
                        processApiError err model
 
+        UpdateUserStatus result ->
+             case result of
+                  Ok username ->
+                      (model, getUsersConf model)
+                        |> createSuccessNotification (username ++ " have been modified")
+
+                  Err err ->
+                       processApiError err model
+
         AddRole r ->
             ({model | rolesToAddOnSave = r :: model.rolesToAddOnSave}, Cmd.none)
-        RemoveRole user r ->
+        RemoveRole user provider r ->
             let
                 -- remove role, and also authz that are associated to the role but not associated with any other remaining role
-                newRoles = user.roles |> List.filter (\x -> r /= x) 
+                newRoles = Dict.get provider user.providersInfo |> Maybe.map .roles |> Maybe.withDefault [] |> List.filter (\x -> r /= x) 
                 newAuthz = 
                     -- keep authz if it is found in any authz of newRoles
                     -- keep authz if it's in custom authz of the user
@@ -142,9 +151,10 @@ update msg model =
                                     newRoles
                                     |> List.any (\y -> List.member y allAuthz)
                         ) user.authz
-                newUser = {user | roles = newRoles, authz = newAuthz}
+                newUser = {login = user.login, authz = newAuthz, roles = newRoles}
+                newPanelMode = EditMode {user | authz = newAuthz, roles = newRoles}
             in
-            ({model | panelMode = EditMode newUser}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.isHashedPasswd))
+            ({model | panelMode = newPanelMode}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.isHashedPasswd))
         Notification subMsg ->
             Toasty.update defaultConfig Notification subMsg model
 
@@ -153,7 +163,7 @@ update msg model =
         Login newLogin ->
             ({model | isValidInput = ValidInputs, login = newLogin}, Cmd.none)
         SubmitUpdatedInfos u ->
-            ({model | rolesToAddOnSave = [], password = "", userForcePasswdInput = False, login = ""}, updateUser model u.login (DataTypes.AddUserForm { u | login = u.login} model.password model.isHashedPasswd))
+            ({model | rolesToAddOnSave = [], password = "", userForcePasswdInput = False, login = ""}, updateUser model u.login (DataTypes.AddUserForm u model.password model.isHashedPasswd))
         SubmitNewUser u  ->
             if(isEmpty u.login) then
               ({model | isValidInput = InvalidUsername}, Cmd.none)
@@ -167,8 +177,12 @@ update msg model =
                , isValidInput         = ValidInputs
                , rolesToAddOnSave     = []
                }
-               , addUser model (DataTypes.AddUserForm (newUserToUser u) model.password model.isHashedPasswd)
+               , addUser model (DataTypes.AddUserForm u model.password model.isHashedPasswd)
                )
+        ActivateUser username ->
+            (model, activateUser model username)
+        DisableUser username ->
+            (model, disableUser model username)
 
         PreHashedPasswd bool ->
             ({model | password = "",isHashedPasswd = bool}, Cmd.none)
