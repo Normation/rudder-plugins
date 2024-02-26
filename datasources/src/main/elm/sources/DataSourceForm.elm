@@ -22,12 +22,14 @@ datasourceForm model datasource origin =
               , nameError
               ]
             , div [ class "form-group" ] [
-                label [ for "key"] [ text "Key name" ]
-              , idWarning
+                label [ for "key"]
+                [ text "Key name"
+                , idWarning
+                ]
               , input [ type_ "text", class "form-control has-example-help", id "key", placeholder (nameToId datasource.name), name "datasourceKey", value datasource.id, disabled (not isNew), onInput (\s -> UpdateDataSource { datasource | id = s}) ] []
               , div [ class "example-help" ] [
                   text "The key name will be used to access imported data, such as "
-                , pre [] [ text ("${node.properties["++ (if String.isEmpty datasource.id then "\"key_name\"" else  datasource.id )++"]") ]
+                , pre [] [ text ("${node.properties["++ (if String.isEmpty datasource.id then "\"key_name\"" else  datasource.id )++"]}") ]
                 ]
               , span [ class "text-danger" ] [ idError ]
               ]
@@ -93,8 +95,8 @@ datasourceForm model datasource origin =
 
     idWarning =
       if isNew then
-        div [ class "group-warning" ] [
-          span [ class "fa fa-info-circle"] []
+        span [ class "ms-2  text-warning" ] [
+          span [ class "fa fa-info-circle me-1"] []
           , text "Key name cannot be modified after creation."
         ]
       else
@@ -134,7 +136,7 @@ datasourceForm model datasource origin =
           ]
 
         , div [ class "main-navbar"] [
-            ul [ class "ui-tabs-nav " ] []
+            ul [ class "nav nav-underline" ] []
           ]
 
         , div [ class "main-details" ] [
@@ -179,8 +181,8 @@ postForm ui httpData =
   let
     noParamWarning =
      if (List.isEmpty httpData.parameters) then
-       div [ class "group-warning" ] [
-         span [ class "fa fa-info-circle" ] []
+       div [ class "text-warning" ] [
+         span [ class "me-1 fa fa-info-circle" ] []
        , text "No parameters defined for this data source."
        ]
      else text ""
@@ -190,14 +192,12 @@ postForm ui httpData =
           input [ type_ "text", class "form-control", value p.name
                 , onInput (\s -> UpdateHTTPData {httpData | parameters = List.Extra.updateAt index (\h -> {h | name = s }) httpData.parameters })
                 ] []
-        , span [ class "input-group-addon"] [ text ":" ]
+        , span [ class "input-group-text"] [ text ":" ]
         , input [ type_ "text", class "form-control", value p.value
                 , onInput (\s -> UpdateHTTPData {httpData | parameters = List.Extra.updateAt index (\h -> {h | value = s }) httpData.parameters })
                 ] []
-        , span [ class "input-group-btn" ] [
-            button [ class "btn btn-danger", onClick (UpdateHTTPData {httpData | parameters = List.Extra.removeAt index httpData.parameters }) ] [
-              span [ class "fa fa-minus"]  []
-            ]
+        , button [ type_ "button", class "btn btn-danger", onClick (UpdateHTTPData {httpData | parameters = List.Extra.removeAt index httpData.parameters }) ] [
+            span [ class "fa fa-minus"]  []
           ]
         ]
       )
@@ -205,21 +205,19 @@ postForm ui httpData =
     param = ui.newParam
     newParam =
       div [ class "new-headers" ] [
-        div [ class "bs-callout bs-callout-info text-info"] [
+        div [ class "alert alert-info"] [
           text "Don't forget to click on the green plus to add the new parameter!"
         ]
       , div [ class "input-group group-header" ] [
           input [ type_ "text", class "form-control", value param.name, placeholder "name"
                 , onInput (\s -> UpdateUI {ui | newParam = { param | name = s} })
                 ] []
-        , span [ class "input-group-addon"] [ text ":" ]
+        , span [ class "input-group-text"] [ text ":" ]
         , input [ type_ "text", class "form-control", value param.value, placeholder "value"
                 , onInput (\s -> UpdateUI {ui | newParam = { param | value = s} })
                 ] []
-        , span [ class "input-group-btn" ] [
-             button [ class "btn btn-success", onClick AddParam] [
-               span [ class "fa fa-plus" ] []
-             ]
+        , button [ class "btn btn-success", type_ "button", onClick AddParam] [
+            span [ class "fa fa-plus" ] []
            ]
          ]
        ]
@@ -232,7 +230,7 @@ postForm ui httpData =
                 label [] [
                   a [onClick (UpdateUI {ui | openParameter = not opened})] [
                     text "Parameters"
-                  , span [ class "fa fa-chevron-right"] []
+                  , span [ class ("fa fa-chevron-" ++ if opened then "down" else "right")] []
                   ]
                 ]
               , if opened then div [ class "well"] params else text ""
@@ -243,8 +241,8 @@ headersForm ui httpData =
   let
     noHeadersWarning =
      if (List.isEmpty httpData.headers) then
-       div [ class "group-warning" ] [
-         span [ class "fa fa-info-circle" ] []
+       div [ class "text-warning" ] [
+         span [ class "me-1 fa fa-info-circle" ] []
        , text "No Headers defined for this data source."
        ]
      else text ""
@@ -254,14 +252,12 @@ headersForm ui httpData =
           input [ type_ "text", class "form-control", value param.name
                 , onInput (\s -> UpdateHTTPData {httpData | headers = List.Extra.updateAt index (\h -> {h | name = s }) httpData.headers })
                 ] []
-        , span [ class "input-group-addon"] [ text ":" ]
+        , span [ class "input-group-text"] [ text ":" ]
         , input [ type_ "text", class "form-control", value param.value
                 , onInput (\s -> UpdateHTTPData {httpData | headers = List.Extra.updateAt index (\h -> {h | value = s }) httpData.headers })
                 ] []
-        , span [ class "input-group-btn" ] [
-            button [ class "btn btn-danger", onClick (UpdateHTTPData {httpData | headers = List.Extra.removeAt index httpData.headers }) ] [
-              span [ class "fa fa-minus"]  []
-            ]
+        , button [ class "btn btn-danger", type_ "button", onClick (UpdateHTTPData {httpData | headers = List.Extra.removeAt index httpData.headers }) ] [
+            span [ class "fa fa-minus"]  []
           ]
         ]
       )
@@ -269,21 +265,19 @@ headersForm ui httpData =
     header = ui.newHeader
     newHeader =
       div [ class "new-headers" ] [
-        div [ class "bs-callout bs-callout-info text-info"] [
+        div [ class "alert alert-info"] [
           text "Don't forget to click on the green plus to add the new parameter!"
         ]
       , div [ class "input-group group-header" ] [
           input [ type_ "text", class "form-control", value header.name, placeholder "name"
                 , onInput (\s -> UpdateUI {ui | newHeader = { header | name = s} })
                 ] []
-         , span [ class "input-group-addon"] [ text ":" ]
+         , span [ class "input-group-text"] [ text ":" ]
          , input [ type_ "text", class "form-control", value header.value, placeholder "value"
                 , onInput (\s -> UpdateUI {ui | newHeader = { header | value = s} })
                 ] []
-         , span [ class "input-group-btn" ] [
-             button [ class "btn btn-success", onClick AddHeader] [
-               span [ class "fa fa-plus" ] []
-             ]
+         , button [ type_ "button", class "btn btn-success", onClick AddHeader] [
+             span [ class "fa fa-plus" ] []
            ]
          ]
        ]
@@ -296,6 +290,7 @@ headersForm ui httpData =
       label [ class "optional-link"] [
         a [onClick (UpdateUI {ui | openHeader = not opened})] [
           b [] [ text "Headers"]
+        , span [ class ("fa fa-chevron-" ++ if opened then "down" else "right")] []
         ]
       ]
     , if opened then div [ id "headers", class "well" ]  headers else text ""
@@ -311,7 +306,7 @@ jsonPathForm httpData =
                 , span [ class "fa fa-question-circle icon-info", attribute "data-bs-toggle" "tooltip", attribute "data-bs-container" "body", title "You can also use Rudder variable expansion here. See help for URL above."] []
                 ]
               , div [ class "input-group" ] [
-                  label [ class "input-group-addon addon has-example-help", for "jsonpath"] [text "$."]
+                  label [ class "input-group-text addon has-example-help", for "jsonpath"] [text "$."]
                 , input [ type_ "text", class "form-control has-example-help", id "jsonpath", value httpData.path
                         , onInput ( \s -> UpdateHTTPData {httpData | path = s })
                         ] []
@@ -337,7 +332,7 @@ advancedOptions datasource ui httpData =
                 label [] [
                   a [onClick (UpdateUI {ui | openAdvanced = not opened})] [
                     text "Advanced options "
-                  , span [ class "fa fa-chevron-right"] []
+                  , span [ class ("fa fa-chevron-" ++ if opened then "down" else "right")] []
                   ]
                 ]
               , if opened then
@@ -345,7 +340,7 @@ advancedOptions datasource ui httpData =
                   ul [ class "form-group " ] [
                     li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "checkSsl" ] [
+                        label [ class "input-group-text", for "checkSsl" ] [
                           input [ type_ "checkbox", id "checkSsl", checked (not httpData.checkSsl)
                                 , onCheck (\b -> UpdateHTTPData { httpData | checkSsl = not b} )
                                 ] []
@@ -365,13 +360,13 @@ advancedOptions datasource ui httpData =
                     input [ type_ "number", class "form-control ", id "requesttimeout-minutes", Html.Attributes.min "0", value (String.fromInt requestTimeoutMinutes)
                           , onInput (\s -> UpdateHTTPData { httpData | requestTimeout = (((Maybe.withDefault requestTimeoutMinutes (String.toInt s)) * 60)+ requestTimeoutSeconds)})
                           ] []
-                  , label [ for "requesttimeout-minutes", class "input-group-addon" ] [
+                  , label [ for "requesttimeout-minutes", class "input-group-text" ] [
                       text (String.Extra.pluralize "minute" "minutes" requestTimeoutMinutes)
                     ]
                   , input [ type_ "number", class "form-control ", id "requesttimeout-seconds" , value (String.fromInt requestTimeoutSeconds), Html.Attributes.min "0", Html.Attributes.max "59"
                           , onInput (\s -> UpdateHTTPData { httpData| requestTimeout = ((Maybe.withDefault requestTimeoutSeconds (String.toInt s))+ (requestTimeoutMinutes*60))})
                           ] []
-                  , label [ for "requesttimeout-seconds", class "input-group-addon"] [
+                  , label [ for "requesttimeout-seconds", class "input-group-text"] [
                       text (String.Extra.pluralize "second" "seconds" requestTimeoutSeconds)
                     ]
                   ]
@@ -380,13 +375,13 @@ advancedOptions datasource ui httpData =
                     input [ type_ "number", class "form-control ", id "updatetimeout-minutes", Html.Attributes.min "0", value (String.fromInt updateTimeoutMinutes)
                           , onInput (\s -> UpdateDataSource { datasource | updateTimeout = (((Maybe.withDefault updateTimeoutMinutes (String.toInt s)) * 60)+ updateTimeoutSeconds)})
                           ] []
-                  , label [ for "updatetimeout-minutes", class "input-group-addon" ] [
+                  , label [ for "updatetimeout-minutes", class "input-group-text" ] [
                       text (String.Extra.pluralize "minute" "minutes" updateTimeoutMinutes)
                     ]
                   , input [ type_ "number", class "form-control ", id "updatetimeout-seconds", value (String.fromInt updateTimeoutSeconds), Html.Attributes.min "0", Html.Attributes.max "59"
                           , onInput (\s -> UpdateDataSource { datasource| updateTimeout = ((Maybe.withDefault updateTimeoutSeconds (String.toInt s))+ (updateTimeoutMinutes*60))})
                           ] []
-                  , label [ for "updatetimeout-seconds", class "input-group-addon"] [
+                  , label [ for "updatetimeout-seconds", class "input-group-text"] [
                       text (String.Extra.pluralize "second" "seconds" updateTimeoutSeconds )
                     ]
                   ]
@@ -415,17 +410,17 @@ updateTrigger ui datasource =
             minutes = (modBy 60 schedule.duration )
 
           in
-                div [ class "input-group group-update-frequency" ] [
+                div [ class "input-group group-update-frequency mt-1 mb-2" ] [
                     input [ type_ "number", class "form-control ", id "updateFrequency-hours", Html.Attributes.min "0", value (String.fromInt hours)
                           , onInput (\s -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | duration = ((Maybe.withDefault hours (String.toInt s)) * 60)+ minutes}}})
                           ] []
-                  , label [ for "updateFrequency-hours", class "input-group-addon"] [
+                  , label [ for "updateFrequency-hours", class "input-group-text"] [
                       text (String.Extra.pluralize "hour" "hours" hours)
                     ]
                   , input [ type_ "number", class "form-control ", id "updateFrequency-minutes",  Html.Attributes.min "0", value (String.fromInt minutes)
                           , onInput (\s -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | duration = (Maybe.withDefault minutes (String.toInt s))+ (hours*60)}}})
                           ] []
-                  , label [ for "updateFrequency-minutes", class "input-group-addon"] [ --
+                  , label [ for "updateFrequency-minutes", class "input-group-text"] [ --
                       text (String.Extra.pluralize "minute" "minutes" minutes)
                     ]
                   ]
@@ -437,15 +432,15 @@ updateTrigger ui datasource =
                 label [ class "bloc"] [
                   a [onClick (UpdateUI {ui | openTrigger = not opened})] [
                     text "Update triggers"
-                  , span [ class "fa fa-chevron-right"] []
+                  , span [ class ("fa fa-chevron-" ++ if opened then "down" else "right")] []
                   ]
                 ]
               , if opened then
                 div [ class "well"] [
-                  ul [ class "form-group " ] [
+                  ul [ class "mb-1" ] [
                     li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "neverUpdate" ] [
+                        label [ class "input-group-text", for "neverUpdate" ] [
                           input [ type_ "checkbox", id "neverUpdate", checked (schedule.type_ /= NotScheduled)
                                 , onCheck (\b -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | type_ = if b then Scheduled else NotScheduled } } } )
                                 ] []
@@ -464,7 +459,7 @@ updateTrigger ui datasource =
                 , ul [ class "form-group " ] [
                     li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "onGeneration" ] [
+                        label [ class "input-group-text", for "onGeneration" ] [
                           input [ type_ "checkbox", id "onGeneration", checked params.onGeneration
                                 , onCheck (\b -> UpdateDataSource { datasource| runParameters = { params | onGeneration = b } } )
                                 ] []
@@ -480,7 +475,7 @@ updateTrigger ui datasource =
                     ]
                   , li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "onNewNode" ] [
+                        label [ class "input-group-text", for "onNewNode" ] [
                           input [ type_ "checkbox", id "onNewNode", checked params.onNewNode
                                 , onCheck (\b -> UpdateDataSource { datasource| runParameters = { params | onNewNode = b } } )
                                 ] []
@@ -514,7 +509,7 @@ nodeBehaviour ui data =
                   a [onClick (UpdateUI {ui | openNode = not opened})] [
 
                     text "What to do when a query for a Node returns a 404 error?"
-                  , span [ class "fa fa-chevron-right" ] []
+                  , span [ class ("fa fa-chevron-" ++ if opened then "down" else "right") ] []
                   ]
                 ]
               , if opened then
@@ -522,7 +517,7 @@ nodeBehaviour ui data =
                   ul [ class "form-group " ] [
                     li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "onMissingDelete" ] [
+                        label [ class "input-group-text", for "onMissingDelete" ] [
                           input [ type_ "radio", id "onMissingDelete", checked (data.onMissing == Delete)
                                 , onClick (UpdateHTTPData { data| onMissing = Delete } )
                                 ] []
@@ -536,13 +531,11 @@ nodeBehaviour ui data =
                         ]
                       ]
                     ]
-                  ]
-                , ul [ class "form-group " ] [
-                    li [ class "rudder-form" ] [
+                  , li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "onMissingNoChange" ] [
-                          input [ type_ "radio", id "onMissingNoChange", checked (data.onMissing == NoChange)
-                                , onClick (UpdateHTTPData { data| onMissing = NoChange } )
+                      label [ class "input-group-text", for "onMissingNoChange" ] [
+                        input [ type_ "radio", id "onMissingNoChange", checked (data.onMissing == NoChange)
+                              , onClick (UpdateHTTPData { data| onMissing = NoChange } )
                                 ] []
                         , label [ for "onMissingNoChange", class "label-radio" ] [
                             span [ class "ion ion-checkmark-round" ] []
@@ -556,7 +549,7 @@ nodeBehaviour ui data =
                     ]
                   , li [ class "rudder-form" ] [
                       div [ class "input-group" ] [
-                        label [ class "input-group-addon", for "onMissingDefaultValue" ] [
+                        label [ class "input-group-text", for "onMissingDefaultValue" ] [
                           input [ type_ "radio", id "onMissingDefaultValue", checked isDefault
                                 , onClick (UpdateHTTPData { data| onMissing = Default currentDefault } )
                                 ] []
