@@ -250,11 +250,19 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
 
       RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
         "oauth2",
+<<<<<<< HEAD
         oauth2AuthenticationProvider(rudderUserService, registrationRepository, RudderConfig.userRepository)
       )
       RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
         "oidc",
         oidcAuthenticationProvider(rudderUserService, registrationRepository, RudderConfig.userRepository)
+=======
+        oauth2AuthenticationProvider(rudderUserService, registrationRepository, roleApiMapping)
+      )
+      RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
+        "oidc",
+        oidcAuthenticationProvider(rudderUserService, registrationRepository, roleApiMapping)
+>>>>>>> branches/rudder/8.0
       )
       val manager =
         applicationContext.getBean("org.springframework.security.authenticationManager", classOf[AuthenticationManager])
@@ -268,6 +276,8 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       applicationContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "mainHttpSecurityFilters")
     }
   }
+
+  @Bean def roleApiMapping = new RoleApiMapping(RudderConfig.authorizationApiMapping)
 
   @Bean def rudderOauth2AuthSuccessHandler: AuthenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler(
     "/secure/index.html"
@@ -322,17 +332,29 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def oidcUserService(
       rudderUserDetailsService: RudderInMemoryUserDetailsService,
       registrationRepository:   RudderClientRegistrationRepository,
+<<<<<<< HEAD
       userRepository:           UserRepository
   ): OidcUserService = {
     new RudderOidcUserService(rudderUserDetailsService, registrationRepository, userRepository)
+=======
+      roleApiMapping:           RoleApiMapping
+  ): OidcUserService = {
+    new RudderOidcUserService(rudderUserDetailsService, registrationRepository, roleApiMapping)
+>>>>>>> branches/rudder/8.0
   }
 
   @Bean def oauth2UserService(
       rudderUserDetailsService: RudderInMemoryUserDetailsService,
       registrationRepository:   RudderClientRegistrationRepository,
+<<<<<<< HEAD
       userRepository:           UserRepository
   ): OAuth2UserService[OAuth2UserRequest, OAuth2User] = {
     new RudderOAuth2UserService(rudderUserDetailsService, registrationRepository, userRepository)
+=======
+      roleApiMapping:           RoleApiMapping
+  ): OAuth2UserService[OAuth2UserRequest, OAuth2User] = {
+    new RudderOAuth2UserService(rudderUserDetailsService, registrationRepository, roleApiMapping)
+>>>>>>> branches/rudder/8.0
   }
 
   // following beans are the default one provided by spring security for oauth2 logic
@@ -362,11 +384,19 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def oauth2AuthenticationProvider(
       rudderUserDetailsService: RudderInMemoryUserDetailsService,
       registrationRepository:   RudderClientRegistrationRepository,
+<<<<<<< HEAD
       userRepository:           UserRepository
   ) = {
     val x = new OAuth2LoginAuthenticationProvider(
       rudderAuthorizationCodeTokenResponseClient(),
       oauth2UserService(rudderUserDetailsService, registrationRepository, userRepository)
+=======
+      roleApiMapping:           RoleApiMapping
+  ) = {
+    val x = new OAuth2LoginAuthenticationProvider(
+      rudderAuthorizationCodeTokenResponseClient(),
+      oauth2UserService(rudderUserDetailsService, registrationRepository, roleApiMapping)
+>>>>>>> branches/rudder/8.0
     )
     x.setAuthoritiesMapper(userAuthoritiesMapper)
     x
@@ -375,11 +405,19 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def oidcAuthenticationProvider(
       rudderUserDetailsService: RudderInMemoryUserDetailsService,
       registrationRepository:   RudderClientRegistrationRepository,
+<<<<<<< HEAD
       userRepository:           UserRepository
   ): OidcAuthorizationCodeAuthenticationProvider = {
     val x = new OidcAuthorizationCodeAuthenticationProvider(
       rudderAuthorizationCodeTokenResponseClient(),
       oidcUserService(rudderUserDetailsService, registrationRepository, userRepository)
+=======
+      roleApiMapping:           RoleApiMapping
+  ): OidcAuthorizationCodeAuthenticationProvider = {
+    val x = new OidcAuthorizationCodeAuthenticationProvider(
+      rudderAuthorizationCodeTokenResponseClient(),
+      oidcUserService(rudderUserDetailsService, registrationRepository, roleApiMapping)
+>>>>>>> branches/rudder/8.0
     )
     x.setJwtDecoderFactory(jwtDecoderFactory)
     x.setAuthoritiesMapper(userAuthoritiesMapper)
@@ -476,7 +514,11 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
   def mapRudderUser(
       delegateLoadUser:         R => U,
       rudderUserDetailsService: RudderInMemoryUserDetailsService,
+<<<<<<< HEAD
       userRepository:           UserRepository,
+=======
+      roleApiMapping:           RoleApiMapping,
+>>>>>>> branches/rudder/8.0
       userRequest:              R,
       newUserDetails:           (U, RudderUserDetail) => T
   ): T = {
@@ -487,6 +529,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
     )
 
     val optReg = registrationRepository.registrations.get(userRequest.getClientRegistration.getRegistrationId)
+<<<<<<< HEAD
 
     // check that we know that user in our DB, else if "provisioning" is enabled, create it
     val rudderUser = {
@@ -523,6 +566,22 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       user:        U,
       rudder:      RudderUserDetail,
       userBuilder: (U, RudderUserDetail) => T
+=======
+
+    // check that we know that user in our DB
+    val rudderUser = rudderUserDetailsService.loadUserByUsername(user.getName)
+
+    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails)
+  }
+
+  def buildUser(
+      optReg:         Option[RudderClientRegistration],
+      userRequest:    R,
+      user:           U,
+      roleApiMapping: RoleApiMapping,
+      rudder:         RudderUserDetail,
+      userBuilder:    (U, RudderUserDetail) => T
+>>>>>>> branches/rudder/8.0
   ): T = {
     val roles = {
       optReg match {
@@ -587,8 +646,23 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           }
       }
     }
+    // we derive api authz from users rights
+    val acls  = roleApiMapping
+      .getApiAclFromRoles(roles.toSeq)
+      .groupBy(_.path.parts.head)
+      .flatMap {
+        case (_, seq) =>
+          seq.sortBy(_.path)(AclPath.orderingaAclPath).sortBy(_.path.parts.head.value)
+      }
+      .toList
+
+    val userDetails = rudder
+      .copy(roles = roles, apiAuthz = ApiAuthorization.ACL(acls))
+    AuthBackendsLogger.debug(
+      s"Principal '${rudder.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${userDetails.apiAuthz}"
+    )
     // we need to update roles in all cases
-    userBuilder(user, rudder.copy(roles = roles))
+    userBuilder(user, userDetails)
   }
 
 }
@@ -596,7 +670,11 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
 class RudderOidcUserService(
     rudderUserDetailsService:            RudderInMemoryUserDetailsService,
     override val registrationRepository: RudderClientRegistrationRepository,
+<<<<<<< HEAD
     userRepository:                      UserRepository
+=======
+    roleApiMapping:                      RoleApiMapping
+>>>>>>> branches/rudder/8.0
 ) extends OidcUserService with RudderUserServerMapping[OidcUserRequest, OidcUser, RudderUserDetail with OidcUser] {
 
   // we need to use our copy of DefaultOAuth2UserService to log/manage errors
@@ -605,14 +683,28 @@ class RudderOidcUserService(
   override val protocolName = "OIDC"
 
   override def loadUser(userRequest: OidcUserRequest): OidcUser = {
+<<<<<<< HEAD
     mapRudderUser(super.loadUser(_), rudderUserDetailsService, userRepository, userRequest, new RudderOidcDetails(_, _))
+=======
+    mapRudderUser(
+      super.loadUser(_),
+      rudderUserDetailsService,
+      roleApiMapping,
+      userRequest,
+      new RudderOidcDetails(_, _)
+    )
+>>>>>>> branches/rudder/8.0
   }
 }
 
 class RudderOAuth2UserService(
     rudderUserDetailsService:            RudderInMemoryUserDetailsService,
     override val registrationRepository: RudderClientRegistrationRepository,
+<<<<<<< HEAD
     userRepository:                      UserRepository
+=======
+    roleApiMapping:                      RoleApiMapping
+>>>>>>> branches/rudder/8.0
 ) extends OAuth2UserService[OAuth2UserRequest, OAuth2User]
     with RudderUserServerMapping[OAuth2UserRequest, OAuth2User, RudderUserDetail with OAuth2User] {
   val defaultUserService = new RudderDefaultOAuth2UserService()
@@ -623,7 +715,11 @@ class RudderOAuth2UserService(
     mapRudderUser(
       defaultUserService.loadUser(_),
       rudderUserDetailsService,
+<<<<<<< HEAD
       userRepository,
+=======
+      roleApiMapping,
+>>>>>>> branches/rudder/8.0
       userRequest,
       new RudderOauth2Details(_, _)
     )
