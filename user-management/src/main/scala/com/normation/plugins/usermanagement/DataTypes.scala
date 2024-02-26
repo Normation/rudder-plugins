@@ -85,7 +85,7 @@ object Serialisation {
 
 final case class JsonAuthConfig(
     digest:                 String,
-    roleListOverride:       JsonProviderRolesCapacity, // the roles can be overriden or not
+    roleListOverride:       JsonProviderRolesCapacity,
     authenticationBackends: Set[String],
     providerProperties:     Map[String, JsonProviderProperty],
     users:                  List[JsonUser]
@@ -210,13 +210,6 @@ final case class JsonUser(
           case r                    => Left(r)
         }
     }
-
-    // We have these roles which should be already included withing the current JsonUser roles :
-    // val roles = u.roles.filter {
-    //   case _: Custom => false
-    //   case _ => true
-    // }.map(_.name)
-    // perhaps do roles = this.roles ++ roles to handle any case
 
     copy(
       rolesCoverage = JsonRoles(allUserRoles.map(_.name)),

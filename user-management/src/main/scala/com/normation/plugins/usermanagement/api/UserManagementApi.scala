@@ -370,7 +370,7 @@ class UserManagementApiImpl(
                                   .map {
                                     case true  =>
                                       implicit val currentRoles   = allRoles.values.toSet
-                                      // Unkown permissions are trusted and put in file
+                                      // Unknown permissions are trusted and put in file
                                       val (roles, authz, unknown) = UserManagementService.parsePermissions(user.permissions.toSet)
                                       userManagementService
                                         .add(User(u.id, "", roles.map(_.name) ++ authz.map(_.id) ++ unknown), user.isPreHashed)
