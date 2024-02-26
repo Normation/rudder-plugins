@@ -4,8 +4,8 @@ set -eo pipefail
 readonly ACTION="$1"
 set -u
 readonly INVENTORIES_DIR=/var/rudder/inventories/received
-readonly GLPI_FUSION_URL=$(sed -e "/GLPI_FUSION_URL/s/^.*=//" /opt/rudder/etc/glpi.conf)
-readonly PATCH_FQDN=$(sed -e "/PATCH_FQDN/s/^.*=//" /opt/rudder/etc/glpi.conf)
+readonly GLPI_FUSION_URL=$(sed -ne "/GLPI_FUSION_URL/s/^.*=//p" /opt/rudder/etc/glpi.conf)
+readonly PATCH_FQDN=$(sed -ne "/PATCH_FQDN/s/^.*=//p" /opt/rudder/etc/glpi.conf)
 
 
 send_inventory()
