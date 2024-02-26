@@ -105,5 +105,5 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
   }
 
   val userManagementService =
-    new UserManagementService(userService, UserFile(usersFile.pathAsString, usersInputStream).succeed)
+    new UserManagementService(userRepo, userService, UserFile(usersFile.pathAsString, usersInputStream).succeed)
 }

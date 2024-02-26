@@ -292,7 +292,9 @@ displayRightPanel model user =
         displayedProviders =
             -- at least one provider overrides the role list : we can't edit the roles and we display the roles for the overriding one
             case takeFirstOverrideProviderInfo model user of
-                Just providerInfo -> rolesSection providerInfo Override True True True
+                Just providerInfo -> 
+                    rolesSection providerInfo Override True True True ++
+                    formDeleteOrDisableSection
                 Nothing -> 
                     case Dict.get "file" user.providersInfo of
                         Nothing -> -- file is not an explicit provider so roles can be added in the provider
@@ -303,6 +305,15 @@ displayRightPanel model user =
                             -- and one section for the actually editable file provider
                             rolesSection providerInfo None False False False ++
                             formSubmitSection providerInfo.provider
+        formDeleteOrDisableSection =
+            [
+                div[class "btn-container"]
+                [
+                      button [class "btn btn-sm btn-danger btn-delete" , onClick (OpenDeleteModal user.login)] [text "Delete"]
+                    , button [class ("btn btn-sm btn-status-toggle " ++ if user.status == Active then "btn-default" else "btn-primary"), onClick (if user.status == Active then DisableUser user.login else ActivateUser user.login)] 
+                    [ if user.status == Active then text "Disable" else text "Activate" ]
+                ]
+            ]
         formSubmitSection provider =
             [
                 div[class "btn-container"]

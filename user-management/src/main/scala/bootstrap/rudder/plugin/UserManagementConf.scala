@@ -70,7 +70,11 @@ object UserManagementConf extends RudderPluginModule {
     RudderConfig.userRepository,
     RudderConfig.rudderUserListProvider,
     RudderConfig.authenticationProviders,
-    new UserManagementService(RudderConfig.rudderUserListProvider, UserFileProcessing.getUserResourceFile()),
+    new UserManagementService(
+      RudderConfig.userRepository,
+      RudderConfig.rudderUserListProvider,
+      UserFileProcessing.getUserResourceFile()
+    ),
     new RoleApiMapping(RudderConfig.authorizationApiMapping)
   )
 

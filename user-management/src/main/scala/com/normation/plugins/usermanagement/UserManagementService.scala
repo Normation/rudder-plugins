@@ -18,8 +18,10 @@ import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
+import com.normation.rudder.users._
 import com.normation.zio._
 import java.util.concurrent.TimeUnit
+import org.joda.time.DateTime
 import org.springframework.core.io.{ClassPathResource => CPResource}
 import scala.xml.Elem
 import scala.xml.Node
@@ -216,7 +218,11 @@ object UserManagementService {
 
 }
 
-class UserManagementService(userService: FileUserDetailListProvider, getUserResourceFile: IOResult[UserFile]) {
+class UserManagementService(
+    userRepository:      UserRepository,
+    userService:         FileUserDetailListProvider,
+    getUserResourceFile: IOResult[UserFile]
+) {
   import UserManagementService._
 
   /*
@@ -267,6 +273,7 @@ class UserManagementService(userService: FileUserDetailListProvider, getUserReso
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
       _          <- userService.reloadPure()
+      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now()))
     } yield ()
   }
 
