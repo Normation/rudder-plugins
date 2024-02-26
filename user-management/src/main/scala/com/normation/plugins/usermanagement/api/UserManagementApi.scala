@@ -337,7 +337,7 @@ class UserManagementApiImpl(
     ): LiftResponse = {
 
       (for {
-        _ <- userManagementService.remove(id, authzToken.actor)
+        _ <- userManagementService.remove(id, authzToken.actor, "User deleted by user management API")
       } yield {
         id.transformInto[JsonDeletedUser]
       }).chainError(s"Could not delete user ${id}").toLiftResponseOne(params, schema, _ => None)

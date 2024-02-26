@@ -257,9 +257,9 @@ class UserManagementService(
 
   /*
    * When we delete an user, it can be from file or auto-added by OIDC or other backend supporting that.
-   * So we let the callback on file reload do the deletion from base.
+   * So we let the callback on file reload do the deletion for file users, and then delete from the user repository.
    */
-  def remove(toDelete: String, actor: EventActor): IOResult[Unit] = {
+  def remove(toDelete: String, actor: EventActor, reason: String): IOResult[Unit] = {
     for {
       file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
@@ -273,7 +273,7 @@ class UserManagementService(
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
       _          <- userService.reloadPure()
-      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now()))
+      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now(), reason))
     } yield ()
   }
 
