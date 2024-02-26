@@ -281,7 +281,6 @@ object JsonUser {
     val roles        = providersInfo.values.map(_.roles).foldLeft(JsonRoles.empty)(_ ++ _)
     val customRights = providersInfo.values.map(_.customRights).foldLeft(JsonRights.empty)(_ ++ _)
 
-    // TODO: role coverage is not computed, it's hard to obtain with current "unknown" string authztypes and roles, so maybe recompute manually
     JsonUser(id, status, authz, roles, roles, customRights, providersInfo.keys.toList, providersInfo)
   }
 }
