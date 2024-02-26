@@ -30,7 +30,7 @@ view model =
             span [] [ text "Data sources" ]
           ]
           , div [ class "header-buttons" ] [
-              button [ class "btn btn-success", onClick NewDataSource ] [
+              button [type_ "button", class "btn btn-success", onClick NewDataSource ] [
                 text "Create "
               , i [ class "add-icon ion ion-android-add-circle" ] []
               ]
@@ -78,21 +78,22 @@ view model =
 
   , case model.ui.deleteModal of
       Just datasource ->
-        div [ tabindex -1, class "modal fade in", style "z-index" "1050", style "display" "block" ]
-        [ div [class "modal-backdrop fade in"][]
+        div [ class "modal fade show" , style "z-index" "1050", style "display" "block"]
+        [ div [class "modal-backdrop fade show"][]
         , div [ class "modal-dialog" ] [
             div [ class "modal-content" ] [
               div [ class "modal-header" ] [
-                h3 [ class "modal-title" ] [ text ("Delete " ++ datasource.name)]
+                h5 [ class "modal-title" ] [ text ("Delete " ++ datasource.name)]
+              , button [type_ "button", class "btn-close", onClick (UpdateUI {ui | deleteModal = Nothing}) ][]
               ]
             , div [ class "modal-body" ]
-              [ h4 [class "text-center"][text ("Are you sure you want to delete datasource '"++ datasource.name ++"'?")]
+              [ h5 [class "text-center"][text ("Are you sure you want to delete datasource '"++ datasource.name ++"'?")]
               ]
             , div [ class "modal-footer" ] [
-                button [ class "btn btn-default", onClick (UpdateUI {ui | deleteModal = Nothing}) ]
+                button [type_ "button", class "btn btn-default", onClick (UpdateUI {ui | deleteModal = Nothing}) ]
                 [ text "Cancel " ]
               , if model.hasWriteRights then
-                  button [ class "btn btn-danger", onClick (DeleteCall datasource)] [
+                  button [type_ "button", class "btn btn-danger", onClick (DeleteCall datasource)] [
                     text "Delete "
                   , i [ class "fa fa-times-circle" ] []
                   ]

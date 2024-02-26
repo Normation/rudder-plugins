@@ -15,7 +15,7 @@ label.form-control{
 	border-left: none;
 	padding: 8px 12px !important;
 }
-label.form-control,label.input-group-addon{
+label.form-control,label.input-group-text{
 	cursor: pointer;
 }
 label.form-control > i {
@@ -90,7 +90,7 @@ form{
 .panel-body > .panel-col:last-child{
   padding: 15px;
   border-left: 1px solid #D6DEEF;
-  background-color: #f0f0f0;
+  background-color: #F8F9FC;
   display: flex;
 }
 
@@ -116,10 +116,6 @@ form{
 		border-top: 20px solid transparent;
 		border-bottom: 20px solid transparent;
 		border-left: 20px solid #D6DEEF;
-	}
-	.panel-body > .panel-col:last-child{
-		border-left: 1px solid #D6DEEF;
-		background-color: #f0f0f0;
 	}
 }
 /* -- --------------- -- */
@@ -309,16 +305,16 @@ form{
 ui-dropdown-panel{
     z-index:9999 !important;
 }
-.input-group > .input-group-addon + ui-picker{
-    border-color: #D6DEEFccc;
+.input-group > .input-group-text + ui-picker{
+    border-color: #D6DEEF;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
-.input-group > .input-group-addon + ui-picker > ui-picker-input{
+.input-group > .input-group-text + ui-picker > ui-picker-input{
 	padding: 0;
 	height: 100%;
 }
-.input-group > .input-group-addon + ui-picker > ui-picker-input > ui-color-picker-rect{
+.input-group > .input-group-text + ui-picker > ui-picker-input > ui-color-picker-rect{
     top: 0;
     right: -1px;
     width: 34px;
@@ -332,10 +328,10 @@ ui-dropdown-panel{
     border-top: none;
     border-bottom: none;
 }
-.input-group > .input-group-addon + ui-picker ui-color-picker-background{
+.input-group > .input-group-text + ui-picker ui-color-picker-background{
 	border-radius: 2px;
 }
-.input-group > .input-group-addon + ui-picker ui-color-picker-text{
+.input-group > .input-group-text + ui-picker ui-color-picker-text{
     padding: 6px 12px;
 }
 
@@ -348,51 +344,25 @@ ui-dropdown-panel{
   margin:0;
   padding:0;
 }
-
-#branding-main .input-group .input-group-addon {
-  border: 1px solid #D6DEEF;
-}
-#branding-main .input-group > .input-group-addon:first-child {
-  border-top-left-radius: 4px;
-  border-bottom-left-radius: 4px;
-  border-right:none;
-  background-color: #F8F9FC;
-}
-#branding-main .input-group > .input-group-addon:last-child {
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
-  border-left:none;
-  cursor: pointer;
-  min-width: 40px;
-}
-
-#branding-main .input-group > .input-group-addon:last-child > i.fa{
-  color: #bababa;
+#branding-main .input-group > .input-group-text:last-child > .fa{
+  color: #72829D;
   transition-duration: .2s;
 }
-span.input-group-addon.remove-btn ,
-span.input-group-addon.upload-btn {
+.remove-btn ,
+.upload-btn {
   transition-duration: .2s;
 }
-span.input-group-addon.remove-btn:hover ,
-span.input-group-addon.upload-btn:hover {
-  background-color: #f7f7f7;
+#branding-main .input-group > .input-group-text:last-child.remove-btn:hover > i.fa{
+  color: #DA291C;
 }
-#branding-main .input-group > .input-group-addon:last-child.remove-btn:hover > i.fa{
-  color: #dd4b39;
-}
-#branding-main .input-group > .input-group-addon:last-child.upload-btn:hover > i.fa{
+#branding-main .input-group > .input-group-text:last-child.upload-btn:hover > i.fa{
   color: #337ab7;
 }
-#branding-main .input-group > .input-group-addon:last-child.remove-btn > i.fa-upload,
-#branding-main .input-group > .input-group-addon:last-child.upload-btn > i.fa-times{
+#branding-main .input-group > .input-group-text:last-child.remove-btn > i.fa-upload,
+#branding-main .input-group > .input-group-text:last-child.upload-btn > i.fa-times{
   display: none;
 }
 
-#branding-main .input-group .input-group-addon:first-child input{
-    position: relative;
-    top: 2px;
-}
 #branding-main .toolbar {
     background-color: #fff;
     border-top: 1px solid #D6DEEF;
