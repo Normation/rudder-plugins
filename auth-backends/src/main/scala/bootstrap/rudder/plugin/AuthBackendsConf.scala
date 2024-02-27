@@ -265,11 +265,11 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       // add authentication providers to rudder list
 
       RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
-        "oauth2",
+        RudderOAuth2UserService.PROTOCOL_ID,
         oauth2AuthenticationProvider(rudderUserService, registrationRepository, userRepository, roleApiMapping)
       )
       RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
-        "oidc",
+        RudderOidcUserService.PROTOCOL_ID,
         oidcAuthenticationProvider(rudderUserService, registrationRepository, userRepository, roleApiMapping)
       )
       val manager =
@@ -494,6 +494,7 @@ class RudderDefaultOAuth2AuthorizationRequestResolver(
 trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: RudderUserDetail with U] {
 
   def registrationRepository: RudderClientRegistrationRepository
+  def protocolId:             String
   def protocolName:           String
 
   def mapRudderUser(
@@ -522,7 +523,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           // provisioning is enabled, create the user and try again
           (userRepository
             .setExistingUsers(
-              protocolName,
+              protocolId,
               List(user.getName),
               EventTrace(
                 RudderEventActor,
@@ -664,6 +665,9 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
 
 }
 
+object RudderOidcUserService {
+  val PROTOCOL_ID = "oidc"
+}
 class RudderOidcUserService(
     rudderUserDetailsService:            RudderInMemoryUserDetailsService,
     override val registrationRepository: RudderClientRegistrationRepository,
@@ -674,6 +678,7 @@ class RudderOidcUserService(
   // we need to use our copy of DefaultOAuth2UserService to log/manage errors
   super.setOauth2UserService(new RudderDefaultOAuth2UserService())
 
+  override val protocolId   = RudderOidcUserService.PROTOCOL_ID
   override val protocolName = "OIDC"
 
   override def loadUser(userRequest: OidcUserRequest): OidcUser = {
@@ -688,6 +693,9 @@ class RudderOidcUserService(
   }
 }
 
+object RudderOAuth2UserService {
+  val PROTOCOL_ID = "oauth2"
+}
 class RudderOAuth2UserService(
     rudderUserDetailsService:            RudderInMemoryUserDetailsService,
     override val registrationRepository: RudderClientRegistrationRepository,
@@ -697,6 +705,7 @@ class RudderOAuth2UserService(
     with RudderUserServerMapping[OAuth2UserRequest, OAuth2User, RudderUserDetail with OAuth2User] {
   val defaultUserService = new RudderDefaultOAuth2UserService()
 
+  override val protocolId   = RudderOAuth2UserService.PROTOCOL_ID
   override val protocolName = "OAuth2"
 
   override def loadUser(userRequest: OAuth2UserRequest): OAuth2User = {
