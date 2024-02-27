@@ -99,6 +99,7 @@ class ChangeValidationWorkflowLevelService(
     validationWorkflowService: TwoValidationStepsWorkflowServiceImpl,
     validationNeeded:          Seq[ValidationNeeded],
     workflowEnabledByUser:     () => Box[Boolean],
+    alwaysNeedValidation:      () => Box[Boolean],
     validatedUserRepo:         RoValidatedUserRepository
 ) extends WorkflowLevelService {
 
@@ -138,7 +139,8 @@ class ChangeValidationWorkflowLevelService(
       change:  T
   ): Box[WorkflowService] = {
     def getWorkflowAux = {
-      getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) {
+      // When we "always need validation", we ignore all validationNeeded checks, otherwise we validate using these checks
+      getWorkflow(validationNeeded.foldLeft(alwaysNeedValidation()) {
         case (shouldValidate, nextCheck) =>
           shouldValidate.flatMap {
             // logic is "or": if previous should validate is true, don't check following
@@ -288,6 +290,7 @@ object ChangeValidationConf extends RudderPluginModule {
         )
       ),
       () => RudderConfig.configService.rudder_workflow_enabled().toBox,
+      () => RudderConfig.configService.rudder_workflow_validate_all().toBox,
       roValidatedUserRepository
     )
   )
