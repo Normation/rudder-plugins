@@ -221,6 +221,49 @@
                       </div>
                     </div>
                   </div>
+                  <lift:authz role="administration_write">
+                  <br>
+                  <div data-lift="ChangeValidationSettings.validation">
+                    <div class="section-with-doc">
+                      <div class="section-left">
+                        <form class="lift:form.ajax">
+                          <ul>
+                            <li class="rudder-form">
+                              <div class="input-group">
+                                <label class="input-group-addon" for="validationAutoValidatedUser">
+                                  <input type="checkbox" value="Reload" id="validationAutoValidatedUser"/>
+                                  <label for="validationAutoValidatedUser" class="label-radio">
+                                    <span class="ion ion-checkmark-round"></span>
+                                  </label>
+                                  <span class="ion ion-checkmark-round check-icon"></span>
+                                </label>
+                                <label class="form-control" for="validationAutoValidatedUser">
+                                  Validate all changes
+                                </label>
+                              </div>
+                            </li>
+                          </ul>
+                          <input type="submit" value="Save change" id="validationAutoSubmit"/>
+                          <span class="lift:Msg?id=updateValidation">[messages]</span>
+                        </form>
+                      </div>
+                      <div class="section-right">
+                        <div class="doc doc-info">
+                          <div class="marker">
+                            <span class="fa fa-info-circle"></span>
+                          </div>
+                          <p>
+                            Any change done by a Validated User will be automaticaly approved no matter the nature of the change.
+                          </p>
+                          <p>
+                            Configuring groups below will hence have no effect on validated users (in the list above), but will apply to non-validated users, who will still need a change request to modify a node from a supervised group.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                  </div>
+                  </lift:authz>
                   <div>
                     <h3 class="page-subtitle">Configure groups with change validations</h3>
                     <div class="section-with-doc">

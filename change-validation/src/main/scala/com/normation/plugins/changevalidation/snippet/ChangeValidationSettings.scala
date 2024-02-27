@@ -54,7 +54,10 @@ class ChangeValidationSettings extends DispatchSnippet {
   private[this] val configService: ReadConfigService with UpdateConfigService = RudderConfig.configService
   private[this] val workflowLevelService = RudderConfig.workflowLevelService
 
-  def dispatch = { case "activation" => workflowConfiguration }
+  def dispatch = {
+    case "activation" => workflowConfiguration
+    case "validation" => validationConfiguration
+  }
 
   def workflowConfiguration: NodeSeq => NodeSeq = { xml: NodeSeq =>
     //  initial values, updated on successful submit
@@ -188,5 +191,50 @@ class ChangeValidationSettings extends DispatchSnippet {
     "#workflowSubmit " #> {
       SHtml.ajaxSubmit("Save change", () => submit, ("class", "btn btn-default"))
     }) apply (finalXml)
+  }
+
+  // same as workflowConfiguration but with 1 single checkbox, and val autoValidatedUsers = configService.rudder_workflow_validation_auto_validated_users().toBox
+  def validationConfiguration: NodeSeq => NodeSeq = { xml: NodeSeq =>
+    // initial value, updated on successful submit
+    var initAutoValidatedUsers = configService.rudder_workflow_validate_all().toBox
+
+    // form value
+    var autoValidatedUsers = initAutoValidatedUsers.getOrElse(false)
+
+    def submit = {
+      configService
+        .set_rudder_workflow_validate_all(autoValidatedUsers)
+        .toBox
+        .foreach(updateOk => initAutoValidatedUsers = Full(autoValidatedUsers))
+      S.notice("updateValidation", "Validation configuration correctly updated")
+      check()
+    }
+
+    def noModif = initAutoValidatedUsers.map(_ == autoValidatedUsers).getOrElse(false)
+
+    def check() = {
+      if (!noModif) {
+        S.notice("updateValidation", "")
+      }
+      Run(s"""$$("#validationSubmit").attr("disabled",${noModif});""")
+    }
+
+    ("#validationAutoValidatedUser" #> {
+      initAutoValidatedUsers match {
+        case Full(value) =>
+          SHtml.ajaxCheckbox(
+            value,
+            (b: Boolean) => { autoValidatedUsers = b; check() },
+            ("id", "validationAutoValidatedUser"),
+            ("class", "twoCol")
+          )
+        case eb: EmptyBox =>
+          val fail = eb ?~ "there was an error, while fetching value of property: 'Auto validated users' "
+          <div class="error">{fail.msg}</div>
+      }
+    } &
+    "#validationAutoSubmit " #> {
+      SHtml.ajaxSubmit("Save change", () => submit, ("class", "btn btn-default"))
+    })(xml)
   }
 }
