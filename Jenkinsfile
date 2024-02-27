@@ -150,6 +150,7 @@ pipeline {
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
                             sh script: 'make generate-pom'
+                            sh script: '$MVN_CMD --version', label: "common deploy"
                             sh script: '$MVN_CMD --update-snapshots clean install package deploy', label: "common deploy"
                         }
                     }
