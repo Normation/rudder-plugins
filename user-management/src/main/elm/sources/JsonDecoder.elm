@@ -2,7 +2,7 @@ module JsonDecoder exposing (..)
 
 import DataTypes exposing (Role, RoleConf, RoleListOverride(..), User, UserStatus(..), UsersConf)
 import Json.Decode as D exposing (Decoder)
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (optional, required)
 import DataTypes exposing (ProviderInfo)
 import DataTypes exposing (ProvidersInfo)
 import DataTypes exposing (ProviderProperties)
@@ -63,6 +63,9 @@ decodeUser : Decoder User
 decodeUser =
     D.succeed User
         |> required "login" D.string
+        |> optional "name" D.string ""
+        |> optional "email" D.string ""
+        |> required "otherInfo" (D.dict D.string)
         |> required "status" decodeUserStatus
         |> required "authz" (D.list <| D.string)
         |> required "permissions" (D.list <| D.string)
@@ -70,6 +73,7 @@ decodeUser =
         |> required "customRights" (D.list <| D.string)
         |> required "providers" (D.list <| D.string)
         |> required "providersInfo" decodeProvidersInfo
+        |> optional "lastLogin" (D.maybe D.string) Nothing
 
 decodeUserStatus : Decoder UserStatus
 decodeUserStatus =

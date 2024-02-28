@@ -59,6 +59,7 @@ import com.normation.plugins.usermanagement.JsonUpdatedUser
 import com.normation.plugins.usermanagement.JsonUser
 import com.normation.plugins.usermanagement.JsonUserFormData
 import com.normation.plugins.usermanagement.Serialisation._
+import com.normation.plugins.usermanagement.UpdateUser
 import com.normation.plugins.usermanagement.User
 import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.rudder.AuthorizationType
@@ -238,7 +239,9 @@ class UserManagementApiImpl(
                     if (u.managedBy == DefaultAuthBackendProvider.FILE) {
                       transformUser(
                         currentUserDetails,
-                        Map(fileProviderInfo.provider -> fileProviderInfo)
+                        u,
+                        Map(fileProviderInfo.provider -> fileProviderInfo),
+                        lastSession.map(_.creationDate)
                       ).withRoleCoverage(currentUserDetails)
                     } else {
 
@@ -388,7 +391,7 @@ class UserManagementApiImpl(
                               case None => Inconsistency(s"'$id' does not exists").fail
                             }
                           } else {
-                            userManagementService.update(id, user.transformInto[User], user.isPreHashed)
+                            userManagementService.update(id, user.transformInto[UpdateUser], user.isPreHashed)
                           }
       } yield {
         user.transformInto[User].transformInto[JsonUpdatedUser]
@@ -516,14 +519,19 @@ class UserManagementApiImpl(
     JsonAuthConfig(encoder, roleListOverride, authBackendsProvider, providersProperties, users)
   }
 
-  private def transformUser(u: RudderUserDetail, providersInfo: Map[String, JsonProviderInfo]): JsonUser = {
+  private def transformUser(
+      u:             RudderUserDetail,
+      info:          UserInfo,
+      providersInfo: Map[String, JsonProviderInfo],
+      lastLogin:     Option[DateTime]
+  ): JsonUser = {
     // NoRights and AnyRights directly map to known user permissions. AnyRights takes precedence over NoRights.
     if (u.authz.authorizationTypes.contains(AuthorizationType.AnyRights)) {
-      JsonUser.anyRights(u.getUsername, u.status, providersInfo)
+      JsonUser.anyRights(u.getUsername, info.name, info.email, info.otherInfo, u.status, providersInfo, lastLogin)
     } else if (u.authz.authorizationTypes.isEmpty || u.authz.authorizationTypes.contains(AuthorizationType.NoRights)) {
-      JsonUser.noRights(u.getUsername, u.status, providersInfo)
+      JsonUser.noRights(u.getUsername, info.name, info.email, info.otherInfo, u.status, providersInfo, lastLogin)
     } else {
-      JsonUser(u.getUsername, u.status, providersInfo)
+      JsonUser(u.getUsername, info.name, info.email, info.otherInfo, u.status, providersInfo, lastLogin)
     }
   }
 
@@ -544,6 +552,9 @@ class UserManagementApiImpl(
       .withFieldComputed(_.authz, s => JsonRights(s.authz.toSet))
       .withFieldComputed(_.roles, getDiplayPermissions(_))
       .withFieldComputed(_.rolesCoverage, getDiplayPermissions(_))
+      .withFieldConst(_.name, userInfo.name)
+      .withFieldConst(_.email, userInfo.email)
+      .withFieldConst(_.otherInfo, userInfo.otherInfo)
       .withFieldConst(_.status, userInfo.status)
       .withFieldConst(_.providers, List(userInfo.managedBy))
       .withFieldComputed(
@@ -559,6 +570,7 @@ class UserManagementApiImpl(
           )
         }
       )
+      .withFieldComputed(_.lastLogin, s => Some(s.creationDate))
       .withFieldConst(_.customRights, JsonRights.empty)
       .buildTransformer
   }
@@ -579,7 +591,9 @@ class UserManagementApiImpl(
           RudderUserDetail(RudderAccount.User(userInfo.id, ""), userInfo.status, Set(), ApiAuthorization.None)
         transformUser(
           defaultUser,
-          Map(userInfo.managedBy -> JsonProviderInfo.fromUser(defaultUser, userInfo.managedBy))
+          userInfo,
+          Map(userInfo.managedBy -> JsonProviderInfo.fromUser(defaultUser, userInfo.managedBy)),
+          lastSession.map(_.creationDate)
         )
       }
       case Some(userSession) => {

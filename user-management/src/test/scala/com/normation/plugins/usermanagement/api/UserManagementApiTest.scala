@@ -9,7 +9,9 @@ import com.normation.rudder.rest.AuthorizationApiMapping
 import com.normation.rudder.rest.ExtensibleAuthorizationApiMapping
 import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.rudder.users.SessionId
 import com.normation.rudder.users.UserInfo
+import com.normation.rudder.users.UserSession
 import com.normation.rudder.users.UserStatus
 import java.nio.file.Files
 import net.liftweb.common.Loggable
@@ -41,11 +43,11 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
         DateTime.parse("2024-02-01T01:01:01Z"),
         UserStatus.Disabled,
         "manager",
-        None,
-        None,
+        Some("User 3"),
+        Some("user3@example.com"),
         None,
         List.empty,
-        Json.Obj()
+        Json.Obj("some" -> Json.Str("value"))
       ),
       UserInfo(
         "user2",
@@ -69,6 +71,9 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
         List.empty,
         Json.Obj()
       )
+    ),
+    List(
+      UserSession("user2", SessionId("s2"), DateTime.parse("2024-02-29T00:00:00Z"), "file", List.empty, List.empty, None, None)
     ),
     testUserFile
   )
