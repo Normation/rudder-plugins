@@ -17,4 +17,5 @@ type Msg =
 
   | GetDataSources (Result Error (List DataSource))
   | SaveDataSource (Result Error DataSource)
+  | OpenDeleteModal DataSource
   | DeleteDataSource (Result Error String)
