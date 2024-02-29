@@ -27,15 +27,6 @@ is optional and can be disabled at any time without any problem, besides risking
 image::docs/images/Enabling.png[]
 
 
-== Rudder compatibility and breaking changes
-
-=== Version 5.0-1.1 needs Rudder 5.0.1 or above
-
-The problem was that on some condition, the change request was not saved in the correct data back-end: it was using the Rudder one in place of the plugin one.
-
-- Rudder ticket: https://issues.rudder.io/issues/13609
-- Plugin ticket: https://issues.rudder.io/issues/13630
-
 
 == What is a Change request ?
 
