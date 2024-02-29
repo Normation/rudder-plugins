@@ -280,7 +280,7 @@ class UserManagementService(
   /*
    * This method will mostly interact with DB in the future.
    */
-  def update(currentUser: String, newUser: User, isPreHashed: Boolean): IOResult[Unit] = {
+  def update(currentUser: String, updateUser: UpdateUser, isPreHashed: Boolean): IOResult[Unit] = {
     for {
       file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
@@ -291,15 +291,15 @@ class UserManagementService(
                         case user: Elem if (user \ "@name").text == currentUser =>
                           // for each user's parameters, if a new user's parameter is empty we decide to keep the original one
                           val newRoles    = {
-                            if (newUser.permissions.isEmpty) ((user \ "@role") ++ (user \ "@permissions")).text.split(",").toSet
-                            else newUser.permissions
+                            if (updateUser.permissions.isEmpty) ((user \ "@role") ++ (user \ "@permissions")).text.split(",").toSet
+                            else updateUser.permissions
                           }
-                          val newUsername = if (newUser.username.isEmpty) currentUser else newUser.username
-                          val newPassword = if (newUser.password.isEmpty) {
+                          val newUsername = if (updateUser.username.isEmpty) currentUser else updateUser.username
+                          val newPassword = if (updateUser.password.isEmpty) {
                             (user \ "@password").text
                           } else {
-                            if (isPreHashed) newUser.password
-                            else getHash((userXML \\ "authentication" \ "@hash").text).encode(newUser.password)
+                            if (isPreHashed) updateUser.password
+                            else getHash((userXML \\ "authentication" \ "@hash").text).encode(updateUser.password)
                           }
 
                           User(newUsername, newPassword, newRoles).toNode
@@ -309,6 +309,13 @@ class UserManagementService(
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
       _          <- userService.reloadPure()
+      // always update fields, at worst they will be updated with an empty value
+      _          <- userRepository.updateInfo(
+                      currentUser,
+                      Some(updateUser.name),
+                      Some(updateUser.email),
+                      updateUser.otherInfo
+                    )
     } yield ()
   }
 

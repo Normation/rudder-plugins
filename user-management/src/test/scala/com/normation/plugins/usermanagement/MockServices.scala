@@ -19,7 +19,7 @@ import zio.ZIO
 import zio.json.ast.Json
 import zio.syntax._
 
-class MockServices(userInfos: List[UserInfo], usersFile: File) {
+class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], usersFile: File) {
 
   object userRepo extends UserRepository {
 
@@ -37,7 +37,7 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
     override def closeAllOpenSession(endDate: DateTime, endCause: String): IOResult[Unit] = ???
 
     override def getLastPreviousLogin(userId: String): IOResult[Option[UserSession]] = {
-      ZIO.none
+      userSessions.find(_.userId == userId).succeed
     }
 
     override def deleteOldSessions(olderThan: DateTime): IOResult[Unit] = ???
@@ -78,7 +78,9 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
         name:      Option[Option[String]],
         email:     Option[Option[String]],
         otherInfo: Option[Json.Obj]
-    ): IOResult[Unit] = ???
+    ): IOResult[Unit] = {
+      ZIO.unit
+    }
 
     override def getAll(): IOResult[List[UserInfo]] = userInfos.succeed
 

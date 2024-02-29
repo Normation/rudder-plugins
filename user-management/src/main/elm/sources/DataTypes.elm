@@ -27,6 +27,9 @@ type alias Role =
 
 type alias User =
     { login : String
+    , name : String
+    , email : String
+    , otherInfo : Dict String String
     , status : UserStatus
     , authz : List String
     , roles : List String
@@ -34,6 +37,7 @@ type alias User =
     , customRights : List String
     , providers : List String
     , providersInfo : ProvidersInfo
+    , lastLogin : Maybe String
     }
 
 type UserStatus = 
@@ -46,6 +50,9 @@ type alias NewUser =
     { login : String
     , authz : List String
     , roles : List String
+    , name : String
+    , email : String
+    , otherInfo : Dict String String
     }
 
 type alias ProviderProperties = 
@@ -139,7 +146,21 @@ type PanelMode
 
 type StateInput
     = InvalidUsername
+    | InvalidNewUserInfoField
     | ValidInputs
+
+type alias UserForm =
+    { login : String
+    , password : String
+    , isHashedPasswd : Bool
+    , userForcePasswdInput : Bool
+    , rolesToAddOnSave : List String
+    , name : String
+    , email : String
+    , otherInfo : Dict String String
+    , newUserInfoFields : List (String, String)
+    , isValidInput : StateInput
+    }
 
 type alias Model =
     { contextPath : String
@@ -149,17 +170,17 @@ type alias Model =
     , rolesConf : RoleConf  -- from API
     , roleListOverride: RoleListOverride
     , toasties : Toasty.Stack Toasty.Defaults.Toast
-    , panelMode : PanelMode
-    , password : String
-    , login : String
-    , isHashedPasswd : Bool
-    , isValidInput : StateInput
-    , rolesToAddOnSave : List String
+    , userForm : UserForm
+    , ui : UI
     , providers : List String
     , providersProperties: Dict String ProviderProperties
-    , userForcePasswdInput : Bool
+    }
+
+type alias UI = 
+    { panelMode : PanelMode
     , openDeleteModal : Bool
     }
+
 
 type Msg
     = GetUserInfo (Result Error UsersConf)
@@ -178,6 +199,15 @@ type Msg
     | Login String
     | AddRole String
     | RemoveRole User Provider String
+    | NewUserInfoFieldKey String Int
+    | NewUserInfoFieldValue String Int
+    | AddUserInfoField
+    | ModifyUserInfoField String String
+    | RemoveNewUserInfoField Int
+    | RemoveUserInfoField String
+    | UserInfoName String
+    | UserInfoEmail String
+    | UserInfoFields (Dict String String)
     | ActivateUser Username
     | DisableUser Username
     | SubmitUpdatedInfos NewUser
@@ -191,3 +221,9 @@ type Msg
       -- NOTIFICATIONS
     | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
     | Notification (Toasty.Msg Toasty.Defaults.Toast)
+
+
+mergeUserNewInfo : UserForm -> Dict String String
+mergeUserNewInfo userForm =
+    Dict.fromList (Dict.toList userForm.otherInfo ++ userForm.newUserInfoFields)
+    |> Dict.remove "" -- empty fields are invalid, we remove them for now but they may be used for explicit errors later

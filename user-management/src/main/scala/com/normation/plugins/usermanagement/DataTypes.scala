@@ -42,11 +42,14 @@ import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
 import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserStatus
+import com.normation.utils.DateFormaterService
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl._
 import net.liftweb.common.Logger
+import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import zio.json._
+import zio.json.ast.Json
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -55,8 +58,18 @@ object UserManagementLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("usermanagement")
 }
 
+final case class UpdateUser(
+    username:    String,
+    password:    String,
+    permissions: Set[String],
+    name:        Option[String],
+    email:       Option[String],
+    otherInfo:   Option[Json.Obj]
+)
+
 object Serialisation {
 
+  implicit val dateTime:          JsonEncoder[DateTime]   = JsonEncoder[String].contramap(DateFormaterService.serialize)
   implicit val userStatusEncoder: JsonEncoder[UserStatus] = JsonEncoder[String].contramap(_.value)
 
   implicit val jsonUserFormDataDecoder:       JsonDecoder[JsonUserFormData]       = DeriveJsonDecoder.gen[JsonUserFormData]
@@ -164,28 +177,29 @@ object JsonProviderInfo {
   }
 }
 
-/**
-  * @param id The identifier/username
-  * @param authz All authorizations for the user
-  * @param permissions All role names for the user
-  * @param rolesCoverage All roles names that are inferred from all authz of the user
-  * @param customRights All custom rights for the user
-  */
 final case class JsonUser(
     @jsonField("login") id:          String,
+    name:                            Option[String],
+    email:                           Option[String],
+    otherInfo:                       Json.Obj,
     status:                          UserStatus,
     authz:                           JsonRights,
     @jsonField("permissions") roles: JsonRoles,
     rolesCoverage:                   JsonRoles,
     customRights:                    JsonRights,
     providers:                       List[String],
-    providersInfo:                   Map[String, JsonProviderInfo]
+    providersInfo:                   Map[String, JsonProviderInfo],
+    lastLogin:                       Option[DateTime]
 ) {
   def merge(providerInfo: JsonProviderInfo): JsonUser = {
     JsonUser(
       id,
+      name,
+      email,
+      otherInfo,
       status,
-      providersInfo + (providerInfo.provider -> providerInfo)
+      providersInfo + (providerInfo.provider -> providerInfo),
+      lastLogin
     )
   }
 
@@ -221,67 +235,83 @@ final case class JsonUser(
 object JsonUser {
   implicit private[JsonUser] val roleTransformer: Transformer[Role, String] = _.name
 
-  def noRights(username: String, status: UserStatus, providersInfo: Map[String, JsonProviderInfo]):  JsonUser = {
+  def noRights(
+      username:      String,
+      name:          Option[String],
+      email:         Option[String],
+      otherInfo:     Json.Obj,
+      status:        UserStatus,
+      providersInfo: Map[String, JsonProviderInfo],
+      lastLogin:     Option[DateTime]
+  ): JsonUser = {
     JsonUser(
       username,
+      name,
+      email,
+      otherInfo,
       status,
       JsonRights.empty,
       JsonRoles.empty,
       JsonRoles.empty,
       JsonRights.empty,
       providersInfo.keys.toList,
-      providersInfo
+      providersInfo,
+      lastLogin
     )
   }
-  def anyRights(username: String, status: UserStatus, providersInfo: Map[String, JsonProviderInfo]): JsonUser = {
+  def anyRights(
+      username:      String,
+      name:          Option[String],
+      email:         Option[String],
+      otherInfo:     Json.Obj,
+      status:        UserStatus,
+      providersInfo: Map[String, JsonProviderInfo],
+      lastLogin:     Option[DateTime]
+  ): JsonUser = {
     JsonUser(
       username,
+      name,
+      email,
+      otherInfo,
       status,
       JsonRights.AnyRights,
       JsonRoles(Set(Role.Administrator.name)),
       JsonRoles(Set(Role.Administrator.name)),
       JsonRights.empty,
       providersInfo.keys.toList,
-      providersInfo
-    )
-  }
-
-  def fromUser(u: RudderUserDetail, providersInfo: Map[String, JsonProviderInfo])(implicit allRoles: Set[Role]): JsonUser = {
-    val (allUserRoles, customUserRights) = {
-      UserManagementService
-        .computeRoleCoverage(allRoles, u.authz.authorizationTypes)
-        .getOrElse(Set.empty)
-        .partitionMap {
-          case Custom(customRights) => Right(customRights.authorizationTypes)
-          case r                    => Left(r)
-        }
-    }
-
-    // custom anonymous roles and permissions are already inside roleCoverage and customRights fields
-    val roles = u.roles.filter {
-      case _: Custom => false
-      case _ => true
-    }.map(_.name)
-
-    JsonUser(
-      u.getUsername,
-      u.status,
-      u.authz.transformInto[JsonRights],
-      JsonRoles(roles),
-      JsonRoles(allUserRoles.map(_.name)),
-      Rights(customUserRights.flatten).transformInto[JsonRights],
-      providersInfo.keys.toList,
-      providersInfo
+      providersInfo,
+      lastLogin
     )
   }
 
   // Main constructor which aggregates providers info to merge all serialized roles and authz
-  def apply(id: String, status: UserStatus, providersInfo: Map[String, JsonProviderInfo]): JsonUser = {
+  def apply(
+      id:            String,
+      name:          Option[String],
+      email:         Option[String],
+      otherInfo:     Json.Obj,
+      status:        UserStatus,
+      providersInfo: Map[String, JsonProviderInfo],
+      lastLogin:     Option[DateTime]
+  ): JsonUser = {
     val authz        = providersInfo.values.map(_.authz).foldLeft(JsonRights.empty)(_ ++ _)
     val roles        = providersInfo.values.map(_.roles).foldLeft(JsonRoles.empty)(_ ++ _)
     val customRights = providersInfo.values.map(_.customRights).foldLeft(JsonRights.empty)(_ ++ _)
 
-    JsonUser(id, status, authz, roles, roles, customRights, providersInfo.keys.toList, providersInfo)
+    JsonUser(
+      id,
+      name,
+      email,
+      otherInfo,
+      status,
+      authz,
+      roles,
+      roles,
+      customRights,
+      providersInfo.keys.toList,
+      providersInfo,
+      lastLogin
+    )
   }
 }
 
@@ -342,11 +372,15 @@ final case class JsonUserFormData(
     username:    String,
     password:    String,
     permissions: List[String],
-    isPreHashed: Boolean
+    isPreHashed: Boolean,
+    name:        Option[String],
+    email:       Option[String],
+    otherInfo:   Option[Json.Obj]
 )
 
 object JsonUserFormData {
-  implicit val transformer: Transformer[JsonUserFormData, User] = Transformer.derive[JsonUserFormData, User]
+  implicit val transformer:           Transformer[JsonUserFormData, User]       = Transformer.derive[JsonUserFormData, User]
+  implicit val transformerUpdateUser: Transformer[JsonUserFormData, UpdateUser] = Transformer.derive[JsonUserFormData, UpdateUser]
 }
 
 final case class JsonCoverage(
