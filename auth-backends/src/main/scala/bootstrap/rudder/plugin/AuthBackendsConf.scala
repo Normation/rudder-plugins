@@ -654,10 +654,11 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       }
       .toList
 
+    val apiAuthz    = ApiAuthorization.ACL(acls)
     val userDetails = rudder
-      .copy(roles = roles, apiAuthz = ApiAuthorization.ACL(acls))
+      .copy(roles = roles, apiAuthz = apiAuthz)
     AuthBackendsLogger.debug(
-      s"Principal '${rudder.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${userDetails.apiAuthz}"
+      s"Principal '${rudder.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${apiAuthz.debugString}"
     )
     // we need to update roles in all cases
     userBuilder(user, userDetails)
