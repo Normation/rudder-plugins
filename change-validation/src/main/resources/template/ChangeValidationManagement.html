@@ -182,36 +182,37 @@ data-lift="with-cached-resource">
 	    </div>
 	  </div>
 	</div>
-	<div>
-	  <h3 class="page-title">Configure change request triggers</h3>
-	  <div>
-	    <p>
-	      By default, change request are created for all users. You can change when a change request
-	      is created with below options:
-	    </p>
-	    <ul>
-	      <li>exempt some users from validation;</li>
-	      <li>trigger change request only for changes impacting nodes belonging to some supervised groups;
-	      </li>
-	    </ul>
-	    <p>Be careful: a change request is created when <b>at least one</b> predicate matches, so an
-	      exempted user
-	      still need a change request to modify a node from a supervised group.
-	    </p>
-	  </div>
-	  <h3 class="page-subtitle">Configure users with change validation</h3>
-	  <div class="section-with-doc">
-	    <div class="section-left">
-	      <div id="WorkflowUsers-app">
-		<div id="validated-users-management"></div>
-	      </div>
-	    </div>
-	    <div class="section-right">
-	      <div class="doc doc-info">
-		<div class="marker">
-		  <span class="fa fa-info-circle"></span>
-		</div>
-		<p>
+
+                <div>
+                  <h3 class="page-title">Configure change request triggers</h3>
+                  <div>
+                    <p>
+                      By default, change request are created for all users. You can change when a change request
+                      is created with below options:
+                    </p>
+                    <ul>
+                      <li>exempt some users from validation;</li>
+                      <li>trigger change request only for changes impacting nodes belonging to some supervised groups;
+                      </li>
+                    </ul>
+                    <p>Be careful: a change request is created when <b>at least one</b> predicate matches, so an
+                      exempted user
+                      still need a change request to modify a node from a supervised group.
+                    </p>
+                  </div>
+                  <h3 class="page-subtitle">Configure users with change validation</h3>
+                  <div class="section-with-doc">
+                    <div class="section-left">
+                      <div id="WorkflowUsers-app">
+                        <div id="validated-users-management"></div>
+                      </div>
+                    </div>
+                    <div class="section-right">
+                      <div class="doc doc-info">
+                        <div class="marker">
+                          <span class="fa fa-info-circle"></span>
+                        </div>
+                        <p>
                           Any change done by a validated user will be automatically deployed without validation needed
                           by another user.
                         </p>
