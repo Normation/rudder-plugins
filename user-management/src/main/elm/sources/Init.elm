@@ -15,7 +15,7 @@ subscriptions model =
 init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
-        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] None Toasty.initialState Closed "" "" True ValidInputs [] [] False False
+        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] None Toasty.initialState Closed "" "" True ValidInputs [] [] Dict.empty False False
     in
     ( initModel
     , getUsersConf initModel

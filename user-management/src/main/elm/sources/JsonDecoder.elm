@@ -1,8 +1,11 @@
 module JsonDecoder exposing (..)
 
-import DataTypes exposing (Role, RoleConf, RoleListOverride(..), User, UsersConf)
+import DataTypes exposing (Role, RoleConf, RoleListOverride(..), User, UserStatus(..), UsersConf)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import DataTypes exposing (ProviderInfo)
+import DataTypes exposing (ProvidersInfo)
+import DataTypes exposing (ProviderProperties)
 
 decodeApiReloadResult : Decoder String
 decodeApiReloadResult =
@@ -24,7 +27,14 @@ decodeCurrentUsersConf =
         |> required "digest" D.string
         |> required "roleListOverride" decodeRoleListOverride
         |> required "authenticationBackends" (D.list <| D.string)
+        |> required "providerProperties" (D.dict decodeProviderProperties)
         |> required "users" (D.list <| decodeUser)
+
+decodeProviderProperties : Decoder ProviderProperties
+decodeProviderProperties =
+    D.succeed ProviderProperties
+        |> required "roleListOverride" decodeRoleListOverride
+        |> required "hasModifiablePassword" D.bool
 
 decodeRoleListOverride : Decoder RoleListOverride
 decodeRoleListOverride =
@@ -36,15 +46,40 @@ decodeRoleListOverride =
         _          -> D.succeed None
     )
 
+decodeProviderInfo : Decoder ProviderInfo
+decodeProviderInfo =
+    D.succeed ProviderInfo
+        |> required "provider" D.string
+        |> required "authz" (D.list <| D.string)
+        |> required "roles" (D.list <| D.string)
+        |> required "customRights" (D.list <| D.string)
+
+-- Decode dict of providers info, the key is the provider
+decodeProvidersInfo : Decoder ProvidersInfo
+decodeProvidersInfo =
+    D.dict decodeProviderInfo
 
 decodeUser : Decoder User
 decodeUser =
     D.succeed User
         |> required "login" D.string
+        |> required "status" decodeUserStatus
         |> required "authz" (D.list <| D.string)
         |> required "permissions" (D.list <| D.string)
         |> required "rolesCoverage" (D.list <| D.string)
         |> required "customRights" (D.list <| D.string)
+        |> required "providers" (D.list <| D.string)
+        |> required "providersInfo" decodeProvidersInfo
+
+decodeUserStatus : Decoder UserStatus
+decodeUserStatus =
+    D.string |> D.andThen
+    (\str ->
+      case str of
+        "active"   -> D.succeed Active
+        "disabled" -> D.succeed Disabled
+        _          -> D.succeed Deleted
+    )
 
 decodeApiAddUserResult : Decoder String
 decodeApiAddUserResult =
@@ -70,6 +105,13 @@ decodeDeletedUser : Decoder String
 decodeDeletedUser =
     D.at [ "deletedUser" ] (D.at [ "username" ] D.string)
 
+decodeApiStatusResult : Decoder String
+decodeApiStatusResult =
+    D.at [ "data" ] decodeStatus
+
+decodeStatus : Decoder String
+decodeStatus =
+    D.at [ "status" ] D.string
 decodeRole : Decoder Role
 decodeRole =
     D.succeed Role

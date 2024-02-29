@@ -6,10 +6,12 @@ module ApiCalls exposing (..)
 -- API call to get the category tree
 
 
-import DataTypes exposing (AddUserForm, Model, Msg(..))
+import DataTypes exposing (AddUserForm, Model, Msg(..), Username)
 import Http exposing (emptyBody, expectJson, jsonBody, request, send)
 import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiUpdateUserResult, decodeGetRoleApiResult)
 import JsonEncoder exposing (encodeAddUser)
+import JsonDecoder exposing (decodeApiStatusResult)
+import Json.Decode as Decode
 
 getUrl: DataTypes.Model -> String -> String
 getUrl m url =
@@ -95,6 +97,38 @@ updateUser model toUpdate userForm =
                 }
     in
     send UpdateUser req
+
+activateUser : Model -> Username -> Cmd Msg
+activateUser model username =
+    let
+        req =
+            request
+                { method          = "PUT"
+                , headers         = []
+                , url             = getUrl model ("/usermanagement/status/activate/" ++ username)
+                , body            = emptyBody
+                , expect          = expectJson (Decode.map (\_ -> username) decodeApiStatusResult)
+                , timeout         = Nothing
+                , withCredentials = False
+                }
+    in
+    send UpdateUserStatus req
+
+disableUser : Model -> Username -> Cmd Msg
+disableUser model username =
+    let
+        req =
+            request
+                { method          = "PUT"
+                , headers         = []
+                , url             = getUrl model ("/usermanagement/status/disable/" ++ username)
+                , body            = emptyBody
+                , expect          = expectJson (Decode.map (\_ -> username) decodeApiStatusResult)
+                , timeout         = Nothing
+                , withCredentials = False
+                }
+    in
+    send UpdateUserStatus req
 
 getRoleConf : Model -> Cmd Msg
 getRoleConf model =

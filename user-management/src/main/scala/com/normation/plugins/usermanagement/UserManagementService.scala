@@ -2,6 +2,7 @@ package com.normation.plugins.usermanagement
 
 import better.files.Dsl.SymbolicOperations
 import better.files.File
+import bootstrap.liftweb.FileUserDetailListProvider
 import bootstrap.liftweb.PasswordEncoder
 import bootstrap.liftweb.UserFile
 import bootstrap.liftweb.UserFileProcessing
@@ -131,6 +132,30 @@ object UserManagementService {
     }
   }
 
+  /**
+   * Parse a list of permissions and split it so that we have a representation of users permissions as :
+   * - a set of roles that could be parsed from the permissions
+   * - a minimal set of authorization types that are complementary to roles and not present yet in the set of roles
+   * - a set of unknown permissions that could neither parsed as roles nor authorization types
+   */
+  def parsePermissions(
+      permissions:     Set[String]
+  )(implicit allRoles: Set[Role]): (Set[Role], Set[AuthorizationType], Set[String]) = {
+    // Everything that is not a role is an authz and remaining authz are put into custom role
+    val allRolesByName     = allRoles.map(r => r.name -> r).toMap
+    val (remaining, roles) = permissions.partitionMap(r => allRolesByName.get(r).toRight(r))
+    val allRoleAuthz       = roles.flatMap(_.rights.authorizationTypes)
+    val (unknowns, authzs) = remaining.partitionMap(a => {
+      AuthorizationType
+        .parseRight(a)
+        .map(_.filter(!allRoleAuthz.contains(_)))
+        .left
+        .map(_ => a)
+    })
+
+    (roles, authzs.flatten, unknowns)
+  }
+
   def computeRoleCoverage(roles: Set[Role], authzs: Set[AuthorizationType]): Option[Set[Role]] = {
 
     def compareRights(r: Role, as: Set[AuthorizationType]): Option[Role] = {
@@ -193,7 +218,11 @@ object UserManagementService {
 
 }
 
-class UserManagementService(userRepository: UserRepository, getUserResourceFile: IOResult[UserFile]) {
+class UserManagementService(
+    userRepository:      UserRepository,
+    userService:         FileUserDetailListProvider,
+    getUserResourceFile: IOResult[UserFile]
+) {
   import UserManagementService._
 
   /*
@@ -222,14 +251,15 @@ class UserManagementService(userRepository: UserRepository, getUserResourceFile:
                       case _ =>
                         Unexpected(s"Wrong formatting : ${file.path}").fail
                     }
+      _          <- userService.reloadPure()
     } yield user
   }
 
   /*
    * When we delete an user, it can be from file or auto-added by OIDC or other backend supporting that.
-   * So we need to both remove it (mark "status=delete") from base and from file.
+   * So we let the callback on file reload do the deletion for file users, and then delete from the user repository.
    */
-  def remove(toDelete: String, actor: EventActor): IOResult[Unit] = {
+  def remove(toDelete: String, actor: EventActor, reason: String): IOResult[Unit] = {
     for {
       file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
@@ -242,7 +272,8 @@ class UserManagementService(userRepository: UserRepository, getUserResourceFile:
                       }
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
-      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now()))
+      _          <- userService.reloadPure()
+      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now(), reason))
     } yield ()
   }
 
@@ -277,6 +308,7 @@ class UserManagementService(userRepository: UserRepository, getUserResourceFile:
                       }
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
+      _          <- userService.reloadPure()
     } yield ()
   }
 
