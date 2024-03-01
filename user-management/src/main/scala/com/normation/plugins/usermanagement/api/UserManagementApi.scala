@@ -41,6 +41,7 @@ import bootstrap.liftweb.AuthBackendProvidersManager
 import bootstrap.liftweb.DefaultAuthBackendProvider
 import bootstrap.liftweb.FileUserDetailListProvider
 import bootstrap.liftweb.PasswordEncoder
+import bootstrap.liftweb.ProviderRoleExtension
 import com.normation.errors._
 import com.normation.plugins.usermanagement.JsonAddedUser
 import com.normation.plugins.usermanagement.JsonAuthConfig
@@ -48,7 +49,6 @@ import com.normation.plugins.usermanagement.JsonCoverage
 import com.normation.plugins.usermanagement.JsonDeletedUser
 import com.normation.plugins.usermanagement.JsonProviderInfo
 import com.normation.plugins.usermanagement.JsonProviderProperty
-import com.normation.plugins.usermanagement.JsonProviderRolesCapacity
 import com.normation.plugins.usermanagement.JsonReloadResult
 import com.normation.plugins.usermanagement.JsonRights
 import com.normation.plugins.usermanagement.JsonRole
@@ -56,10 +56,12 @@ import com.normation.plugins.usermanagement.JsonRoleAuthorizations
 import com.normation.plugins.usermanagement.JsonRoles
 import com.normation.plugins.usermanagement.JsonStatus
 import com.normation.plugins.usermanagement.JsonUpdatedUser
+import com.normation.plugins.usermanagement.JsonUpdatedUserInfo
 import com.normation.plugins.usermanagement.JsonUser
 import com.normation.plugins.usermanagement.JsonUserFormData
 import com.normation.plugins.usermanagement.Serialisation._
-import com.normation.plugins.usermanagement.UpdateUser
+import com.normation.plugins.usermanagement.UpdateUserFile
+import com.normation.plugins.usermanagement.UpdateUserInfo
 import com.normation.plugins.usermanagement.User
 import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.rudder.AuthorizationType
@@ -150,10 +152,18 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     override def dataContainer: Option[String] = None
   }
 
-  final case object UpdateUserInfos extends UserManagementApi with OneParam with StartsAtVersion10 {
+  final case object UpdateUser extends UserManagementApi with OneParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
-    val description    = "Update user's infos"
+    val description    = "Update user's administration fields"
     val (action, path) = POST / "usermanagement" / "update" / "{username}"
+
+    override def dataContainer: Option[String] = None
+  }
+
+  final case object UpdateUserInfo extends UserManagementApi with OneParam with StartsAtVersion10 {
+    val z              = implicitly[Line].value
+    val description    = "Update user's information"
+    val (action, path) = POST / "usermanagement" / "update" / "info" / "{username}"
 
     override def dataContainer: Option[String] = None
   }
@@ -202,7 +212,8 @@ class UserManagementApiImpl(
       case UserManagementApi.ReloadUsersConf => ReloadUsersConf
       case UserManagementApi.AddUser         => AddUser
       case UserManagementApi.DeleteUser      => DeleteUser
-      case UserManagementApi.UpdateUserInfos => UpdateUserInfos
+      case UserManagementApi.UpdateUser      => UpdateUser
+      case UserManagementApi.UpdateUserInfo  => UpdateUserInfo
       case UserManagementApi.ActivateUser    => ActivateUser
       case UserManagementApi.DisableUser     => DisableUser
       case UserManagementApi.RoleCoverage    => RoleCoverage
@@ -226,9 +237,30 @@ class UserManagementApiImpl(
           ZIO
             .foreach(users)(u => {
               implicit val currentRoles: Set[Role] = roles
-              userRepo.getLastPreviousLogin(u.id).map { lastSession =>
+              // we take last session to get last known roles and authz of the user
+              // we need to merge at the level of JsonUser because last session roles are just String
+              userRepo.getLastPreviousLogin(u.id, false).map { lastSession =>
+                // depending on provider property configuration, we should merge or override roles
+                val providerProperties        = authProvider.getProviderProperties()
+                val mainProviderRoleExtension = providerProperties.get(u.managedBy).map(_.providerRoleExtension)
+
+                val defaultUser            =
+                  RudderUserDetail(RudderAccount.User(u.id, ""), u.status, Set(), ApiAuthorization.None)
+                val userWithoutPermissions = transformUser(
+                  defaultUser,
+                  u,
+                  Map(u.managedBy -> JsonProviderInfo.fromUser(defaultUser, u.managedBy)),
+                  lastSession.map(_.creationDate)
+                )
+
                 file.users.get(u.id) match {
-                  case None    => transformProvidedUser(u, lastSession)
+                  case None    => {
+                    // we still need to consider one role extension case : if provider cannot define roles, user cannot have any role
+                    mainProviderRoleExtension match {
+                      case Some(ProviderRoleExtension.None) => userWithoutPermissions
+                      case _                                => transformProvidedUser(u, lastSession)
+                    }
+                  }
                   case Some(x) => {
                     // we need to update the status to the latest one from database
                     val currentUserDetails = x.copy(status = u.status)
@@ -244,19 +276,26 @@ class UserManagementApiImpl(
                         lastSession.map(_.creationDate)
                       ).withRoleCoverage(currentUserDetails)
                     } else {
-
                       // we need to merge the two users, the one from the file and the one from the session
-                      // depending on provider property configuration, we should merge or override roles, by default merge
-                      val providerProperties = authProvider.getProviderProperties()
-                      val overrideRoles      = providerProperties.get(u.managedBy).map(_.overridesRoles).getOrElse(false)
-                      // merge at the level of JsonUser because last session roles are just String
-                      val providedUser       = transformProvidedUser(u, lastSession)
-                      if (overrideRoles) {
-                        providedUser.addProviderInfo(fileProviderInfo)
-                      } else {
-                        providedUser.merge(fileProviderInfo).withRoleCoverage(x)
+                      mainProviderRoleExtension match {
+                        case Some(ProviderRoleExtension.WithOverride) =>
+                          // Do not recompute roles nor roles coverage, because file roles are overriden by provider roles
+                          transformProvidedUser(u, lastSession).addProviderInfo(fileProviderInfo)
+                        case Some(ProviderRoleExtension.NoOverride)   =>
+                          // Merge the previous session roles with the file roles and recompute role coverage over the merge result
+                          transformProvidedUser(u, lastSession).merge(fileProviderInfo).withRoleCoverage(currentUserDetails)
+                        case Some(ProviderRoleExtension.None)         =>
+                          // Ignore the session roles which may have previously been saved with another role extension mode
+                          userWithoutPermissions.merge(fileProviderInfo).withRoleCoverage(currentUserDetails)
+                        case None                                     =>
+                          // Provider no longer known, fallback to file provider
+                          transformUser(
+                            currentUserDetails,
+                            u,
+                            Map(fileProviderInfo.provider -> fileProviderInfo),
+                            lastSession.map(_.creationDate)
+                          ).withRoleCoverage(currentUserDetails)
                       }
-
                     }
                   }
                 }
@@ -315,14 +354,16 @@ class UserManagementApiImpl(
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
       (for {
-        user  <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
-        _     <- ZIO.when(userService.authConfig.users.keySet contains user.username) {
-                   Inconsistency(s"User '${user.username}' already exists").fail
-                 }
-        added <- userManagementService.add(user.transformInto[User], user.isPreHashed)
-
+        user <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
+        _    <- ZIO.when(userService.authConfig.users.keySet contains user.username) {
+                  Inconsistency(s"User '${user.username}' already exists").fail
+                }
+        _    <-
+          userManagementService
+            .add(user.transformInto[User], user.isPreHashed)
+        _    <- userManagementService.updateInfo(user.username, user.transformInto[UpdateUserInfo])
       } yield {
-        added.transformInto[JsonAddedUser]
+        user.transformInto[JsonAddedUser]
       }).chainError("Could not add user").toLiftResponseOne(params, schema, _ => None)
     }
   }
@@ -347,8 +388,8 @@ class UserManagementApiImpl(
     }
   }
 
-  object UpdateUserInfos extends LiftApiModule {
-    val schema = UserManagementApi.UpdateUserInfos
+  object UpdateUser extends LiftApiModule {
+    val schema = UserManagementApi.UpdateUser
 
     def process(
         version:    ApiVersion,
@@ -359,43 +400,36 @@ class UserManagementApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        u              <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
-        user            = u.copy(permissions = u.permissions.filter(_ != AuthorizationType.NoRights.id))
-        allRoles       <- RudderRoles.getAllRoles
-        checkExistence <- if (!(userService.authConfig.users.keySet contains id)) {
-                            // we may have users that where added by other providers, and still want to add them in file if the providers allows extending
-                            userRepo.get(id).flatMap {
-                              case Some(u) =>
-                                authProvider
-                                  .getProviderProperties()
-                                  .get(u.managedBy)
-                                  .map(_.extendsRoles)
-                                  .map {
-                                    case true  =>
-                                      implicit val currentRoles   = allRoles.values.toSet
-                                      // Unknown permissions are trusted and put in file
-                                      val (roles, authz, unknown) = UserManagementService.parsePermissions(user.permissions.toSet)
-                                      userManagementService
-                                        .add(User(u.id, "", roles.map(_.name) ++ authz.map(_.id) ++ unknown), user.isPreHashed)
-                                    case false =>
-                                      Inconsistency(
-                                        s"Roles of user '$id' cannot be extended by provider '${u.managedBy}' because how the provider was configured"
-                                      ).fail
-                                  }
-                                  .getOrElse(
-                                    Inconsistency(
-                                      s"User '$id' is not managed by a file provider, and provider '${u.managedBy}' is not correctly registered"
-                                    ).fail
-                                  )
-
-                              case None => Inconsistency(s"'$id' does not exists").fail
-                            }
-                          } else {
-                            userManagementService.update(id, user.transformInto[UpdateUser], user.isPreHashed)
-                          }
+        u        <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO // We ignore the "user info" part of the request
+        user      = u.copy(permissions = u.permissions.filter(_ != AuthorizationType.NoRights.id))
+        allRoles <- RudderRoles.getAllRoles
+        _        <-
+          userManagementService.update(id, user.transformInto[UpdateUserFile], user.isPreHashed)(
+            allRoles
+          )
       } yield {
         user.transformInto[User].transformInto[JsonUpdatedUser]
-      }).chainError(s"Could not update user '$id'").toLiftResponseOne(params, schema, _ => None)
+      }).chainError(s"Could not update user '${id}'").toLiftResponseOne(params, schema, _ => None)
+    }
+  }
+
+  object UpdateUserInfo extends LiftApiModule {
+    val schema = UserManagementApi.UpdateUserInfo
+
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        id:         String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
+      (for {
+        u <- ZioJsonExtractor.parseJson[UpdateUserInfo](req).toIO
+        _ <- userManagementService.updateInfo(id, u)
+      } yield {
+        u.transformInto[JsonUpdatedUserInfo]
+      }).chainError(s"Could not update user '${id}' information").toLiftResponseOne(params, schema, _ => Some(id))
     }
   }
 
@@ -501,20 +535,8 @@ class UserManagementApiImpl(
     val authBackendsProvider = authProviderManager.getConfiguredProviders().map(_.name).toSet
 
     // Aggregate all provider properties, if any provider can override user roles then it means there is a global override
-    val roleListOverride    = if (providerProperties.values.exists(_.overridesRoles)) {
-      JsonProviderRolesCapacity.Override
-    } else {
-      JsonProviderRolesCapacity.None
-    }
-    val providersProperties = providerProperties.view.mapValues {
-      case p =>
-        val rolesListOverride: JsonProviderRolesCapacity = {
-          if (p.overridesRoles) JsonProviderRolesCapacity.Override
-          else if (p.extendsRoles) JsonProviderRolesCapacity.Extend
-          else JsonProviderRolesCapacity.None
-        }
-        JsonProviderProperty(rolesListOverride, p.hasModifiablePassword)
-    }.toMap
+    val roleListOverride    = providerProperties.values.max.providerRoleExtension
+    val providersProperties = providerProperties.view.mapValues(_.transformInto[JsonProviderProperty]).toMap
 
     JsonAuthConfig(encoder, roleListOverride, authBackendsProvider, providersProperties, users)
   }

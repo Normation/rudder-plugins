@@ -20,9 +20,22 @@ type alias AddUserForm =
     , isPreHashed : Bool
     }
 
+type alias UserInfoForm =
+    { name : String
+    , email : String
+    , otherInfo : Dict String String
+    }
+
 type alias Role =
     { id: String
     , rights: List String
+    }
+
+type alias UserAuth = 
+    { login : String
+    , password : String
+    , permissions : List String
+    , isPreHashed : Bool
     }
 
 type alias User =
@@ -57,7 +70,6 @@ type alias NewUser =
 
 type alias ProviderProperties = 
     { roleListOverride : RoleListOverride
-    , hasModifiablePassword : Bool
     }
 
 type alias ProviderInfo = 
@@ -84,6 +96,20 @@ userProviders providers =
 filterExternalProviders: List String -> List String
 filterExternalProviders providers =
   List.filter (\p -> p /= "file" && p /= "rootAdmin") providers
+
+filterUserProviderEnablingRoles: Model -> User -> List ProviderInfo
+filterUserProviderEnablingRoles model user = 
+    user.providers
+    |> filterExternalProviders 
+    |> List.filter (\p -> 
+        Dict.get p model.providersProperties
+        |> Maybe.map (\pp -> pp.roleListOverride /= None)
+        |> Maybe.withDefault False
+    )
+    |> List.filterMap (\p -> 
+        Dict.get p user.providersInfo
+    )
+
 
 filterUserProviderByRoleListOverride: RoleListOverride -> Model -> User -> List ProviderInfo
 filterUserProviderByRoleListOverride value model user = 
@@ -114,14 +140,6 @@ takeFirstExtendProviderInfo : Model -> User -> Maybe ProviderInfo
 takeFirstExtendProviderInfo model user = 
     filterUserProviderByRoleListOverride Extend model user
     |> List.head
-
-providerHasModifiablePassword : Model -> Provider -> Bool
-providerHasModifiablePassword model provider =
-    provider == "file" || (
-        Dict.get provider model.providersProperties 
-        |> Maybe.map .hasModifiablePassword 
-        |> Maybe.withDefault False
-    )
 
 providerCanEditRoles : Model -> Provider -> Bool
 providerCanEditRoles model provider =
@@ -155,9 +173,7 @@ type alias UserForm =
     , isHashedPasswd : Bool
     , userForcePasswdInput : Bool
     , rolesToAddOnSave : List String
-    , name : String
-    , email : String
-    , otherInfo : Dict String String
+    , userInfoForm : UserInfoForm
     , newUserInfoFields : List (String, String)
     , isValidInput : StateInput
     }
@@ -190,6 +206,7 @@ type Msg
     | AddUser (Result Error String)
     | DeleteUser (Result Error String)
     | UpdateUser (Result Error String)
+    | UpdateUserInfo (Result Error UserInfoForm)
     | UpdateUserStatus (Result Error Username)
     | CallApi (Model -> Cmd Msg)
     | ActivePanelSettings User
@@ -210,7 +227,8 @@ type Msg
     | UserInfoFields (Dict String String)
     | ActivateUser Username
     | DisableUser Username
-    | SubmitUpdatedInfos NewUser
+    | SubmitUpdateUser UserAuth
+    | SubmitUserInfo
     | SubmitNewUser NewUser
     | PreHashedPasswd Bool
     | AddPasswdAnyway
@@ -223,7 +241,27 @@ type Msg
     | Notification (Toasty.Msg Toasty.Defaults.Toast)
 
 
-mergeUserNewInfo : UserForm -> Dict String String
+mergeUserNewInfo : UserForm -> UserInfoForm
 mergeUserNewInfo userForm =
-    Dict.fromList (Dict.toList userForm.otherInfo ++ userForm.newUserInfoFields)
-    |> Dict.remove "" -- empty fields are invalid, we remove them for now but they may be used for explicit errors later
+    let
+        userInfo = userForm.userInfoForm
+    in
+        { name = userInfo.name
+        , email = userInfo.email
+        , otherInfo =
+        Dict.fromList (Dict.toList userForm.userInfoForm.otherInfo ++ userForm.newUserInfoFields)
+        |> Dict.remove "" -- empty fields are invalid, we remove them for now but they may be used for explicit errors later
+        }
+
+userFormToNewUser : UserForm -> NewUser
+userFormToNewUser userForm =
+    let
+        userInfo = mergeUserNewInfo userForm
+    in
+        { login = userForm.login
+        , authz = []
+        , roles = userForm.rolesToAddOnSave
+        , name = userInfo.name
+        , email = userInfo.email
+        , otherInfo = userInfo.otherInfo
+        }

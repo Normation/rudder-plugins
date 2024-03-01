@@ -20,8 +20,8 @@ import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
 import com.normation.rudder.users._
 import com.normation.zio._
+import io.scalaland.chimney.dsl._
 import java.util.concurrent.TimeUnit
-import org.joda.time.DateTime
 import org.springframework.core.io.{ClassPathResource => CPResource}
 import scala.xml.Elem
 import scala.xml.Node
@@ -257,7 +257,7 @@ class UserManagementService(
 
   /*
    * When we delete an user, it can be from file or auto-added by OIDC or other backend supporting that.
-   * So we let the callback on file reload do the deletion for file users, and then delete from the user repository.
+   * So we let the callback on file reload do the deletion for file users
    */
   def remove(toDelete: String, actor: EventActor, reason: String): IOResult[Unit] = {
     for {
@@ -273,50 +273,93 @@ class UserManagementService(
                     }).transform(toUpdate).head
       _          <- UserManagementIO.replaceXml(userXML, newXml, file)
       _          <- userService.reloadPure()
-      _          <- userRepository.delete(List(toDelete), None, Nil, EventTrace(actor, DateTime.now(), reason))
     } yield ()
   }
 
   /*
-   * This method will mostly interact with DB in the future.
+   * This method contains all logic of updating an user, taking into account :
+   * - the providers list for the user and their ability to extend roles from user file
+   * - the password definition and hashing
    */
-  def update(currentUser: String, updateUser: UpdateUser, isPreHashed: Boolean): IOResult[Unit] = {
+  def update(id: String, updateUser: UpdateUserFile, isPreHashed: Boolean)(
+      allRoles:  Map[String, Role]
+  ): IOResult[Unit] = {
+    implicit val currentRoles: Set[Role] = allRoles.values.toSet
+
+    // Unknown permissions are trusted and put in file
+    val (roles, authz, unknown) = UserManagementService.parsePermissions(updateUser.permissions.toSet)
+
+    val newFileUserPermissions = roles.map(_.name) ++ authz.map(_.id) ++ unknown
     for {
+      userInfo <- userRepository
+                    .get(id)
+                    .notOptional(s"User '${id}' does not exist therefore cannot be updated")
+
+      // the user to update in the file with the resolved permissions
+      fileUser  = updateUser.transformInto[User].copy(permissions = newFileUserPermissions)
+
+      // we may have users that where added by other providers, and still want to add them in file
+      // This block initializes the user in the file, for permissions and password to be updated below
+      _ <- ZIO.when(!(userService.authConfig.users.keySet.contains(id))) {
+             for {
+               // Apparently we need to do the whole thing to get the file and add it, before doing it again to update
+               file       <- getUserResourceFile.map(getUserFilePath(_))
+               parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
+               userXML    <- IOResult.attempt(parsedFile.document().children)
+               toUpdate    = (userXML \\ "authentication").head
+
+               _ <- (userXML \\ "authentication").head match {
+                      case e: Elem =>
+                        val newXml = e.copy(child = e.child ++ User(id, "", Set.empty).toNode)
+                        UserManagementIO.replaceXml(userXML, newXml, file)
+                      case _ =>
+                        Unexpected(s"Wrong formatting : ${file.path}").fail
+                    }
+             } yield ()
+           }
+
       file       <- getUserResourceFile.map(getUserFilePath(_))
       parsedFile <- IOResult.attempt(ConstructingParser.fromFile(file.toJava, preserveWS = true))
       userXML    <- IOResult.attempt(parsedFile.document().children)
       toUpdate    = (userXML \\ "authentication").head
-      newXml      = new RuleTransformer(new RewriteRule {
-                      override def transform(n: Node): NodeSeq = n match {
-                        case user: Elem if (user \ "@name").text == currentUser =>
-                          // for each user's parameters, if a new user's parameter is empty we decide to keep the original one
-                          val newRoles    = {
-                            if (updateUser.permissions.isEmpty) ((user \ "@role") ++ (user \ "@permissions")).text.split(",").toSet
-                            else updateUser.permissions
-                          }
-                          val newUsername = if (updateUser.username.isEmpty) currentUser else updateUser.username
-                          val newPassword = if (updateUser.password.isEmpty) {
-                            (user \ "@password").text
-                          } else {
-                            if (isPreHashed) updateUser.password
-                            else getHash((userXML \\ "authentication" \ "@hash").text).encode(updateUser.password)
-                          }
 
-                          User(newUsername, newPassword, newRoles).toNode
+      newXml = new RuleTransformer(new RewriteRule {
+                 override def transform(n: Node): NodeSeq = n match {
+                   case user: Elem if (user \ "@name").text == id =>
+                     // for each user's parameters, if a new user's parameter is empty we decide to keep the original one
+                     val newRoles    = {
+                       if (fileUser.permissions.isEmpty) ((user \ "@role") ++ (user \ "@permissions")).text.split(",").toSet
+                       else fileUser.permissions
+                     }
+                     val newUsername = if (fileUser.username.isEmpty) id else fileUser.username
+                     val newPassword = if (fileUser.password.isEmpty) {
+                       (user \ "@password").text
+                     } else {
+                       if (isPreHashed) fileUser.password
+                       else getHash((userXML \\ "authentication" \ "@hash").text).encode(fileUser.password)
+                     }
 
-                        case other => other
-                      }
-                    }).transform(toUpdate).head
-      _          <- UserManagementIO.replaceXml(userXML, newXml, file)
-      _          <- userService.reloadPure()
-      // always update fields, at worst they will be updated with an empty value
-      _          <- userRepository.updateInfo(
-                      currentUser,
-                      Some(updateUser.name),
-                      Some(updateUser.email),
-                      updateUser.otherInfo
-                    )
+                     User(newUsername, newPassword, newRoles).toNode
+
+                   case other => other
+                 }
+               }).transform(toUpdate).head
+      _     <- UserManagementIO.replaceXml(userXML, newXml, file)
+      _     <- userService.reloadPure()
     } yield ()
+  }
+
+  /**
+   * User information fields in the database
+   */
+  def updateInfo(id: String, updateUser: UpdateUserInfo): IOResult[Unit] = {
+    // always update fields, at worst they will be updated with an empty value
+    userRepository.updateInfo(
+      id,
+      Some(updateUser.name),
+      Some(updateUser.email),
+      updateUser.otherInfo
+    )
   }
 
   def getAll: IOResult[UserFileInfo] = {

@@ -1,7 +1,6 @@
 module View exposing (..)
 
 import ApiCalls exposing (deleteUser)
-import DataTypes exposing (Model, Msg(..), NewUser, PanelMode(..), Provider, ProviderInfo, RoleListOverride(..), Roles, StateInput(..), User, Users, UserForm, UserStatus(..), filterUserProviderByRoleListOverride, mergeUserNewInfo, providerCanEditRoles, providerHasModifiablePassword, takeFirstExtProvider, takeFirstOverrideProviderInfo)
 import Dict exposing (keys)
 import Html exposing (..)
 import Html.Attributes exposing (attribute, class, disabled, href, for, id, placeholder, required, style, tabindex, type_, value)
@@ -13,7 +12,7 @@ import Toasty.Defaults
 import List
 import List.Extra
 import Set
-import DataTypes exposing (takeFirstExtendProviderInfo)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), ProviderInfo, RoleListOverride(..), Roles, StateInput(..), User, Users, UserForm, UserStatus(..), providerCanEditRoles, takeFirstExtProvider, takeFirstOverrideProviderInfo, filterUserProviderByRoleListOverride, filterUserProviderEnablingRoles, userFormToNewUser)
 
 view : Model -> Html Msg
 view model =
@@ -53,7 +52,13 @@ showDeleteModal username =
                               [
                                 div [class "row"]
                                 [
-                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text " ?"]
+                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"]
+                                  [ text "Are you sure you want to delete user " 
+                                  , b[][text username]
+                                  , text " from the users file ?"
+                                  , br[][]
+                                  , text "They will be purged from the database after a certain amount of time as defined by the Rudder configuration."
+                                  ]
                                 ]
                               ]
                             , div [class "modal-footer"]
@@ -102,10 +107,6 @@ displayPasswordBlock model user =
                     case takeFirstExtProvider u.providers of 
                         Nothing -> True
                         Just _ -> False
-        canPasswordBeAdded =
-            case user of
-                Just u  -> List.all (providerHasModifiablePassword model) u.providers
-                Nothing -> True
         isHidden =
             if model.userForm.isHashedPasswd then
                 "text"
@@ -135,65 +136,78 @@ displayPasswordBlock model user =
 
     in
     if (not isPasswordMandatory) then
-       div[class "msg-providers"] (
+       div[class "msg-providers"]
        [
             i [class "fa fa-exclamation-circle info-passwd-icon"][]
           , text "Since the authentication method used an external provider, no password will be asked for this user."
-       ] ++ (if canPasswordBeAdded then 
-       [
-            br[][]
-          , text "If you want to add a password anyway, "
+          ,  br[][]
+          , text "If you want to add a password anyway as fallback, "
           , a [class "click-here", onClick AddPasswdAnyway][text "Click here"]
           , if (model.userForm.userForcePasswdInput) then
                 div [class "force-password"] (
                     div[class "info-force-passwd"]
                     [
-                      text "The password value won't be use with currently default authentication provider "
+                      text "The password value won't be used with the current default authentication provider "
                     , b [style "color" "#2557D6"] [text mainProvider]
                     , text ", you should let it blank."
                     ] :: passwordInput
                 )
             else 
                 div [][]
-        ] else [])
-        )
+        ]
     else
         div [] (passwordInput)
 
 displayRightPanelAddUser : Model -> Html Msg
 displayRightPanelAddUser model =
-   let
-       emptyUsername = if model.userForm.isValidInput == InvalidUsername then "invalid-form-field" else ""
-   in
-   div [class "panel-wrap"]
-   [
-       div [class "panel"]
-       [
-             button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
-           , div[class "card-header"][h2 [class "title-username"] [text "Create User"]]
-           , div []
-           [
-                 input [class ("form-control username-input " ++ emptyUsername), type_ "text", placeholder "Username", onInput Login, value model.userForm.login, required True] []
-               , displayPasswordBlock model Nothing
-               , displayUserInfo model.userForm
-               , div [class "btn-container"] [ button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitNewUser (NewUser model.userForm.login [] [] model.userForm.name model.userForm.email (mergeUserNewInfo model.userForm)))][ i[ class "fa fa-download"][] ]  ]
-           ]
-       ]
-   ]
+    let
+        emptyUsername = if model.userForm.isValidInput == InvalidUsername then "invalid-form-field" else ""
+    in
+    div [class "panel-wrap"]
+    [
+        div [class "panel"]
+        [
+              button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
+            , div[class "card-header"][h2 [class "title-username"] [text "Create User"]]
+            , div []
+            [
+                  input [class ("form-control username-input " ++ emptyUsername), type_ "text", placeholder "Username", onInput Login, value model.userForm.login, required True] []
+                , displayPasswordBlock model Nothing
+                , displayUserInfo model.userForm False
+                , div[class "btn-container"]
+                [
+                    button
+                    [
+                        class "btn btn-sm btn-success btn-save"
+                        , type_ "button"
+                        , onClick (SubmitNewUser (userFormToNewUser model.userForm))
+                    ] [ i[ class "fa fa-download"][] ]
+                ]
+            ]
+        ]
+    ]
 
 displayRoleListOverrideWarning : RoleListOverride -> Html Msg
 displayRoleListOverrideWarning rlo =
   case rlo of
-      None   -> text ""
+      None   ->
+        div [class "msg-providers"]
+        [
+            text " The current main provider for this user does not enable roles. The file roles can be changed but will only be used as fallback for when the provider is no longer enabled or configured for roles."
+        ]
+
       Extend ->
         div [class "msg-providers"][
           i [class "fa fa-exclamation-triangle warning-icon"][]
         , span [][text " Be careful! Displayed user roles originate from the provider which extends roles defined in the Rudder static configuration file"]
        ]
       Override ->
-        div [class "msg-providers"][
-        span [][text " Displayed user roles originate from the provider, which is configured to override roles in the Rudder static configuration file. This configuration options can be changed so that the provider extends those roles instead of overriding them."]
-       ]
+        div [class "msg-providers"]
+        [
+              text " Displayed user roles originate from the provider, which is configured to override roles in the Rudder static configuration file. This configuration option can be changed so that the provider extends those roles instead of overriding them."
+            , br[][]
+            , text "Changing the roles will create fallback roles in file when the provider is no longer enabled or configured for roles."
+        ]
 
 getDiffRoles : Roles -> List String -> List String
 getDiffRoles total sample =
@@ -266,20 +280,20 @@ displayAuthorizations user =
             ]
 
 -- name, email, other info as list of key-value pairs
-displayUserInfo : UserForm -> Html Msg
-displayUserInfo userForm =
+displayUserInfo : UserForm -> Bool -> Html Msg
+displayUserInfo userForm allowSaveInfo =
     div [class "user-info"]
     ([
           h3 [] [text "User information"]
         , div [class "user-info-row"]
           [
               label [for "user-name"][text "Name"]
-            , input [id "user-name", class "form-control user-info-value", placeholder "User name", value userForm.name, onInput UserInfoName][]
+            , input [id "user-name", class "form-control user-info-value", placeholder "User name", value userForm.userInfoForm.name, onInput UserInfoName][]
           ]
         , div [class "user-info-row"]
           [
               label [for "user-email"][text "Email"]
-            , input [id "user-email", class "form-control user-info-value", placeholder "User email", value userForm.email, onInput UserInfoEmail][]
+            , input [id "user-email", class "form-control user-info-value", placeholder "User email", value userForm.userInfoForm.email, onInput UserInfoEmail][]
           ]
     ] ++ (List.map (\(k, v) -> div [class "user-info-row user-info-other"]
             [
@@ -290,7 +304,7 @@ displayUserInfo userForm =
                     , button [class "btn btn-default", onClick (RemoveUserInfoField k)][i [class "fa fa-trash"][]]
                 ]
             ]
-        ) (Dict.toList userForm.otherInfo)
+        ) (Dict.toList userForm.userInfoForm.otherInfo)
     ) ++ (List.indexedMap (\idx (k, v) -> div [class "user-info-row user-info-other"]
             [
                   text "New field"
@@ -303,15 +317,25 @@ displayUserInfo userForm =
             ]
 
     ) userForm.newUserInfoFields) ++ 
+    ((div [ class "user-info-row"]
     [
-        div [class "user-info-row"]
+        div [class "user-info-add"]
         [
-            div [class "user-info-add"]
+            button [class "addBtn", onClick AddUserInfoField][i [class "fa fa-plus"][]]
+        ]
+    ]) :: (if allowSaveInfo then 
+        [
+            div[class "btn-container"]
             [
-                button [class "addBtn", onClick AddUserInfoField][i [class "fa fa-plus"][]]
+                 button
+                [
+                      class "btn btn-sm btn-success btn-save"
+                    , type_ "button"
+                    , onClick SubmitUserInfo
+                ] [ i[ class "fa fa-download"][] ]
             ]
         ]
-    ])
+    else [])))
 
 
 displayRightPanel : Model -> User -> Html Msg
@@ -324,11 +348,11 @@ displayRightPanel model user =
                 , displayCoverageRoles user
                 , displayAuthorizations user
             ]
-        rolesSection : ProviderInfo -> RoleListOverride -> Bool -> Bool -> Bool -> List (Html Msg)
+        rolesSection : ProviderInfo -> Maybe RoleListOverride -> Bool -> Bool -> Bool -> List (Html Msg)
         rolesSection provider override readonlyAddRoles readonlyRemoveRoles hideAddedRoles = 
             [
                   h4 [class "role-title"][text ("Roles (from " ++ provider.provider ++ ")")]
-                , (displayRoleListOverrideWarning override)
+                , Maybe.withDefault (text "") (Maybe.map displayRoleListOverrideWarning override)
                 , div [class "role-management-wrapper"]
                 [
                        div [id "input-role"](displayAddRole model user provider readonlyAddRoles hideAddedRoles)
@@ -336,30 +360,27 @@ displayRightPanel model user =
                 ]
             ]
         displayedProviders =
-            -- at least one provider overrides the role list : we can't edit the roles and we display the roles for the overriding one
-            case takeFirstOverrideProviderInfo model user of
-                Just providerInfo -> 
-                    rolesSection providerInfo Override True True True ++
-                    formDeleteOrDisableSection
-                Nothing -> 
-                    case Dict.get "file" user.providersInfo of
-                        Nothing -> -- file is not an explicit provider so roles can be added in the provider
-                            List.Extra.intercalate ([hr[][]]) (List.map (\p -> rolesSection p None True False False) (filterUserProviderByRoleListOverride Extend model user)) ++
-                            formSubmitSection "file"
-                        Just providerInfo -> -- separate sections : extending provider are readonly, file provider are editable
-                            List.Extra.intercalate ([hr[][]]) (List.map (\p -> rolesSection p Extend True True True) (filterUserProviderByRoleListOverride Extend model user)) ++
+            let 
+                rlo = if takeFirstOverrideProviderInfo model user == Nothing then Extend else Override
+                externalProvidersWithEnabledRoles = filterUserProviderEnablingRoles model user
+                externalProvidersWithoutRoles = filterUserProviderByRoleListOverride None model user
+                fileProviderRlo = externalProvidersWithoutRoles |> List.head |> Maybe.map (\_ -> None)
+            in
+                case Dict.get "file" user.providersInfo of
+                    Nothing -> -- file is not an explicit provider so roles can be added in the provider
+                        List.Extra.intercalate ([hr[][]]) (
+                            List.map (\p -> rolesSection p (Just rlo) True False False) externalProvidersWithEnabledRoles
+                            -- if there is a provider with None roles extension, we also need a section to put roles in file
+                            |> List.append (List.map (\p -> rolesSection { p | provider = "file" } (Just None) False False False) externalProvidersWithoutRoles |> List.take 1)
+                        ) ++
+                        formSubmitSection "file" ++
+                        [hr[][]]
+                    Just providerInfo -> -- separate sections : extending provider are readonly, file provider are editable
+                            List.Extra.intercalate ([hr[][]]) (List.map (\p -> rolesSection p (Just rlo) True True True) externalProvidersWithEnabledRoles) ++
                             -- and one section for the actually editable file provider
-                            rolesSection providerInfo None False False False ++
-                            formSubmitSection providerInfo.provider
-        formDeleteOrDisableSection =
-            [
-                div[class "btn-container"]
-                [
-                      button [class "btn btn-sm btn-danger btn-delete" , onClick (OpenDeleteModal user.login)] [text "Delete"]
-                    , button [class ("btn btn-sm btn-status-toggle " ++ if user.status == Active then "btn-default" else "btn-primary"), onClick (if user.status == Active then DisableUser user.login else ActivateUser user.login)] 
-                    [ if user.status == Active then text "Disable" else text "Activate" ]
-                ]
-            ]
+                            rolesSection providerInfo fileProviderRlo False False False ++
+                            formSubmitSection providerInfo.provider ++
+                            [hr[][]]
         formSubmitSection provider =
             [
                 div[class "btn-container"]
@@ -372,13 +393,11 @@ displayRightPanel model user =
                           class "btn btn-sm btn-success btn-save"
                         , type_ "button"
                         , if (providerCanEditRoles model provider) then disabled False else disabled True
-                        , onClick (SubmitUpdatedInfos {
+                        , onClick (SubmitUpdateUser {
                               login = user.login
-                            , authz = user.authz
-                            , roles = model.userForm.rolesToAddOnSave ++ ((List.filterMap (\p -> Dict.get p user.providersInfo |> Maybe.map .roles) [provider]) |> List.concat)
-                            , name = model.userForm.name
-                            , email = model.userForm.email
-                            , otherInfo = mergeUserNewInfo model.userForm
+                            , password = model.userForm.password
+                            , permissions = user.authz ++ model.userForm.rolesToAddOnSave ++ ((List.filterMap (\p -> Dict.get p user.providersInfo |> Maybe.map .roles) [provider]) |> List.concat)
+                            , isPreHashed = model.userForm.isHashedPasswd
                         })
                     ] [ i[ class "fa fa-download"][] ]
                 ]
@@ -400,27 +419,9 @@ displayRightPanel model user =
               ] 
            ]
            , displayPasswordBlock model (Just user)
-        ] ++ (if takeFirstOverrideProviderInfo model user == Nothing then [
-           displayUserInfo model.userForm
-        ] else [
-              displayUserInfo model.userForm
-            , div [class "btn-container"] 
-            [ 
-                button
-                [
-                      class "btn btn-sm btn-success btn-save"
-                    , type_ "button"
-                    , onClick (SubmitUpdatedInfos {
-                          login = user.login
-                        , authz = user.authz
-                        , roles = user.roles
-                        , name = model.userForm.name
-                        , email = model.userForm.email
-                        , otherInfo = mergeUserNewInfo model.userForm
-                    })
-                ] [ i[ class "fa fa-download"][] ]
-            ]
-        ]) ++ displayedProviders ++ rolesAuthzInformationSection)
+        ] ++ displayedProviders ++ (
+           displayUserInfo model.userForm True :: rolesAuthzInformationSection
+        ))
     ]
 
 displayUsersConf : Model -> Users -> Html Msg
