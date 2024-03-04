@@ -1,4 +1,0 @@
-<authentication hash="bcrypt" case-sensitivity="true">
-  <user name="test-user" password="1234" permissions="user" />
-  <user name="another-test-user" password="4321" permissions="read_only" />
-</authentication>
