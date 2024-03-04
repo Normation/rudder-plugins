@@ -193,9 +193,9 @@ class TwoValidationStepsWorkflowServiceImpl(
       isCreator:         Boolean
   ): WorkflowAction = {
 
-    val deployAction = {
+    def deployAction(action: (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]) = {
       if (canDeploy(isCreator, selfDeployment))
-        Seq((Deployed.id, stepValidationToDeployed _))
+        Seq((Deployed.id, action))
       else Seq()
     }
 
@@ -204,17 +204,13 @@ class TwoValidationStepsWorkflowServiceImpl(
         val validatorActions = {
           (if (canValidate(isCreator, selfValidation)) {
              Seq((Deployment.id, stepValidationToDeployment _))
-           } else Seq()) ++ deployAction
+           } else Seq()) ++ deployAction(stepValidationToDeployed)
         }
         WorkflowAction("Validate", validatorActions)
 
-      case Deployment.id     =>
-        val deploymentAction = {
-          (if (canDeploy(isCreator, selfValidation)) {
-             Seq((Deployment.id, stepDeploymentToDeployed _))
-           } else Seq()) ++ deployAction
-        }
-        WorkflowAction("Deploy", deploymentAction)
+      case Deployment.id =>
+        WorkflowAction("Deploy", deployAction(stepDeploymentToDeployed))
+
       case Deployed.id       => NoWorkflowAction
       case Cancelled.id      => NoWorkflowAction
       case WorkflowNodeId(x) =>
@@ -334,7 +330,7 @@ class TwoValidationStepsWorkflowServiceImpl(
   }
 
   private def canDeploy(isCreator: Boolean, selfDeployment: () => Box[Boolean]): Boolean = {
-    val correctActor = selfDeployment().getOrElse(false) || isCreator
+    val correctActor = selfDeployment().getOrElse(false) || !isCreator
     correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Edit)
   }
 

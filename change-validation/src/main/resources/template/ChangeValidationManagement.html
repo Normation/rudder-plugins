@@ -2,189 +2,186 @@
 <html>
 
 <head>
-  <meta charset="utf8" />
-  <!-- everything here will be ignored and replaced by common-layout -->
+<meta charset="utf8" />
+<!-- everything here will be ignored and replaced by common-layout -->
 </head>
 
 <body data-lift-content-id="plugin-main">
-  <div id="plugin-main" data-lift="surround?with=common-layout;at=content">
-    <head_merge>
-      <title>Rudder - Change Validation</title>
-      <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen"
-        data-lift="with-cached-resource">
-      <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen"
-        data-lift="with-cached-resource">
-      <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
-      <script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
-      <script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
-    </head_merge>
+<div id="plugin-main" data-lift="surround?with=common-layout;at=content">
+<head_merge>
+<title>Rudder - Change Validation</title>
+<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen"
+data-lift="with-cached-resource">
+<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen"
+data-lift="with-cached-resource">
+<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
+<script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
+<script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
+</head_merge>
 
-    <div class="rudder-template">
+<div class="rudder-template">
 
-      <div class="one-col">
-        <div class="main-header">
-          <div class="header-title">
-            <h1>
-              <span>Change validation</span>
-            </h1>
-          </div>
-        </div>
-        <div class="one-col-main">
+<div class="one-col">
+<div class="main-header">
+  <div class="header-title">
+    <h1>
+      <span>Change validation</span>
+    </h1>
+  </div>
+</div>
+<div class="one-col-main">
 
-          <div class="template-sidebar sidebar-left">
-            <div class="sidebar-body" id="navbar-scrollspy">
-              <ul class="nav nav-tabs"></ul>
-            </div>
-          </div>
+  <div class="template-sidebar sidebar-left">
+    <div class="sidebar-body" id="navbar-scrollspy">
+      <ul class="nav nav-tabs"></ul>
+    </div>
+  </div>
 
-          <div class="template-main">
-            <div class="main-container">
-              <div class="main-details" data-bs-spy="scroll" data-bs-target="#navbar-scrollspy">
-
-                <div class="lift:ChangeValidationSettings.activation" id="workflowForm">
-                  <h3 class="page-title" style="margin-top: 0;">Change validation status</h3>
-                  <div class="section-with-doc">
-                    <div class="section-left">
-                      <form class="lift:form.ajax">
-                        <ul>
-                          <li class="rudder-form">
-                            <div class="input-group">
-                              <label class="input-group-addon" for="workflowEnabled">
-                                <input id="workflowEnabled" type="checkbox">
-                                <label for="workflowEnabled" class="label-radio">
-                                  <span class="ion ion-checkmark-round"></span>
-                                </label>
-                                <span class="ion ion-checkmark-round check-icon"></span>
-                              </label>
-                              <label class="form-control" for="workflowEnabled">
-                                Enable change requests
-                              </label>
-                            </div>
-                          </li>
-                          <li class="rudder-form">
-                            <div class="input-group">
-                              <label class="input-group-addon" for="selfVal">
-                                <input id="selfVal" type="checkbox">
-                                <label for="selfVal" class="label-radio">
-                                  <span class="ion ion-checkmark-round"></span>
-                                </label>
-                                <span class="ion ion-checkmark-round check-icon"></span>
-                              </label>
-                              <label class="form-control" for="selfVal">
-                                Allow self validation
-                                <span id="selfValTooltip"></span>
-                              </label>
-                            </div>
-                          </li>
-                          <li class="rudder-form">
-                            <div class="input-group">
-                              <label class="input-group-addon" for="selfDep">
-                                <input id="selfDep" type="checkbox">
-                                <label for="selfDep" class="label-radio">
-                                  <span class="ion ion-checkmark-round"></span>
-                                </label>
-                                <span class="ion ion-checkmark-round check-icon"></span>
-                              </label>
-                              <label class="form-control" for="selfDep">
-                                Allow self deployment
-                                <span id="selfDepTooltip"></span>
-                              </label>
-                            </div>
-                          </li>
-                        </ul>
-                        <lift:authz role="administration_write">
-                          <input type="submit" value="Reload" id="workflowSubmit" />
-                          <span class="lift:Msg?id=updateWorkflow">[messages]</span>
-                        </lift:authz>
-                      </form>
-                    </div>
-                    <div class="section-right">
-                      <div class="doc doc-info">
-                        <div class="marker">
-                          <span class="fa fa-info-circle"></span>
-                        </div>
-                        <p>
-                          If enabled, all change to configuration (directives, rules, groups and parameters) will be
-                          submitted for validation via a change request based on node targeting (configured
-                          below).<br />
-                          A new change request will enter the <b>Pending validation</b> status, then can be moved to
-                          <b>Pending deployment</b> (approved but not yet deployed) or <b>Deployed</b> (approved and
-                          deployed) statuses.
-                        </p>
-                        <p>
-                          If you have the user management plugin, only users with the <b>validator</b> or
-                          <b>deployer</b> roles are authorized to perform
-                          these steps (see <i><strong>/opt/rudder/etc/rudder-users.xml</strong></i>).
-                        </p>
-                        <p>
-                          If disabled or if the change is not submitted to validation, the configuration will be
-                          immediately deployed.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 class="page-title">Configure email notification</h3>
-                  <div class="section-with-doc">
-                    <div class="section-left">
-                      <p>You can modify the email's template of each steps here: </p>
-                      <ul class="clipboard-list">
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/validation-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/validation-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/deployment-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/deployment-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/cancelled-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/cancelled-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/deployed-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/deployed-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-                    <div class="section-right">
-                      <div class="doc doc-info">
-                        <div class="marker">
-                          <span class="fa fa-info-circle"></span>
-                        </div>
-                        <p>
-                          By default, email notifications are disabled. To enable them, make sure that the
-                          <b>smtp.hostServer</b> parameter is
-                          not left empty in the configuration file:
-                          <b>/opt/rudder/etc/plugins/change-validation.conf</b>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+  <div class="template-main">
+    <div class="main-container">
+      <div class="main-details" data-spy="scroll" data-target="#navbar-scrollspy">
+	<div class="lift:ChangeValidationSettings.activation" id="workflowForm">
+	  <h3 class="page-title" style="margin-top: 0;">Change validation status</h3>
+	  <div class="section-with-doc">
+	    <div class="section-left">
+	      <form class="lift:form.ajax">
+		<ul>
+		  <li class="rudder-form">
+		    <div class="input-group">
+		      <label class="input-group-addon" for="workflowEnabled">
+			<input id="workflowEnabled" type="checkbox">
+			<label for="workflowEnabled" class="label-radio">
+			  <span class="ion ion-checkmark-round"></span>
+			</label>
+			<span class="ion ion-checkmark-round check-icon"></span>
+		      </label>
+		      <label class="form-control" for="workflowEnabled">
+			Enable change requests
+		      </label>
+		    </div>
+		  </li>
+		  <li class="rudder-form">
+		    <div class="input-group">
+		      <label class="input-group-addon" for="selfVal">
+			<input id="selfVal" type="checkbox">
+			<label for="selfVal" class="label-radio">
+			  <span class="ion ion-checkmark-round"></span>
+			</label>
+			<span class="ion ion-checkmark-round check-icon"></span>
+		      </label>
+		      <label class="form-control" for="selfVal">
+			Allow self validation
+			<span id="selfValTooltip"></span>
+		      </label>
+		    </div>
+		  </li>
+		  <li class="rudder-form">
+		    <div class="input-group">
+		      <label class="input-group-addon" for="selfDep">
+			<input id="selfDep" type="checkbox">
+			<label for="selfDep" class="label-radio">
+			  <span class="ion ion-checkmark-round"></span>
+			</label>
+			<span class="ion ion-checkmark-round check-icon"></span>
+		      </label>
+		      <label class="form-control" for="selfDep">
+			Allow self deployment
+			<span id="selfDepTooltip"></span>
+		      </label>
+		    </div>
+		  </li>
+		</ul>
+		<lift:authz role="administration_write">
+		  <input type="submit" value="Reload" id="workflowSubmit" />
+		  <span class="lift:Msg?id=updateWorkflow">[messages]</span>
+		</lift:authz>
+	      </form>
+	    </div>
+	    <div class="section-right">
+	      <div class="doc doc-info">
+		<div class="marker">
+		  <span class="fa fa-info-circle"></span>
+		</div>
+		<p>
+		  If enabled, all change to configuration (directives, rules, groups and parameters) will be
+		  submitted for validation via a change request based on node targeting (configured
+		  below).<br />
+		  A new change request will enter the <b>Pending validation</b> status, then can be moved to
+		  <b>Pending deployment</b> (approved but not yet deployed) or <b>Deployed</b> (approved and
+		  deployed) statuses.
+		</p>
+		<p>
+		  If you have the user management plugin, only users with the <b>validator</b> or
+		  <b>deployer</b> roles are authorized to perform
+		  these steps (see <i><strong>/opt/rudder/etc/rudder-users.xml</strong></i>).
+		</p>
+		<p>
+		  If disabled or if the change is not submitted to validation, the configuration will be
+		  immediately deployed.
+		</p>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	<div>
+	  <h3 class="page-title">Configure email notification</h3>
+	  <div class="section-with-doc">
+	    <div class="section-left">
+	      <p>You can modify the email's template of each steps here: </p>
+	      <ul class="clipboard-list">
+		<li>
+		  <span>/var/rudder/plugins/change-validation/validation-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/validation-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+		<li>
+		  <span>/var/rudder/plugins/change-validation/deployment-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/deployment-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+		<li>
+		  <span>/var/rudder/plugins/change-validation/cancelled-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/cancelled-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+		<li>
+		  <span>/var/rudder/plugins/change-validation/deployed-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/deployed-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+	      </ul>
+	    </div>
+	    <div class="section-right">
+	      <div class="doc doc-info">
+		<div class="marker">
+		  <span class="fa fa-info-circle"></span>
+		</div>
+		<p>
+		  By default, email notifications are disabled. To enable them, make sure that the
+		  <b>smtp.hostServer</b> parameter is
+		  not left empty in the configuration file:
+		  <b>/opt/rudder/etc/plugins/change-validation.conf</b>
+		</p>
+	      </div>
+	    </div>
+	  </div>
+	</div>
                 <div>
                   <h3 class="page-title">Configure change request triggers</h3>
                   <div>
@@ -221,6 +218,49 @@
                       </div>
                     </div>
                   </div>
+                  <lift:authz role="administration_write">
+                  <br>
+                  <div data-lift="ChangeValidationSettings.validation">
+                    <div class="section-with-doc">
+                      <div class="section-left">
+                        <form class="lift:form.ajax">
+                          <ul>
+                            <li class="rudder-form">
+                              <div class="input-group">
+                                <label class="input-group-addon" for="validationAutoValidatedUser">
+                                  <input type="checkbox" value="Reload" id="validationAutoValidatedUser"/>
+                                  <label for="validationAutoValidatedUser" class="label-radio">
+                                    <span class="ion ion-checkmark-round"></span>
+                                  </label>
+                                  <span class="ion ion-checkmark-round check-icon"></span>
+                                </label>
+                                <label class="form-control" for="validationAutoValidatedUser">
+                                  Validate all changes
+                                </label>
+                              </div>
+                            </li>
+                          </ul>
+                          <input type="submit" value="Save change" id="validationAutoSubmit"/>
+                          <span class="lift:Msg?id=updateValidation">[messages]</span>
+                        </form>
+                      </div>
+                      <div class="section-right">
+                        <div class="doc doc-info">
+                          <div class="marker">
+                            <span class="fa fa-info-circle"></span>
+                          </div>
+                          <p>
+                            Any change done by a Validated User will be automatically approved no matter the nature of the change.
+                          </p>
+                          <p>
+                            Configuring groups below will hence have no effect on validated users (in the list above), but will apply to non-validated users, who will still need a change request to modify a node from a supervised group.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                  </div>
+                  </lift:authz>
                   <div>
                     <h3 class="page-subtitle">Configure groups with change validations</h3>
                     <div class="section-with-doc">

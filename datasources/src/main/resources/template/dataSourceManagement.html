@@ -6,7 +6,6 @@
   </head_merge>
   <main class="rudder-template" id="datasource">
   </main>
-
   <script>
     var hasWriteRights = false;
   </script>
@@ -31,6 +30,9 @@
         setTimeout(function(){
           initBsTooltips();
         }, 400);
+      });
+      app.ports.successNotification.subscribe(function(str) {
+        createSuccessNotification(str)
       });
     })
   </script>
