@@ -1,6 +1,6 @@
 module UserManagement exposing (processApiError, update)
 
-import ApiCalls exposing (activateUser, addUser, disableUser, getRoleConf, getUsersConf, postReloadConf, updateUser)
+import ApiCalls exposing (activateUser, addUser, disableUser, getRoleConf, getUsersConf, postReloadConf, updateUser, updateUserInfo)
 import Browser
 import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), mergeUserNewInfo, userProviders)
 import Dict exposing (fromList)
@@ -140,6 +140,15 @@ update msg model =
                   Err err ->
                        processApiError err model
 
+        UpdateUserInfo result ->
+             case result of
+                  Ok _ ->
+                      (model, getUsersConf model)
+                        |> createSuccessNotification (model.userForm.login ++ " information has been modified")
+
+                  Err err ->
+                       processApiError err model
+
         AddRole r ->
             let
                 userForm = model.userForm
@@ -162,12 +171,11 @@ update msg model =
                                     newRoles
                                     |> List.any (\y -> List.member y allAuthz)
                         ) user.authz
-                newUser = {login = user.login, authz = newAuthz, roles = newRoles, name = user.name, email = user.email, otherInfo = user.otherInfo}
                 newPanelMode = EditMode {user | authz = newAuthz, roles = newRoles}
                 ui = model.ui
                 newUI = {ui | panelMode = newPanelMode}
             in
-            ({model | ui = newUI}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.userForm.isHashedPasswd))
+            ({model | ui = newUI}, updateUser model user.login (DataTypes.UserAuth user.login "" (newAuthz ++ newRoles) model.userForm.isHashedPasswd))
         Notification subMsg ->
             Toasty.update defaultConfig Notification subMsg model
 
@@ -207,8 +215,10 @@ update msg model =
         ModifyUserInfoField key value ->
             let
                 userForm = model.userForm
-                newUserInfoFields = Dict.insert key value userForm.otherInfo
-                newUserForm = { userForm | otherInfo = newUserInfoFields }
+                userInfoForm = userForm.userInfoForm
+                newUserInfoFields = Dict.insert key value userInfoForm.otherInfo
+                newUserInfoForm = { userInfoForm | otherInfo = newUserInfoFields }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm }
             in
                 ({model | userForm = newUserForm}, Cmd.none)
         AddUserInfoField ->
@@ -220,32 +230,45 @@ update msg model =
         RemoveUserInfoField key ->
             let
                 userForm = model.userForm
-                newUserForm = { userForm | otherInfo = Dict.remove key userForm.otherInfo }
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | otherInfo = Dict.remove key userInfoForm.otherInfo }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm }
             in
                 ({model | userForm = newUserForm}, Cmd.none)
         UserInfoName name ->
             let
                 userForm = model.userForm
-                newUserForm = { userForm | name = name, isValidInput = ValidInputs }
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | name = name }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm, isValidInput = ValidInputs }
             in
                 ({model | userForm = newUserForm}, Cmd.none)
         UserInfoEmail email ->
             let
                 userForm = model.userForm
-                newUserForm = { userForm | email = email, isValidInput = ValidInputs }
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | email = email }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm, isValidInput = ValidInputs }
             in
                 ({model | userForm = newUserForm}, Cmd.none)
         UserInfoFields fields ->
             let
                 userForm = model.userForm
-                newUserForm = { userForm | otherInfo = fields, isValidInput = ValidInputs }
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | otherInfo = fields }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm, isValidInput = ValidInputs }
             in
                 ({model | userForm = newUserForm}, Cmd.none)
-        SubmitUpdatedInfos u ->
+        SubmitUpdateUser u ->
             let
                 newModel = resetFormPanel model model.ui.panelMode
             in
-                (newModel, updateUser model u.login (DataTypes.AddUserForm u model.userForm.password model.userForm.isHashedPasswd))
+                (newModel, updateUser model u.login u)
+        SubmitUserInfo ->
+            let
+                newModel = resetFormPanel model model.ui.panelMode
+            in
+                (newModel, updateUserInfo model model.userForm.login (mergeUserNewInfo model.userForm))
         SubmitNewUser u  ->
             if isEmpty u.login then
                 let
@@ -311,25 +334,32 @@ resetFormPanel : Model -> PanelMode -> Model
 resetFormPanel model panelMode =
     let
         currentUserForm = model.userForm
-        newFields = case panelMode of
-            EditMode user -> 
-                if user.login == currentUserForm.login then
-                    { login = currentUserForm.login, name = currentUserForm.name, email = currentUserForm.email, otherInfo = mergeUserNewInfo currentUserForm }
-                else
-                    { login = user.login, name = user.name, email = user.email, otherInfo = user.otherInfo }
-            _ -> { login = "", name = "", email = "", otherInfo = Dict.empty }
+        newLogin = 
+            case panelMode of
+                EditMode user -> user.login
+                _ -> ""
+        newFields = 
+            case panelMode of
+                EditMode user -> 
+                    if user.login == currentUserForm.login then
+                        mergeUserNewInfo currentUserForm
+                    else
+                        { name = user.name, email = user.email, otherInfo = user.otherInfo }
+                _ -> { name = "", email = "", otherInfo = Dict.empty }
         newUI = { panelMode = panelMode, openDeleteModal = False }
-        newUserForm = 
-            { 
-              login = newFields.login
-            , name = newFields.name
+        newUserInfoForm = 
+            { name = newFields.name
             , email = newFields.email
             , otherInfo = newFields.otherInfo
+            }
+        newUserForm = 
+            { login = newLogin
             , password = ""
             , isHashedPasswd = True
             , userForcePasswdInput = False
             , rolesToAddOnSave = []
             , newUserInfoFields = []
+            , userInfoForm = newUserInfoForm
             , isValidInput = ValidInputs 
             }
     in

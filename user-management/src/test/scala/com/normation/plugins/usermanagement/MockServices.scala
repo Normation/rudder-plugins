@@ -36,7 +36,7 @@ class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], u
 
     override def closeAllOpenSession(endDate: DateTime, endCause: String): IOResult[Unit] = ???
 
-    override def getLastPreviousLogin(userId: String): IOResult[Option[UserSession]] = {
+    override def getLastPreviousLogin(userId: String, closedSessionsOnly: Boolean): IOResult[Option[UserSession]] = {
       userSessions.find(_.userId == userId).succeed
     }
 

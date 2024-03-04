@@ -1,15 +1,15 @@
 module JsonEncoder exposing (..)
-
-import DataTypes exposing (AddUserForm, NewUser, User)
+import DataTypes exposing (AddUserForm, UserAuth, UserInfoForm)
 import Json.Encode exposing (Value, bool, list, object, string)
 import Dict
 
-encodeUser: (User, String) -> Value
-encodeUser (user, password) =
+encodeUserAuth: UserAuth -> Value
+encodeUserAuth user =
     object
     [ ("username", string user.login)
-    , ("password", string password)
-    , ("permissions", list (\s -> string s) (user.authz ++  user.roles))
+    , ("password", string user.password)
+    , ("permissions", list (\s -> string s) user.permissions)
+    , ("isPreHashed", bool user.isPreHashed)
     ]
 
 encodeAddUser: AddUserForm -> Value
@@ -22,4 +22,12 @@ encodeAddUser userForm =
     , ("name", string userForm.user.name)
     , ("email", string userForm.user.email)
     , ("otherInfo", object (List.map (\(k, v) -> (k, string v)) (Dict.toList userForm.user.otherInfo)))
+    ]
+
+encodeUserInfo: UserInfoForm -> Value
+encodeUserInfo user =
+    object
+    [ ("name", string user.name)
+    , ("email", string user.email)
+    , ("otherInfo", object (List.map (\(k, v) -> (k, string v)) (Dict.toList user.otherInfo)))
     ]

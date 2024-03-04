@@ -1,11 +1,9 @@
 module JsonDecoder exposing (..)
 
-import DataTypes exposing (Role, RoleConf, RoleListOverride(..), User, UserStatus(..), UsersConf)
+import DataTypes exposing (Role, RoleConf, RoleListOverride(..), User, UserStatus(..), UsersConf, ProviderInfo, ProvidersInfo, ProviderProperties, UserInfoForm)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
-import DataTypes exposing (ProviderInfo)
-import DataTypes exposing (ProvidersInfo)
-import DataTypes exposing (ProviderProperties)
+import Dict
 
 decodeApiReloadResult : Decoder String
 decodeApiReloadResult =
@@ -34,14 +32,13 @@ decodeProviderProperties : Decoder ProviderProperties
 decodeProviderProperties =
     D.succeed ProviderProperties
         |> required "roleListOverride" decodeRoleListOverride
-        |> required "hasModifiablePassword" D.bool
 
 decodeRoleListOverride : Decoder RoleListOverride
 decodeRoleListOverride =
   D.string |> D.andThen
     (\str ->
       case str of
-        "extend"   -> D.succeed Extend
+        "no-override"   -> D.succeed Extend
         "override" -> D.succeed Override
         _          -> D.succeed None
     )
@@ -100,6 +97,21 @@ decodeApiUpdateUserResult =
 decodeUpdateUser : Decoder String
 decodeUpdateUser =
     D.at [ "updatedUser" ] (D.at [ "username" ] D.string)
+
+decodeApiUpdateUserInfoResult : Decoder UserInfoForm
+decodeApiUpdateUserInfoResult =
+    D.at [ "data" ] decodeUpdateUserInfo
+
+decodeUpdateUserInfoResult : Decoder UserInfoForm
+decodeUpdateUserInfoResult =
+    D.at [ "updatedUser" ] decodeUpdateUserInfo
+
+decodeUpdateUserInfo : Decoder UserInfoForm
+decodeUpdateUserInfo =
+    D.succeed UserInfoForm
+        |> optional "name" D.string ""
+        |> optional "email" D.string ""
+        |> optional "otherInfo" (D.dict D.string) Dict.empty
 
 decodeApiDeleteUserResult : Decoder String
 decodeApiDeleteUserResult =

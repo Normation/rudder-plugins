@@ -37,6 +37,8 @@
 
 package com.normation.plugins.usermanagement
 
+import bootstrap.liftweb.AuthBackendProviderProperties
+import bootstrap.liftweb.ProviderRoleExtension
 import com.normation.rudder.Rights
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
@@ -58,65 +60,76 @@ object UserManagementLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("usermanagement")
 }
 
-final case class UpdateUser(
+final case class UpdateUserFile(
     username:    String,
     password:    String,
-    permissions: Set[String],
-    name:        Option[String],
-    email:       Option[String],
-    otherInfo:   Option[Json.Obj]
+    permissions: Set[String]
 )
+
+object UpdateUserFile {
+  implicit val transformer: Transformer[UpdateUserFile, User] = Transformer.derive[UpdateUserFile, User]
+}
+
+final case class UpdateUserInfo(
+    name:      Option[String],
+    email:     Option[String],
+    otherInfo: Option[Json.Obj]
+) {
+  def isEmpty: Boolean = name.isEmpty && email.isEmpty && otherInfo.isEmpty
+}
 
 object Serialisation {
 
-  implicit val dateTime:          JsonEncoder[DateTime]   = JsonEncoder[String].contramap(DateFormaterService.serialize)
-  implicit val userStatusEncoder: JsonEncoder[UserStatus] = JsonEncoder[String].contramap(_.value)
+  implicit val dateTime:                             JsonEncoder[DateTime]                      = JsonEncoder[String].contramap(DateFormaterService.serialize)
+  implicit val userStatusEncoder:                    JsonEncoder[UserStatus]                    = JsonEncoder[String].contramap(_.value)
+  implicit val providerRoleExtensionEncoder:         JsonEncoder[ProviderRoleExtension]         =
+    JsonEncoder[String].contramap(_.name)
+  implicit val authBackendProviderPropertiesEncoder: JsonEncoder[AuthBackendProviderProperties] =
+    DeriveJsonEncoder.gen[AuthBackendProviderProperties]
+
+  implicit val updateUserInfoDecoder: JsonDecoder[UpdateUserInfo] = DeriveJsonDecoder.gen[UpdateUserInfo]
+  implicit val updateUserInfoEncoder: JsonEncoder[UpdateUserInfo] = DeriveJsonEncoder.gen[UpdateUserInfo]
 
   implicit val jsonUserFormDataDecoder:       JsonDecoder[JsonUserFormData]       = DeriveJsonDecoder.gen[JsonUserFormData]
   implicit val jsonRoleAuthorizationsDecoder: JsonDecoder[JsonRoleAuthorizations] = DeriveJsonDecoder.gen[JsonRoleAuthorizations]
 
-  implicit val jsonRightsEncoder:           JsonEncoder[JsonRights]                =
+  implicit val jsonRightsEncoder:           JsonEncoder[JsonRights]           =
     JsonEncoder[List[String]].contramap(_.authorizationTypes.toList.sorted)
-  implicit val jsonRolesEncoder:            JsonEncoder[JsonRoles]                 = JsonEncoder[Set[String]].contramap(_.roles)
-  implicit val jsonProviderInfoEncoder:     JsonEncoder[JsonProviderInfo]          = DeriveJsonEncoder.gen[JsonProviderInfo]
-  implicit val jsonUserEncoder:             JsonEncoder[JsonUser]                  = DeriveJsonEncoder.gen[JsonUser]
-  implicit val jsonStatusEncoder:           JsonEncoder[JsonStatus]                = DeriveJsonEncoder.gen[JsonStatus]
-  implicit val jsonRolesCapacityEncoder:    JsonEncoder[JsonProviderRolesCapacity] = JsonEncoder[String].contramap(_.name)
-  implicit val jsonProviderPropertyEncoder: JsonEncoder[JsonProviderProperty]      = DeriveJsonEncoder.gen[JsonProviderProperty]
-  implicit val jsonAuthConfigEncoder:       JsonEncoder[JsonAuthConfig]            = DeriveJsonEncoder.gen[JsonAuthConfig]
-  implicit val jsonRoleEncoder:             JsonEncoder[JsonRole]                  = DeriveJsonEncoder.gen[JsonRole]
-  implicit val jsonInternalUserDataEncoder: JsonEncoder[JsonInternalUserData]      = DeriveJsonEncoder.gen[JsonInternalUserData]
-  implicit val jsonAddedUserEncoder:        JsonEncoder[JsonAddedUser]             = DeriveJsonEncoder.gen[JsonAddedUser]
-  implicit val jsonUpdatedUserEncoder:      JsonEncoder[JsonUpdatedUser]           = DeriveJsonEncoder.gen[JsonUpdatedUser]
-  implicit val jsonUsernameEncoder:         JsonEncoder[JsonUsername]              = DeriveJsonEncoder.gen[JsonUsername]
-  implicit val jsonDeletedUserEncoder:      JsonEncoder[JsonDeletedUser]           = DeriveJsonEncoder.gen[JsonDeletedUser]
-  implicit val jsonReloadStatusEncoder:     JsonEncoder[JsonReloadStatus]          = DeriveJsonEncoder.gen[JsonReloadStatus]
-  implicit val jsonReloadResultEncoder:     JsonEncoder[JsonReloadResult]          = DeriveJsonEncoder.gen[JsonReloadResult]
-  implicit val jsonRoleCoverageEncoder:     JsonEncoder[JsonRoleCoverage]          = DeriveJsonEncoder.gen[JsonRoleCoverage]
-  implicit val jsonCoverageEncoder:         JsonEncoder[JsonCoverage]              = DeriveJsonEncoder.gen[JsonCoverage]
+  implicit val jsonRolesEncoder:            JsonEncoder[JsonRoles]            = JsonEncoder[Set[String]].contramap(_.roles)
+  implicit val jsonProviderInfoEncoder:     JsonEncoder[JsonProviderInfo]     = DeriveJsonEncoder.gen[JsonProviderInfo]
+  implicit val jsonUserEncoder:             JsonEncoder[JsonUser]             = DeriveJsonEncoder.gen[JsonUser]
+  implicit val jsonUpdatedUserInfoEncoder:  JsonEncoder[JsonUpdatedUserInfo]  = DeriveJsonEncoder.gen[JsonUpdatedUserInfo]
+  implicit val jsonStatusEncoder:           JsonEncoder[JsonStatus]           = DeriveJsonEncoder.gen[JsonStatus]
+  implicit val jsonProviderPropertyEncoder: JsonEncoder[JsonProviderProperty] = DeriveJsonEncoder.gen[JsonProviderProperty]
+  implicit val jsonAuthConfigEncoder:       JsonEncoder[JsonAuthConfig]       = DeriveJsonEncoder.gen[JsonAuthConfig]
+  implicit val jsonRoleEncoder:             JsonEncoder[JsonRole]             = DeriveJsonEncoder.gen[JsonRole]
+  implicit val jsonInternalUserDataEncoder: JsonEncoder[JsonInternalUserData] = DeriveJsonEncoder.gen[JsonInternalUserData]
+  implicit val jsonAddedUserDataEncoder:    JsonEncoder[JsonAddedUserData]    = DeriveJsonEncoder.gen[JsonAddedUserData]
+  implicit val jsonAddedUserEncoder:        JsonEncoder[JsonAddedUser]        = DeriveJsonEncoder.gen[JsonAddedUser]
+  implicit val jsonUpdatedUserEncoder:      JsonEncoder[JsonUpdatedUser]      = DeriveJsonEncoder.gen[JsonUpdatedUser]
+  implicit val jsonUsernameEncoder:         JsonEncoder[JsonUsername]         = DeriveJsonEncoder.gen[JsonUsername]
+  implicit val jsonDeletedUserEncoder:      JsonEncoder[JsonDeletedUser]      = DeriveJsonEncoder.gen[JsonDeletedUser]
+  implicit val jsonReloadStatusEncoder:     JsonEncoder[JsonReloadStatus]     = DeriveJsonEncoder.gen[JsonReloadStatus]
+  implicit val jsonReloadResultEncoder:     JsonEncoder[JsonReloadResult]     = DeriveJsonEncoder.gen[JsonReloadResult]
+  implicit val jsonRoleCoverageEncoder:     JsonEncoder[JsonRoleCoverage]     = DeriveJsonEncoder.gen[JsonRoleCoverage]
+  implicit val jsonCoverageEncoder:         JsonEncoder[JsonCoverage]         = DeriveJsonEncoder.gen[JsonCoverage]
 }
 
 final case class JsonAuthConfig(
     digest:                 String,
-    roleListOverride:       JsonProviderRolesCapacity,
+    roleListOverride:       ProviderRoleExtension,
     authenticationBackends: Set[String],
     providerProperties:     Map[String, JsonProviderProperty],
     users:                  List[JsonUser]
 )
 
-sealed trait JsonProviderRolesCapacity {
-  def name: String
-}
-object JsonProviderRolesCapacity       {
-  case object Override extends JsonProviderRolesCapacity { override val name: String = "override" }
-  case object Extend   extends JsonProviderRolesCapacity { override val name: String = "extend"   }
-  case object None     extends JsonProviderRolesCapacity { override val name: String = "none"     }
-}
-
 final case class JsonProviderProperty(
-    roleListOverride:      JsonProviderRolesCapacity,
-    hasModifiablePassword: Boolean
+    @jsonField("roleListOverride") providerRoleExtension: ProviderRoleExtension
 )
+object JsonProviderProperty {
+  implicit val transformer: Transformer[AuthBackendProviderProperties, JsonProviderProperty] =
+    Transformer.derive[AuthBackendProviderProperties, JsonProviderProperty]
+}
 
 final case class JsonRoles(
     roles: Set[String]
@@ -207,7 +220,8 @@ final case class JsonUser(
     * Only add the provider info but do not take it into account in roles and rights
     */
   def addProviderInfo(providerInfo: JsonProviderInfo): JsonUser = {
-    copy(providersInfo = providersInfo + (providerInfo.provider -> providerInfo))
+    // TODO: The list is not ordered so we can just append
+    copy(providers = providers :+ providerInfo.provider, providersInfo = providersInfo + (providerInfo.provider -> providerInfo))
   }
 
   /**
@@ -322,10 +336,23 @@ final case class JsonRole(
 
 final case class JsonReloadResult(reload: JsonReloadStatus)
 
-object JsonReloadResult {
+object JsonReloadResult  {
   val Done = JsonReloadResult(JsonReloadStatus("Done"))
 }
 final case class JsonReloadStatus(status: String)
+
+final case class JsonAddedUserData(
+    username:    String,
+    password:    String,
+    permissions: List[String],
+    name:        Option[String],
+    email:       Option[String],
+    otherInfo:   Option[Json.Obj]
+)
+object JsonAddedUserData {
+  implicit val transformer: Transformer[JsonUserFormData, JsonAddedUserData] =
+    Transformer.derive[JsonUserFormData, JsonAddedUserData]
+}
 
 final case class JsonInternalUserData(
     username:    String,
@@ -338,10 +365,11 @@ object JsonInternalUserData {
 }
 
 final case class JsonAddedUser(
-    addedUser: JsonInternalUserData
+    addedUser: JsonAddedUserData
 ) extends AnyVal
 object JsonAddedUser        {
-  implicit val transformer: Transformer[User, JsonAddedUser] = (u: User) => JsonAddedUser(u.transformInto[JsonInternalUserData])
+  implicit val transformer: Transformer[JsonUserFormData, JsonAddedUser] = (u: JsonUserFormData) =>
+    JsonAddedUser(u.transformInto[JsonAddedUserData])
 }
 
 final case class JsonUpdatedUser(
@@ -350,6 +378,14 @@ final case class JsonUpdatedUser(
 object JsonUpdatedUser      {
   implicit val transformer: Transformer[User, JsonUpdatedUser] = (u: User) =>
     JsonUpdatedUser(u.transformInto[JsonInternalUserData])
+}
+
+final case class JsonUpdatedUserInfo(
+    updatedUser: UpdateUserInfo
+) extends AnyVal
+object JsonUpdatedUserInfo  {
+  implicit val transformer: Transformer[UpdateUserInfo, JsonUpdatedUserInfo] =
+    JsonUpdatedUserInfo(_)
 }
 
 final case class JsonUsername(
@@ -379,8 +415,9 @@ final case class JsonUserFormData(
 )
 
 object JsonUserFormData {
-  implicit val transformer:           Transformer[JsonUserFormData, User]       = Transformer.derive[JsonUserFormData, User]
-  implicit val transformerUpdateUser: Transformer[JsonUserFormData, UpdateUser] = Transformer.derive[JsonUserFormData, UpdateUser]
+  implicit val transformer:           Transformer[JsonUserFormData, User]           = Transformer.derive[JsonUserFormData, User]
+  implicit val transformerUpdateUser: Transformer[JsonUserFormData, UpdateUserFile] =
+    Transformer.derive[JsonUserFormData, UpdateUserFile]
 }
 
 final case class JsonCoverage(

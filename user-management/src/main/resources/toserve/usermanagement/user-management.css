@@ -296,14 +296,14 @@ h3 {
   margin-bottom: 5em;
 }
 
-.user-info .user-info-row:last-child {
-  text-align: right;
-}
-
 .user-info .user-info-row.user-info-other {
   display: flex;
   flex-direction: column;
   column-gap: 5px;
+}
+
+.user-info .user-info-row .user-info-add {
+  text-align: right;
 }
 
 .user-info .user-info-row .user-info-row-edit {

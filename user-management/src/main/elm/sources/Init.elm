@@ -1,7 +1,7 @@
 module Init exposing (..)
 
 import ApiCalls exposing (getUsersConf)
-import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleListOverride(..), StateInput(..), UserForm, UI)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleListOverride(..), StateInput(..), UserForm, UI, UserInfoForm)
 import Dict exposing (fromList)
 import Html.Attributes exposing (style)
 import Http
@@ -16,7 +16,8 @@ init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
         initUi = UI Closed False
-        initUserForm = UserForm "" "" True False [] "" "" Dict.empty [] ValidInputs 
+        initUserInfoForm = UserInfoForm "" "" Dict.empty
+        initUserForm = UserForm "" "" True False [] initUserInfoForm [] ValidInputs 
         initModel = Model flags.contextPath "" (fromList []) (fromList []) [] None Toasty.initialState initUserForm initUi [] Dict.empty
     in
     ( initModel
