@@ -123,67 +123,65 @@ data-lift="with-cached-resource">
 	    </div>
 	  </div>
 	</div>
-
-                <div>
-                  <h3 class="page-title">Configure email notification</h3>
-                  <div class="section-with-doc">
-                    <div class="section-left">
-                      <p>You can modify the email's template of each steps here: </p>
-                      <ul class="clipboard-list">
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/validation-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/validation-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/deployment-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/deployment-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/cancelled-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/cancelled-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                        <li>
-                          <span>/var/rudder/plugins/change-validation/deployed-mail.template</span>
-                          <a class="btn-goto btn-clipboard"
-                            data-clipboard-text="/var/rudder/plugins/change-validation/deployed-mail.template"
-                            data-bs-toggle='tooltip' data-bs-placement='bottom' data-bs-container="html"
-                            title="Copy to clipboard">
-                            <i class="far fa-clipboard"></i>
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-                    <div class="section-right">
-                      <div class="doc doc-info">
-                        <div class="marker">
-                          <span class="fa fa-info-circle"></span>
-                        </div>
-                        <p>
-                          By default, email notifications are disabled. To enable them, make sure that the
-                          <b>smtp.hostServer</b> parameter is
-                          not left empty in the configuration file:
-                          <b>/opt/rudder/etc/plugins/change-validation.conf</b>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+	<div>
+	  <h3 class="page-title">Configure email notification</h3>
+	  <div class="section-with-doc">
+	    <div class="section-left">
+	      <p>You can modify the email's template of each steps here: </p>
+	      <ul class="clipboard-list">
+		<li>
+		  <span>/var/rudder/plugins/change-validation/validation-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/validation-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+		<li>
+		  <span>/var/rudder/plugins/change-validation/deployment-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/deployment-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+		<li>
+		  <span>/var/rudder/plugins/change-validation/cancelled-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/cancelled-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+		<li>
+		  <span>/var/rudder/plugins/change-validation/deployed-mail.template</span>
+		  <a class="btn-goto btn-clipboard"
+		    data-clipboard-text="/var/rudder/plugins/change-validation/deployed-mail.template"
+		    data-toggle='tooltip' data-placement='bottom' data-container="html"
+		    title="Copy to clipboard">
+		    <i class="far fa-clipboard"></i>
+		  </a>
+		</li>
+	      </ul>
+	    </div>
+	    <div class="section-right">
+	      <div class="doc doc-info">
+		<div class="marker">
+		  <span class="fa fa-info-circle"></span>
+		</div>
+		<p>
+		  By default, email notifications are disabled. To enable them, make sure that the
+		  <b>smtp.hostServer</b> parameter is
+		  not left empty in the configuration file:
+		  <b>/opt/rudder/etc/plugins/change-validation.conf</b>
+		</p>
+	      </div>
+	    </div>
+	  </div>
+	</div>
                 <div>
                   <h3 class="page-title">Configure change request triggers</h3>
                   <div>
