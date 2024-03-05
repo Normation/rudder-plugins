@@ -272,7 +272,8 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
     }
   }
 
-  @Bean def roleApiMapping = new RoleApiMapping(RudderConfig.authorizationApiMapping)
+  @Bean def userRepository: UserRepository = RudderConfig.userRepository
+  @Bean def roleApiMapping: RoleApiMapping = new RoleApiMapping(RudderConfig.authorizationApiMapping)
 
   @Bean def rudderOauth2AuthSuccessHandler: AuthenticationSuccessHandler = new SimpleUrlAuthenticationSuccessHandler(
     "/secure/index.html"
