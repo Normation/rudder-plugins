@@ -50,9 +50,9 @@ import com.normation.rudder.domain.eventlog.ModifyChangeRequest
 import com.normation.rudder.domain.workflows._
 import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model._
-import com.normation.rudder.web.services.CurrentUser
 import com.normation.utils.DateFormaterService
 import net.liftweb.common._
 import net.liftweb.http._
