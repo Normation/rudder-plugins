@@ -38,17 +38,30 @@
 package com.normation.plugins.usermanagement.api
 
 import bootstrap.liftweb.AuthBackendProvidersManager
+import bootstrap.liftweb.DefaultAuthBackendProvider
 import bootstrap.liftweb.FileUserDetailListProvider
+import bootstrap.liftweb.PasswordEncoder
+import bootstrap.liftweb.ProviderRoleExtension
 import com.normation.errors._
 import com.normation.plugins.usermanagement.JsonAddedUser
+import com.normation.plugins.usermanagement.JsonAuthConfig
 import com.normation.plugins.usermanagement.JsonCoverage
 import com.normation.plugins.usermanagement.JsonDeletedUser
+import com.normation.plugins.usermanagement.JsonProviderInfo
+import com.normation.plugins.usermanagement.JsonProviderProperty
 import com.normation.plugins.usermanagement.JsonReloadResult
+import com.normation.plugins.usermanagement.JsonRights
 import com.normation.plugins.usermanagement.JsonRole
 import com.normation.plugins.usermanagement.JsonRoleAuthorizations
+import com.normation.plugins.usermanagement.JsonRoles
+import com.normation.plugins.usermanagement.JsonStatus
 import com.normation.plugins.usermanagement.JsonUpdatedUser
+import com.normation.plugins.usermanagement.JsonUpdatedUserInfo
+import com.normation.plugins.usermanagement.JsonUser
 import com.normation.plugins.usermanagement.JsonUserFormData
 import com.normation.plugins.usermanagement.Serialisation._
+import com.normation.plugins.usermanagement.UpdateUserFile
+import com.normation.plugins.usermanagement.UpdateUserInfo
 import com.normation.plugins.usermanagement.User
 import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.rudder.AuthorizationType
@@ -60,6 +73,7 @@ import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
+import com.normation.rudder.api.HttpAction.PUT
 import com.normation.rudder.apidata.ZioJsonExtractor
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest._
@@ -69,13 +83,18 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.users.EventTrace
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.RudderUserDetail
+import com.normation.rudder.users.UserInfo
 import com.normation.rudder.users.UserRepository
-import com.softwaremill.quicklens._
-import io.scalaland.chimney.syntax._
+import com.normation.rudder.users.UserSession
+import com.normation.rudder.users.UserStatus
+import io.scalaland.chimney.Transformer
+import io.scalaland.chimney.dsl._
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import org.joda.time.DateTime
 import sourcecode.Line
 import zio.ZIO
 import zio.syntax._
@@ -134,10 +153,34 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     override def dataContainer: Option[String] = None
   }
 
-  final case object UpdateUserInfos extends UserManagementApi with OneParam with StartsAtVersion10 {
+  final case object UpdateUser extends UserManagementApi with OneParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
-    val description    = "Update user's infos"
+    val description    = "Update user's administration fields"
     val (action, path) = POST / "usermanagement" / "update" / "{username}"
+
+    override def dataContainer: Option[String] = None
+  }
+
+  final case object UpdateUserInfo extends UserManagementApi with OneParam with StartsAtVersion10 {
+    val z              = implicitly[Line].value
+    val description    = "Update user's information"
+    val (action, path) = POST / "usermanagement" / "update" / "info" / "{username}"
+
+    override def dataContainer: Option[String] = None
+  }
+
+  final case object ActivateUser extends UserManagementApi with OneParam with StartsAtVersion10 {
+    val z              = implicitly[Line].value
+    val description    = "Activate a user"
+    val (action, path) = PUT / "usermanagement" / "status" / "activate" / "{username}"
+
+    override def dataContainer: Option[String] = None
+  }
+
+  final case object DisableUser extends UserManagementApi with OneParam with StartsAtVersion10 {
+    val z              = implicitly[Line].value
+    val description    = "Disable a user"
+    val (action, path) = PUT / "usermanagement" / "status" / "disable" / "{username}"
 
     override def dataContainer: Option[String] = None
   }
@@ -157,7 +200,8 @@ class UserManagementApiImpl(
     userRepo:              UserRepository,
     userService:           FileUserDetailListProvider,
     authProvider:          AuthBackendProvidersManager,
-    userManagementService: UserManagementService
+    userManagementService: UserManagementService,
+    roleApiMapping:        RoleApiMapping
 ) extends LiftApiModuleProvider[UserManagementApi] {
   api =>
 
@@ -169,7 +213,10 @@ class UserManagementApiImpl(
       case UserManagementApi.ReloadUsersConf => ReloadUsersConf
       case UserManagementApi.AddUser         => AddUser
       case UserManagementApi.DeleteUser      => DeleteUser
-      case UserManagementApi.UpdateUserInfos => UpdateUserInfos
+      case UserManagementApi.UpdateUser      => UpdateUser
+      case UserManagementApi.UpdateUserInfo  => UpdateUserInfo
+      case UserManagementApi.ActivateUser    => ActivateUser
+      case UserManagementApi.DisableUser     => DisableUser
       case UserManagementApi.RoleCoverage    => RoleCoverage
       case UserManagementApi.GetRoles        => GetRoles
     }.toList
@@ -181,26 +228,83 @@ class UserManagementApiImpl(
   object GetUserInfo extends LiftApiModule0 {
     val schema = UserManagementApi.GetUserInfo
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import com.normation.plugins.usermanagement.Serialisation._
 
-      // This is just a compat hub done so that we can see all users. There will be problems
       (for {
-        users <- userRepo.getAll()
+        users     <- userRepo.getAll()
+        allRoles  <- RudderRoles.getAllRoles
+        file       = userService.authConfig
+        roles      = allRoles.values.toSet
+        jsonUsers <-
+          ZIO
+            .foreach(users)(u => {
+              implicit val currentRoles: Set[Role] = roles
+              // we take last session to get last known roles and authz of the user
+              // we need to merge at the level of JsonUser because last session roles are just String
+              userRepo.getLastPreviousLogin(u.id, false).map { lastSession =>
+                // depending on provider property configuration, we should merge or override roles
+                val providerProperties        = authProvider.getProviderProperties()
+                val mainProviderRoleExtension = providerProperties.get(u.managedBy).map(_.providerRoleExtension)
+
+                val defaultUser            =
+                  RudderUserDetail(RudderAccount.User(u.id, ""), u.status, Set(), ApiAuthorization.None, NodeSecurityContext.None)
+                val userWithoutPermissions = transformUser(
+                  defaultUser,
+                  u,
+                  Map(u.managedBy -> JsonProviderInfo.fromUser(defaultUser, u.managedBy)),
+                  lastSession.map(_.creationDate)
+                )
+
+                file.users.get(u.id) match {
+                  case None    => {
+                    // we still need to consider one role extension case : if provider cannot define roles, user cannot have any role
+                    mainProviderRoleExtension match {
+                      case Some(ProviderRoleExtension.None) => userWithoutPermissions
+                      case _                                => transformProvidedUser(u, lastSession)
+                    }
+                  }
+                  case Some(x) => {
+                    // we need to update the status to the latest one from database
+                    val currentUserDetails = x.copy(status = u.status)
+
+                    // since file definition does not depend on session use the file user as base for file-managed users
+                    val fileProviderInfo = JsonProviderInfo.fromUser(x, DefaultAuthBackendProvider.FILE)
+
+                    if (u.managedBy == DefaultAuthBackendProvider.FILE) {
+                      transformUser(
+                        currentUserDetails,
+                        u,
+                        Map(fileProviderInfo.provider -> fileProviderInfo),
+                        lastSession.map(_.creationDate)
+                      ).withRoleCoverage(currentUserDetails)
+                    } else {
+                      // we need to merge the two users, the one from the file and the one from the session
+                      mainProviderRoleExtension match {
+                        case Some(ProviderRoleExtension.WithOverride) =>
+                          // Do not recompute roles nor roles coverage, because file roles are overridden by provider roles
+                          transformProvidedUser(u, lastSession).addProviderInfo(fileProviderInfo)
+                        case Some(ProviderRoleExtension.NoOverride)   =>
+                          // Merge the previous session roles with the file roles and recompute role coverage over the merge result
+                          transformProvidedUser(u, lastSession).merge(fileProviderInfo).withRoleCoverage(currentUserDetails)
+                        case Some(ProviderRoleExtension.None)         =>
+                          // Ignore the session roles which may have previously been saved with another role extension mode
+                          userWithoutPermissions.merge(fileProviderInfo).withRoleCoverage(currentUserDetails)
+                        case None                                     =>
+                          // Provider no longer known, fallback to file provider
+                          transformUser(
+                            currentUserDetails,
+                            u,
+                            Map(fileProviderInfo.provider -> fileProviderInfo),
+                            lastSession.map(_.creationDate)
+                          ).withRoleCoverage(currentUserDetails)
+                      }
+                    }
+                  }
+                }
+              }
+            })
       } yield {
-        val file         = userService.authConfig
-        val updatedUsers = users.map(u => {
-          file.users.get(u.id) match {
-            case None    =>
-              (
-                u.id,
-                RudderUserDetail(RudderAccount.User(u.id, ""), u.status, Set(), ApiAuthorization.None, NodeSecurityContext.None)
-              )
-            case Some(x) => (x.getUsername, x)
-          }
-        })
-        val authFile     = file.modify(_.users).setTo(updatedUsers.toMap)
-        authFile.serialize(authProvider)
-      }).chainError("Error when retrieving user list").toLiftResponseOne(params, schema, None)
+        serialize(jsonUsers.sortBy(_.id))(file.encoder, authProvider)
+      }).chainError("Error when retrieving user list").toLiftResponseOne(params, schema, _ => None)
     }
   }
 
@@ -224,7 +328,7 @@ class UserManagementApiImpl(
 
       } yield {
         json
-      }).toLiftResponseOne(params, schema, None)
+      }).toLiftResponseOne(params, schema, _ => None)
     }
   }
 
@@ -237,7 +341,7 @@ class UserManagementApiImpl(
       } yield {
         JsonReloadResult.Done
       }).chainError("Could not reload user's configuration")
-        .toLiftResponseOne(params, schema, None)
+        .toLiftResponseOne(params, schema, _ => None)
     }
   }
 
@@ -251,16 +355,17 @@ class UserManagementApiImpl(
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
       (for {
-        user  <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
-        _     <- ZIO.when(userService.authConfig.users.keySet contains user.username) {
-                   Inconsistency(s"User '${user.username}' already exists").fail
-                 }
-        added <- userManagementService.add(user.transformInto[User], user.isPreHashed)
-        _     <- reload()
-
+        user <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
+        _    <- ZIO.when(userService.authConfig.users.keySet contains user.username) {
+                  Inconsistency(s"User '${user.username}' already exists").fail
+                }
+        _    <-
+          userManagementService
+            .add(user.transformInto[User], user.isPreHashed)
+        _    <- userManagementService.updateInfo(user.username, user.transformInto[UpdateUserInfo])
       } yield {
-        added.transformInto[JsonAddedUser]
-      }).chainError("Could not add user").toLiftResponseOne(params, schema, None)
+        user.transformInto[JsonAddedUser]
+      }).chainError("Could not add user").toLiftResponseOne(params, schema, _ => None)
     }
   }
 
@@ -277,16 +382,15 @@ class UserManagementApiImpl(
     ): LiftResponse = {
 
       (for {
-        _ <- userManagementService.remove(id, authzToken.qc.actor)
-        _ <- reload()
+        _ <- userManagementService.remove(id, authzToken.qc.actor, "User deleted by user management API")
       } yield {
         id.transformInto[JsonDeletedUser]
-      }).chainError(s"Could not delete user ${id}").toLiftResponseOne(params, schema, None)
+      }).chainError(s"Could not delete user ${id}").toLiftResponseOne(params, schema, _ => None)
     }
   }
 
-  object UpdateUserInfos extends LiftApiModule {
-    val schema = UserManagementApi.UpdateUserInfos
+  object UpdateUser extends LiftApiModule {
+    val schema = UserManagementApi.UpdateUser
 
     def process(
         version:    ApiVersion,
@@ -297,20 +401,100 @@ class UserManagementApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        user           <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO
-        checkExistence <- if (!(userService.authConfig.users.keySet contains id)) {
-                            // we may have users that where added by OIDC, and still want to add them in file
-                            userRepo.get(id).flatMap {
-                              case Some(u) => userManagementService.add(User(u.id, "", Set()), user.isPreHashed)
-                              case None    => Inconsistency(s"'$id' does not exists").fail
-                            }
-                          } else {
-                            userManagementService.update(id, user.transformInto[User], user.isPreHashed)
-                          }
-        _              <- reload()
+        u        <- ZioJsonExtractor.parseJson[JsonUserFormData](req).toIO // We ignore the "user info" part of the request
+        user      = u.copy(permissions = u.permissions.filter(_ != AuthorizationType.NoRights.id))
+        allRoles <- RudderRoles.getAllRoles
+        _        <-
+          userManagementService.update(id, user.transformInto[UpdateUserFile], user.isPreHashed)(
+            allRoles
+          )
       } yield {
         user.transformInto[User].transformInto[JsonUpdatedUser]
-      }).chainError(s"Could not update user '$id'").toLiftResponseOne(params, schema, None)
+      }).chainError(s"Could not update user '${id}'").toLiftResponseOne(params, schema, _ => None)
+    }
+  }
+
+  object UpdateUserInfo extends LiftApiModule {
+    val schema = UserManagementApi.UpdateUserInfo
+
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        id:         String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
+      (for {
+        u <- ZioJsonExtractor.parseJson[UpdateUserInfo](req).toIO
+        _ <- userManagementService.updateInfo(id, u)
+      } yield {
+        u.transformInto[JsonUpdatedUserInfo]
+      }).chainError(s"Could not update user '${id}' information").toLiftResponseOne(params, schema, _ => Some(id))
+    }
+  }
+
+  object ActivateUser extends LiftApiModule {
+    val schema = UserManagementApi.ActivateUser
+
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        id:         String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
+      (for {
+        user       <- userRepo.get(id).notOptional(s"User '$id' does not exist therefore cannot be activated")
+        jsonStatus <- user.status match {
+                        case UserStatus.Active   => JsonStatus(UserStatus.Active).succeed
+                        case UserStatus.Disabled => {
+                          val eventTrace = EventTrace(
+                            authzToken.qc.actor,
+                            DateTime.now,
+                            "User current disabled status set to 'active' by user management API"
+                          )
+                          userRepo.setActive(List(user.id), eventTrace).as(JsonStatus(UserStatus.Active))
+                        }
+                        case UserStatus.Deleted  =>
+                          Inconsistency(s"User '$id' cannot be activated because the user is currently deleted").fail
+                      }
+      } yield {
+        jsonStatus
+      }).chainError(s"Could not activate user '$id'").toLiftResponseOne(params, schema, _ => Some(id))
+    }
+  }
+
+  object DisableUser extends LiftApiModule {
+    val schema = UserManagementApi.DisableUser
+
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        id:         String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
+      (for {
+        user       <- userRepo.get(id).notOptional(s"User '$id' does not exist therefore cannot be disabled")
+        jsonStatus <- user.status match {
+                        case UserStatus.Disabled => JsonStatus(UserStatus.Disabled).succeed
+                        case UserStatus.Active   => {
+                          val eventTrace = EventTrace(
+                            authzToken.qc.actor,
+                            DateTime.now,
+                            "User current active status set to 'disabled' by user management API"
+                          )
+                          userRepo.disable(List(user.id), None, List.empty, eventTrace).as(JsonStatus(UserStatus.Disabled))
+                        }
+                        case UserStatus.Deleted  =>
+                          Inconsistency(s"User '$id' cannot be disabled because the user is currently deleted").fail
+                      }
+      } yield {
+        jsonStatus
+      }).chainError(s"Could not disable user '$id'").toLiftResponseOne(params, schema, _ => Some(id))
     }
   }
 
@@ -340,7 +524,123 @@ class UserManagementApiImpl(
                          }
       } yield {
         roleAndCustoms.transformInto[JsonCoverage]
-      }).chainError(s"Could not get role's coverage user from request").toLiftResponseOne(params, schema, None)
+      }).chainError(s"Could not get role's coverage user from request").toLiftResponseOne(params, schema, _ => None)
+    }
+  }
+
+  def serialize(
+      users:         List[JsonUser]
+  )(passwordEncoder: PasswordEncoder.Rudder, authProviderManager: AuthBackendProvidersManager): JsonAuthConfig = {
+    val encoder: String = PassEncoderToString(passwordEncoder)
+    val providerProperties   = authProviderManager.getProviderProperties()
+    val authBackendsProvider = authProviderManager.getConfiguredProviders().map(_.name).toSet
+
+    // Aggregate all provider properties, if any provider can override user roles then it means there is a global override
+    val roleListOverride    = providerProperties.values.max.providerRoleExtension
+    val providersProperties = providerProperties.view.mapValues(_.transformInto[JsonProviderProperty]).toMap
+
+    JsonAuthConfig(encoder, roleListOverride, authBackendsProvider, providersProperties, users)
+  }
+
+  private def transformUser(
+      u:             RudderUserDetail,
+      info:          UserInfo,
+      providersInfo: Map[String, JsonProviderInfo],
+      lastLogin:     Option[DateTime]
+  ): JsonUser = {
+    // NoRights and AnyRights directly map to known user permissions. AnyRights takes precedence over NoRights.
+    if (u.authz.authorizationTypes.contains(AuthorizationType.AnyRights)) {
+      JsonUser.anyRights(u.getUsername, info.name, info.email, info.otherInfo, u.status, providersInfo, lastLogin)
+    } else if (u.authz.authorizationTypes.isEmpty || u.authz.authorizationTypes.contains(AuthorizationType.NoRights)) {
+      JsonUser.noRights(u.getUsername, info.name, info.email, info.otherInfo, u.status, providersInfo, lastLogin)
+    } else {
+      JsonUser(u.getUsername, info.name, info.email, info.otherInfo, u.status, providersInfo, lastLogin)
+    }
+  }
+
+  implicit def transformDbUserToJsonUser(implicit userInfo: UserInfo): Transformer[UserSession, JsonUser] = {
+    // Filter out custom permissions of form "anon[..]" and take the aliased roles of form "alias(role)" (see toDisplayNames)
+    def getDiplayPermissions(userSession: UserSession): JsonRoles = {
+      val customRegex  = """^anon\[(.*)\]$""".r
+      val aliasedRegex = """^.*\((.*)\)$""".r
+      JsonRoles(userSession.permissions.flatMap {
+        case customRegex(perm) => None
+        case aliasedRegex(r)   => Some(r)
+        case perm              => Some(perm)
+      }.toSet)
+    }
+    Transformer
+      .define[UserSession, JsonUser]
+      .withFieldConst(_.id, userInfo.id)
+      .withFieldComputed(_.authz, s => JsonRights(s.authz.toSet))
+      .withFieldComputed(_.roles, getDiplayPermissions(_))
+      .withFieldComputed(_.rolesCoverage, getDiplayPermissions(_))
+      .withFieldConst(_.name, userInfo.name)
+      .withFieldConst(_.email, userInfo.email)
+      .withFieldConst(_.otherInfo, userInfo.otherInfo)
+      .withFieldConst(_.status, userInfo.status)
+      .withFieldConst(_.providers, List(userInfo.managedBy))
+      .withFieldComputed(
+        _.providersInfo,
+        s => {
+          Map(
+            userInfo.managedBy -> JsonProviderInfo(
+              userInfo.managedBy,
+              JsonRights(s.authz.toSet),
+              getDiplayPermissions(s),
+              JsonRights.empty
+            )
+          )
+        }
+      )
+      .withFieldComputed(_.lastLogin, s => Some(s.creationDate))
+      .withFieldConst(_.customRights, JsonRights.empty)
+      .buildTransformer
+  }
+
+  /**
+   * Use the last session information as user permissions and authz.
+   * The resulting user has the exact same permissions and authz as provided in the last user session.
+   *
+   * Current user permissions may be different if they have changed since we saved the user info, roles may also no longer exist,
+   * so we do not attempt to parse as roles, but we still need to transform roles that are aliases or that are unnamed.
+   */
+  private def transformProvidedUser(userInfo: UserInfo, lastSession: Option[UserSession])(implicit
+      allRoles:                               Set[Role]
+  ): JsonUser = {
+    lastSession match {
+      case None              => {
+        val defaultUser = {
+          RudderUserDetail(
+            RudderAccount.User(userInfo.id, ""),
+            userInfo.status,
+            Set(),
+            ApiAuthorization.None,
+            NodeSecurityContext.None
+          )
+        }
+        transformUser(
+          defaultUser,
+          userInfo,
+          Map(userInfo.managedBy -> JsonProviderInfo.fromUser(defaultUser, userInfo.managedBy)),
+          lastSession.map(_.creationDate)
+        )
+      }
+      case Some(userSession) => {
+        implicit val user: UserInfo = userInfo
+        userSession.transformInto[JsonUser]
+      }
+    }
+  }
+
+  private def PassEncoderToString(encoder: PasswordEncoder.Rudder): String = {
+    encoder match {
+      case PasswordEncoder.MD5    => "MD5"
+      case PasswordEncoder.SHA1   => "SHA-1"
+      case PasswordEncoder.SHA256 => "SHA-256"
+      case PasswordEncoder.SHA512 => "SHA-512"
+      case PasswordEncoder.BCRYPT => "BCRYPT"
+      case _                      => "plain text"
     }
   }
 }

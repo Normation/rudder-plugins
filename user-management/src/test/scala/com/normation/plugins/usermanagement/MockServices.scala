@@ -15,16 +15,18 @@ import com.normation.rudder.users.UserSession
 import java.nio.charset.StandardCharsets
 import org.apache.commons.io.IOUtils
 import org.joda.time.DateTime
+import zio.ZIO
 import zio.json.ast.Json
 import zio.syntax._
 
-class MockServices(userInfos: List[UserInfo], usersFile: File) {
+class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], usersFile: File) {
 
   object userRepo extends UserRepository {
 
     override def logStartSession(
         userId:            String,
         permissions:       List[String],
+        authz:             List[String],
         tenants:           String,
         sessionId:         SessionId,
         authenticatorName: String,
@@ -35,7 +37,9 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
 
     override def closeAllOpenSession(endDate: DateTime, endCause: String): IOResult[Unit] = ???
 
-    override def getLastPreviousLogin(userId: String): IOResult[Option[UserSession]] = ???
+    override def getLastPreviousLogin(userId: String, closedSessionsOnly: Boolean): IOResult[Option[UserSession]] = {
+      userSessions.find(_.userId == userId).succeed
+    }
 
     override def deleteOldSessions(olderThan: DateTime): IOResult[Unit] = ???
 
@@ -46,7 +50,9 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
         notLoggedSince:    Option[DateTime],
         excludeFromOrigin: List[String],
         trace:             EventTrace
-    ): IOResult[List[String]] = ???
+    ): IOResult[List[String]] = {
+      userId.succeed
+    }
 
     override def delete(
         userId:            List[String],
@@ -64,14 +70,18 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
         trace:             EventTrace
     ): IOResult[List[String]] = ???
 
-    override def setActive(userId: List[String], trace: EventTrace): IOResult[Unit] = ???
+    override def setActive(userId: List[String], trace: EventTrace): IOResult[Unit] = {
+      ZIO.unit
+    }
 
     override def updateInfo(
         id:        String,
         name:      Option[Option[String]],
         email:     Option[Option[String]],
         otherInfo: Option[Json.Obj]
-    ): IOResult[Unit] = ???
+    ): IOResult[Unit] = {
+      ZIO.unit
+    }
 
     override def getAll(): IOResult[List[UserInfo]] = userInfos.succeed
 
@@ -98,5 +108,5 @@ class MockServices(userInfos: List[UserInfo], usersFile: File) {
   }
 
   val userManagementService =
-    new UserManagementService(userRepo, UserFile(usersFile.pathAsString, usersInputStream).succeed)
+    new UserManagementService(userRepo, userService, UserFile(usersFile.pathAsString, usersInputStream).succeed)
 }

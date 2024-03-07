@@ -1,8 +1,8 @@
 module UserManagement exposing (processApiError, update)
 
-import ApiCalls exposing (addUser, computeRoleCoverage, getRoleConf, getUsersConf, postReloadConf, updateUser)
+import ApiCalls exposing (activateUser, addUser, disableUser, getRoleConf, getUsersConf, postReloadConf, updateUser, updateUserInfo)
 import Browser
-import DataTypes exposing (Authorization, Model, Msg(..), PanelMode(..), StateInput(..), User, Username, Users, userProviders)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), mergeUserNewInfo, userProviders)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, createSuccessNotification, defaultConfig, init, subscriptions)
@@ -10,6 +10,10 @@ import String exposing (isEmpty)
 import Toasty
 import View exposing (view)
 import List
+import List.FlatMap
+import DataTypes exposing (User)
+import DataTypes exposing (UI)
+import DataTypes exposing (UserForm)
 
 main =
     Browser.element
@@ -18,14 +22,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-getUser: Username -> Users -> Maybe User
-getUser username users =
-    case (Dict.get username users) of
-        Just a ->
-           Just (User username a.custom a.permissions)
-        Nothing ->
-            Nothing
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -38,9 +34,22 @@ update msg model =
                 Ok u ->
                     let
                         recordUser =
-                            List.map (\x -> (x.login, (Authorization x.authz  x.permissions))) u.users
+                            List.map (\x -> (x.login, x)) u.users
+                        users = fromList recordUser
+                        newPanelMode =
+                            case model.ui.panelMode of
+                                EditMode user ->
+                                    case Dict.get user.login users of
+                                        Just u_ ->
+                                            EditMode u_
+                                        Nothing ->
+                                            Closed
+                                _ ->
+                                    Closed
+                        ui = model.ui
+                        newUI = {ui | panelMode = newPanelMode} 
                         newModel =
-                            { model | roleListOverride = u.roleListOverride, users = fromList recordUser, digest = u.digest, providers = (userProviders u.authenticationBackends)}
+                            { model | roleListOverride = u.roleListOverride, users = users, ui = newUI, digest = u.digest, providers = (userProviders u.authenticationBackends), providersProperties = u.providersProperties}
 
                     in
                     ( newModel, getRoleConf model )
@@ -77,29 +86,22 @@ update msg model =
             Toasty.update defaultConfig ToastyMsg subMsg model
 
         ActivePanelAddUser ->
-            if model.panelMode == AddMode then
-                ({model | panelMode = Closed, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
+            if model.ui.panelMode == AddMode then
+                (resetFormPanel model Closed, Cmd.none)
             else
-                ({model | panelMode = AddMode, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
+                (resetFormPanel model AddMode, Cmd.none)
         ActivePanelSettings user ->
-            case model.panelMode of
+            case model.ui.panelMode of
                 EditMode u ->
                     if u.login == user.login then
-                        ({model | panelMode = Closed, authzToAddOnSave = [], userForcePasswdInput = False}, Cmd.none)
+                        (resetFormPanel model Closed, Cmd.none)
                     else
-                        ({model |authzToAddOnSave = [], password = "", panelMode = EditMode user, userForcePasswdInput = False }, Cmd.none)
+                        (resetFormPanel model (EditMode user), Cmd.none)
                 _          ->
-                    ({model | panelMode = EditMode user}, Cmd.none)
+                    (resetFormPanel model (EditMode user), Cmd.none)
 
         DeactivatePanel ->
-            ({model | isValidInput = ValidInputs, panelMode = Closed, authzToAddOnSave = [], password = "", userForcePasswdInput = False}, Cmd.none)
-
-        ComputeRoleCoverage result ->
-            case result of
-                Ok _ ->
-                    (model, computeRoleCoverage model model.authorizations)
-                Err err ->
-                    processApiError err model
+            (resetFormPanel model Closed, Cmd.none)
 
         AddUser result ->
              case result of
@@ -112,7 +114,10 @@ update msg model =
         DeleteUser result ->
              case result of
                   Ok deletedUser ->
-                       ({model | panelMode = Closed, login = "", openDeleteModal = False}, getUsersConf model)
+                       let
+                           newModel = resetFormPanel model Closed
+                       in
+                           (newModel, getUsersConf model)
                            |> createSuccessNotification (deletedUser ++ " have been deleted")
                   Err err ->
                        processApiError err model
@@ -126,51 +131,196 @@ update msg model =
                   Err err ->
                        processApiError err model
 
+        UpdateUserStatus result ->
+             case result of
+                  Ok username ->
+                      (model, getUsersConf model)
+                        |> createSuccessNotification (username ++ " have been modified")
+
+                  Err err ->
+                       processApiError err model
+
+        UpdateUserInfo result ->
+             case result of
+                  Ok _ ->
+                      (model, getUsersConf model)
+                        |> createSuccessNotification (model.userForm.login ++ " information has been modified")
+
+                  Err err ->
+                       processApiError err model
+
         AddRole r ->
-            ({model | authzToAddOnSave = r :: model.authzToAddOnSave}, Cmd.none)
-        RemoveRole user r ->
             let
-                newRoles = List.filter (\x -> r /= x) user.permissions
-                newAuthz = List.filter (\x -> r /= x) user.authz
-                newUser = {user | permissions = newRoles, authz = newAuthz}
+                userForm = model.userForm
             in
-            ({model | panelMode = EditMode newUser}, updateUser model user.login (DataTypes.AddUserForm newUser "" model.isHashedPasswd))
+                ({model | userForm = {userForm | rolesToAddOnSave = r :: userForm.rolesToAddOnSave}}, Cmd.none)
+        RemoveRole user provider r ->
+            let
+                -- remove role, and also authz that are associated to the role but not associated with any other remaining role
+                newRoles = Dict.get provider user.providersInfo |> Maybe.map .roles |> Maybe.withDefault [] |> List.filter (\x -> r /= x) 
+                newAuthz = 
+                    -- keep authz if it is found in any authz of newRoles
+                    -- keep authz if it's in custom authz of the user
+                    let
+                        allAuthz = Dict.toList model.roles |> List.FlatMap.flatMap (\(role, authz) -> if List.member role newRoles then authz else [])
+                    in 
+                        user.customRights ++ List.filter (\x ->
+                            case model.roles |> Dict.get x of
+                                Just _ -> True
+                                Nothing -> 
+                                    newRoles
+                                    |> List.any (\y -> List.member y allAuthz)
+                        ) user.authz
+                newPanelMode = EditMode {user | authz = newAuthz, roles = newRoles}
+                ui = model.ui
+                newUI = {ui | panelMode = newPanelMode}
+            in
+            ({model | ui = newUI}, updateUser model user.login (DataTypes.UserAuth user.login "" (newAuthz ++ newRoles) model.userForm.isHashedPasswd))
         Notification subMsg ->
             Toasty.update defaultConfig Notification subMsg model
 
         Password newPassword ->
-            ({model | isValidInput = ValidInputs, password = newPassword}, Cmd.none)
+            let
+                userForm = model.userForm
+                newUserForm = { userForm | password = newPassword, isValidInput = ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
         Login newLogin ->
-            ({model | isValidInput = ValidInputs, login = newLogin}, Cmd.none)
-        SubmitUpdatedInfos u ->
-            ({model | authzToAddOnSave = [], password = "", userForcePasswdInput = False, login = "", panelMode = Closed}, updateUser model u.login (DataTypes.AddUserForm { u | login = model.login} model.password model.isHashedPasswd))
+            let
+                userForm = model.userForm
+                newUserForm = { userForm | login = newLogin, isValidInput = ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        NewUserInfoFieldKey key idx ->
+            let
+                userForm = model.userForm
+                newUserInfoFields = List.indexedMap (\i (k, v) -> if i == idx then (key, v) else (k, v)) userForm.newUserInfoFields
+                newUserForm = { userForm | newUserInfoFields = newUserInfoFields, isValidInput = if key == "" then InvalidNewUserInfoField else ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        NewUserInfoFieldValue value idx ->
+            let
+                userForm = model.userForm
+                newUserInfoFields = List.indexedMap (\i (k, v) -> if i == idx then (k, value) else (k, v)) userForm.newUserInfoFields
+                newUserForm = { userForm | newUserInfoFields = newUserInfoFields, isValidInput = if value == "" then InvalidNewUserInfoField else ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        RemoveNewUserInfoField idx ->
+            let
+                userForm = model.userForm
+                newUserInfoFields = List.filterMap identity (List.indexedMap (\i (k, v) -> if i == idx then Nothing else Just (k, v)) userForm.newUserInfoFields)
+                newUserForm = { userForm | newUserInfoFields = newUserInfoFields }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        ModifyUserInfoField key value ->
+            let
+                userForm = model.userForm
+                userInfoForm = userForm.userInfoForm
+                newUserInfoFields = Dict.insert key value userInfoForm.otherInfo
+                newUserInfoForm = { userInfoForm | otherInfo = newUserInfoFields }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        AddUserInfoField ->
+            let
+                userForm = model.userForm
+                newUserForm = { userForm | newUserInfoFields = userForm.newUserInfoFields ++ [("", "")] }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        RemoveUserInfoField key ->
+            let
+                userForm = model.userForm
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | otherInfo = Dict.remove key userInfoForm.otherInfo }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        UserInfoName name ->
+            let
+                userForm = model.userForm
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | name = name }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm, isValidInput = ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        UserInfoEmail email ->
+            let
+                userForm = model.userForm
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | email = email }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm, isValidInput = ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        UserInfoFields fields ->
+            let
+                userForm = model.userForm
+                userInfoForm = userForm.userInfoForm
+                newUserInfoForm = { userInfoForm | otherInfo = fields }
+                newUserForm = { userForm | userInfoForm = newUserInfoForm, isValidInput = ValidInputs }
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
+        SubmitUpdateUser u ->
+            let
+                newModel = resetFormPanel model model.ui.panelMode
+            in
+                (newModel, updateUser model u.login u)
+        SubmitUserInfo ->
+            let
+                newModel = resetFormPanel model model.ui.panelMode
+            in
+                (newModel, updateUserInfo model model.userForm.login (mergeUserNewInfo model.userForm))
         SubmitNewUser u  ->
-            if(isEmpty u.login) then
-              ({model | isValidInput = InvalidUsername}, Cmd.none)
+            if isEmpty u.login then
+                let
+                    userForm = model.userForm
+                    newUserForm = { userForm | isValidInput = InvalidUsername }
+                in
+                    ({model | userForm = newUserForm}, Cmd.none)
             else
-              ({ model |
-                 panelMode            = Closed
-               , login                = ""
-               , password             = ""
-               , userForcePasswdInput = False
-               , isHashedPasswd         = True
-               , isValidInput         = ValidInputs
-               , authzToAddOnSave     = []
-               }
-               , addUser model (DataTypes.AddUserForm u model.password model.isHashedPasswd)
-               )
+                let
+                    newModel = resetFormPanel model Closed
+                in
+                    (newModel, addUser model (DataTypes.AddUserForm u model.userForm.password model.userForm.isHashedPasswd))
+        ActivateUser username ->
+            (model, activateUser model username)
+        DisableUser username ->
+            (model, disableUser model username)
 
         PreHashedPasswd bool ->
-            ({model | password = "",isHashedPasswd = bool}, Cmd.none)
+            let
+                userForm = model.userForm
+                newUserForm = {userForm | password = "", isHashedPasswd = bool}
+            in
+                ({model | userForm = newUserForm}, Cmd.none)
         AddPasswdAnyway ->
-            if (model.userForcePasswdInput) then
-                ({model | userForcePasswdInput = False, password = ""}, Cmd.none)
+            if model.userForm.userForcePasswdInput then
+                let
+                    userForm = model.userForm
+                    newUserForm = {userForm | password = "", userForcePasswdInput = False}
+                in
+                    ({model | userForm = newUserForm}, Cmd.none)
             else
-                ({model | userForcePasswdInput = True}, Cmd.none)
+                let
+                    userForm = model.userForm
+                    newUserForm = {userForm | userForcePasswdInput = True}
+                in
+                    ({model | userForm = newUserForm}, Cmd.none)
         OpenDeleteModal username ->
-            ({model | openDeleteModal = True, login = username}, Cmd.none)
+            let
+                ui = model.ui
+                newUI = {ui | openDeleteModal = True}
+                userForm = model.userForm
+                newUserForm = {userForm | login = username}
+            in
+                ({model | ui = newUI, userForm = newUserForm}, Cmd.none)
         CloseDeleteModal ->
-            ({model | openDeleteModal = False, login = ""}, Cmd.none)
+            let
+                ui = model.ui
+                newUI = {ui | openDeleteModal = False}
+                userForm = model.userForm
+                newUserForm = {userForm | login = ""}
+            in
+                ({model | ui = newUI, userForm = newUserForm}, Cmd.none)
 
 processApiError : Error -> Model -> ( Model, Cmd Msg )
 processApiError err model =
@@ -179,3 +329,38 @@ processApiError err model =
             { model | digest = "", users = fromList []}
     in
     ( newModel, Cmd.none ) |> createErrorNotification "Error while trying to fetch settings." err
+
+resetFormPanel : Model -> PanelMode -> Model
+resetFormPanel model panelMode =
+    let
+        currentUserForm = model.userForm
+        newLogin = 
+            case panelMode of
+                EditMode user -> user.login
+                _ -> ""
+        newFields = 
+            case panelMode of
+                EditMode user -> 
+                    if user.login == currentUserForm.login then
+                        mergeUserNewInfo currentUserForm
+                    else
+                        { name = user.name, email = user.email, otherInfo = user.otherInfo }
+                _ -> { name = "", email = "", otherInfo = Dict.empty }
+        newUI = { panelMode = panelMode, openDeleteModal = False }
+        newUserInfoForm = 
+            { name = newFields.name
+            , email = newFields.email
+            , otherInfo = newFields.otherInfo
+            }
+        newUserForm = 
+            { login = newLogin
+            , password = ""
+            , isHashedPasswd = True
+            , userForcePasswdInput = False
+            , rolesToAddOnSave = []
+            , newUserInfoFields = []
+            , userInfoForm = newUserInfoForm
+            , isValidInput = ValidInputs 
+            }
+    in
+        { model | ui = newUI, userForm = newUserForm }
