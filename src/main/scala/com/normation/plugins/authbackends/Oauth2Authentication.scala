@@ -34,6 +34,9 @@
 
 package com.normation.plugins.authbackends
 
+import bootstrap.liftweb.LogoutPostAction
+import bootstrap.liftweb.UserLogout
+import bootstrap.rudder.plugin.BuildLogout
 import cats.data.NonEmptyList
 import com.normation.errors._
 import com.typesafe.config.Config
@@ -71,17 +74,22 @@ final case class OIDCProvidedRole(enabled: Boolean, attributeName: String, over:
  * We never want to print the secret in logs, so override it.
  */
 final case class RudderClientRegistration(
-    registration: ClientRegistration,
-    infoMsg:      String,
-    roles:        OIDCProvidedRole,
-    provisioning: Boolean
+    registration:        ClientRegistration,
+    logoutUrl:           Option[String],
+    logoutRedirectUrl:   Option[String],
+    infoMsg:             String,
+    roles:               OIDCProvidedRole,
+    provisioning:        Boolean,
+    restrictRoleMapping: Boolean,
+    roleMapping:         Map[String, String]
 ) {
   override def toString: String = {
     toDebugStringWithSecret.replaceFirst("""clientSecret='([^']+?)'""", "clientSecret='*****'")
   }
 
   // avoid that in logs etc, use only for interactive debugging sessions
-  def toDebugStringWithSecret = s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}, user provisioning enabled: ${provisioning}"""
+  def toDebugStringWithSecret =
+    s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}, user provisioning enabled: ${provisioning}"""
 }
 
 /*
@@ -93,23 +101,27 @@ final case class RudderClientRegistration(
  */
 object RudderPropertyBasedOAuth2RegistrationDefinition {
 
-  val A_NAME            = "name"
-  val A_CLIENT_ID       = "client.id"
-  val A_CLIENT_SECRET   = "client.secret"
-  val A_CLIENT_REDIRECT = "client.redirect"
-  val A_AUTH_METHOD     = "authMethod"
-  val A_GRANT_TYPE      = "grantType"
-  val A_INFO_MESSAGE    = "ui.infoMessage"
-  val A_SCOPE           = "scope"
-  val A_URI_AUTH        = "uri.auth"
-  val A_URI_TOKEN       = "uri.token"
-  val A_URI_USER_INFO   = "uri.userInfo"
-  val A_URI_JWK_SET     = "uri.jwkSet"
-  val A_PIVOT_ATTR      = "userNameAttributeName"
-  val A_ROLES_ENABLED   = "roles.enabled"
-  val A_ROLES_ATTRIBUTE = "roles.attribute"
-  val A_ROLES_OVERRIDE  = "roles.override"
-  val A_PROVISIONING    = "enableProvisioning"
+  val A_NAME                 = "name"
+  val A_CLIENT_ID            = "client.id"
+  val A_CLIENT_SECRET        = "client.secret"
+  val A_CLIENT_REDIRECT      = "client.redirect"
+  val A_AUTH_METHOD          = "authMethod"
+  val A_GRANT_TYPE           = "grantType"
+  val A_INFO_MESSAGE         = "ui.infoMessage"
+  val A_SCOPE                = "scope"
+  val A_URI_AUTH             = "uri.auth"
+  val A_URI_TOKEN            = "uri.token"
+  val A_URI_USER_INFO        = "uri.userInfo"
+  val A_URI_JWK_SET          = "uri.jwkSet"
+  val A_URI_LOGOUT           = "uri.logout"
+  val A_URI_LOGOUT_REDIRECT  = "uri.logoutRedirect"
+  val A_PIVOT_ATTR           = "userNameAttributeName"
+  val A_ROLES_ENABLED        = "roles.enabled"
+  val A_ROLES_ATTRIBUTE      = "roles.attribute"
+  val A_ROLES_OVERRIDE       = "roles.override"
+  val A_ENFORCE_ROLE_MAPPING = "roles.mapping.restricted"
+  val A_ROLE_MAPPING         = "roles.mapping.entitlements"
+  val A_PROVISIONING         = "enableProvisioning"
 
   val authMethods = {
     import ClientAuthenticationMethod._
@@ -124,23 +136,27 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   val baseProperty = "rudder.auth.oauth2.provider"
 
   val registrationAttributes = Map(
-    A_NAME            -> "human readable name to use in the button 'login with XXXX'",
-    A_CLIENT_ID       -> "id generated in the Oauth2 service provider to identify rudder as a client app",
-    A_CLIENT_SECRET   -> "the corresponding secret key",
-    A_CLIENT_REDIRECT -> "rudder URL to redirect to once authentication is done on the provider (must be resolvable from user browser)",
-    A_AUTH_METHOD     -> s"authentication method to use (${authMethods.map(_.getValue).mkString(",")})",
-    A_GRANT_TYPE      -> s"authorization grant type to use (${grantTypes.map(_.getValue).mkString(",")}",
-    A_INFO_MESSAGE    -> "message displayed in the login form, for example to tell the user what login he must use",
-    A_SCOPE           -> "data scope to request access to",
-    A_URI_AUTH        -> "provider URL to contact for main authentication (see provider documentation)",
-    A_URI_TOKEN       -> "provider URL to contact for token verification (see provider documentation)",
-    A_URI_USER_INFO   -> "provider URL to contact to get user information (see provider documentation)",
-    A_URI_JWK_SET     -> "provider URL to check signature of JWT token (see provider documentation)",
-    A_PIVOT_ATTR      -> "the attribute used to find local app user",
-    A_ROLES_ENABLED   -> "enable custom role extension by OIDC",
-    A_ROLES_ATTRIBUTE -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
-    A_ROLES_OVERRIDE  -> "keep user configured roles in rudder-user.xml or override them with the one provided in the token",
-    A_PROVISIONING    -> "allows the automatic creation of users in Rudder in they successfully authenticate with OIDC"
+    A_NAME                 -> "human readable name to use in the button 'login with XXXX'",
+    A_CLIENT_ID            -> "id generated in the Oauth2 service provider to identify rudder as a client app",
+    A_CLIENT_SECRET        -> "the corresponding secret key",
+    A_CLIENT_REDIRECT      -> "rudder URL to redirect to once authentication is done on the provider (must be resolvable from user browser)",
+    A_AUTH_METHOD          -> s"authentication method to use (${authMethods.map(_.getValue).mkString(",")})",
+    A_GRANT_TYPE           -> s"authorization grant type to use (${grantTypes.map(_.getValue).mkString(",")}",
+    A_INFO_MESSAGE         -> "message displayed in the login form, for example to tell the user what login he must use",
+    A_SCOPE                -> "data scope to request access to",
+    A_URI_AUTH             -> "provider URL to contact for main authentication (see provider documentation)",
+    A_URI_TOKEN            -> "provider URL to contact for token verification (see provider documentation)",
+    A_URI_USER_INFO        -> "provider URL to contact to get user information (see provider documentation)",
+    A_URI_JWK_SET          -> "provider URL to check signature of JWT token (see provider documentation)",
+    A_URI_LOGOUT           -> "(optional) provider URL to logout and end session (see provider documentation).",
+    A_URI_LOGOUT_REDIRECT  -> "(optional) the redirect URL to provide to the IdP after logout",
+    A_PIVOT_ATTR           -> "the attribute used to find local app user",
+    A_ROLES_ENABLED        -> "enable custom role extension by OIDC",
+    A_ROLES_ATTRIBUTE      -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
+    A_ROLES_OVERRIDE       -> "keep user configured roles in rudder-user.xml or override them with the one provided in the token",
+    A_PROVISIONING         -> "allows the automatic creation of users in Rudder in they successfully authenticate with OIDC",
+    A_ROLE_MAPPING         -> s"provide a map of alias `IdP role name` -> `Rudder role name`, where each IdP role name is a sub-key of '${A_ROLE_MAPPING}'",
+    A_ENFORCE_ROLE_MAPPING -> "if true (default), restricts roles available by the IdP to the role defined in mapping entitlement. Else the map provides alias for Rudder internal role names."
   )
 
   def parseAuthenticationMethod(method: String): PureResult[ClientAuthenticationMethod] = {
@@ -214,9 +230,29 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
         config.getString(path)
       )
     }
+
     def toBool(s: String) = s.toLowerCase match {
       case "true" => true
       case _      => false
+    }
+    def readMap(key: String): IOResult[Map[String, String]] = {
+      val path = baseProperty + "." + id + "." + key
+      import scala.jdk.CollectionConverters._
+      for {
+        keySet <- IOResult
+                    .attempt(s"Missing key '${path}' for OAUTH2 registration '${id}' (${registrationAttributes(key)})")(
+                      config.getConfig(path).entrySet().asScala.map(_.getKey()).toList
+                    )
+                    .catchAll(_ =>
+                      List().succeed
+                    ) // in that case, we suppose that the key is just missing so we return a default empty value for mapping
+        values <- ZIO.foreach(keySet) { key =>
+                    val wholeKey = path + "." + key
+                    IOResult.attempt(s"Error when reading role entitlement mapping '${wholeKey}'") {
+                      (key, config.getString(wholeKey))
+                    }
+                  }
+      } yield values.toMap
     }
 
     for {
@@ -233,10 +269,14 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       uriUserInfo         <- read(A_URI_USER_INFO)
       pivotAttr           <- read(A_PIVOT_ATTR)
       jwkSetUri           <- read(A_URI_JWK_SET)
+      logoutUri           <- read(A_URI_LOGOUT).fold(_ => Option.empty[String], Some(_))
+      logoutUriRedirect   <- read(A_URI_LOGOUT_REDIRECT).fold(_ => Option.empty[String], Some(_))
       rolesEnabled        <- read(A_ROLES_ENABLED).catchAll(_ => "false".succeed)
       rolesAttr           <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
       rolesOverride       <- read(A_ROLES_OVERRIDE).catchAll(_ => "false".succeed)
       provisioningAllowed <- read(A_PROVISIONING).catchAll(_ => "false".succeed)
+      enforceRoleMapping  <- read(A_ENFORCE_ROLE_MAPPING).catchAll(_ => "false".succeed)
+      roleMapping         <- readMap(A_ROLE_MAPPING)
     } yield {
       RudderClientRegistration(
         ClientRegistration
@@ -254,13 +294,17 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
           .clientName(name)
           .jwkSetUri(jwkSetUri)
           .build(),
+        logoutUri,
+        logoutUriRedirect,
         infoMessage,
         OIDCProvidedRole(
           toBool(rolesEnabled),
           rolesAttr,
           toBool(rolesOverride)
         ),
-        toBool(provisioningAllowed)
+        toBool(provisioningAllowed),
+        toBool(enforceRoleMapping),
+        roleMapping
       )
     }
   }
@@ -320,6 +364,19 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
     for {
       newOnes <- readAllRegistrations(config)
       _       <- registrations.set(newOnes)
+      // for each oauthRegistration, register a logout action
+      _       <- ZIO.foreach(newOnes) {
+                   case (id, r) =>
+                     r.logoutUrl match {
+                       case Some(url) =>
+                         val logoutAction =
+                           LogoutPostAction(s"oauth2_end_session:${id}", BuildLogout.build(id, url, r.logoutRedirectUrl))
+                         AuthBackendsLoggerPure.debug(s"Adding remote logout URL GET for '${id}'") *>
+                         UserLogout.logoutActions.update(_.appended(logoutAction))
+                       case None      =>
+                         AuthBackendsLoggerPure.debug(s"No remote logout URL configured for '${id}'")
+                     }
+                 }
     } yield ()
   }
 
