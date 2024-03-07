@@ -8,7 +8,6 @@ MINOR_VERSION   = $(shell echo "$(RUDDER_VERSION)" | grep -Po '^\d+.\d+')
 BRANCH_TYPE     = $(shell sed -ne '/^branch-type=/s/branch-type=//p' $(MAIN_BUILD))
 COMMON_VERSION  = $(shell sed -ne '/^common-version=/s/common-version=//p' $(MAIN_BUILD))
 PRIVATE_VERSION = $(shell sed -ne '/^private-version=/s/private-version=//p' $(MAIN_BUILD))
-RUDDER_RPKG_VERSION = $(shell sed -ne '/^rudder-rpkg-version=/s/rudder-rpkg-version=//p' $(MAIN_BUILD))
 
 ifneq (,$(wildcard ./build.conf))
 PLUGIN_VERSION   = $(shell sed -ne '/^plugin-version=/s/plugin-version=//p' build.conf)
@@ -21,16 +20,16 @@ LIB_PUBLIC_NAME = plugins-parent
 LIB_PRIVATE_VERSION = ${PRIVATE_VERSION}
 LIB_PUBLIC_VERSION = ${COMMON_VERSION}
 
-VERSION = ${RUDDER_RPKG_VERSION:=RUDDER_VERSION}-${PLUGIN_VERSION}
+VERSION = ${RUDDER_VERSION}-${PLUGIN_VERSION}
 PLUGIN_POM_VERSION = $(RUDDER_VERSION)-${PLUGIN_VERSION}
 RUDDER_BUILD_VERSION = $(RUDDER_VERSION)
 ifeq ($(BRANCH_TYPE),nightly)
-VERSION = ${RUDDER_RPKG_VERSION}-${PLUGIN_VERSION}-nightly
+VERSION = ${RUDDER_VERSION}-${PLUGIN_VERSION}-nightly
 PLUGIN_POM_VERSION = $(RUDDER_VERSION)-${PLUGIN_VERSION}-SNAPSHOT
 endif
 ifeq ($(BRANCH_TYPE),next)
 PLUGIN_POM_VERSION = $(RUDDER_VERSION)-${PLUGIN_VERSION}-SNAPSHOT
-VERSION = ${RUDDER_RPKG_VERSION}-${PLUGIN_VERSION}-nightly
+VERSION = ${RUDDER_VERSION}-${PLUGIN_VERSION}-nightly
 RUDDER_BUILD_VERSION = $(RUDDER_VERSION)-SNAPSHOT
 endif
 
