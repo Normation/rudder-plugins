@@ -5,8 +5,13 @@ import better.files.Resource
 import bootstrap.liftweb.AuthBackendProvidersManager
 import com.normation.plugins.usermanagement.MockServices
 import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.rest.AuthorizationApiMapping
+import com.normation.rudder.rest.ExtensibleAuthorizationApiMapping
+import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.rudder.users.SessionId
 import com.normation.rudder.users.UserInfo
+import com.normation.rudder.users.UserSession
 import com.normation.rudder.users.UserStatus
 import java.nio.file.Files
 import net.liftweb.common.Loggable
@@ -36,19 +41,19 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
       UserInfo( // user3 not in the file will get empty permissions and authz
         "user3",
         DateTime.parse("2024-02-01T01:01:01Z"),
-        UserStatus.Active,
+        UserStatus.Disabled,
         "manager",
-        None,
-        None,
+        Some("User 3"),
+        Some("user3@example.com"),
         None,
         List.empty,
-        Json.Obj()
+        Json.Obj("some" -> Json.Str("value"))
       ),
       UserInfo(
         "user2",
         DateTime.parse("2024-02-01T01:01:01Z"),
         UserStatus.Active,
-        "manager",
+        "file",
         None,
         None,
         None,
@@ -59,12 +64,25 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
         "user1",
         DateTime.parse("2024-02-01T01:01:01Z"),
         UserStatus.Active,
-        "manager",
+        "file",
         None,
         None,
         None,
         List.empty,
         Json.Obj()
+      )
+    ),
+    List(
+      UserSession(
+        "user2",
+        SessionId("s2"),
+        DateTime.parse("2024-02-29T00:00:00Z"),
+        "file",
+        List.empty,
+        List.empty,
+        "",
+        None,
+        None
       )
     ),
     testUserFile
@@ -74,7 +92,8 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
       mockServices.userRepo,
       mockServices.userService,
       new AuthBackendProvidersManager(),
-      mockServices.userManagementService
+      mockServices.userManagementService,
+      new RoleApiMapping(new ExtensibleAuthorizationApiMapping(AuthorizationApiMapping.Core :: Nil))
     )
   )
 
@@ -93,6 +112,6 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
     tmpDir.delete()
   }
 
-  doTest(semanticJson = true)
+  doTest()
 
 }

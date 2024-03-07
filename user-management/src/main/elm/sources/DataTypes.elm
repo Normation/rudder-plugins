@@ -7,15 +7,23 @@ import Toasty
 import Toasty.Defaults
 
 type alias Roles = Dict String (List String)
-type alias Users = Dict Username Authorization
+type alias Users = Dict Username User
+type alias Provider = String
 type alias Username = String
 type alias Password = String
 type alias RoleConf = List Role
+type alias ProvidersInfo = Dict Provider ProviderInfo
 
 type alias AddUserForm =
-    { user : User
+    { user : NewUser
     , password : String
     , isPreHashed : Bool
+    }
+
+type alias UserInfoForm =
+    { name : String
+    , email : String
+    , otherInfo : Dict String String
     }
 
 type alias Role =
@@ -23,15 +31,52 @@ type alias Role =
     , rights: List String
     }
 
-type alias Authorization =
-    { permissions : List String
-    , custom: List String
+type alias UserAuth = 
+    { login : String
+    , password : String
+    , permissions : List String
+    , isPreHashed : Bool
     }
 
 type alias User =
     { login : String
+    , name : String
+    , email : String
+    , otherInfo : Dict String String
+    , status : UserStatus
     , authz : List String
-    , permissions : List String
+    , roles : List String
+    , rolesCoverage : List String
+    , customRights : List String
+    , providers : List String
+    , providersInfo : ProvidersInfo
+    , lastLogin : Maybe String
+    }
+
+type UserStatus = 
+    Active
+    | Disabled
+    | Deleted
+
+-- Payload to create a new user or update an existing one
+type alias NewUser = 
+    { login : String
+    , authz : List String
+    , roles : List String
+    , name : String
+    , email : String
+    , otherInfo : Dict String String
+    }
+
+type alias ProviderProperties = 
+    { roleListOverride : RoleListOverride
+    }
+
+type alias ProviderInfo = 
+    { provider : String
+    , authz : List String
+    , roles : List String
+    , customRights : List String
     }
 
 -- does the configured list of provider allows to change the list of user roles, and how (extend only, or override?)
@@ -48,14 +93,67 @@ userProviders: List String -> List String
 userProviders providers =
   List.filter (\p -> p /= "rootAdmin") providers
 
+filterExternalProviders: List String -> List String
+filterExternalProviders providers =
+  List.filter (\p -> p /= "file" && p /= "rootAdmin") providers
+
+filterUserProviderEnablingRoles: Model -> User -> List ProviderInfo
+filterUserProviderEnablingRoles model user = 
+    user.providers
+    |> filterExternalProviders 
+    |> List.filter (\p -> 
+        Dict.get p model.providersProperties
+        |> Maybe.map (\pp -> pp.roleListOverride /= None)
+        |> Maybe.withDefault False
+    )
+    |> List.filterMap (\p -> 
+        Dict.get p user.providersInfo
+    )
+
+
+filterUserProviderByRoleListOverride: RoleListOverride -> Model -> User -> List ProviderInfo
+filterUserProviderByRoleListOverride value model user = 
+    user.providers
+    |> filterExternalProviders 
+    |> List.filter (\p -> 
+        Dict.get p model.providersProperties
+        |> Maybe.map (\pp -> pp.roleListOverride == value)
+        |> Maybe.withDefault False
+    )
+    |> List.filterMap (\p -> 
+        Dict.get p user.providersInfo
+    )
+
+getFileProviderInfo: User -> Maybe ProviderInfo
+getFileProviderInfo user = 
+    Dict.get "file" user.providersInfo
+
 takeFirstExtProvider: List String -> Maybe String
-takeFirstExtProvider providers =
-    List.head (List.filter (\p -> p /= "file" && p /= "rootAdmin") providers)
+takeFirstExtProvider = List.head << filterExternalProviders
+
+takeFirstOverrideProviderInfo : Model -> User -> Maybe ProviderInfo
+takeFirstOverrideProviderInfo model user = 
+    filterUserProviderByRoleListOverride Override model user
+    |> List.head
+
+takeFirstExtendProviderInfo : Model -> User -> Maybe ProviderInfo
+takeFirstExtendProviderInfo model user = 
+    filterUserProviderByRoleListOverride Extend model user
+    |> List.head
+
+providerCanEditRoles : Model -> Provider -> Bool
+providerCanEditRoles model provider =
+    provider == "file" || (
+      Dict.get provider model.providersProperties
+      |> Maybe.map (\p -> p.roleListOverride /= Override)
+      |> Maybe.withDefault False
+    )
 
 type alias UsersConf =
     { digest : String
     , roleListOverride: RoleListOverride
     , authenticationBackends: List String
+    , providersProperties : Dict String ProviderProperties
     , users : List User
     }
 
@@ -66,7 +164,19 @@ type PanelMode
 
 type StateInput
     = InvalidUsername
+    | InvalidNewUserInfoField
     | ValidInputs
+
+type alias UserForm =
+    { login : String
+    , password : String
+    , isHashedPasswd : Bool
+    , userForcePasswdInput : Bool
+    , rolesToAddOnSave : List String
+    , userInfoForm : UserInfoForm
+    , newUserInfoFields : List (String, String)
+    , isValidInput : StateInput
+    }
 
 type alias Model =
     { contextPath : String
@@ -75,28 +185,29 @@ type alias Model =
     , roles: Roles
     , rolesConf : RoleConf  -- from API
     , roleListOverride: RoleListOverride
-    , authorizations : Authorization
     , toasties : Toasty.Stack Toasty.Defaults.Toast
-    , panelMode : PanelMode
-    , password : String
-    , login : String
-    , isHashedPasswd : Bool
-    , isValidInput : StateInput
-    , authzToAddOnSave : List String
+    , userForm : UserForm
+    , ui : UI
     , providers : List String
-    , userForcePasswdInput : Bool
+    , providersProperties: Dict String ProviderProperties
+    }
+
+type alias UI = 
+    { panelMode : PanelMode
     , openDeleteModal : Bool
     }
+
 
 type Msg
     = GetUserInfo (Result Error UsersConf)
     | GetRoleConf (Result Error RoleConf)
     | PostReloadUserInfo (Result Error String) -- also returns the updated list
     | SendReload -- ask for API call to reload user list
-    | ComputeRoleCoverage (Result Error Authorization)
     | AddUser (Result Error String)
     | DeleteUser (Result Error String)
     | UpdateUser (Result Error String)
+    | UpdateUserInfo (Result Error UserInfoForm)
+    | UpdateUserStatus (Result Error Username)
     | CallApi (Model -> Cmd Msg)
     | ActivePanelSettings User
     | ActivePanelAddUser
@@ -104,9 +215,21 @@ type Msg
     | Password String
     | Login String
     | AddRole String
-    | RemoveRole User String
-    | SubmitUpdatedInfos User
-    | SubmitNewUser User
+    | RemoveRole User Provider String
+    | NewUserInfoFieldKey String Int
+    | NewUserInfoFieldValue String Int
+    | AddUserInfoField
+    | ModifyUserInfoField String String
+    | RemoveNewUserInfoField Int
+    | RemoveUserInfoField String
+    | UserInfoName String
+    | UserInfoEmail String
+    | UserInfoFields (Dict String String)
+    | ActivateUser Username
+    | DisableUser Username
+    | SubmitUpdateUser UserAuth
+    | SubmitUserInfo
+    | SubmitNewUser NewUser
     | PreHashedPasswd Bool
     | AddPasswdAnyway
     | OpenDeleteModal String
@@ -116,3 +239,29 @@ type Msg
       -- NOTIFICATIONS
     | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
     | Notification (Toasty.Msg Toasty.Defaults.Toast)
+
+
+mergeUserNewInfo : UserForm -> UserInfoForm
+mergeUserNewInfo userForm =
+    let
+        userInfo = userForm.userInfoForm
+    in
+        { name = userInfo.name
+        , email = userInfo.email
+        , otherInfo =
+        Dict.fromList (Dict.toList userForm.userInfoForm.otherInfo ++ userForm.newUserInfoFields)
+        |> Dict.remove "" -- empty fields are invalid, we remove them for now but they may be used for explicit errors later
+        }
+
+userFormToNewUser : UserForm -> NewUser
+userFormToNewUser userForm =
+    let
+        userInfo = mergeUserNewInfo userForm
+    in
+        { login = userForm.login
+        , authz = []
+        , roles = userForm.rolesToAddOnSave
+        , name = userInfo.name
+        , email = userInfo.email
+        , otherInfo = userInfo.otherInfo
+        }
