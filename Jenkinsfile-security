@@ -1,5 +1,5 @@
 
-def version = "8.1"
+def version = "8.2"
 def changeUrl = env.CHANGE_URL
 def slackResponse = slackSend(channel: "ci-security", message: "*${version} plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
