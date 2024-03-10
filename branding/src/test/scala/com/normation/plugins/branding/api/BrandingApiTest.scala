@@ -1,6 +1,6 @@
 package com.normation.plugins.branding
 
-import better.files._
+import better.files.*
 import com.normation.plugins.branding.api.BrandingApi
 import com.normation.plugins.branding.api.BrandingApiService
 import com.normation.rudder.api.ApiVersion

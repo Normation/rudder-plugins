@@ -37,27 +37,27 @@
 
 package com.normation.plugins.datasources
 
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginStatus
-import com.normation.plugins.datasources.DataSourceSchedule._
+import com.normation.plugins.datasources.DataSourceSchedule.*
 import com.normation.rudder.db.Doobie
-import com.normation.rudder.domain.eventlog._
+import com.normation.rudder.domain.eventlog.*
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.utils.StringUuidGenerator
-import com.normation.zio._
-import doobie._
-import doobie.implicits._
-import io.scalaland.chimney.syntax._
+import com.normation.zio.*
+import doobie.*
+import doobie.implicits.*
+import io.scalaland.chimney.syntax.*
 import org.joda.time.DateTime
-import zio._
-import zio.interop.catz._
-import zio.json._
-import zio.syntax._
+import zio.*
+import zio.interop.catz.*
+import zio.json.*
+import zio.syntax.*
 
 final case class PartialNodeUpdate(
     nodes:         Map[NodeId, NodeInfo] // the node to update
@@ -119,14 +119,14 @@ trait DataSourceUpdateCallbacks {
 }
 
 trait NoopDataSourceCallbacks extends DataSourceUpdateCallbacks {
-  def onNewNode(node: NodeId):                                                               IOResult[Unit] = ZIO.unit
-  def onGenerationStarted(generationTimeStamp: DateTime):                                    IOResult[Unit] = ZIO.unit
-  def onUserAskUpdateAllNodes(actor: EventActor):                                            IOResult[Unit] = ZIO.unit
-  def onUserAskUpdateAllNodesFor(actor: EventActor, datasourceId: DataSourceId):             IOResult[Unit] = ZIO.unit
-  def onUserAskUpdateNode(actor: EventActor, nodeId: NodeId):                                IOResult[Unit] = ZIO.unit
-  def onUserAskUpdateNodeFor(actor: EventActor, nodeId: NodeId, datasourceId: DataSourceId): IOResult[Unit] = ZIO.unit
-  def startAll():                                                                            IOResult[Unit] = ZIO.unit
-  def initialize():                                                                          IOResult[Unit] = ZIO.unit
+  def onNewNode(node:                          NodeId): IOResult[Unit] = ZIO.unit
+  def onGenerationStarted(generationTimeStamp: DateTime): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateAllNodes(actor:           EventActor): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateAllNodesFor(actor:        EventActor, datasourceId: DataSourceId): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateNode(actor:               EventActor, nodeId:       NodeId): IOResult[Unit] = ZIO.unit
+  def onUserAskUpdateNodeFor(actor:            EventActor, nodeId:       NodeId, datasourceId: DataSourceId): IOResult[Unit] = ZIO.unit
+  def startAll():   IOResult[Unit] = ZIO.unit
+  def initialize(): IOResult[Unit] = ZIO.unit
 }
 
 class MemoryDataSourceRepository extends DataSourceRepository {
@@ -134,13 +134,14 @@ class MemoryDataSourceRepository extends DataSourceRepository {
 
   private[this] val sourcesRef = zio.Ref.make(Map[DataSourceId, DataSource]()).runNow
 
-  def getAllIds = sourcesRef.get.map(_.keySet)
+  override def getAllIds: IOResult[Set[DataSourceId]] = sourcesRef.get.map(_.keySet)
 
-  def getAll = sourcesRef.get
+  def getAll: IOResult[Map[DataSourceId, DataSource]] = sourcesRef.get
 
   def get(id: DataSourceId): IOResult[Option[DataSource]] = sourcesRef.get.map(_.get(id))
 
-  def save(source: DataSource) = sourcesRef.update(sources => sources + ((source.id, source))) *> source.succeed
+  def save(source: DataSource): IOResult[DataSource] =
+    sourcesRef.update(sources => sources + ((source.id, source))) *> source.succeed
 
   def delete(id: DataSourceId, cause: UpdateCause): IOResult[DataSourceId] =
     sourcesRef.update(sources => sources - (id)) *> id.succeed
@@ -209,7 +210,7 @@ class DataSourceRepoImpl(
   // get datasource scheduler which match the condition
   private[this] def foreachDatasourceScheduler(
       condition: DataSource => Boolean
-  )(action:      DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
+  )(action: DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
     datasources
       .all()
       .flatMap(m => {
@@ -424,7 +425,7 @@ class DataSourceJdbcRepository(
     doobie: Doobie
 ) extends DataSourceRepository {
 
-  import doobie._
+  import doobie.*
 
   override def getAllIds: IOResult[Set[DataSourceId]] = {
     transactIOResult("Error when getting datasource IDs")(xa => DataSourceJdbcRepository.getIdsSQL.to[Set].transact(xa))
@@ -449,7 +450,7 @@ class DataSourceJdbcRepository(
     val fullDataSource = source.transformInto[FullDataSource]
     def insert         = DataSourceJdbcRepository.insertDataSourceSQL(source.id, fullDataSource)
     def update         = DataSourceJdbcRepository.updateDataSourceSQL(source.id, fullDataSource)
-    import cats.implicits._
+    import cats.implicits.*
     val sql            = for {
       rowsAffected <- update.run
       result       <- rowsAffected match {
@@ -481,7 +482,7 @@ class DataSourceJdbcRepository(
 }
 
 object DataSourceJdbcRepository {
-  import com.normation.plugins.datasources.DataSourceJsonCodec._
+  import com.normation.plugins.datasources.DataSourceJsonCodec.*
 
   // Datasource properties is stored as a string in the database column
   implicit val dataSourceGet: Get[DataSourceProperties] = Get[String].temap(_.fromJson[DataSourceProperties])

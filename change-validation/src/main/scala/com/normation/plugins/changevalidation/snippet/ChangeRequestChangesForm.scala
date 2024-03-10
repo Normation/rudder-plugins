@@ -37,8 +37,8 @@
 
 package com.normation.plugins.changevalidation.snippet
 
-import bootstrap.liftweb._
-import com.normation.box._
+import bootstrap.liftweb.*
+import com.normation.box.*
 import com.normation.cfclerk.domain.SectionSpec
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.domain.TechniqueName
@@ -55,23 +55,23 @@ import com.normation.rudder.domain.nodes.ModifyNodeGroupDiff
 import com.normation.rudder.domain.nodes.ModifyToNodeGroupDiff
 import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies._
-import com.normation.rudder.domain.properties._
+import com.normation.rudder.domain.policies.*
+import com.normation.rudder.domain.properties.*
 import com.normation.rudder.domain.properties.GroupProperty
 import com.normation.rudder.domain.queries.Query
-import com.normation.rudder.domain.workflows._
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.rule.category.RuleCategory
 import com.normation.rudder.web.ChooseTemplate
-import com.normation.rudder.web.model._
+import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
-import net.liftweb.common._
-import net.liftweb.http._
-import net.liftweb.http.js.JE._
-import net.liftweb.http.js.JsCmds._
-import net.liftweb.util.Helpers._
+import net.liftweb.common.*
+import net.liftweb.http.*
+import net.liftweb.http.js.JE.*
+import net.liftweb.http.js.JsCmds.*
+import net.liftweb.util.Helpers.*
 import org.joda.time.DateTime
-import scala.xml._
+import scala.xml.*
 
 object ChangeRequestChangesForm {
   def form = ChooseTemplate(
@@ -83,7 +83,7 @@ object ChangeRequestChangesForm {
 class ChangeRequestChangesForm(
     changeRequest: ChangeRequest
 ) extends DispatchSnippet with Loggable {
-  import ChangeRequestChangesForm._
+  import ChangeRequestChangesForm.*
 
   private[this] val techniqueRepo                = RudderConfig.techniqueRepository
   private[this] val changeRequestEventLogService = RudderConfig.changeRequestEventLogService
@@ -96,7 +96,7 @@ class ChangeRequestChangesForm(
   private[this] val linkUtil                     = RudderConfig.linkUtil
   private[this] val diffDisplayer                = RudderConfig.diffDisplayer
 
-  import linkUtil._
+  import linkUtil.*
 
   def dispatch = {
     case "changes" =>
@@ -139,21 +139,21 @@ class ChangeRequestChangesForm(
       def changes       = changeRequest.directives(directiveUid).changes
       def directiveName = changes.initialState.map(_._2.name).getOrElse(changes.firstChange.diff.directive.name)
 
-      def body = SHtml.a(
+      def body: NodeSeq = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, List(changes))),
         <span>{directiveName}</span>
       )
 
-      def children = Nil
+      def children: List[JsTreeNode] = Nil
     }
 
-    val directivesChild = new JsTreeNode {
-      val changes  = changeRequest.directives.values.map(_.changes).toList
-      val body     = SHtml.a(
+    val directivesChild: JsTreeNode = new JsTreeNode {
+      val changes = changeRequest.directives.values.map(_.changes).toList
+      val body:     NodeSeq          = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, changes)),
         <span>Directives</span>
       )
-      val children = changeRequest.directives.keys.map(directiveChild(_)).toList
+      val children: List[JsTreeNode] = changeRequest.directives.keys.map(directiveChild(_)).toList
 
       override val attrs = List(("data-jstree" -> """{ "type" : "changeType" }"""), ("id" -> { "directives" }))
     }
@@ -161,21 +161,21 @@ class ChangeRequestChangesForm(
     def ruleChild(ruleId: RuleId) = new JsTreeNode {
       val changes  = changeRequest.rules(ruleId).changes
       val ruleName = changes.initialState.map(_.name).getOrElse(changes.firstChange.diff.rule.name)
-      val body     = SHtml.a(
+      val body: NodeSeq = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, Nil, List(changes))),
         <span>{ruleName}</span>
       )
 
-      val children = Nil
+      val children: List[JsTreeNode] = Nil
     }
 
-    val rulesChild = new JsTreeNode {
-      val changes        = changeRequest.rules.values.map(_.changes).toList
-      val body           = SHtml.a(
+    val rulesChild: JsTreeNode = new JsTreeNode {
+      val changes = changeRequest.rules.values.map(_.changes).toList
+      val body:     NodeSeq          = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, Nil, changes)),
         <span>Rules</span>
       )
-      val children       = changeRequest.rules.keys.map(ruleChild(_)).toList
+      val children: List[JsTreeNode] = changeRequest.rules.keys.map(ruleChild(_)).toList
       override val attrs = List(("data-jstree" -> """{ "type" : "changeType" }"""), ("id" -> { "rules" }))
     }
 
@@ -188,21 +188,21 @@ class ChangeRequestChangesForm(
           case d:     DeleteNodeGroupDiff   => d.group.name
           case modTo: ModifyToNodeGroupDiff => modTo.group.name
         })
-      val body      = SHtml.a(
+      val body: NodeSeq = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, List(changes))),
         <span>{groupName}</span>
       )
 
-      val children = Nil
+      val children: List[JsTreeNode] = Nil
     }
 
-    val groupsChild = new JsTreeNode {
-      val changes        = changeRequest.nodeGroups.values.map(_.changes).toList
-      val body           = SHtml.a(
+    val groupsChild: JsTreeNode = new JsTreeNode {
+      val changes = changeRequest.nodeGroups.values.map(_.changes).toList
+      val body:     NodeSeq          = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, changes)),
         <span>Groups</span>
       )
-      val children       = changeRequest.nodeGroups.keys.map(groupChild(_)).toList
+      val children: List[JsTreeNode] = changeRequest.nodeGroups.keys.map(groupChild(_)).toList
       override val attrs = List(("data-jstree" -> """{ "type" : "changeType" }"""), ("id" -> { "groups" }))
     }
 
@@ -215,25 +215,25 @@ class ChangeRequestChangesForm(
           case d:     DeleteGlobalParameterDiff   => d.parameter.name
           case modTo: ModifyToGlobalParameterDiff => modTo.parameter.name
         })
-      val body          = SHtml.a(
+      val body: NodeSeq = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, Nil, Nil, List(changes))),
         <span>{parameterName}</span>
       )
 
-      val children = Nil
+      val children: List[JsTreeNode] = Nil
     }
 
-    val globalParametersChild = new JsTreeNode {
-      val changes        = changeRequest.globalParams.values.map(_.changes).toList
-      val body           = SHtml.a(
+    val globalParametersChild: JsTreeNode = new JsTreeNode {
+      val changes = changeRequest.globalParams.values.map(_.changes).toList
+      val body:     NodeSeq          = SHtml.a(
         () => SetHtml("history", displayHistory(rootRuleCategory, Nil, Nil, Nil, changes)),
         <span>Global Parameters</span>
       )
-      val children       = changeRequest.globalParams.keys.map(globalParameterChild(_)).toList
+      val children: List[JsTreeNode] = changeRequest.globalParams.keys.map(globalParameterChild(_)).toList
       override val attrs = List(("data-jstree" -> """{ "type" : "changeType" }"""), ("id" -> { "params" }))
     }
 
-    val body = SHtml.a(
+    val body: NodeSeq = SHtml.a(
       () =>
         SetHtml(
           "history",
@@ -248,7 +248,7 @@ class ChangeRequestChangesForm(
       <span>Changes</span>
     )
 
-    val children = directivesChild :: rulesChild :: groupsChild :: globalParametersChild :: Nil
+    val children: List[JsTreeNode] = directivesChild :: rulesChild :: groupsChild :: globalParametersChild :: Nil
 
     override val attrs = List(("data-jstree" -> """{ "type" : "changeType" }"""), ("id" -> { "changes" }))
 

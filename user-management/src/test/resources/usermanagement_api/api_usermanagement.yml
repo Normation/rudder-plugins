@@ -56,7 +56,7 @@ response:
               "rule_only",
               "user"
             ],
-            "customRights" : [],
+            "customRights" : ["no_rights"],
             "providers" : [
               "file"
             ],
@@ -92,7 +92,7 @@ response:
                 "roles" : [
                   "user"
                 ],
-                "customRights" : []
+                "customRights" : ["no_rights"]
               }
             }
           },
@@ -125,7 +125,7 @@ response:
               "read_only",
               "rule_only"
             ],
-            "customRights" : [],
+            "customRights" : ["no_rights"],
             "providers" : [
               "file"
             ],
@@ -152,7 +152,7 @@ response:
                 "roles" : [
                   "read_only"
                 ],
-                "customRights" : []
+                "customRights" : ["no_rights"]
               }
             },
             "lastLogin" : "2024-02-29T00:00:00Z"
@@ -175,9 +175,9 @@ response:
             "providersInfo" : {
               "manager" : {
                 "provider" : "manager",
-                "authz" : [],
+                "authz" : ["no_rights"],
                 "roles" : [],
-                "customRights" : []
+                "customRights" : ["no_rights"]
               }
             }
           }

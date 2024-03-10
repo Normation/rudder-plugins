@@ -2,15 +2,15 @@ package com.normation.plugins.changevalidation
 
 import bootstrap.liftweb.FileUserDetailListProvider
 import bootstrap.liftweb.ValidatedUserList
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.Doobie
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import net.liftweb.common.Loggable
 import zio.ZIO
-import zio.interop.catz._
-import zio.syntax._
+import zio.interop.catz.*
+import zio.syntax.*
 
 trait RoValidatedUserJdbcRepositorySQL {
 
@@ -45,7 +45,7 @@ class RoValidatedUserJdbcRepository(
     userListProvider: FileUserDetailListProvider
 ) extends RoValidatedUserRepository with RoValidatedUserJdbcRepositorySQL with Loggable {
 
-  import doobie._
+  import doobie.*
 
   override def getValidatedUsers(): IOResult[Seq[EventActor]] = {
     transactIOResult("Could not get users from the change validation users table")(xa =>
@@ -90,7 +90,7 @@ class WoValidatedUserJdbcRepository(
     roRepo: RoValidatedUserRepository
 ) extends WoValidatedUserRepository with WoValidatedUserJdbcRepositorySQL with Loggable {
 
-  import doobie._
+  import doobie.*
 
   override def createUser(newVU: EventActor): IOResult[EventActor] = {
     roRepo

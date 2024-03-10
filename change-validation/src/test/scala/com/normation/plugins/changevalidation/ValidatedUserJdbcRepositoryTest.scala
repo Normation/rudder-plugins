@@ -4,7 +4,7 @@ import better.files.File
 import better.files.Resource
 import bootstrap.liftweb.FileUserDetailListProvider
 import bootstrap.liftweb.UserFile
-import cats.syntax.apply._
+import cats.syntax.apply.*
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.DBCommon
 import com.normation.rudder.rest.AuthorizationApiMapping
@@ -12,7 +12,7 @@ import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users.UserAuthorisationLevel
 import com.normation.zio.UnsafeRun
 import doobie.Transactor
-import doobie.implicits._
+import doobie.implicits.*
 import doobie.specs2.analysisspec.IOChecker
 import doobie.util.query.Query0
 import doobie.util.update.Update0
@@ -21,7 +21,7 @@ import org.apache.commons.io.IOUtils
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import zio.interop.catz._
+import zio.interop.catz.*
 
 @RunWith(classOf[JUnitRunner])
 class ValidatedUserJdbcRepositoryTest extends Specification with DBCommon with IOChecker {

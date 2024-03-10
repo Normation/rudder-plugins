@@ -39,7 +39,7 @@ package com.normation.plugins.scaleoutrelay
 
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.zio._
+import com.normation.zio.*
 /*
  * This template file will processed at build time to choose
  * the correct immplementation to use for the interface.

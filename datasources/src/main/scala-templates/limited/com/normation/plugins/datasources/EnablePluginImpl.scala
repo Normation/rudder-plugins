@@ -39,7 +39,7 @@ package com.normation.plugins.datasources
 
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.zio._
+import com.normation.zio.*
 
 final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends LicensedPluginCheck {
   // here are processed variables

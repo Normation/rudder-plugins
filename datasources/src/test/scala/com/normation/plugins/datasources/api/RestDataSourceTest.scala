@@ -38,22 +38,22 @@
 package com.normation.plugins.datasources.api
 
 import better.files.File
-import com.normation.plugins.datasources._
-import com.normation.plugins.datasources.DataSourceJsonCodec._
+import com.normation.plugins.datasources.*
+import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.rudder.MockNodes
 import com.normation.rudder.domain.properties.GenericProperty.fromZioJson
 import com.normation.rudder.rest.RestTest
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
-import com.normation.zio._
-import io.scalaland.chimney.syntax._
+import com.normation.zio.*
+import io.scalaland.chimney.syntax.*
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit.SECONDS
 import net.liftweb.common.Loggable
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import zio._
-import zio.json._
+import zio.*
+import zio.json.*
 import zio.json.ast.Json
 
 @RunWith(classOf[JUnitRunner])

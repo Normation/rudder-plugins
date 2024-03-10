@@ -1,21 +1,21 @@
 package com.normation.plugins.datasources
 
 import cats.effect
-import cats.syntax.apply._
+import cats.syntax.apply.*
 import com.normation.errors.Inconsistency
 import com.normation.rudder.db.DBCommon
 import com.normation.zio.UnsafeRun
 import doobie.Transactor
-import doobie.implicits._
+import doobie.implicits.*
 import doobie.specs2.analysisspec.IOChecker
 import doobie.util.query.Query0
 import doobie.util.update.Update0
-import io.scalaland.chimney.syntax._
+import io.scalaland.chimney.syntax.*
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import zio._
-import zio.interop.catz._
+import zio.*
+import zio.interop.catz.*
 
 @RunWith(classOf[JUnitRunner])
 class RepositoryTest extends Specification with DBCommon with IOChecker {

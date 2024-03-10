@@ -1,16 +1,16 @@
 package com.normation.plugins.changevalidation
 
 import better.files.File
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.plugins.changevalidation.ChangeValidationLoggerPure
-import com.normation.plugins.changevalidation.RudderJsonMapping._
+import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.FullNodeGroupCategory
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import scala.collection.immutable.SortedSet
 import zio.ZIO
-import zio.json._
+import zio.json.*
 
 /*
  * This service save the list of target (only their id) in a
