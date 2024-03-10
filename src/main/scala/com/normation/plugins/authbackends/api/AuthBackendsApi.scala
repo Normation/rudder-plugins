@@ -47,12 +47,12 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.InternalApi
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
@@ -86,7 +86,7 @@ class AuthBackendsApiImpl(
 ) extends LiftApiModuleProvider[AuthBackendsApi] {
   api =>
 
-  def schemas = AuthBackendsApi
+  def schemas: ApiModuleProvider[AuthBackendsApi] = AuthBackendsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     AuthBackendsApi.endpoints
@@ -104,9 +104,9 @@ class AuthBackendsApiImpl(
    * enabled ones.
    */
   object GetAuthenticationInformation extends LiftApiModule0 {
-    val schema = AuthBackendsApi.GetAuthenticationInformation
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import JsonSerialization._
+    val schema:                                                                                                AuthBackendsApi.GetAuthenticationInformation.type = AuthBackendsApi.GetAuthenticationInformation
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                                      = {
+      import JsonSerialization.*
 
       IOResult
         .attempt("Error when trying to get group information")(
