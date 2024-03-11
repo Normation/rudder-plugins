@@ -436,7 +436,7 @@ To correct that problem, you need to remove that restriction (and update your ce
   * `jdk.certpath.disabledAlgorithms`
 * restart `rudder-jetty`
 
-=== OAUTHv2 / OpenID Connect (OIDC)
+== OAUTHv2 / OpenID Connect (OIDC)
 
 https://openid.net/connect/[OpenID Connect] (OIDC) is a very common SSO protocol to authenticate and manage authorizations of users in a decentralized, multi-tenant set-up (ie, typically web applications nowadays). It's built on top of `OAUTHv2` and replace it in most new cases.
 
@@ -591,19 +591,33 @@ rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
 #
 # enable Rudder user role provisioning by the OIDC IdP. Use `true` or `false` (default)
 rudder.auth.oauth2.provider.okta.roles.enabled=true
-#Name of the OIDC token attribute that will hold rudder roles. This is something that you identity provider
-#administrator will give you. The attribute value must be a OAuth list of string, ie in the format:
+
+# Name of the OIDC token attribute that will hold rudder roles. This is something that you identity provider
+# administrator will give you. The attribute value must be a OAuth list of string, ie in the format:
 #  attribute: [role-oidc-a, role-oidc-b, etc]
-#Each string will be mapped to a rudder role (or ignored if no matching is found). Default value: empty.
+# Each string will be mapped to a rudder role (or ignored if no matching is found). Default value: empty.
 rudder.auth.oauth2.provider.okta.roles.attribute=rudderroles
-#Define if the provided list of roles should *override* or *be appended to* the list of roles configured for
+
+# Define if the provided list of roles should *override* or *be appended to* the list of roles configured for
 #the user in the `rudder-users.xml` file. Use `false` for append (default), `true` for override.
 rudder.auth.oauth2.provider.okta.roles.override=true
+
+# Mapping between IdP role name ("entitlements") and Rudder internal naming scheme.
+#
+# It is common for the IdP to use its own naming scheme, or to have several IdP using
+# diffenent naming incompatible naming scheme for roles. The following property allows
+# to map an IdP entitlement into a rudder role name (custom or builtin)
+rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
+rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
+# You can restrict the role that The IdP can assign to only role mapped to entitlements.
+# When the following properties is true, roles that don't appear in `mapping.entitlements`
+# will be filtered-out.
+rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
+
 # enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
 # Users provisioned through that channel don't have roles, you will need to also
 # provisioned roles thanks to IdP.
 rudder.auth.oauth2.provider.okta.enableProvisionning=true
-
 ```
 
 
