@@ -560,7 +560,7 @@ class UserManagementApiImpl(
 
   implicit def transformDbUserToJsonUser(implicit userInfo: UserInfo): Transformer[UserSession, JsonUser] = {
     // Filter out custom permissions of form "anon[..]" and take the aliased roles of form "alias(role)" (see toDisplayNames)
-    def getDiplayPermissions(userSession: UserSession): JsonRoles = {
+    def getDisplayPermissions(userSession: UserSession): JsonRoles = {
       val customRegex  = """^anon\[(.*)\]$""".r
       val aliasedRegex = """^.*\((.*)\)$""".r
       JsonRoles(userSession.permissions.flatMap {
@@ -573,8 +573,8 @@ class UserManagementApiImpl(
       .define[UserSession, JsonUser]
       .withFieldConst(_.id, userInfo.id)
       .withFieldComputed(_.authz, s => JsonRights(s.authz.toSet))
-      .withFieldComputed(_.roles, getDiplayPermissions(_))
-      .withFieldComputed(_.rolesCoverage, getDiplayPermissions(_))
+      .withFieldComputed(_.roles, getDisplayPermissions(_))
+      .withFieldComputed(_.rolesCoverage, getDisplayPermissions(_))
       .withFieldConst(_.name, userInfo.name)
       .withFieldConst(_.email, userInfo.email)
       .withFieldConst(_.otherInfo, userInfo.otherInfo)
@@ -587,7 +587,7 @@ class UserManagementApiImpl(
             userInfo.managedBy -> JsonProviderInfo(
               userInfo.managedBy,
               JsonRights(s.authz.toSet),
-              getDiplayPermissions(s),
+              getDisplayPermissions(s),
               JsonRights.empty
             )
           )
