@@ -6,10 +6,11 @@ module ApiCalls exposing (..)
 -- API call to get the category tree
 
 
-import DataTypes exposing (AddUserForm, Authorization, Model, Msg(..), User)
+import DataTypes exposing (AddUserForm, Model, Msg(..), Username, UserInfoForm, UserAuth)
 import Http exposing (emptyBody, expectJson, jsonBody, request, send)
-import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiRoleCoverage, decodeApiUpdateUserResult, decodeGetRoleApiResult)
-import JsonEncoder exposing (encodeAddUser, encodeAuthorization)
+import JsonDecoder exposing (decodeApiAddUserResult, decodeApiCurrentUsersConf, decodeApiDeleteUserResult, decodeApiReloadResult, decodeApiUpdateUserResult, decodeGetRoleApiResult, decodeApiStatusResult, decodeApiUpdateUserInfoResult)
+import JsonEncoder exposing (encodeAddUser, encodeUserInfo, encodeUserAuth)
+import Json.Decode as Decode
 
 getUrl: DataTypes.Model -> String -> String
 getUrl m url =
@@ -48,22 +49,6 @@ postReloadConf model =
     in
     send PostReloadUserInfo req
 
-computeRoleCoverage : Model -> Authorization -> Cmd Msg
-computeRoleCoverage model authorizations =
-    let
-        req =
-            request
-                { method          = "POST"
-                , headers         = []
-                , url             = getUrl model "/usermanagement/coverage"
-                , body            = jsonBody (encodeAuthorization authorizations)
-                , expect          = expectJson decodeApiRoleCoverage
-                , timeout         = Nothing
-                , withCredentials = False
-                }
-    in
-    send ComputeRoleCoverage req
-
 addUser : Model -> AddUserForm -> Cmd Msg
 addUser model userForm =
     let
@@ -96,7 +81,7 @@ deleteUser  username model =
     in
     send DeleteUser req
 
-updateUser : Model -> String -> AddUserForm -> Cmd Msg
+updateUser : Model -> String -> UserAuth -> Cmd Msg
 updateUser model toUpdate userForm =
     let
         req =
@@ -104,13 +89,62 @@ updateUser model toUpdate userForm =
                 { method          = "POST"
                 , headers         = []
                 , url             = getUrl model ("/usermanagement/update/" ++ toUpdate)
-                , body            = jsonBody (encodeAddUser userForm)
+                , body            = jsonBody (encodeUserAuth userForm)
                 , expect          = expectJson decodeApiUpdateUserResult
                 , timeout         = Nothing
                 , withCredentials = False
                 }
     in
     send UpdateUser req
+
+updateUserInfo : Model -> String -> UserInfoForm -> Cmd Msg
+updateUserInfo model toUpdate userForm =
+    let
+        req =
+            request
+                { method          = "POST"
+                , headers         = []
+                , url             = getUrl model ("/usermanagement/update/info/" ++ toUpdate)
+                , body            = jsonBody (encodeUserInfo userForm)
+                , expect          = expectJson decodeApiUpdateUserInfoResult
+                , timeout         = Nothing
+                , withCredentials = False
+                }
+    in
+    send UpdateUserInfo req
+
+
+activateUser : Model -> Username -> Cmd Msg
+activateUser model username =
+    let
+        req =
+            request
+                { method          = "PUT"
+                , headers         = []
+                , url             = getUrl model ("/usermanagement/status/activate/" ++ username)
+                , body            = emptyBody
+                , expect          = expectJson (Decode.map (\_ -> username) decodeApiStatusResult)
+                , timeout         = Nothing
+                , withCredentials = False
+                }
+    in
+    send UpdateUserStatus req
+
+disableUser : Model -> Username -> Cmd Msg
+disableUser model username =
+    let
+        req =
+            request
+                { method          = "PUT"
+                , headers         = []
+                , url             = getUrl model ("/usermanagement/status/disable/" ++ username)
+                , body            = emptyBody
+                , expect          = expectJson (Decode.map (\_ -> username) decodeApiStatusResult)
+                , timeout         = Nothing
+                , withCredentials = False
+                }
+    in
+    send UpdateUserStatus req
 
 getRoleConf : Model -> Cmd Msg
 getRoleConf model =

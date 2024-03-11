@@ -1,16 +1,18 @@
 module View exposing (..)
 
 import ApiCalls exposing (deleteUser)
-import DataTypes exposing (Model, Msg(..), PanelMode(..), RoleConf, RoleListOverride(..), Roles, StateInput(..), User, Username, Users, UsersConf, takeFirstExtProvider)
 import Dict exposing (keys)
 import Html exposing (..)
-import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, required, style, tabindex, type_)
+import Html.Attributes exposing (attribute, class, disabled, href, for, id, placeholder, required, style, tabindex, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Init exposing (defaultConfig)
 import String exposing (isEmpty)
 import Toasty
 import Toasty.Defaults
 import List
+import List.Extra
+import Set
+import DataTypes exposing (Model, Msg(..), PanelMode(..), ProviderInfo, RoleListOverride(..), Roles, StateInput(..), User, Users, UserForm, UserStatus(..), providerCanEditRoles, takeFirstExtProvider, takeFirstOverrideProviderInfo, filterUserProviderByRoleListOverride, filterUserProviderEnablingRoles, userFormToNewUser)
 
 view : Model -> Html Msg
 view model =
@@ -22,8 +24,8 @@ view model =
             else
                 displayUsersConf model model.users
         deleteModal =
-            if model.openDeleteModal then
-                showDeleteModal model.login
+            if model.ui.openDeleteModal then
+                showDeleteModal model.userForm.login
             else
                 div[][]
     in
@@ -50,7 +52,13 @@ showDeleteModal username =
                               [
                                 div [class "row"]
                                 [
-                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"][text "Are you sure you want to delete user " , b[][text username] , text " ?"]
+                                  h4 [class "col-lg-12 col-sm-12 col-xs-12 text-center"]
+                                  [ text "Are you sure you want to delete user " 
+                                  , b[][text username]
+                                  , text " from the users file ?"
+                                  , br[][]
+                                  , text "They will be purged from the database after a certain amount of time as defined by the Rudder configuration."
+                                  ]
                                 ]
                               ]
                             , div [class "modal-footer"]
@@ -82,40 +90,46 @@ hashPasswordMenu isHashedPasswd =
         ]
 
 
-displayPasswordBlock : Model -> Html Msg
-displayPasswordBlock model =
+displayPasswordBlock : Model -> Maybe User -> Html Msg
+displayPasswordBlock model user =
     let
         mainProvider =
-            case (takeFirstExtProvider model.providers) of
-              Just p  -> p
+            case user of 
+              Just u -> case (takeFirstExtProvider u.providers) of
+                Just p -> p
+                Nothing -> "unknown_provider"
               Nothing -> "unknown_provider"
         classDeactivatePasswdInput = if isPasswordMandatory then "" else " deactivate-auth-backend  ask-passwd-deactivate "
         isPasswordMandatory =
-           case (List.head model.providers) of
-             Just p -> p == "file"
-             Nothing -> True
+            case user  of
+                Nothing -> True
+                Just u -> -- at least one provider is external
+                    case takeFirstExtProvider u.providers of 
+                        Nothing -> True
+                        Just _ -> False
         isHidden =
-            if model.isHashedPasswd then
+            if model.userForm.isHashedPasswd then
                 "text"
             else "password"
-        phMsg = if model.isHashedPasswd then "New hashed password" else "This password will be hashed and then stored"
-        passwdRequiredId =
+        phMsg = if model.userForm.isHashedPasswd then "New hashed password" else "This password will be hashed and then stored"
+        passwdRequiredValidation =
             if isPasswordMandatory then
-                case model.panelMode of
+                case model.ui.panelMode of
                     AddMode ->
-                        if (model.isValidInput == InvalidUsername) then "invalid-password" else "valid-input"
+                        if (model.userForm.isValidInput == InvalidUsername) then "invalid-form-field" else ""
                     _       ->
-                        "valid-input"
+                        ""
             else
                 ""
         passwordInput =
             [
-                  hashPasswordMenu model.isHashedPasswd
-                , input [id passwdRequiredId, class ("form-control anim-show  " ++ classDeactivatePasswdInput), type_ isHidden, placeholder phMsg, onInput Password, attribute "autocomplete" "new-password"] []
+                  h3 [] [text "Password"]
+                , hashPasswordMenu model.userForm.isHashedPasswd
+                , input [class ("form-control anim-show  " ++ classDeactivatePasswdInput ++ " " ++ passwdRequiredValidation), type_ isHidden, placeholder phMsg, onInput Password, attribute "autocomplete" "new-password", value model.userForm.password] []
                 , hashType
             ]
         hashType =
-            if model.isHashedPasswd then
+            if model.userForm.isHashedPasswd then
                 div[class "hash-block"][i[class "fa fa-key hash-icon"][],div[class "hash-type"][text model.digest]]
             else
                div[][]
@@ -126,58 +140,74 @@ displayPasswordBlock model =
        [
             i [class "fa fa-exclamation-circle info-passwd-icon"][]
           , text "Since the authentication method used an external provider, no password will be asked for this user."
-          , br[][]
-          , text "If you want to add a password anyway, "
+          ,  br[][]
+          , text "If you want to add a password anyway as fallback, "
           , a [class "click-here", onClick AddPasswdAnyway][text "Click here"]
-          , if (model.userForcePasswdInput) then
+          , if (model.userForm.userForcePasswdInput) then
                 div [class "force-password"] (
                     div[class "info-force-passwd"]
                     [
-                      text "The password value won't be use with currently default authentication provider "
+                      text "The password value won't be used with the current default authentication provider "
                     , b [style "color" "#2557D6"] [text mainProvider]
                     , text ", you should let it blank."
                     ] :: passwordInput
                 )
-            else
+            else 
                 div [][]
-       ]
+        ]
     else
         div [] (passwordInput)
 
 displayRightPanelAddUser : Model -> Html Msg
 displayRightPanelAddUser model =
-   let
-       emptyUsername =
-           case model.panelMode of
-               AddMode ->
-                   if (model.isValidInput == InvalidUsername) then "invalid-username" else "valid-input"
-               _       ->
-                   "valid-input"
-   in
-   div [class "panel-wrap"]
-   [
-       div [class "panel"]
-       [
-             button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
-           , div[class "card-header"][h2 [class "title-username"] [text "Create User"]]
-           , div []
-           [
-                 input [id emptyUsername, class "form-control username-input", type_ "text", placeholder "Username", onInput Login, required True] []
-               , displayPasswordBlock model
-               , div [class "btn-container"] [ button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitNewUser (User model.login [] []))][ i[ class "fa fa-download"][] ]  ]
-           ]
-       ]
-   ]
+    let
+        emptyUsername = if model.userForm.isValidInput == InvalidUsername then "invalid-form-field" else ""
+    in
+    div [class "panel-wrap"]
+    [
+        div [class "panel"]
+        [
+              button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
+            , div[class "card-header"][h2 [class "title-username"] [text "Create User"]]
+            , div []
+            [
+                  input [class ("form-control username-input " ++ emptyUsername), type_ "text", placeholder "Username", onInput Login, value model.userForm.login, required True] []
+                , displayPasswordBlock model Nothing
+                , displayUserInfo model.userForm False
+                , div[class "btn-container"]
+                [
+                    button
+                    [
+                        class "btn btn-sm btn-success btn-save"
+                        , type_ "button"
+                        , onClick (SubmitNewUser (userFormToNewUser model.userForm))
+                    ] [ i[ class "fa fa-download"][] ]
+                ]
+            ]
+        ]
+    ]
 
 displayRoleListOverrideWarning : RoleListOverride -> Html Msg
 displayRoleListOverrideWarning rlo =
   case rlo of
-      None -> div [][]
-      x    ->
+      None   ->
+        div [class "msg-providers"]
+        [
+            text " The current main provider for this user does not enable roles. The file roles can be changed but will only be used as fallback for when the provider is no longer enabled or configured for roles."
+        ]
+
+      Extend ->
         div [class "msg-providers"][
           i [class "fa fa-exclamation-triangle warning-icon"][]
-        , span [][text " Be careful! Displayed user roles originate from Rudder static configuration file, but providers currently configured can change them. This property can be check in provider configuration options."]
+        , span [][text " Be careful! Displayed user roles originate from the provider which extends roles defined in the Rudder static configuration file"]
        ]
+      Override ->
+        div [class "msg-providers"]
+        [
+              text " Displayed user roles originate from the provider, which is configured to override roles in the Rudder static configuration file. This configuration option can be changed so that the provider extends those roles instead of overriding them."
+            , br[][]
+            , text "Changing the roles will create fallback roles in file when the provider is no longer enabled or configured for roles."
+        ]
 
 getDiffRoles : Roles -> List String -> List String
 getDiffRoles total sample =
@@ -186,73 +216,232 @@ getDiffRoles total sample =
     in
         (List.filter (\r -> (List.all (\r2 -> r /= r2) sample)) t)
 
-displayDropdownRoleList : List String -> Html Msg
-displayDropdownRoleList roles =
+displayDropdownRoleList : Model -> User -> Bool -> Html Msg
+displayDropdownRoleList model user readonly =
     let
-        tokens = List.map (\r -> a [href "#", onClick (AddRole r)][text r]) roles
-    in
-    div [class "dropdown-content"] tokens
-
-displayRightPanel : Model -> Html Msg
-displayRightPanel model =
-    let
-        user = case model.panelMode of
-            EditMode u -> u
-            _ -> User "" [] []
-        availableRoles = getDiffRoles model.roles (user.authz ++ model.authzToAddOnSave)
+        availableRoles = getDiffRoles model.roles (user.roles ++ model.userForm.rolesToAddOnSave)
+        tokens = List.map (\r -> a [href "#", onClick (AddRole r)][text r]) availableRoles
         addBtn =
             if List.isEmpty availableRoles then
                 button [id "addBtn-disabled", class "addBtn", disabled True][i [class "fa fa-plus"][]]
             else
                 button [class "addBtn"][i [class "fa fa-plus"][]]
     in
+        if not readonly
+        then
+            div [class "dropdown"]
+            [
+                  addBtn
+                , div [class "dropdown-content"] tokens
+            ]
+        else
+            text ""
+    
+displayCoverageRoles : User -> Html Msg
+displayCoverageRoles user = 
+    let
+        inferredRoles = Set.diff (Set.fromList user.rolesCoverage) (Set.fromList user.roles)
+    in
+        if Set.isEmpty inferredRoles
+        then 
+            text ""
+        else
+            div []
+            [
+                  h4 [class "role-title"][text "Inferred roles"]
+                , div [class "callout-fade callout-info"]
+                [
+                      div[class "marker"][span[class "glyphicon glyphicon-info-sign"][]]
+                    , text "Roles that are also included with the authorizations of this user. You can add them explicitly to user roles, and user authorizations will remain the same."
+                ]
+                , div [class "role-management-wrapper"] 
+                [
+                    div[id "input-role"](List.map (\x -> span [ class "auth" ][text x]) (Set.toList inferredRoles))
+                ]
+            ]
+
+displayAuthorizations : User -> Html Msg
+displayAuthorizations user =
+    let
+        userAuthz = List.map (\x -> span [ class "auth" ] [ text x ]) (user.authz)
+    in
+        if List.isEmpty user.authz
+        then 
+            text ""
+        else
+            div [class "row-foldable row-folded"]
+            [
+                  h4 [class "role-title"][text "Authorizations"]
+                , text "Current rights of the user :"
+                , div [class "role-management-wrapper"]
+                [
+                    div[id "input-role"](userAuthz)
+                ]
+            ]
+
+-- name, email, other info as list of key-value pairs
+displayUserInfo : UserForm -> Bool -> Html Msg
+displayUserInfo userForm allowSaveInfo =
+    div [class "user-info"]
+    ([
+          h3 [] [text "User information"]
+        , div [class "user-info-row"]
+          [
+              label [for "user-name"][text "Name"]
+            , input [id "user-name", class "form-control user-info-value", placeholder "User name", value userForm.userInfoForm.name, onInput UserInfoName][]
+          ]
+        , div [class "user-info-row"]
+          [
+              label [for "user-email"][text "Email"]
+            , input [id "user-email", class "form-control user-info-value", placeholder "User email", value userForm.userInfoForm.email, onInput UserInfoEmail][]
+          ]
+    ] ++ (List.map (\(k, v) -> div [class "user-info-row user-info-other"]
+            [
+                  label [for k][text k]
+                , div [class "user-info-row-edit"]
+                [
+                    input [id k, class "form-control user-info-value", placeholder ("User " ++ k), onInput (ModifyUserInfoField k), value v][]
+                    , button [class "btn btn-default", onClick (RemoveUserInfoField k)][i [class "fa fa-trash"][]]
+                ]
+            ]
+        ) (Dict.toList userForm.userInfoForm.otherInfo)
+    ) ++ (List.indexedMap (\idx (k, v) -> div [class "user-info-row user-info-other"]
+            [
+                  text "New field"
+                , div [class "user-info-row-edit"]
+                [
+                      input [class "form-control user-info-label", placeholder "New field", onInput (\s -> NewUserInfoFieldKey s idx), value k][]
+                    , input [class "form-control user-info-value", placeholder "New value", onInput (\s -> NewUserInfoFieldValue s idx), value v][]
+                    , button [class "btn btn-default", onClick (RemoveNewUserInfoField idx)][i [class "fa fa-trash"][]]
+                ]
+            ]
+
+    ) userForm.newUserInfoFields) ++ 
+    ((div [ class "user-info-row"]
+    [
+        div [class "user-info-add"]
+        [
+            button [class "addBtn", onClick AddUserInfoField][i [class "fa fa-plus"][]]
+        ]
+    ]) :: (if allowSaveInfo then 
+        [
+            div[class "btn-container"]
+            [
+                 button
+                [
+                      class "btn btn-sm btn-success btn-save"
+                    , type_ "button"
+                    , onClick SubmitUserInfo
+                ] [ i[ class "fa fa-download"][] ]
+            ]
+        ]
+    else [])))
+
+
+displayRightPanel : Model -> User -> Html Msg
+displayRightPanel model user =
+    let
+        -- Additional RO information
+        rolesAuthzInformationSection =
+            [
+                  hr [][]
+                , displayCoverageRoles user
+                , displayAuthorizations user
+            ]
+        rolesSection : ProviderInfo -> Maybe RoleListOverride -> Bool -> Bool -> Bool -> List (Html Msg)
+        rolesSection provider override readonlyAddRoles readonlyRemoveRoles hideAddedRoles = 
+            [
+                  h4 [class "role-title"][text ("Roles (from " ++ provider.provider ++ ")")]
+                , Maybe.withDefault (text "") (Maybe.map displayRoleListOverrideWarning override)
+                , div [class "role-management-wrapper"]
+                [
+                       div [id "input-role"](displayAddRole model user provider readonlyAddRoles hideAddedRoles)
+                     , displayDropdownRoleList model user readonlyRemoveRoles
+                ]
+            ]
+        displayedProviders =
+            let 
+                rlo = if takeFirstOverrideProviderInfo model user == Nothing then Extend else Override
+                externalProvidersWithEnabledRoles = filterUserProviderEnablingRoles model user
+                externalProvidersWithoutRoles = filterUserProviderByRoleListOverride None model user
+                fileProviderRlo = externalProvidersWithoutRoles |> List.head |> Maybe.map (\_ -> None)
+            in
+                case Dict.get "file" user.providersInfo of
+                    Nothing -> -- file is not an explicit provider so roles can be added in the provider
+                        List.Extra.intercalate ([hr[][]]) (
+                            List.map (\p -> rolesSection p (Just rlo) True False False) externalProvidersWithEnabledRoles
+                            -- if there is a provider with None roles extension, we also need a section to put roles in file
+                            |> List.append (List.map (\p -> rolesSection { p | provider = "file" } (Just None) False False False) externalProvidersWithoutRoles |> List.take 1)
+                        ) ++
+                        formSubmitSection "file" ++
+                        [hr[][]]
+                    Just providerInfo -> -- separate sections : extending provider are readonly, file provider are editable
+                            List.Extra.intercalate ([hr[][]]) (List.map (\p -> rolesSection p (Just rlo) True True True) externalProvidersWithEnabledRoles) ++
+                            -- and one section for the actually editable file provider
+                            rolesSection providerInfo fileProviderRlo False False False ++
+                            formSubmitSection providerInfo.provider ++
+                            [hr[][]]
+        formSubmitSection provider =
+            [
+                div[class "btn-container"]
+                [
+                      button [class "btn btn-sm btn-danger btn-delete" , onClick (OpenDeleteModal user.login)] [text "Delete"]
+                    , button [class ("btn btn-sm btn-status-toggle " ++ if user.status == Active then "btn-default" else "btn-primary"), onClick (if user.status == Active then DisableUser user.login else ActivateUser user.login)] 
+                    [ if user.status == Active then text "Disable" else text "Activate" ]
+                    , button
+                    [
+                          class "btn btn-sm btn-success btn-save"
+                        , type_ "button"
+                        , if (providerCanEditRoles model provider) then disabled False else disabled True
+                        , onClick (SubmitUpdateUser {
+                              login = user.login
+                            , password = model.userForm.password
+                            , permissions = user.authz ++ model.userForm.rolesToAddOnSave ++ ((List.filterMap (\p -> Dict.get p user.providersInfo |> Maybe.map .roles) [provider]) |> List.concat)
+                            , isPreHashed = model.userForm.isHashedPasswd
+                        })
+                    ] [ i[ class "fa fa-download"][] ]
+                ]
+            ]
+    in 
     div [class "panel-wrap"]
     [
         div [class "panel"]
-        [
+        ([
            div[class "panel-header"]
            [
-                h2 [class "title-username"] [text user.login]
+                h2 [class "title-username"] (text user.login :: List.map (\x -> span [ class "providers" ][text x]) user.providers)
               , button [class "btn btn-sm btn-outline-secondary", onClick DeactivatePanel][text "Close"]
+              , div [class "user-last-login"]
+              [
+                case user.lastLogin of
+                    Nothing -> em [][text "Never logged in"]
+                    Just l -> em [][text ("Last login: " ++ (String.replace "T" " " l))]
+              ] 
            ]
-           , input [class "form-control username-input", type_ "text", placeholder "New Username", onInput Login] []
-           , displayPasswordBlock model
-           , h4 [class "role-title"][text "Roles"]
-           , (displayRoleListOverrideWarning model.roleListOverride)
-           , div [class "role-management-wrapper"]
-           [
-                  div [id "input-role"][(displayAddAuth model user)]
-                , div [class "dropdown"]
-                [
-                      addBtn
-                    , (displayDropdownRoleList availableRoles)
-                ]
-           ]
-           , div[class "btn-container"]
-             [ button [class "btn btn-sm btn-danger btn-delete" , onClick (OpenDeleteModal user.login)] [text "Delete"]
-             , button [class "btn btn-sm btn-success btn-save", type_ "button", onClick (SubmitUpdatedInfos {user | permissions = user.permissions ++ model.authzToAddOnSave})][ i[ class "fa fa-download"][] ]
-             ]
-        ]
+           , displayPasswordBlock model (Just user)
+        ] ++ displayedProviders ++ (
+           displayUserInfo model.userForm True :: rolesAuthzInformationSection
+        ))
     ]
 
 displayUsersConf : Model -> Users -> Html Msg
 displayUsersConf model u =
     let
         users =
-            (List.map (\(name, rights) -> (User name rights.custom rights.permissions)) (Dict.toList u)) |> List.map (\user -> displayUser user)
+            Dict.values u |> List.filter (\user -> user.status /= Deleted) |> List.map (\user -> displayUser user)
         newUserMenu =
-            if model.panelMode == AddMode then
+            if model.ui.panelMode == AddMode then
                 displayRightPanelAddUser model
             else
-                div [] []
+                text ""
         panel =
-            case model.panelMode of
-                EditMode _    -> displayRightPanel model
-                _             -> div [][]
+            case model.ui.panelMode of
+                EditMode user    -> displayRightPanel model user
+                _             -> text ""
         hasExternal =  (takeFirstExtProvider model.providers)
         lstOfExtProviders = case hasExternal of
             Nothing ->
-                div [][]
+                text ""
             Just _ ->
                 div [class "provider-list"](List.map (\s -> span [class "providers"][text s]) model.providers)
         msgProvider = case hasExternal of
@@ -283,10 +472,9 @@ displayUsersConf model u =
                     ]
                     , div [ class "callout-fade callout-info" ]
                     [
-                          div [ class "marker marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
+                          div [ class "marker" ] [ span [ class "glyphicon glyphicon-info-sign" ] [] ]
                         , text msgProvider
                         , lstOfExtProviders
-                        , (displayRoleListOverrideWarning model.roleListOverride)
                     ]
                 ]
                 , newUserMenu
@@ -295,51 +483,64 @@ displayUsersConf model u =
             , div [ class "col-xs-12" ][ div [ class "row user-list" ] users ]
         ]
 
+providerToIcon : String -> String
+providerToIcon provider =
+    case provider of
+        "file" -> "fa-file"
+        _      -> "fa-link"
+
 displayUser : User -> Html Msg
 displayUser user =
-    div [class "user-card-wrapper col-xs-6 col-md-4 col-lg-3", onClick (ActivePanelSettings user)]
-    [
-        div [class "user-card"]
+    if user.status == Deleted then
+        text ""
+    else
+        div [class "user-card-wrapper", onClick (ActivePanelSettings user)]
         [
-              div [class "user-card-inner"][h3 [id "name"][text user.login]]
-            , displayAuth  user
+            div [class "user-card"]
+            [
+                div [class "user-card-inner"]
+                [
+                      div [class "user-card-providers"](List.map (\p -> span [class ("fa " ++ providerToIcon p)][]) user.providers)
+                    , h3 [id "name"][text user.login]
+                ]
+                , displayRoles user
+                , displayUserLastLogin user
+            ]
         ]
-    ]
 
-displayAddAuth : Model -> User -> Html Msg
-displayAddAuth model user  =
+displayAddRole : Model -> User -> ProviderInfo -> Bool -> Bool -> List (Html Msg)
+displayAddRole model user providerInfo readonly hideAddedRoles =
     let
-        newAddedRole =
-         List.map (
-             \x ->
-                 span [ class "auth-added" ][ text x ]
-         ) (model.authzToAddOnSave)
+        newAddedRole = 
+            if hideAddedRoles then [] 
+            else
+                List.map (
+                    \x ->
+                        span [ class "auth-added" ][ text x ]
+                ) (model.userForm.rolesToAddOnSave)
 
         userRoles =
             List.map (
                 \x ->
                     span [ class "auth" ]
-                    [
-                          text x
-                        , div [id "remove-role",class "fa fa-times", onClick (RemoveRole user x)] []
-                    ]
+                    (text x :: (
+                        if not readonly
+                        then [ div ([id "remove-role",class "fa fa-times"] ++ (if not readonly then [onClick (RemoveRole user providerInfo.provider x)] else [])) [] ]
+                        else []
+                    ))
 
-            ) (user.permissions ++ user.authz)
-        roles = userRoles ++ newAddedRole
+            ) (providerInfo.roles)
     in
-    if (List.isEmpty roles) then
-        span[class "list-auths"][]
-    else
-        span[class "list-auths"](userRoles ++ newAddedRole)
+        userRoles ++ newAddedRole
 
-displayAuth : User -> Html Msg
-displayAuth user  =
+displayRoles : User -> Html Msg
+displayRoles user  =
     let
         userRoles =
             List.map (
                 \x ->
                     span [ class "auth" ][text x]
-            ) (user.permissions ++ user.authz)
+            ) (user.roles)
     in
     if (List.isEmpty userRoles) then
         span[class "list-auths-empty"]
@@ -349,3 +550,14 @@ displayAuth user  =
         ]
     else
         span[class "list-auths"](userRoles)
+
+displayUserLastLogin : User -> Html Msg
+displayUserLastLogin user =
+    case user.lastLogin of
+        Nothing -> text ""
+        Just l -> 
+            div [class "user-card-last-login"]
+            [
+                  text (String.replace "T" " " l)
+                , i [class "fa fa-sign-in"][]
+            ]
