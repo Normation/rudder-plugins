@@ -9,6 +9,3 @@ SCRIPTS = postinst
 
 include ../makefiles/common-scala-plugin.mk
 
-target/$(NAME)/user-management-schema.sql:
-	cp ./src/main/resources/user-management-schema.sql target/$(NAME)/
-
