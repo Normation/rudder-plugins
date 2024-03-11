@@ -635,6 +635,7 @@ class ChangeRequestApiTest extends TraitTestApiFromYamlFiles with AfterAll {
       validationWorkflowService,
       List.empty,
       () => Full(true),
+      () => Full(false),
       null
     )
   )
