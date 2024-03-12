@@ -61,6 +61,7 @@ import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.domain.logger.PluginLogger
+import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users._
 import com.normation.zio._
@@ -527,8 +528,15 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           rudderUserDetailsService.loadUserByUsername(user.getName)
       }
     }
+    // for now, tenants are not configurable by OIDC
+    val tenants    = rudderUserDetailsService.authConfigProvider.getUserByName(user.getName) match {
+      // when the user is not defined in rudder-users.xml, we give it the whole perm on nodes for compatibility
+      case Left(_)  => NodeSecurityContext.All
+      // if the user is defined in rudder-users.xml, we get whatever is defined there.
+      case Right(u) => u.nodePerms
+    }
 
-    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails)
+    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails, tenants)
   }
 
   def buildUser(
@@ -537,7 +545,8 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       user:           U,
       roleApiMapping: RoleApiMapping,
       rudder:         RudderUserDetail,
-      userBuilder:    (U, RudderUserDetail) => T
+      userBuilder:    (U, RudderUserDetail) => T,
+      tenants:        NodeSecurityContext
   ): T = {
     val roles = {
       optReg match {
@@ -644,8 +653,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       .toList
 
     val apiAuthz    = ApiAuthorization.ACL(acls)
-    val userDetails = rudder
-      .copy(roles = roles, apiAuthz = apiAuthz)
+    val userDetails = rudder.copy(roles = roles, apiAuthz = apiAuthz, nodePerms = tenants)
     AuthBackendsLogger.debug(
       s"Principal '${rudder.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${apiAuthz.debugString}"
     )
