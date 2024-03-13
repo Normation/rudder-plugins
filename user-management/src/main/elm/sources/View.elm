@@ -580,7 +580,7 @@ displayUsersConf model u =
             , newUserMenu
             , panel
             ]
-        , div [ class "col-xs-12" ] [ div [ class "row user-list" ] users ]
+        , div [ class "col-xs-12" ] [ div [ class "user-list" ] users ]
         ]
 
 

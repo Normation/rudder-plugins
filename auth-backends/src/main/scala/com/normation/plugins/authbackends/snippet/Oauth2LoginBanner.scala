@@ -94,8 +94,8 @@ class Oauth2LoginBanner(
         rgs.map {
           case (id, r) =>
             <div class="form-group">
-             <div class="input-group col-xs-12">
-               <a class="btn btn-warning-rudder col-xs-12" href={redirectUrl(id)} role="button">{
+             <div class="input-group-text col-12">
+               <a class="btn col-12" href={redirectUrl(id)} role="button">{
               s"${r.infoMsg} (${r.registration.getClientName})"
             }</a>
              </div>
@@ -106,8 +106,8 @@ class Oauth2LoginBanner(
       </div>
     } else {
       <div id="oauth2providers">
-        <div class="col-xs-12">
-          <h4 class="welcome col-xs-12">OAUTH2 backend is enabled, but no providers are correctly configured</h4>
+        <div class="col-12">
+          <h4 class="welcome col-12">OAUTH2 backend is enabled, but no providers are correctly configured</h4>
         </div>
       </div>
     }
@@ -130,7 +130,7 @@ class Oauth2LoginBanner(
                                     |   $('#errorInfoSSO').toggle(true);
                                     | }}
                                     |""".stripMargin))) ++
-              <button id="toggleLoginFormButton" class="btn btn-default btn-xs">show non-SSO login form
+              <button id="toggleLoginFormButton" class="btn btn-sm btn-light btn-outline-secondary border">show non-SSO login form
                             </button><div id="toggleLoginForm" style="display: none">{x}</div>
             case LoginFormRendering.Remove => NodeSeq.Empty
           })
