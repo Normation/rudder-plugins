@@ -296,7 +296,7 @@ def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
   if (changeUrl == null) {
 
-    def msg ="*${version} - plugins - build* - <"+currentBuild.absoluteUrl+"|Link>"
+    def msg ="*${version} - plugins* - <"+currentBuild.absoluteUrl+"|Link>"
 
     def color = "#00A8E1"
 
