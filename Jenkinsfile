@@ -6,7 +6,7 @@ def changeUrl = env.CHANGE_URL
 def slackResponse = ""
 def blueUrl = "${env.JOB_DISPLAY_URL}"
 if (changeUrl == null) {
-  def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
+  slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
 }
 def job = ""
 def errors = []
