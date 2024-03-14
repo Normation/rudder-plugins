@@ -436,7 +436,7 @@ To correct that problem, you need to remove that restriction (and update your ce
   * `jdk.certpath.disabledAlgorithms`
 * restart `rudder-jetty`
 
-=== OAUTHv2 / OpenID Connect (OIDC)
+== OAUTHv2 / OpenID Connect (OIDC)
 
 https://openid.net/connect/[OpenID Connect] (OIDC) is a very common SSO protocol to authenticate and manage authorizations of users in a decentralized, multi-tenant set-up (ie, typically web applications nowadays). It's built on top of `OAUTHv2` and replace it in most new cases.
 
@@ -475,7 +475,7 @@ so that it is easier to change or disable some of them.
 
 === IdP-provided authorisations for Rudder users
 
-You can configure an OAuth2 or OIDC provider so that it informs Rudder of the roles the user need to have. This allows to centrally
+You can configure an `OAuth2` or `OIDC` provider so that it informs Rudder of the roles the user need to have. This allows to centrally
 manage both user and authorisation in the same place.
 
 This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
@@ -487,6 +487,15 @@ You need three additional properties to enable and configure that property for a
   are merged with the `rudder-users.xml` ones.
 
 See the example configuration file below for details about these property values.
+
+=== IdP provisioning for Rudder users
+
+You can configure an `OAuth2` or `OIDC` provider so that users that are correctly authenticated with it can be automatically created in Rudder. This allows to avoid changing `rudder-users.xml` file.
+By default, user provisioned by that way don't have any rights. You will need to also configure roles provisioning through your IdP (see previous section).
+
+To allow IdP provisioning of users, set property `enableProvisionning` to `true` (default `false`).
+
+See the example configuration file below for details about that property.
 
 === Example configuration for `okta` provider
 
@@ -578,20 +587,37 @@ rudder.auth.oauth2.provider.okta.grantType=authorization_code
 rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
 
 #
-# Properties to configure roles provisioning through the OIDC token
+# Properties to configure roles and users provisioning through the OIDC token
 #
-# enable Rudder user role provisioning by the OIDC IdP. use `true` or `false` (default)
+# enable Rudder user role provisioning by the OIDC IdP. Use `true` or `false` (default)
 rudder.auth.oauth2.provider.okta.roles.enabled=true
-#Name of the OIDC token attribute that will hold rudder roles. This is something that you identity provider
-#administrator will give you. The attribute value must be a OAuth list of string, ie in the format:
+
+# Name of the OIDC token attribute that will hold rudder roles. This is something that you identity provider
+# administrator will give you. The attribute value must be a OAuth list of string, ie in the format:
 #  attribute: [role-oidc-a, role-oidc-b, etc]
-#Each string will be mapped to a rudder role (or ignored if no matching is found). Default value: empty.
+# Each string will be mapped to a rudder role (or ignored if no matching is found). Default value: empty.
 rudder.auth.oauth2.provider.okta.roles.attribute=rudderroles
-#Define if the provided list of roles should *override* or *be appended to* the list of roles configured for
+
+# Define if the provided list of roles should *override* or *be appended to* the list of roles configured for
 #the user in the `rudder-users.xml` file. Use `false` for append (default), `true` for override.
 rudder.auth.oauth2.provider.okta.roles.override=true
 
+# Mapping between IdP role name ("entitlements") and Rudder internal naming scheme.
+#
+# It is common for the IdP to use its own naming scheme, or to have several IdP using
+# diffenent naming incompatible naming scheme for roles. The following property allows
+# to map an IdP entitlement into a rudder role name (custom or builtin)
+rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
+rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
+# You can restrict the role that The IdP can assign to only role mapped to entitlements.
+# When the following properties is true, roles that don't appear in `mapping.entitlements`
+# will be filtered-out.
+rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
 
+# enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
+# Users provisioned through that channel don't have roles, you will need to also
+# provisioned roles thanks to IdP.
+rudder.auth.oauth2.provider.okta.enableProvisionning=true
 ```
 
 
