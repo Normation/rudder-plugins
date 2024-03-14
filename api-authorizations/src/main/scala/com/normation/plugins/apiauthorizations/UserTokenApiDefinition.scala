@@ -40,6 +40,7 @@ package com.normation.plugins.apiauthorizations
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api._
 import com.normation.rudder.apidata.JsonApiAcl
+import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest._
 import com.normation.rudder.rest.{UserApi => API}
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
@@ -108,7 +109,9 @@ class UserApi(
         s"API token for user '${authzToken.qc.actor.name}'",
         isEnabled = true,
         now,
-        now
+        now,
+        // set "no tenant" - they will be updated dynamically when perms are resolved for that token in AppConfigAuth
+        NodeSecurityContext.None
       )
 
       writeApi
@@ -258,7 +261,7 @@ object UserApi {
     def empty: RestAccountsResponse = RestAccountsResponse(Nil)
 
     /**
-      * Displays the provided clear-text or hashed token for the api account 
+      * Displays the provided clear-text or hashed token for the api account
       */
     def fromUnredacted(account: ApiAccount, secret: String): RestAccountsResponse = {
       apply(List(account), Some(ClearTextToken(secret)))

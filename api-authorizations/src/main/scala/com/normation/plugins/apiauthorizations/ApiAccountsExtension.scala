@@ -107,7 +107,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
 
   def body(xml: NodeSeq): NodeSeq = {
     ("#acl-app" #>
-      <div>
+    <div>
         <head_merge>
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
           <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/rudder-apiauthorizations.js"></script>

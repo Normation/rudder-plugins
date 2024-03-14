@@ -48,7 +48,8 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
       "number one user",
       isEnabled = true,
       creationDate = accountCreationDate,
-      tokenGenerationDate = accountCreationDate
+      tokenGenerationDate = accountCreationDate,
+      NodeSecurityContext.All
     )
   )
 
