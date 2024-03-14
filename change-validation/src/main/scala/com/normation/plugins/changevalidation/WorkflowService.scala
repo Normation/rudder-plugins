@@ -56,7 +56,7 @@ import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
-import com.normation.rudder.web.services.CurrentUser
+import com.normation.rudder.users.CurrentUser
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.common._
 import zio._
@@ -226,7 +226,7 @@ class TwoValidationStepsWorkflowServiceImpl(
 
       case Deployment.id     =>
         WorkflowAction("Deploy", deployAction(stepDeploymentToDeployed))
-        
+
       case Deployed.id       => NoWorkflowAction
       case Cancelled.id      => NoWorkflowAction
       case WorkflowNodeId(x) =>
