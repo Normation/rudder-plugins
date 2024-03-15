@@ -45,7 +45,7 @@ class OpenScapNodeDetailsExtension(
             case false =>
               <div id="openScap" class="inner-portlet">
                   <h3 class="page-title">OpenSCAP reporting</h3>
-                  <div class="col-xs-12 callout-fade callout-info">
+                  <div class="col-sm-12 callout-fade callout-info">
                     <div class="marker">
                       <span class="fa fa-info-circle"></span>
                     </div>
@@ -71,10 +71,10 @@ class OpenScapNodeDetailsExtension(
           (
             "#NodeDetailsTabMenu *" #> { (x: NodeSeq) =>
               x ++ (
-                <li>
-                  <a href="#openscap_reports" class="ui-tabs-panel ui-corner-bottom">
+                <li class="nav-item">
+                  <button class="nav-link" data-bs-toggle="tab" data-bs-target="#openscap_reports" type="button" role="tab" aria-controls="openscap_reports">
                     {tabTitle}
-                  </a>
+                  </button>
                 </li>
               )
             } &
