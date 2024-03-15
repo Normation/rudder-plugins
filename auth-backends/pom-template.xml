@@ -78,7 +78,7 @@
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>nimbus-jose-jwt</artifactId>
-      <version>9.31</version>
+      <version>9.37.3</version>
       <exclusions>
         <exclusion>
           <groupId>net.minidev</groupId>
