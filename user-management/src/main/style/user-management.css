@@ -39,7 +39,7 @@
 
 #plugin-main .inner-portlet {
   padding: 0 15px;
-  font-family : var(--font-sans);
+  font-family: var(--font-sans);
   font-weight: 400;
   font-size: 14px;
 }
@@ -51,11 +51,10 @@
 }
 
 .user-card {
+  cursor: pointer;
   float: left;
-  width: 49%;
   min-height: 151px;
   margin: 15px 15px 15px 20px;
-  border-line: 2px;
   padding-bottom: 10px;
   border-radius: 8px;
   width: 300px;
@@ -68,10 +67,6 @@
 
 .user-card:hover {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
-}
-
-.user-card-wrapper {
-  cursor: pointer;
 }
 
 .user-card-inner {
@@ -181,7 +176,7 @@ h3 {
   width: 26px;
   height: 26px;
   border-radius: 3px;
-  background-color : #13BEB7;
+  background-color: #13BEB7;
   display: inline-flex;
   align-items: center;
   font-size: 20px;
@@ -487,7 +482,7 @@ h3 {
 
 .addBtn {
   margin: 5px 0 0 10px;
-  background-color : #13BEB7;
+  background-color: #13BEB7;
   color: white;
   padding: 2px;
   font-size: 10;
