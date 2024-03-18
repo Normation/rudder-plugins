@@ -1,6 +1,7 @@
 {
   "type": "plugin",
   "name": "${plugin-id}",
+  "description": "Run Ansible playbook on nodes",
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
