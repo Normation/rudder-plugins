@@ -40,7 +40,7 @@ package com.normation.plugins.authbackends
 import com.normation.NamedZioLogger
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
-import zio.json._
+import zio.json.*
 
 /**
  * Applicative log of interest for Rudder ops.
