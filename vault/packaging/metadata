@@ -1,6 +1,7 @@
 {
   "type": "plugin",
   "name": "${plugin-id}",
+  "description": "Integration with HashiCorp Vault",
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",

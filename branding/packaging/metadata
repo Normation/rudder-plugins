@@ -1,6 +1,7 @@
 {
   "type": "plugin",
   "name": "${plugin-id}",
+  "description": "Customize the Web UI colors and logo",
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
