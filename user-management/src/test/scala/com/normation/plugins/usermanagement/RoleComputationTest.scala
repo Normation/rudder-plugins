@@ -4,7 +4,7 @@ import com.normation.plugins.usermanagement.UserManagementService.computeRoleCov
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Role
 import com.normation.rudder.RudderRoles
-import com.normation.zio._
+import com.normation.zio.*
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner

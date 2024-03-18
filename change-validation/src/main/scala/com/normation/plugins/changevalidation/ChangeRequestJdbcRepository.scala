@@ -38,12 +38,12 @@
 package com.normation.plugins.changevalidation
 
 import cats.data.NonEmptyList
-import cats.syntax.reducible._
-import com.normation.errors._
+import cats.syntax.reducible.*
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.Doobie
-import com.normation.rudder.db.Doobie._
+import com.normation.rudder.db.Doobie.*
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleUid
@@ -54,15 +54,15 @@ import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
 import com.normation.rudder.services.marshalling.ChangeRequestChangesUnserialisation
-import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
 import doobie.util.fragments
-import net.liftweb.common._
+import net.liftweb.common.*
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.xml.Elem
-import zio.interop.catz._
+import zio.interop.catz.*
 
 trait RoChangeRequestJdbcRepositorySQL {
 
@@ -75,7 +75,7 @@ trait RoChangeRequestJdbcRepositorySQL {
 
   val changeRequestMapper: ChangeRequestMapper
 
-  import changeRequestMapper._
+  import changeRequestMapper.*
 
   implicit val readCRWithState: Read[Box[(ChangeRequest, WorkflowNodeId)]] = {
     Read[(Box[ChangeRequest], WorkflowNodeId)].map { case (cr, state) => cr.map((_, state)) }
@@ -151,7 +151,7 @@ class RoChangeRequestJdbcRepository(
     override val changeRequestMapper: ChangeRequestMapper
 ) extends RoChangeRequestRepository with RoChangeRequestJdbcRepositorySQL with Loggable {
 
-  import doobie._
+  import doobie.*
 
   // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
   private[this] def execQuery(q: Query0[Box[ChangeRequest]]): Box[Vector[ChangeRequest]] = {
@@ -211,7 +211,7 @@ class RoChangeRequestJdbcRepository(
 
   override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
 
-    import ChangeRequestFilter._
+    import ChangeRequestFilter.*
     val errorMsg = s"Could not get change request by filter ${filter}"
 
     def getXPathWithValue(by: ByFilter): (Fragment, String) = by match {
@@ -236,7 +236,7 @@ class WoChangeRequestJdbcRepository(
     roRepo: RoChangeRequestRepository
 ) extends WoChangeRequestRepository with Loggable with WoChangeRequestJdbcRepositorySQL {
 
-  import doobie._
+  import doobie.*
 
   // get the different part from a change request: name, description, content, modId
   private[this] def getAtom(cr: ChangeRequest): (Option[String], Option[String], Elem, Option[String]) = {

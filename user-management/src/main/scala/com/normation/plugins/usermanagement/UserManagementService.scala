@@ -18,19 +18,19 @@ import com.normation.rudder.Role.Custom
 import com.normation.rudder.RudderRoles
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.repository.xml.RudderPrettyPrinter
-import com.normation.rudder.users._
-import com.normation.zio._
-import io.scalaland.chimney.dsl._
+import com.normation.rudder.users.*
+import com.normation.zio.*
+import io.scalaland.chimney.dsl.*
 import java.util.concurrent.TimeUnit
-import org.springframework.core.io.{ClassPathResource => CPResource}
+import org.springframework.core.io.ClassPathResource as CPResource
 import scala.xml.Elem
 import scala.xml.Node
 import scala.xml.NodeSeq
 import scala.xml.parsing.ConstructingParser
 import scala.xml.transform.RewriteRule
 import scala.xml.transform.RuleTransformer
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 case class UserFileInfo(userOrigin: List[UserOrigin], digest: String)
 case class UserOrigin(user: User, hashValidHash: Boolean)
@@ -139,7 +139,7 @@ object UserManagementService {
    * - a set of unknown permissions that could neither parsed as roles nor authorization types
    */
   def parsePermissions(
-      permissions:     Set[String]
+      permissions: Set[String]
   )(implicit allRoles: Set[Role]): (Set[Role], Set[AuthorizationType], Set[String]) = {
     // Everything that is not a role is an authz and remaining authz are put into custom role
     val allRolesByName     = allRoles.map(r => r.name -> r).toMap
@@ -223,7 +223,7 @@ class UserManagementService(
     userService:         FileUserDetailListProvider,
     getUserResourceFile: IOResult[UserFile]
 ) {
-  import UserManagementService._
+  import UserManagementService.*
 
   /*
    * For now, when we add an user, we always add it in the XML file (and not only in database).
@@ -282,7 +282,7 @@ class UserManagementService(
    * - the password definition and hashing
    */
   def update(id: String, updateUser: UpdateUserFile, isPreHashed: Boolean)(
-      allRoles:  Map[String, Role]
+      allRoles: Map[String, Role]
   ): IOResult[Unit] = {
     implicit val currentRoles: Set[Role] = allRoles.values.toSet
 

@@ -36,15 +36,15 @@
 
 package com.normation.plugins.nodeexternalreports.service
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.services.nodes.NodeInfoService
-import com.typesafe.config._
+import com.typesafe.config.*
 import java.io.File
-import net.liftweb.common._
+import net.liftweb.common.*
 import net.liftweb.util.Helpers.tryo
 import scala.collection.immutable.SortedMap
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 final case class ExternalReport(
     title:         String,

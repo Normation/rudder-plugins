@@ -37,36 +37,36 @@
 
 package com.normation.plugins.datasources.api
 
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.datasources.DataSource
 import com.normation.plugins.datasources.DataSourceId
-import com.normation.plugins.datasources.DataSourceJsonCodec._
+import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.plugins.datasources.DataSourceRepository
 import com.normation.plugins.datasources.DataSourceUpdateCallbacks
 import com.normation.plugins.datasources.FullDataSource
 import com.normation.plugins.datasources.NodeUpdateResult
 import com.normation.plugins.datasources.RestResponseMessage
 import com.normation.plugins.datasources.UpdateCause
-import com.normation.plugins.datasources.api.{DataSourceApi => API}
+import com.normation.plugins.datasources.api.DataSourceApi as API
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.properties.CompareProperties
-import com.normation.rudder.domain.properties.GenericProperty._
+import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.repository.WoNodeRepository
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.utils.StringUuidGenerator
-import io.scalaland.chimney.syntax._
+import io.scalaland.chimney.syntax.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import zio.syntax._
+import zio.syntax.*
 
 class DataSourceApiImpl(
     extractor:       RestExtractorService,
@@ -79,11 +79,11 @@ class DataSourceApiImpl(
 
   val kind = "datasources"
 
-  def schemas = API
+  override def schemas: ApiModuleProvider[API] = API
 
   type ActionType = RestUtils.ActionType
 
-  import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson._
+  import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson.*
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints
@@ -105,7 +105,7 @@ class DataSourceApiImpl(
   }
 
   object ReloadAllDatasourcesOneNode extends LiftApiModule {
-    val schema        = API.ReloadAllDatasourcesOneNode
+    val schema: DataSourceApi.ReloadAllDatasourcesOneNode.type = API.ReloadAllDatasourcesOneNode
     val restExtractor = extractor
     def process(
         version:    ApiVersion,
@@ -125,7 +125,7 @@ class DataSourceApiImpl(
   }
 
   object ReloadOneDatasourceAllNodes extends LiftApiModule {
-    val schema        = API.ReloadOneDatasourceAllNodes
+    val schema: DataSourceApi.ReloadOneDatasourceAllNodes.type = API.ReloadOneDatasourceAllNodes
     val restExtractor = extractor
     def process(
         version:      ApiVersion,
@@ -145,7 +145,7 @@ class DataSourceApiImpl(
   }
 
   object ReloadOneDatasourceOneNode extends LiftApiModule {
-    val schema        = API.ReloadOneDatasourceOneNode
+    val schema: DataSourceApi.ReloadOneDatasourceOneNode.type = API.ReloadOneDatasourceOneNode
     val restExtractor = extractor
     def process(
         version:    ApiVersion,
@@ -166,7 +166,7 @@ class DataSourceApiImpl(
   }
 
   object ClearValueOneDatasourceAllNodes extends LiftApiModule {
-    val schema        = API.ClearValueOneDatasourceAllNodes
+    val schema: DataSourceApi.ClearValueOneDatasourceAllNodes.type = API.ClearValueOneDatasourceAllNodes
     val restExtractor = extractor
     def process(
         version:      ApiVersion,
@@ -192,7 +192,7 @@ class DataSourceApiImpl(
   }
 
   object ClearValueOneDatasourceOneNode extends LiftApiModule {
-    val schema        = API.ClearValueOneDatasourceOneNode
+    val schema: DataSourceApi.ClearValueOneDatasourceOneNode.type = API.ClearValueOneDatasourceOneNode
     val restExtractor = extractor
     def process(
         version:    ApiVersion,
@@ -222,7 +222,7 @@ class DataSourceApiImpl(
   }
 
   object ReloadAllDatasourcesAllNodes extends LiftApiModule0 {
-    val schema        = API.ReloadAllDatasourcesAllNodes
+    val schema: DataSourceApi.ReloadAllDatasourcesAllNodes.type = API.ReloadAllDatasourcesAllNodes
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       // reloadData All Nodes All Datasources
@@ -235,7 +235,7 @@ class DataSourceApiImpl(
   }
 
   object GetAllDataSources extends LiftApiModule0 {
-    val schema        = API.GetAllDataSources
+    val schema: DataSourceApi.GetAllDataSources.type = API.GetAllDataSources
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
@@ -249,7 +249,7 @@ class DataSourceApiImpl(
   }
 
   object GetDataSource extends LiftApiModule {
-    val schema        = API.GetDataSource
+    val schema: DataSourceApi.GetDataSource.type = API.GetDataSource
     val restExtractor = extractor
     def process(
         version:    ApiVersion,
@@ -269,7 +269,7 @@ class DataSourceApiImpl(
   }
 
   object DeleteDataSource extends LiftApiModule {
-    val schema        = API.DeleteDataSource
+    val schema: DataSourceApi.DeleteDataSource.type = API.DeleteDataSource
     val restExtractor = extractor
     def process(
         version:    ApiVersion,
@@ -296,7 +296,7 @@ class DataSourceApiImpl(
   }
 
   object CreateDataSource extends LiftApiModule0 {
-    val schema        = API.CreateDataSource
+    val schema: DataSourceApi.CreateDataSource.type = API.CreateDataSource
     val restExtractor = extractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
@@ -310,7 +310,7 @@ class DataSourceApiImpl(
   }
 
   object UpdateDataSource extends LiftApiModule {
-    val schema        = API.UpdateDataSource
+    val schema: DataSourceApi.UpdateDataSource.type = API.UpdateDataSource
     val restExtractor = extractor
     def process(
         version:    ApiVersion,

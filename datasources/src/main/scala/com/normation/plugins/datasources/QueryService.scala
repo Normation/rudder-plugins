@@ -38,7 +38,7 @@
 package com.normation.plugins.datasources
 
 import cats.data.NonEmptyList
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeState
@@ -51,8 +51,8 @@ import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 /*
  * This file contain the high level logic to update
@@ -350,7 +350,7 @@ class HttpQueryDataSourceService(
   }
 
   override def deleteAll(datasource: DataSourceId, cause: UpdateCause): IOResult[Set[NodeUpdateResult]] = {
-    import com.normation.rudder.domain.properties.GenericProperty._
+    import com.normation.rudder.domain.properties.GenericProperty.*
     val deleteProp = DataSource.nodeProperty(datasource.value, "".toConfigValue)
     for {
       nodes <- nodeInfo.getAll()

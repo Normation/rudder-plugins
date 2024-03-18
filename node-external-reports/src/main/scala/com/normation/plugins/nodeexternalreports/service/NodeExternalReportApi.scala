@@ -37,7 +37,7 @@
 package com.normation.plugins.nodeexternalreports.service
 
 import java.io.FileInputStream
-import net.liftweb.common._
+import net.liftweb.common.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.http.StreamingResponse

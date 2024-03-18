@@ -40,13 +40,13 @@ package com.normation.plugins.changevalidation.snippet
 import bootstrap.liftweb.RudderConfig
 import com.normation.appconfig.ReadConfigService
 import com.normation.appconfig.UpdateConfigService
-import com.normation.box._
-import net.liftweb.common._
-import net.liftweb.http._
+import com.normation.box.*
+import net.liftweb.common.*
+import net.liftweb.http.*
 import net.liftweb.http.js.JsCmds.Run
 import net.liftweb.http.js.JsCmds.Script
 import net.liftweb.util.Helpers
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.*
 import scala.xml.NodeSeq
 
 class ChangeValidationSettings extends DispatchSnippet {
@@ -59,7 +59,7 @@ class ChangeValidationSettings extends DispatchSnippet {
     case "validation" => validationConfiguration
   }
 
-  def workflowConfiguration: NodeSeq => NodeSeq = { xml: NodeSeq =>
+  def workflowConfiguration: NodeSeq => NodeSeq = { (xml: NodeSeq) =>
     //  initial values, updated on successful submit
     var initEnabled = configService.rudder_workflow_enabled().toBox
     var initSelfVal = configService.rudder_workflow_self_validation().toBox
@@ -194,7 +194,7 @@ class ChangeValidationSettings extends DispatchSnippet {
   }
 
   // same as workflowConfiguration but with 1 single checkbox, and val autoValidatedUsers = configService.rudder_workflow_validation_auto_validated_users().toBox
-  def validationConfiguration: NodeSeq => NodeSeq = { xml: NodeSeq =>
+  def validationConfiguration: NodeSeq => NodeSeq = { (xml: NodeSeq) =>
     // initial value, updated on successful submit
     var initAutoValidatedUsers = configService.rudder_workflow_validate_all().toBox
 

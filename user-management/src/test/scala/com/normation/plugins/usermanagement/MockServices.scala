@@ -17,7 +17,7 @@ import org.apache.commons.io.IOUtils
 import org.joda.time.DateTime
 import zio.ZIO
 import zio.json.ast.Json
-import zio.syntax._
+import zio.syntax.*
 
 class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], usersFile: File) {
 

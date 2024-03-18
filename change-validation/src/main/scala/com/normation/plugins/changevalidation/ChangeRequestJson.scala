@@ -42,10 +42,10 @@ import com.normation.cfclerk.domain.SectionSpec
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueName
 import com.normation.cfclerk.domain.TechniqueVersion
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.apidata.JsonResponseObjects._
-import com.normation.rudder.apidata.implicits._
+import com.normation.rudder.apidata.JsonResponseObjects.*
+import com.normation.rudder.apidata.implicits.*
 import com.normation.rudder.domain.nodes.AddNodeGroupDiff
 import com.normation.rudder.domain.nodes.ChangeRequestNodeGroupDiff
 import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
@@ -100,14 +100,14 @@ import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.PartialTransformer
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.partial.Result
-import io.scalaland.chimney.syntax._
+import io.scalaland.chimney.syntax.*
 import net.liftweb.common.Empty
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import scala.util.Try
 import zio.Chunk
 import zio.NonEmptyChunk
-import zio.json._
+import zio.json.*
 import zio.json.internal.Write
 
 sealed trait SimpleDiffOrValueJson[T] {
@@ -128,7 +128,7 @@ object SimpleDiffOrValueJson {
     Transformer.derive[SimpleDiff[T], SimpleDiffJson[T]]
   implicit def simpleValueEncoder[T: JsonEncoder]: JsonEncoder[SimpleValueJson[T]]               =
     JsonEncoder[T].contramap[SimpleValueJson[T]](_.value)
-  implicit def simpleDiffEncoder[T: JsonEncoder]:  JsonEncoder[SimpleDiffJson[T]]                = DeriveJsonEncoder.gen[SimpleDiffJson[T]]
+  implicit def simpleDiffEncoder[T: JsonEncoder]: JsonEncoder[SimpleDiffJson[T]] = DeriveJsonEncoder.gen[SimpleDiffJson[T]]
 
   // An encoder for both {from, to} json object and raw value json. This is a way to encode both different types of json
   implicit def encoder[T: JsonEncoder]: JsonEncoder[SimpleDiffOrValueJson[T]] = new JsonEncoder[SimpleDiffOrValueJson[T]] {
@@ -173,7 +173,7 @@ object ChangeRequestJson {
   }
 
   // Entrypoint to convert the whole tree of ChangeRequest + some context to a serializable object ChangeRequestJson
-  def from(cr:              ChangeRequest, status: WorkflowNodeId, isAcceptable: Boolean)(implicit
+  def from(cr: ChangeRequest, status: WorkflowNodeId, isAcceptable: Boolean)(implicit
       techniqueByDirective: Map[DirectiveId, Technique],
       diffService:          DiffService
   ): PureResult[ChangeRequestJson] = {
@@ -309,7 +309,7 @@ object DirectiveChangeJson {
         technique:          Technique,
         initialRootSection: SectionSpec
     ): Either[String, ModifyDirectiveJson] = {
-      import io.scalaland.chimney.dsl._
+      import io.scalaland.chimney.dsl.*
       // This is in a try/catch because directiveValToSectionVal may fail
       Try(
         ModifyDirectiveJson(
@@ -399,7 +399,7 @@ final case class DirectiveChangeActionJson(
     change: DirectiveChangeJson
 )
 object DirectiveChangeActionJson {
-  import DirectiveChangeJson._
+  import DirectiveChangeJson.*
 
   implicit def transformer(implicit
       technique:   Technique,
@@ -531,7 +531,7 @@ final case class RuleChangeActionJson(
     change: RuleChangeJson
 )
 object RuleChangeActionJson {
-  import RuleChangeJson._
+  import RuleChangeJson.*
 
   implicit def transformer(implicit
       diffService: DiffService
@@ -739,7 +739,7 @@ final case class GroupChangeActionJson(
     change: GroupChangeJson
 )
 object GroupChangeActionJson {
-  import GroupChangeJson._
+  import GroupChangeJson.*
 
   implicit def transformer(implicit
       diffService: DiffService
@@ -853,7 +853,7 @@ final case class GlobalParameterChangeActionJson(
 )
 
 object GlobalParameterChangeActionJson {
-  import GlobalParameterChangeJson._
+  import GlobalParameterChangeJson.*
 
   implicit def transformer(implicit
       diffService: DiffService

@@ -9,7 +9,7 @@ import com.normation.rudder.api.ApiToken
 import com.normation.rudder.api.RoApiAccountRepository
 import com.normation.rudder.api.TokenGenerator
 import com.normation.rudder.api.WoApiAccountRepository
-import zio.syntax._
+import zio.syntax.*
 
 class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = Map.empty) { self =>
 
@@ -26,9 +26,9 @@ class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = M
       id.succeed
     }
 
-    override def getAllStandardAccounts:      IOResult[Seq[ApiAccount]]    = ???
+    override def getAllStandardAccounts: IOResult[Seq[ApiAccount]] = ???
     override def getByToken(token: ApiToken): IOResult[Option[ApiAccount]] = ???
-    override def getSystemAccount:            ApiAccount                   = ???
+    override def getSystemAccount: ApiAccount = ???
   }
 
   object tokenGenerator extends TokenGenerator {

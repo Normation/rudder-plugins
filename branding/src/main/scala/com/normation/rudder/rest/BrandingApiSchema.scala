@@ -38,7 +38,7 @@
 package com.normation.rudder.rest
 
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.api.HttpAction._
+import com.normation.rudder.api.HttpAction.*
 import sourcecode.Line
 
 /*
@@ -49,7 +49,7 @@ import sourcecode.Line
 sealed trait BrandingApiSchema extends EndpointSchema with GeneralApi with SortIndex
 
 object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
-  import EndpointSchema.syntax._
+  import EndpointSchema.syntax.*
   final case object GetBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
     val z              = implicitly[Line].value
     val description    = "Get branding plugin configuration"

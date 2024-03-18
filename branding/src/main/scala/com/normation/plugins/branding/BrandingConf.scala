@@ -37,7 +37,7 @@
 
 package com.normation.plugins.branding
 
-import zio.json._
+import zio.json.*
 
 // This case class is serialized with it's parameters directly in json
 // Changing a parameter name impacts Rest api and parsing in Elm app and file format.

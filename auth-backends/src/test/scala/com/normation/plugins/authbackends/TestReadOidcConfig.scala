@@ -36,11 +36,11 @@
  */
 package com.normation.plugins.authbackends
 
-import com.normation.zio._
+import com.normation.zio.*
 import com.typesafe.config.ConfigFactory
 import java.io.StringReader
 import org.junit.runner.RunWith
-import org.specs2.mutable._
+import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])

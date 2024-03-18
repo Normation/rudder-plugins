@@ -37,8 +37,9 @@
 
 package com.normation.plugins.openscappolicies
 
+import bootstrap.liftweb.ConfigResource
 import bootstrap.rudder.plugin.OpenscapPoliciesConf
-import com.normation.plugins._
+import com.normation.plugins.*
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 
@@ -50,9 +51,9 @@ class OpenscapPoliciesPluginDef(override val status: PluginStatus) extends Defau
 
   def oneTimeInit: Unit = {}
 
-  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = {
+  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = {
     Some(OpenscapPoliciesConf.openScapApiImpl)
   }
 
-  val configFiles = Seq()
+  val configFiles: Seq[ConfigResource] = Seq()
 }

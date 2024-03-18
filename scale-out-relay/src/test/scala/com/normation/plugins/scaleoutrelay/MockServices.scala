@@ -1,6 +1,6 @@
 package com.normation.plugins.scaleoutrelay
 
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
 import com.normation.eventlog.EventLogFilter
@@ -35,7 +35,7 @@ import com.unboundid.ldif.LDIFChangeRecord
 import doobie.Fragment
 import zio.Ref
 import zio.ZIO
-import zio.syntax._
+import zio.syntax.*
 
 class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId, NodeGroup]) {
 
@@ -71,16 +71,16 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
       nodesRef.update(_ - node.id).map(_ => node)
     }
 
-    override def getNodeInfosSeq(nodeIds: Seq[NodeId]):                                                    IOResult[Seq[NodeInfo]]         = ???
-    override def getNumberOfManagedNodes:                                                                  IOResult[Int]                   = ???
-    override def getAll():                                                                                 IOResult[Map[NodeId, NodeInfo]] = ???
-    override def getAllNodesIds():                                                                         IOResult[Set[NodeId]]           = ???
-    override def getAllNodes():                                                                            IOResult[Map[NodeId, Node]]     = ???
-    override def getAllNodeInfos():                                                                        IOResult[Seq[NodeInfo]]         = ???
-    override def getAllSystemNodeIds():                                                                    IOResult[Seq[NodeId]]           = ???
-    override def getPendingNodeInfos():                                                                    IOResult[Map[NodeId, NodeInfo]] = ???
-    override def getPendingNodeInfo(nodeId: NodeId):                                                       IOResult[Option[NodeInfo]]      = ???
-    override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node]                  =
+    override def getNodeInfosSeq(nodeIds: Seq[NodeId]): IOResult[Seq[NodeInfo]] = ???
+    override def getNumberOfManagedNodes: IOResult[Int]                   = ???
+    override def getAll():                IOResult[Map[NodeId, NodeInfo]] = ???
+    override def getAllNodesIds():        IOResult[Set[NodeId]]           = ???
+    override def getAllNodes():           IOResult[Map[NodeId, Node]]     = ???
+    override def getAllNodeInfos():       IOResult[Seq[NodeInfo]]         = ???
+    override def getAllSystemNodeIds():   IOResult[Seq[NodeId]]           = ???
+    override def getPendingNodeInfos():   IOResult[Map[NodeId, NodeInfo]] = ???
+    override def getPendingNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
+    override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] =
       ???
     override def updateNodeKeyInfo(
         nodeId:         NodeId,
@@ -198,7 +198,7 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
       fakePolicyServers.succeed
     }
 
-    override def getPolicyServers():                               IOResult[PolicyServers] = {
+    override def getPolicyServers(): IOResult[PolicyServers] = {
       fakePolicyServers.succeed
     }
 
@@ -207,7 +207,7 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
         modId:    ModificationId,
         actor:    EventActor
     ): IOResult[PolicyServers] = ???
-    override def deleteRelaySystemObjects(policyServerId: NodeId): IOResult[Unit]          = ???
+    override def deleteRelaySystemObjects(policyServerId: NodeId): IOResult[Unit] = ???
 
   }
 
@@ -231,20 +231,20 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
       ZIO.succeed(null)
     }
 
-    override def eventLogFactory:                                                                EventLogFactory                                       = ???
+    override def eventLogFactory: EventLogFactory = ???
     override def getLastEventByChangeRequest(
         xpath:           String,
         eventTypeFilter: List[EventLogFilter]
     ): IOResult[Map[ChangeRequestId, EventLog]] = ???
-    override def saveEventLog(modId: ModificationId, eventLog: EventLog):                        IOResult[EventLog]                                    = ???
+    override def saveEventLog(modId: ModificationId, eventLog: EventLog): IOResult[EventLog] = ???
     override def getEventLogByCriteria(
         criteria:       Option[Fragment],
         limit:          Option[Int],
         orderBy:        List[Fragment],
         extendedFilter: Option[Fragment]
     ): IOResult[Seq[EventLog]] = ???
-    override def getEventLogById(id: Long):                                                      IOResult[EventLog]                                    = ???
-    override def getEventLogCount(criteria: Option[Fragment], extendedFilter: Option[Fragment]): IOResult[Long]                                        = ???
+    override def getEventLogById(id: Long): IOResult[EventLog] = ???
+    override def getEventLogCount(criteria:       Option[Fragment], extendedFilter: Option[Fragment]): IOResult[Long] = ???
     override def getEventLogByChangeRequest(
         changeRequest:   ChangeRequestId,
         xpath:           String,
@@ -252,6 +252,6 @@ class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId
         orderBy:         Option[String],
         eventTypeFilter: List[EventLogFilter]
     ): IOResult[Vector[EventLog]] = ???
-    override def getEventLogWithChangeRequest(id: Int):                                          IOResult[Option[(EventLog, Option[ChangeRequestId])]] = ???
+    override def getEventLogWithChangeRequest(id: Int): IOResult[Option[(EventLog, Option[ChangeRequestId])]] = ???
   }
 }
