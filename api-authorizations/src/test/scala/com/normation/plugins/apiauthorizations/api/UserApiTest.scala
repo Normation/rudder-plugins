@@ -1,6 +1,6 @@
 package com.normation.plugins.apiauthorizations
 
-import better.files._
+import better.files.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiAccount
 import com.normation.rudder.api.ApiAccountId
@@ -57,17 +57,17 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
 
   val userService: UserService = new UserService {
     // use an user that has access to the api, we do not test authorization checks in this file
-    val user1          = new AuthenticatedUser {
-      val account                              = RudderAccount.Api(accounts(ApiAccountId("user1")))
+    val user1 = new AuthenticatedUser {
+      val account: RudderAccount.Api = RudderAccount.Api(accounts(ApiAccountId("user1")))
       def checkRights(auth: AuthorizationType) = true
-      def getApiAuthz                          = ApiAuthorization.RW
-      def nodePerms                            = NodeSecurityContext.All
+      def getApiAuthz: ApiAuthorization    = ApiAuthorization.RW
+      def nodePerms:   NodeSecurityContext = NodeSecurityContext.All
     }
-    val getCurrentUser = user1
+    val getCurrentUser: AuthenticatedUser = user1
   }
 
   val modules = List(
-    new UserApi(
+    new UserApiImpl(
       mockServices.apiAccountRepository,
       mockServices.apiAccountRepository,
       mockServices.tokenGenerator,

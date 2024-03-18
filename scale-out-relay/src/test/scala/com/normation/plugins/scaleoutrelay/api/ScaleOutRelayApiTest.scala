@@ -1,12 +1,12 @@
 package com.normation.plugins.scaleoutrelay.api
 
-import better.files._
+import better.files.*
 import com.normation.plugins.scaleoutrelay.MockServices
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
-import com.normation.zio._
+import com.normation.zio.*
 import java.nio.file.Files
 import net.liftweb.common.Loggable
 import org.junit.runner.RunWith

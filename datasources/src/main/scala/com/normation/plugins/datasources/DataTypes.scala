@@ -44,7 +44,7 @@ import com.normation.rudder.domain.properties.PropertyProvider
 import com.typesafe.config.ConfigValue
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
-import zio._
+import zio.*
 
 /**
  * Applicative log of interest for Rudder ops.

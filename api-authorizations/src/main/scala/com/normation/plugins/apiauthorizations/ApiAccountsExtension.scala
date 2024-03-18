@@ -44,10 +44,10 @@ import com.normation.rudder.rest.AllApi
 import com.normation.rudder.rest.ApiKind
 import com.normation.rudder.web.snippet.administration.ApiAccounts
 import net.liftweb.common.Loggable
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
-import zio.json._
+import zio.json.*
 
 class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag[ApiAccounts])
     extends PluginExtensionPoint[ApiAccounts] with Loggable {
@@ -77,8 +77,8 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
    */
   def render(xml: NodeSeq) = {
     // get all apis and for public one, and create the structure
-    import net.liftweb.http.js.JsCmds._
-    import net.liftweb.http.js.JE._
+    import net.liftweb.http.js.JsCmds.*
+    import net.liftweb.http.js.JE.*
 
     val categories = ((AllApi.api ++ PluginsInfo.pluginApisDef)
       .filter(x => x.kind == ApiKind.Public || x.kind == ApiKind.General)

@@ -37,8 +37,8 @@
 
 package com.normation.plugins.changevalidation.api
 
-import com.normation.plugins.changevalidation._
-import com.normation.plugins.changevalidation.RudderJsonMapping._
+import com.normation.plugins.changevalidation.*
+import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
@@ -48,13 +48,13 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.InternalApi
-import com.normation.rudder.rest.RudderJsonRequest._
+import com.normation.rudder.rest.RudderJsonRequest.*
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
@@ -98,7 +98,7 @@ class SupervisedTargetsApiImpl(
     nodeGroupRepository:      RoNodeGroupRepository
 ) extends LiftApiModuleProvider[SupervisedTargetsApi] {
 
-  def schemas = SupervisedTargetsApi
+  override def schemas: ApiModuleProvider[SupervisedTargetsApi] = SupervisedTargetsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     SupervisedTargetsApi.endpoints
@@ -129,9 +129,9 @@ class SupervisedTargetsApiImpl(
    * }
    */
   object GetAllTargets extends LiftApiModule0 {
-    val schema = SupervisedTargetsApi.GetAllTargets
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import com.normation.plugins.changevalidation.RudderJsonMapping._
+    val schema:                                                                                                SupervisedTargetsApi.GetAllTargets.type = SupervisedTargetsApi.GetAllTargets
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                            = {
+      import com.normation.plugins.changevalidation.RudderJsonMapping.*
 
       (for {
         groups       <- nodeGroupRepository.getFullGroupLibrary()
@@ -157,8 +157,8 @@ class SupervisedTargetsApiImpl(
 
     // from the JSON, etract the list of target name to supervise
 
-    val schema = SupervisedTargetsApi.UpdateSupervisedTargets
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                SupervisedTargetsApi.UpdateSupervisedTargets.type = SupervisedTargetsApi.UpdateSupervisedTargets
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                                      = {
       (for {
         targets <-
           req

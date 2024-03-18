@@ -7,7 +7,7 @@ import com.normation.rudder.api.ApiAuthorizationKind
 import com.normation.rudder.apidata.JsonApiAcl
 import com.normation.utils.DateFormaterService
 import org.joda.time.DateTime
-import zio.json._
+import zio.json.*
 
 trait UserJsonCodec {
 

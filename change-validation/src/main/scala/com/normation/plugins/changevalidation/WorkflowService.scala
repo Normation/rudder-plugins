@@ -37,8 +37,8 @@
 
 package com.normation.plugins.changevalidation
 
-import com.normation.box._
-import com.normation.errors._
+import com.normation.box.*
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.AuthorizationType
@@ -48,7 +48,7 @@ import com.normation.rudder.domain.eventlog.AddChangeRequestDiff
 import com.normation.rudder.domain.eventlog.ChangeRequestDiff
 import com.normation.rudder.domain.eventlog.DeleteChangeRequestDiff
 import com.normation.rudder.domain.eventlog.ModifyToChangeRequestDiff
-import com.normation.rudder.domain.workflows._
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
@@ -58,8 +58,8 @@ import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
-import net.liftweb.common._
-import zio._
+import net.liftweb.common.*
+import zio.*
 
 /**
  * A proxy workflow service based on a runtime choice
@@ -136,7 +136,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     selfValidation:                () => Box[Boolean],
     selfDeployment:                () => Box[Boolean]
 ) extends WorkflowService {
-  import TwoValidationStepsWorkflowServiceImpl._
+  import TwoValidationStepsWorkflowServiceImpl.*
 
   val name = "two-steps-validation-workflow"
 

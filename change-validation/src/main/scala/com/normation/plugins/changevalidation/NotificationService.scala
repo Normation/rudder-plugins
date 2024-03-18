@@ -4,7 +4,7 @@ import bootstrap.liftweb.FileSystemResource
 import com.github.mustachejava.DefaultMustacheFactory
 import com.github.mustachejava.MustacheFactory
 import com.normation.NamedZioLogger
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.Cancelled
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.Deployed
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.Deployment
@@ -14,7 +14,7 @@ import com.normation.rudder.domain.workflows.WorkflowNode
 import com.normation.rudder.web.model.LinkUtil
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import jakarta.mail._
+import jakarta.mail.*
 import jakarta.mail.Session
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
@@ -23,9 +23,9 @@ import java.io.FileReader
 import java.io.StringReader
 import java.io.StringWriter
 import java.util.Properties
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import zio.ZIO
-import zio.syntax._
+import zio.syntax.*
 
 final case class Email(value: String)
 

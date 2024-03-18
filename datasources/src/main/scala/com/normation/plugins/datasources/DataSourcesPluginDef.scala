@@ -38,14 +38,15 @@
 package com.normation.plugins.datasources
 
 import bootstrap.liftweb.Boot
+import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.DatasourcesConf
-import com.normation.plugins._
+import com.normation.plugins.*
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.zio._
+import com.normation.zio.*
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
@@ -57,7 +58,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
 
   override val basePackage = "com.normation.plugins.datasources"
 
-  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
+  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
 
   def init = {
     // initialize datasources to start schedule
@@ -66,7 +67,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
 
   def oneTimeInit: Unit = {}
 
-  val configFiles = Seq()
+  val configFiles: Seq[ConfigResource] = Seq()
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (

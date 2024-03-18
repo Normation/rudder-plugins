@@ -38,6 +38,7 @@
 package com.normation.plugins.branding
 
 import bootstrap.liftweb.Boot
+import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.DefaultPluginDef
@@ -56,13 +57,13 @@ class BrandingPluginDef(override val status: PluginStatus) extends DefaultPlugin
 
   override val basePackage = "com.normation.plugins.branding"
 
-  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(BrandingPluginConf.brandingApi)
+  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(BrandingPluginConf.brandingApi)
 
   def init = {}
 
   def oneTimeInit: Unit = {}
 
-  val configFiles = Seq()
+  val configFiles: Seq[ConfigResource] = Seq()
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (

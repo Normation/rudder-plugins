@@ -38,41 +38,41 @@
 package com.normation.plugins.apiauthorizations
 
 import com.normation.eventlog.ModificationId
-import com.normation.rudder.api._
+import com.normation.rudder.api.*
 import com.normation.rudder.apidata.JsonApiAcl
 import com.normation.rudder.facts.nodes.NodeSecurityContext
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.{UserApi => API}
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.UserApi
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
-import com.normation.rudder.rest.lift._
+import com.normation.rudder.rest.lift.*
 import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.Transformer
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import org.joda.time.DateTime
-import zio.json._
+import zio.json.*
 
-class UserApi(
+class UserApiImpl(
     readApi:        RoApiAccountRepository,
     writeApi:       WoApiAccountRepository,
     tokenGenerator: TokenGenerator,
     uuidGen:        StringUuidGenerator
-) extends LiftApiModuleProvider[API] {
+) extends LiftApiModuleProvider[UserApi] {
   api =>
 
-  import UserApi._
+  import UserApiImpl.*
 
-  def schemas = API
+  def schemas: ApiModuleProvider[UserApi] = UserApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    API.endpoints
+    UserApi.endpoints
       .map(e => {
         e match {
-          case API.GetApiToken    => GetApiToken
-          case API.CreateApiToken => CreateApiToken
-          case API.DeleteApiToken => DeleteApiToken
-          case API.UpdateApiToken => UpdateApiToken
+          case UserApi.GetApiToken    => GetApiToken
+          case UserApi.CreateApiToken => CreateApiToken
+          case UserApi.DeleteApiToken => DeleteApiToken
+          case UserApi.UpdateApiToken => UpdateApiToken
         }
       })
       .toList
@@ -85,8 +85,8 @@ class UserApi(
    */
 
   object GetApiToken extends LiftApiModule0 {
-    val schema = API.GetApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                UserApi.GetApiToken.type = UserApi.GetApiToken
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse             = {
       readApi
         .getById(ApiAccountId(authzToken.qc.actor.name))
         .map(RestAccountsResponse.fromRedacted(_))
@@ -96,8 +96,8 @@ class UserApi(
   }
 
   object CreateApiToken extends LiftApiModule0 {
-    val schema = API.CreateApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                UserApi.CreateApiToken.type = UserApi.CreateApiToken
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                = {
       val now     = DateTime.now
       val secret  = ApiToken.generate_secret(tokenGenerator)
       val hash    = ApiToken.hash(secret)
@@ -123,8 +123,8 @@ class UserApi(
   }
 
   object DeleteApiToken extends LiftApiModule0 {
-    val schema = API.DeleteApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                UserApi.DeleteApiToken.type = UserApi.DeleteApiToken
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                = {
       writeApi
         .delete(ApiAccountId(authzToken.qc.actor.name), ModificationId(uuidGen.newUuid), authzToken.qc.actor)
         .map(RestAccountIdResponse(_))
@@ -134,8 +134,8 @@ class UserApi(
   }
 
   object UpdateApiToken extends LiftApiModule0 {
-    val schema = API.UpdateApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                UserApi.UpdateApiToken.type = UserApi.UpdateApiToken
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                = {
       readApi
         .getById(ApiAccountId(authzToken.qc.actor.name))
         .map(RestAccountsResponse.fromRedacted(_))
@@ -146,7 +146,7 @@ class UserApi(
 
 }
 
-object UserApi {
+object UserApiImpl {
 
   /**
     * The value that will be displayed in the API response for the token.
@@ -180,8 +180,8 @@ object UserApi {
 
   object RestApiAccount extends UserJsonCodec {
     implicit class ApiAccountOps(val account: ApiAccount) extends AnyVal {
-      import ApiAccountKind._
-      import io.scalaland.chimney.syntax._
+      import ApiAccountKind.*
+      import io.scalaland.chimney.syntax.*
       def expirationDate: Option[String] = {
         account.kind match {
           case PublicApi(_, expirationDate) => expirationDate.map(DateFormaterService.getDisplayDateTimePicker)
@@ -199,7 +199,7 @@ object UserApi {
       }
 
       def acl: Option[List[JsonApiAcl]] = {
-        import ApiAuthorization._
+        import ApiAuthorization.*
         account.kind match {
           case PublicApi(authz, expirationDate) =>
             authz match {
@@ -247,7 +247,7 @@ object UserApi {
   )
 
   object RestAccountsResponse {
-    import RestApiAccount._
+    import RestApiAccount.*
 
     implicit val encoder: JsonEncoder[RestAccountsResponse] = DeriveJsonEncoder.gen[RestAccountsResponse]
 
