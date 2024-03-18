@@ -349,7 +349,7 @@ displayUserInfo userForm allowSaveInfo =
                     div [ class "user-info-row user-info-other" ]
                         [ label [ for k ] [ text k ]
                         , div [ class "user-info-row-edit" ]
-                            [ input [ id k, class "form-control user-info-value", placeholder ("User " ++ k), onInput (ModifyUserInfoField k), value v ] []
+                            [ input [ id k, class "form-control user-info-value", placeholder ("Enter value for field '" ++ k ++ "'"), onInput (ModifyUserInfoField k), value v ] []
                             , button [ class "btn btn-default", onClick (RemoveUserInfoField k) ] [ i [ class "fa fa-trash" ] [] ]
                             ]
                         ]
