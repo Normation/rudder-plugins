@@ -1,6 +1,7 @@
 {
   "type": "plugin",
   "name": "${plugin-id}",
+  "description": "Run OpenSCAP benchmarks and collect results",
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
