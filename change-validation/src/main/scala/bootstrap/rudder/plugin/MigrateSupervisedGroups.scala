@@ -38,14 +38,14 @@
 package bootstrap.rudder.plugin
 
 import better.files.File
-import com.normation.box._
+import com.normation.box.*
 import com.normation.plugins.changevalidation.ChangeValidationLogger
 import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
 import com.normation.rudder.domain.policies.RuleTarget
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.RoNodeGroupRepository
 import java.nio.charset.StandardCharsets
-import net.liftweb.common._
+import net.liftweb.common.*
 import net.liftweb.json.NoTypeHints
 
 final case class OldfileFormat(supervised: List[String])

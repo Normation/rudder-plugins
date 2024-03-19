@@ -37,26 +37,26 @@
 
 package com.normation.plugins.datasources.api
 
-import com.normation.plugins.datasources._
+import com.normation.plugins.datasources.*
 import com.normation.rudder.domain.properties.GenericProperty.fromJsonValue
 import com.normation.rudder.rest.JsonResponsePrettify
 import com.normation.rudder.rest.RestTest
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
-import com.normation.zio._
+import com.normation.zio.*
 import java.util.concurrent.TimeUnit.SECONDS
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import net.liftweb.http.LiftResponse
-import net.liftweb.json.JsonAST._
+import net.liftweb.json.JsonAST.*
 import net.liftweb.json.JsonParser
 import net.liftweb.json.JValue
 import org.junit.runner.RunWith
-import org.specs2.mutable._
+import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
-import zio._
+import zio.*
 
 @RunWith(classOf[JUnitRunner])
 class RestDataSourceTest extends Specification with Loggable {
@@ -128,7 +128,7 @@ class RestDataSourceTest extends Specification with Loggable {
   val d2updatedJson      = DataSourceJsonSerializer.serialize(dataSource2Updated)
 
   val d2modJson = {
-    import net.liftweb.json.JsonDSL._
+    import net.liftweb.json.JsonDSL.*
     (("type"           ->
     (("name"           -> "HTTP")
     ~ ("parameters"    ->
@@ -142,7 +142,7 @@ class RestDataSourceTest extends Specification with Loggable {
   }
 
   val d2DeletedJson = {
-    import net.liftweb.json.JsonDSL._
+    import net.liftweb.json.JsonDSL.*
     (("id"       -> datasource2.id.value)
     ~ ("message" -> s"Data source ${datasource2.id.value} deleted"))
   }

@@ -2,7 +2,7 @@ package com.normation.plugins.openscappolicies.services
 
 import com.normation.errors.IOResult
 import com.normation.plugins.openscappolicies.OpenScapReport
-import org.owasp.validator.html._
+import org.owasp.validator.html.*
 import scala.xml.NodeSeq
 
 class ReportSanitizer(policyFile: String) {

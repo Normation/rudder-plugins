@@ -37,7 +37,8 @@
 
 package com.normation.plugins.branding
 
-import net.liftweb.common._
+import net.liftweb.common.*
+import net.liftweb.json.Formats
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.NoTypeHints
 import net.liftweb.json.Serialization
@@ -132,7 +133,7 @@ final case class Logo(enable: Boolean, name: Option[String], data: Option[String
 }
 
 object BrandingConf {
-  implicit val formats = Serialization.formats(NoTypeHints)
+  implicit val formats:              Formats           = Serialization.formats(NoTypeHints)
   def serialize(conf: BrandingConf): JValue            = {
     import net.liftweb.json.Extraction.decompose
     decompose(conf)

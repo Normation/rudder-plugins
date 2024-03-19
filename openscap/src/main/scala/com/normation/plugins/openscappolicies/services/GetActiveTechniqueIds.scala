@@ -38,15 +38,15 @@
 package com.normation.plugins.openscappolicies.services
 
 import com.normation.cfclerk.domain.TechniqueName
-import com.normation.errors._
-import com.normation.inventory.ldap.core.InventoryMappingResult._
-import com.normation.ldap.sdk.BuildFilter._
+import com.normation.errors.*
+import com.normation.inventory.ldap.core.InventoryMappingResult.*
+import com.normation.ldap.sdk.BuildFilter.*
 import com.normation.ldap.sdk.LDAPConnectionProvider
 import com.normation.ldap.sdk.RoLDAPConnection
 import com.normation.rudder.domain.RudderDit
-import com.normation.rudder.domain.RudderLDAPConstants._
+import com.normation.rudder.domain.RudderLDAPConstants.*
 import com.normation.rudder.domain.policies.ActiveTechniqueId
-import zio._
+import zio.*
 
 class GetActiveTechniqueIds(
     rudderDit: RudderDit,

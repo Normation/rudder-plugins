@@ -46,11 +46,11 @@ import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserStatus
 import com.normation.utils.DateFormaterService
 import io.scalaland.chimney.Transformer
-import io.scalaland.chimney.dsl._
+import io.scalaland.chimney.dsl.*
 import net.liftweb.common.Logger
 import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
-import zio.json._
+import zio.json.*
 import zio.json.ast.Json
 
 /**

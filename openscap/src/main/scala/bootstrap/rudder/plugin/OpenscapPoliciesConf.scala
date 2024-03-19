@@ -84,7 +84,7 @@ object OpenScapProperties {
  * Actual configuration of the plugin logic
  */
 object OpenscapPoliciesConf extends RudderPluginModule {
-  import OpenScapProperties._
+  import OpenScapProperties.*
 
   val SANITIZATION_PROPERTY    = "sanitization.file"
   val POLICY_SANITIZATION_FILE = config.getString(SANITIZATION_PROPERTY)
@@ -100,7 +100,7 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
-  lazy val pluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
+  override lazy val pluginDef: OpenscapPoliciesPluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
   lazy val getActiveTechniqueIds = new GetActiveTechniqueIds(RudderConfig.rudderDit, RudderConfig.roLDAPConnectionProvider)
 

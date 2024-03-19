@@ -1,6 +1,6 @@
 package com.normation.plugins.scaleoutrelay
 
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
@@ -8,7 +8,7 @@ import com.normation.rudder.batch.AsyncDeploymentActor
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.nodes.NodeGroupCategoryId
 import com.normation.rudder.domain.nodes.NodeInfo
-import com.normation.rudder.domain.policies._
+import com.normation.rudder.domain.policies.*
 import com.normation.rudder.repository.EventLogRepository
 import com.normation.rudder.repository.WoDirectiveRepository
 import com.normation.rudder.repository.WoNodeGroupRepository
@@ -19,9 +19,9 @@ import com.normation.rudder.services.servers.PolicyServer
 import com.normation.rudder.services.servers.PolicyServerConfigurationObjects
 import com.normation.rudder.services.servers.PolicyServerManagementService
 import com.normation.utils.StringUuidGenerator
-import com.softwaremill.quicklens._
-import zio._
-import zio.syntax._
+import com.softwaremill.quicklens.*
+import zio.*
+import zio.syntax.*
 
 class ScaleOutRelayService(
     nodeInfosService:              NodeInfoService,

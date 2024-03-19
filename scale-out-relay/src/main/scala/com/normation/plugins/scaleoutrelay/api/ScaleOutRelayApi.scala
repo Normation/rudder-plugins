@@ -1,13 +1,13 @@
 package com.normation.plugins.scaleoutrelay.api
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.POST
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.RestUtils.toJsonError
 import com.normation.rudder.rest.RestUtils.toJsonResponse
 import com.normation.rudder.rest.lift.DefaultParams
@@ -18,8 +18,9 @@ import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import net.liftweb.json.Formats
 import net.liftweb.json.JsonAST.JValue
-import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JsonDSL.*
 import net.liftweb.json.NoTypeHints
 import sourcecode.Line
 
@@ -50,8 +51,8 @@ class ScaleOutRelayApiImpl(
 
   api =>
 
-  implicit val formats = net.liftweb.json.Serialization.formats((NoTypeHints))
-  override def schemas = ScaleOutRelayApi
+  implicit val formats: Formats                             = net.liftweb.json.Serialization.formats((NoTypeHints))
+  override def schemas: ApiModuleProvider[ScaleOutRelayApi] = ScaleOutRelayApi
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
     ScaleOutRelayApi.endpoints.map {
@@ -61,13 +62,13 @@ class ScaleOutRelayApiImpl(
   }
 
   def response(function: Box[JValue], req: Req, errorMessage: String, id: Option[String], dataName: String)(implicit
-      action:            String
+      action: String
   ): LiftResponse = {
     RestUtils.response(restExtractorService, dataName, id)(function, req, errorMessage)
   }
 
   object PromoteToRelay extends LiftApiModule {
-    val schema        = ScaleOutRelayApi.PromoteToRelay
+    val schema: ScaleOutRelayApi.PromoteToRelay.type = ScaleOutRelayApi.PromoteToRelay
     val restExtractor = api.restExtractorService
 
     def process(
@@ -90,7 +91,7 @@ class ScaleOutRelayApiImpl(
     }
   }
   object DemoteToNode   extends LiftApiModule {
-    val schema        = ScaleOutRelayApi.DemoteToNode
+    val schema: ScaleOutRelayApi.DemoteToNode.type = ScaleOutRelayApi.DemoteToNode
     val restExtractor = api.restExtractorService
 
     def process(

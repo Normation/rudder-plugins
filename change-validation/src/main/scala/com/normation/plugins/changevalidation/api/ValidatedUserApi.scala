@@ -41,29 +41,28 @@ import com.normation.eventlog.EventActor
 import com.normation.plugins.changevalidation.RoValidatedUserRepository
 import com.normation.plugins.changevalidation.WorkflowUsers
 import com.normation.plugins.changevalidation.WoValidatedUserRepository
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.apidata.RestDataSerializer
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.RestUtils.toJsonError
 import com.normation.rudder.rest.RestUtils.toJsonResponse
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.AuthorizationType
-
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.DefaultFormats
-import net.liftweb.json.JsonAST._
+import net.liftweb.json.JsonAST.*
 import net.liftweb.json.JsonAST.JArray
-import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JsonDSL.*
 import net.liftweb.json.JValue
 import sourcecode.Line
 
@@ -75,8 +74,8 @@ object ValidatedUserApi       extends ApiModuleProvider[ValidatedUserApi] {
     val description    = "List all users"
     val (action, path) = GET / "users"
 
-    override def dataContainer: Option[String] = None
-    override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
+    override def dataContainer: Option[String]          = None
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
   final case object DeleteValidatedUsersDetails extends ValidatedUserApi with OneParam with StartsAtVersion3 with SortIndex  {
     val z              = implicitly[Line].value
@@ -103,7 +102,7 @@ class ValidatedUserApiImpl(
     restDataSerializer:   RestDataSerializer
 ) extends LiftApiModuleProvider[ValidatedUserApi] {
 
-  import com.normation.plugins.changevalidation.api.{ValidatedUserApi => API}
+  import com.normation.plugins.changevalidation.api.ValidatedUserApi as API
 
   override def schemas: ApiModuleProvider[ValidatedUserApi] = API
 
@@ -146,7 +145,7 @@ class ValidatedUserApiImpl(
   }
 
   object ListUsers extends LiftApiModule0 {
-    val schema        = API.ListUsers
+    val schema: ValidatedUserApi.ListUsers.type = API.ListUsers
     val restExtractor = restExtractorService
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
@@ -164,7 +163,7 @@ class ValidatedUserApiImpl(
   }
 
   object DeleteValidatedUsersDetails extends LiftApiModule {
-    val schema        = API.DeleteValidatedUsersDetails
+    val schema: ValidatedUserApi.DeleteValidatedUsersDetails.type = API.DeleteValidatedUsersDetails
     val restExtractor = restExtractorService
 
     def process(
@@ -188,7 +187,7 @@ class ValidatedUserApiImpl(
   }
 
   object SaveWorkflowUsers extends LiftApiModule0 {
-    val schema        = API.SaveWorkflowUsers
+    val schema: ValidatedUserApi.SaveWorkflowUsers.type = API.SaveWorkflowUsers
     val restExtractor = restExtractorService
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {

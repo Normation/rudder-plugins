@@ -40,18 +40,18 @@ package com.normation.plugins.datasources
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.DocumentContext
 import com.jayway.jsonpath.JsonPath
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.GenericProperty
-import com.normation.rudder.domain.properties.GenericProperty._
+import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.services.policies.ParamInterpolationContext
-import com.normation.zio._
-import com.softwaremill.quicklens._
+import com.normation.zio.*
+import com.softwaremill.quicklens.*
 import com.typesafe.config.ConfigValue
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONAware
@@ -60,8 +60,8 @@ import net.minidev.json.JSONValue
 import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 /*
  * This file contain the logic to update dataset from an
@@ -241,7 +241,7 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
       policyServer:     NodeInfo,
       globalPolicyMode: GlobalPolicyMode,
       parameters:       Map[String, ParamInterpolationContext => IOResult[String]]
-  )(input:              String): IOResult[String] = {
+  )(input: String): IOResult[String] = {
 
     // we inject some props that are useful as identity pivot (like short name)
     // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}

@@ -38,8 +38,9 @@
 package com.normation.plugins.authbackends
 
 import bootstrap.liftweb.Boot
+import bootstrap.liftweb.ConfigResource
 import bootstrap.rudder.plugin.AuthBackendsConf
-import com.normation.plugins._
+import com.normation.plugins.*
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -60,9 +61,9 @@ class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPl
 
   // there is no config file as the main rudder-web.properties must be modified
   // for these properties.
-  val configFiles = Seq()
+  val configFiles: Seq[ConfigResource] = Seq()
 
-  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(AuthBackendsConf.api)
+  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(AuthBackendsConf.api)
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (
