@@ -44,17 +44,17 @@ import com.normation.plugins.PluginVersion
 import com.normation.plugins.authbackends.LoginFormRendering
 import com.normation.plugins.authbackends.RudderPropertyBasedOAuth2RegistrationDefinition
 import com.normation.rudder.web.snippet.Login
-import com.normation.zio._
-import net.liftweb.http.js.JE._
-import net.liftweb.http.js.JsCmds._
-import net.liftweb.util.Helpers._
+import com.normation.zio.*
+import net.liftweb.http.js.JE.*
+import net.liftweb.http.js.JsCmds.*
+import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 class Oauth2LoginBanner(
-    val status:      PluginStatus,
-    version:         PluginVersion,
-    registrations:   RudderPropertyBasedOAuth2RegistrationDefinition
+    val status:    PluginStatus,
+    version:       PluginVersion,
+    registrations: RudderPropertyBasedOAuth2RegistrationDefinition
 )(implicit val ttag: ClassTag[Login])
     extends PluginExtensionPoint[Login] {
 

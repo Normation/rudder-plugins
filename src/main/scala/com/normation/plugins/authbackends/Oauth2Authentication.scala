@@ -38,13 +38,13 @@ import bootstrap.liftweb.LogoutPostAction
 import bootstrap.liftweb.UserLogout
 import bootstrap.rudder.plugin.BuildLogout
 import cats.data.NonEmptyList
-import com.normation.errors._
+import com.normation.errors.*
 import com.typesafe.config.Config
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 /**
  * This file contain logic related to Oauth2/OpenID Connect authentication and
@@ -124,12 +124,12 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   val A_PROVISIONING         = "enableProvisioning"
 
   val authMethods = {
-    import ClientAuthenticationMethod._
+    import ClientAuthenticationMethod.*
     List(CLIENT_SECRET_BASIC, CLIENT_SECRET_POST, CLIENT_SECRET_JWT, NONE)
   }
 
   val grantTypes = {
-    import AuthorizationGrantType._
+    import AuthorizationGrantType.*
     List(AUTHORIZATION_CODE, REFRESH_TOKEN, CLIENT_CREDENTIALS, PASSWORD) // IMPLICIT is deprecated for security reason
   }
 
@@ -215,7 +215,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       case (errs, oks) =>
         errs.toList match {
           case Nil       => oks.toList.succeed
-          case h :: tail => Accumulated(NonEmptyList.of(h, tail: _*)).fail
+          case h :: tail => Accumulated(NonEmptyList.of(h, tail*)).fail
         }
     }
   }
@@ -237,7 +237,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     }
     def readMap(key: String): IOResult[Map[String, String]] = {
       val path = baseProperty + "." + id + "." + key
-      import scala.jdk.CollectionConverters._
+      import scala.jdk.CollectionConverters.*
       for {
         keySet <- IOResult
                     .attempt(s"Missing key '${path}' for OAUTH2 registration '${id}' (${registrationAttributes(key)})")(
@@ -286,7 +286,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
           .clientAuthenticationMethod(authMethod)
           .authorizationGrantType(grantTypes)
           .redirectUri(clientRedirect)
-          .scope(scopes: _*)
+          .scope(scopes*)
           .authorizationUri(uriAuth)
           .tokenUri(uriToken)
           .userInfoUri(uriUserInfo)
@@ -355,7 +355,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
 }
 
 class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[List[(String, RudderClientRegistration)]]) {
-  import RudderPropertyBasedOAuth2RegistrationDefinition._
+  import RudderPropertyBasedOAuth2RegistrationDefinition.*
 
   /*
    * read information from config and update internal cache
