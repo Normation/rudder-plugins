@@ -4,16 +4,16 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.ValidatedUserList
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.Doobie
-import com.normation.rudder.db.Doobie._
+import com.normation.rudder.db.Doobie.*
 import com.normation.zio.ZioRuntime
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
-import zio.interop.catz._
+import zio.interop.catz.*
 
 /**
   * userExists indicates if a Validated User is present in user file description
@@ -25,7 +25,7 @@ class RoValidatedUserJdbcRepository(
     mapper: ValidatedUserMapper
 ) extends RoValidatedUserRepository with Loggable {
 
-  import doobie._
+  import doobie.*
   import mapper.ValidatedUserMeta
 
   val SELECT_SQL = "SELECT username FROM change_validation_validated_users"
@@ -74,7 +74,7 @@ class WoValidatedUserJdbcRepository(
     roRepo: RoValidatedUserRepository
 ) extends WoValidatedUserRepository with Loggable {
 
-  import doobie._
+  import doobie.*
 
   override def createUser(newVU: EventActor): Box[EventActor] = {
     roRepo.get(EventActor(newVU.name)) match {

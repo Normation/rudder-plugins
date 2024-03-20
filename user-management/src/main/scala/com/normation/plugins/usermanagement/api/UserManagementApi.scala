@@ -42,7 +42,7 @@ import bootstrap.liftweb.DefaultAuthBackendProvider
 import bootstrap.liftweb.FileUserDetailListProvider
 import bootstrap.liftweb.PasswordEncoder
 import bootstrap.liftweb.ProviderRoleExtension
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.plugins.usermanagement.JsonAddedUser
 import com.normation.plugins.usermanagement.JsonAuthConfig
 import com.normation.plugins.usermanagement.JsonCoverage
@@ -59,7 +59,7 @@ import com.normation.plugins.usermanagement.JsonUpdatedUser
 import com.normation.plugins.usermanagement.JsonUpdatedUserInfo
 import com.normation.plugins.usermanagement.JsonUser
 import com.normation.plugins.usermanagement.JsonUserFormData
-import com.normation.plugins.usermanagement.Serialisation._
+import com.normation.plugins.usermanagement.Serialisation.*
 import com.normation.plugins.usermanagement.UpdateUserFile
 import com.normation.plugins.usermanagement.UpdateUserInfo
 import com.normation.plugins.usermanagement.User
@@ -75,9 +75,9 @@ import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.api.HttpAction.PUT
 import com.normation.rudder.apidata.ZioJsonExtractor
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
@@ -90,13 +90,13 @@ import com.normation.rudder.users.UserRepository
 import com.normation.rudder.users.UserSession
 import com.normation.rudder.users.UserStatus
 import io.scalaland.chimney.Transformer
-import io.scalaland.chimney.dsl._
+import io.scalaland.chimney.dsl.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import org.joda.time.DateTime
 import sourcecode.Line
 import zio.ZIO
-import zio.syntax._
+import zio.syntax.*
 
 /*
  * This file contains the internal API used to discuss with the JS application.
@@ -204,7 +204,7 @@ class UserManagementApiImpl(
 ) extends LiftApiModuleProvider[UserManagementApi] {
   api =>
 
-  override def schemas = UserManagementApi
+  override def schemas: ApiModuleProvider[UserManagementApi] = UserManagementApi
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
     UserManagementApi.endpoints.map {
@@ -225,8 +225,8 @@ class UserManagementApiImpl(
    * Return a Json Object that list users with their authorizations
    */
   object GetUserInfo extends LiftApiModule0 {
-    val schema = UserManagementApi.GetUserInfo
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                UserManagementApi.GetUserInfo.type = UserManagementApi.GetUserInfo
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                       = {
 
       (for {
         users     <- userRepo.getAll()
@@ -308,8 +308,8 @@ class UserManagementApiImpl(
   }
 
   object GetRoles extends LiftApiModule0 {
-    val schema = UserManagementApi.GetRoles
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                UserManagementApi.GetRoles.type = UserManagementApi.GetRoles
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                    = {
       (for {
         allRoles <- RudderRoles.getAllRoles
         roles     = allRoles.values.toList
@@ -332,7 +332,7 @@ class UserManagementApiImpl(
   }
 
   object ReloadUsersConf extends LiftApiModule0 {
-    val schema = UserManagementApi.ReloadUsersConf
+    val schema: UserManagementApi.ReloadUsersConf.type = UserManagementApi.ReloadUsersConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
@@ -349,7 +349,7 @@ class UserManagementApiImpl(
   }
 
   object AddUser extends LiftApiModule0 {
-    val schema = UserManagementApi.AddUser
+    val schema: UserManagementApi.AddUser.type = UserManagementApi.AddUser
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
@@ -369,7 +369,7 @@ class UserManagementApiImpl(
   }
 
   object DeleteUser extends LiftApiModule {
-    val schema = UserManagementApi.DeleteUser
+    val schema: UserManagementApi.DeleteUser.type = UserManagementApi.DeleteUser
 
     def process(
         version:    ApiVersion,
@@ -389,7 +389,7 @@ class UserManagementApiImpl(
   }
 
   object UpdateUser extends LiftApiModule {
-    val schema = UserManagementApi.UpdateUser
+    val schema: UserManagementApi.UpdateUser.type = UserManagementApi.UpdateUser
 
     def process(
         version:    ApiVersion,
@@ -414,7 +414,7 @@ class UserManagementApiImpl(
   }
 
   object UpdateUserInfo extends LiftApiModule {
-    val schema = UserManagementApi.UpdateUserInfo
+    val schema: UserManagementApi.UpdateUserInfo.type = UserManagementApi.UpdateUserInfo
 
     def process(
         version:    ApiVersion,
@@ -434,7 +434,7 @@ class UserManagementApiImpl(
   }
 
   object ActivateUser extends LiftApiModule {
-    val schema = UserManagementApi.ActivateUser
+    val schema: UserManagementApi.ActivateUser.type = UserManagementApi.ActivateUser
 
     def process(
         version:    ApiVersion,
@@ -466,7 +466,7 @@ class UserManagementApiImpl(
   }
 
   object DisableUser extends LiftApiModule {
-    val schema = UserManagementApi.DisableUser
+    val schema: UserManagementApi.DisableUser.type = UserManagementApi.DisableUser
 
     def process(
         version:    ApiVersion,
@@ -498,7 +498,7 @@ class UserManagementApiImpl(
   }
 
   object RoleCoverage extends LiftApiModule {
-    val schema = UserManagementApi.RoleCoverage
+    val schema: UserManagementApi.RoleCoverage.type = UserManagementApi.RoleCoverage
 
     def process(
         version:    ApiVersion,
@@ -528,7 +528,7 @@ class UserManagementApiImpl(
   }
 
   def serialize(
-      users:         List[JsonUser]
+      users: List[JsonUser]
   )(passwordEncoder: PasswordEncoder.Rudder, authProviderManager: AuthBackendProvidersManager): JsonAuthConfig = {
     val encoder: String = PassEncoderToString(passwordEncoder)
     val providerProperties   = authProviderManager.getProviderProperties()
@@ -605,7 +605,7 @@ class UserManagementApiImpl(
    * so we do not attempt to parse as roles, but we still need to transform roles that are aliases or that are unnamed.
    */
   private def transformProvidedUser(userInfo: UserInfo, lastSession: Option[UserSession])(implicit
-      allRoles:                               Set[Role]
+      allRoles: Set[Role]
   ): JsonUser = {
     lastSession match {
       case None              => {

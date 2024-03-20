@@ -38,7 +38,7 @@
 package com.normation.plugins.openscappolicies
 
 import com.normation.inventory.domain.NodeId
-import net.liftweb.common._
+import net.liftweb.common.*
 import org.slf4j.LoggerFactory
 
 /**

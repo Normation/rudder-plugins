@@ -44,7 +44,7 @@ import com.normation.plugins.PluginVersion
 import com.normation.rudder.web.snippet.Login
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 

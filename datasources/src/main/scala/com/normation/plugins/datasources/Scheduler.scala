@@ -41,12 +41,12 @@ import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.plugins.PluginStatus
-import com.normation.plugins.datasources.DataSourceSchedule._
-import com.normation.rudder.domain.eventlog._
-import com.normation.zio._
+import com.normation.plugins.datasources.DataSourceSchedule.*
+import com.normation.rudder.domain.eventlog.*
+import com.normation.zio.*
 import scala.annotation.nowarn
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 final case class UpdateCause(
     modId:                 ModificationId,
@@ -127,7 +127,7 @@ class DataSourceScheduler(
   // here is the place where we will store the currently
   // running task, so that we are able the stop it and restart
   // it on user action.
-  private[datasources] val scheduledTask: Ref[Option[Fiber[_, _]]] = Ref.make(Option.empty[Fiber[_, _]]).runNow
+  private[datasources] val scheduledTask: Ref[Option[Fiber[?, ?]]] = Ref.make(Option.empty[Fiber[?, ?]]).runNow
 
   /*
    * start scheduling after given delay

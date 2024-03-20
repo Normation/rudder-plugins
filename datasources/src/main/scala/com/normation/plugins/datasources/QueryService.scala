@@ -38,7 +38,7 @@
 package com.normation.plugins.datasources
 
 import cats.data.NonEmptyList
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeState
@@ -51,8 +51,8 @@ import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.repository.WoNodeRepository
 import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 /*
  * This file contain the high level logic to update
@@ -110,7 +110,7 @@ object QueryService {
       case None           => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
       case Some(property) =>
         // look for the property value in the node to know if an update is needed.
-        // If enforceSameOrigin is true, we only touch the property if it's default or datasource owned. 
+        // If enforceSameOrigin is true, we only touch the property if it's default or datasource owned.
         nodeInfo.properties.find(_.name == property.name) match {
           case Some(p) if (p.value == property.value) => NodeUpdateResult.Unchanged(nodeInfo.id).succeed
           case Some(p)
@@ -350,7 +350,7 @@ class HttpQueryDataSourceService(
   }
 
   override def deleteAll(datasource: DataSourceId, cause: UpdateCause): IOResult[Set[NodeUpdateResult]] = {
-    import com.normation.rudder.domain.properties.GenericProperty._
+    import com.normation.rudder.domain.properties.GenericProperty.*
     val deleteProp = DataSource.nodeProperty(datasource.value, "".toConfigValue)
     for {
       nodes <- nodeInfo.getAll()

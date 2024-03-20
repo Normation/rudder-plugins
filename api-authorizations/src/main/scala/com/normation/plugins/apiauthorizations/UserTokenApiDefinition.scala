@@ -37,21 +37,21 @@
 
 package com.normation.plugins.apiauthorizations
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.eventlog.ModificationId
-import com.normation.rudder.api._
-import com.normation.rudder.apidata.ApiAccountSerialisation._
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.{UserApi => API}
-import com.normation.rudder.rest.lift._
+import com.normation.rudder.api.*
+import com.normation.rudder.apidata.ApiAccountSerialisation.*
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.UserApi as API
+import com.normation.rudder.rest.lift.*
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json._
+import net.liftweb.json.*
 import net.liftweb.json.JsonAST.JArray
-import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JsonDSL.*
 import org.joda.time.DateTime
 
 class UserApi(
@@ -63,7 +63,7 @@ class UserApi(
 ) extends LiftApiModuleProvider[API] {
   api =>
 
-  def schemas = API
+  def schemas: ApiModuleProvider[API] = API
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints
@@ -85,7 +85,7 @@ class UserApi(
    */
 
   object GetApiToken extends LiftApiModule0 {
-    val schema        = API.GetApiToken
+    val schema: UserApi.GetApiToken.type = API.GetApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
@@ -105,7 +105,7 @@ class UserApi(
   }
 
   object CreateApiToken extends LiftApiModule0 {
-    val schema        = API.CreateApiToken
+    val schema: UserApi.CreateApiToken.type = API.CreateApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       val now     = DateTime.now
@@ -133,7 +133,7 @@ class UserApi(
   }
 
   object DeleteApiToken extends LiftApiModule0 {
-    val schema        = API.DeleteApiToken
+    val schema: UserApi.DeleteApiToken.type = API.DeleteApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       writeApi.delete(ApiAccountId(authzToken.actor.name), ModificationId(uuidGen.newUuid), authzToken.actor).toBox match {
@@ -149,7 +149,7 @@ class UserApi(
   }
 
   object UpdateApiToken extends LiftApiModule0 {
-    val schema        = API.UpdateApiToken
+    val schema: UserApi.UpdateApiToken.type = API.UpdateApiToken
     val restExtractor = api.restExtractor
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi.getById(ApiAccountId(authzToken.actor.name)).toBox match {
