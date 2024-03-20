@@ -59,6 +59,7 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import java.nio.charset.StandardCharsets
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -71,8 +72,8 @@ import zio.ZIO
  * supervision, and is able to save an updated list.
  */
 
-sealed trait SupervisedTargetsApi extends EndpointSchema with InternalApi with SortIndex
-object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi] {
+sealed trait SupervisedTargetsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
+object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
   val zz = 11
   final case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -90,7 +91,8 @@ object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi
     override def dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[SupervisedTargetsApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class SupervisedTargetsApiImpl(

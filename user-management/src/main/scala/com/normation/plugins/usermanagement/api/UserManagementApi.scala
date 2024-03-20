@@ -90,6 +90,7 @@ import com.normation.rudder.users.UserInfo
 import com.normation.rudder.users.UserRepository
 import com.normation.rudder.users.UserSession
 import com.normation.rudder.users.UserStatus
+import enumeratum.*
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.*
 import net.liftweb.http.LiftResponse
@@ -104,8 +105,9 @@ import zio.syntax.*
  *
  * It gives the list of currently configured authentication backends.
  */
-sealed trait UserManagementApi extends EndpointSchema with GeneralApi with SortIndex
-object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
+sealed trait UserManagementApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+
+object UserManagementApi extends Enum[UserManagementApi] with ApiModuleProvider[UserManagementApi] {
 
   final case object GetUserInfo extends UserManagementApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -193,7 +195,8 @@ object UserManagementApi       extends ApiModuleProvider[UserManagementApi] {
     override def dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[UserManagementApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class UserManagementApiImpl(

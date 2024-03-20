@@ -55,12 +55,13 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
-sealed trait ValidatedUserApi extends EndpointSchema with GeneralApi with SortIndex
-object ValidatedUserApi       extends ApiModuleProvider[ValidatedUserApi] {
+sealed trait ValidatedUserApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
 
   final case object ListUsers                   extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z              = implicitly[Line].value
@@ -87,7 +88,8 @@ object ValidatedUserApi       extends ApiModuleProvider[ValidatedUserApi] {
     override val name = "saveWorkflowUser"
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[ValidatedUserApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class ValidatedUserApiImpl(
