@@ -237,6 +237,8 @@
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.beachape</groupId><artifactId>enumeratum_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.beachape</groupId><artifactId>enumeratum-macros_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.chuusai</groupId><artifactId>shapeless_${scala-binary-version}</artifactId><scope>provided</scope><version>${shapeless-version}</version></dependency>
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_${scala-binary-version}</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>

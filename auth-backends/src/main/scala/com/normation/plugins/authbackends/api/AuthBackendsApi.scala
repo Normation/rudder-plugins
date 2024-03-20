@@ -57,6 +57,7 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
@@ -66,8 +67,9 @@ import sourcecode.Line
  *
  * It gives the list of currently configured authentication backends.
  */
-sealed trait AuthBackendsApi extends EndpointSchema with InternalApi with SortIndex
-object AuthBackendsApi       extends ApiModuleProvider[AuthBackendsApi] {
+sealed trait AuthBackendsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
+
+object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[AuthBackendsApi] {
 
   final case object GetAuthenticationInformation extends AuthBackendsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -78,7 +80,8 @@ object AuthBackendsApi       extends ApiModuleProvider[AuthBackendsApi] {
     override def dataContainer: Option[String]          = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[AuthBackendsApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class AuthBackendsApiImpl(

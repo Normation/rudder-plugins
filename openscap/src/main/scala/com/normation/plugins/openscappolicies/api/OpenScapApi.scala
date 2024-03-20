@@ -16,6 +16,7 @@ import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
@@ -24,8 +25,9 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
-sealed trait OpenScapApi extends EndpointSchema with GeneralApi with SortIndex
-object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
+sealed trait OpenScapApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+
+object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi] {
 
   final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
     val z              = implicitly[Line].value
@@ -43,7 +45,8 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
     override def dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class OpenScapApiImpl(

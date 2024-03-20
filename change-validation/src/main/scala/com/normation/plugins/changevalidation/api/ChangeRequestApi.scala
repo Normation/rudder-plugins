@@ -83,6 +83,7 @@ import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.users.UserService
 import com.normation.rudder.web.services.ReasonBehavior
 import com.normation.rudder.web.services.UserPropertyService
+import enumeratum.*
 import net.liftweb.common.Box
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -91,8 +92,8 @@ import zio.*
 import zio.json.*
 import zio.syntax.*
 
-sealed trait ChangeRequestApi extends EndpointSchema with GeneralApi with SortIndex
-object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
+sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
 
   final case object ListChangeRequests     extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z              = implicitly[Line].value
@@ -154,7 +155,8 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     override def name:          String                  = "updateChangeRequest"
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[ChangeRequestApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class ChangeRequestApiImpl(
