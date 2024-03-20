@@ -227,8 +227,9 @@ class ChangeRequestApiImpl(
   }
 
   object ListChangeRequests extends LiftApiModule0 {
-    val schema:                                                                                                ChangeRequestApi.ListChangeRequests.type = API.ListChangeRequests
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                             = {
+    val schema: ChangeRequestApi.ListChangeRequests.type = API.ListChangeRequests
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
       def listChangeRequestsByFilter(filter: ChangeRequestFilter): IOResult[Seq[ChangeRequestJson]] = {
         for {
@@ -256,6 +257,7 @@ class ChangeRequestApiImpl(
 
   object ChangeRequestsDetails extends LiftApiModule {
     val schema: ChangeRequestApi.ChangeRequestsDetails.type = API.ChangeRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -272,6 +274,7 @@ class ChangeRequestApiImpl(
 
   object DeclineRequestsDetails extends LiftApiModule {
     val schema: ChangeRequestApi.DeclineRequestsDetails.type = API.DeclineRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -308,6 +311,7 @@ class ChangeRequestApiImpl(
 
   object AcceptRequestsDetails extends LiftApiModule {
     val schema: ChangeRequestApi.AcceptRequestsDetails.type = API.AcceptRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -369,6 +373,7 @@ class ChangeRequestApiImpl(
 
   object UpdateRequestsDetails extends LiftApiModule {
     val schema: ChangeRequestApi.UpdateRequestsDetails.type = API.UpdateRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,

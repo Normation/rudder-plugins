@@ -85,8 +85,9 @@ class UserApiImpl(
    */
 
   object GetApiToken extends LiftApiModule0 {
-    val schema:                                                                                                UserApi.GetApiToken.type = UserApi.GetApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse             = {
+    val schema: UserApi.GetApiToken.type = UserApi.GetApiToken
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi
         .getById(ApiAccountId(authzToken.qc.actor.name))
         .map(RestAccountsResponse.fromRedacted(_))
@@ -96,8 +97,9 @@ class UserApiImpl(
   }
 
   object CreateApiToken extends LiftApiModule0 {
-    val schema:                                                                                                UserApi.CreateApiToken.type = UserApi.CreateApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                = {
+    val schema: UserApi.CreateApiToken.type = UserApi.CreateApiToken
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       val now     = DateTime.now
       val secret  = ApiToken.generate_secret(tokenGenerator)
       val hash    = ApiToken.hash(secret)
@@ -123,8 +125,9 @@ class UserApiImpl(
   }
 
   object DeleteApiToken extends LiftApiModule0 {
-    val schema:                                                                                                UserApi.DeleteApiToken.type = UserApi.DeleteApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                = {
+    val schema: UserApi.DeleteApiToken.type = UserApi.DeleteApiToken
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       writeApi
         .delete(ApiAccountId(authzToken.qc.actor.name), ModificationId(uuidGen.newUuid), authzToken.qc.actor)
         .map(RestAccountIdResponse(_))
@@ -134,8 +137,9 @@ class UserApiImpl(
   }
 
   object UpdateApiToken extends LiftApiModule0 {
-    val schema:                                                                                                UserApi.UpdateApiToken.type = UserApi.UpdateApiToken
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                = {
+    val schema: UserApi.UpdateApiToken.type = UserApi.UpdateApiToken
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readApi
         .getById(ApiAccountId(authzToken.qc.actor.name))
         .map(RestAccountsResponse.fromRedacted(_))

@@ -226,8 +226,9 @@ class UserManagementApiImpl(
    * Return a Json Object that list users with their authorizations
    */
   object GetUserInfo extends LiftApiModule0 {
-    override val schema:                                                                                       UserManagementApi.GetUserInfo.type = UserManagementApi.GetUserInfo
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                       = {
+    override val schema: UserManagementApi.GetUserInfo.type = UserManagementApi.GetUserInfo
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
       (for {
         users     <- userRepo.getAll()
@@ -309,8 +310,9 @@ class UserManagementApiImpl(
   }
 
   object GetRoles extends LiftApiModule0 {
-    val schema:                                                                                                UserManagementApi.GetRoles.type = UserManagementApi.GetRoles
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                    = {
+    val schema: UserManagementApi.GetRoles.type = UserManagementApi.GetRoles
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
         allRoles <- RudderRoles.getAllRoles
         roles     = allRoles.values.toList

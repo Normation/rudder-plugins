@@ -60,8 +60,8 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
 
   def oneTimeInit: Unit = {}
 
-  val configFiles:   Seq[ConfigResource]                                = Seq()
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(UserManagementConf.api)
+  override val configFiles: Seq[ConfigResource]                                = Seq()
+  override def apis:        Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(UserManagementConf.api)
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (

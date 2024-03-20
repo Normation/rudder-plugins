@@ -50,6 +50,7 @@ import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.PatcherConfiguration
 import io.scalaland.chimney.syntax.*
 import java.util.concurrent.TimeUnit
+import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.http.Req
@@ -512,8 +513,8 @@ object DataSourceExtractor {
     */
   object OptionalJson extends JsonExtractorUtils[Option] {
     def monad = implicitly
-    def emptyValue[T](id:   String) = Full(None)
-    def getOrElse[T](value: Option[T], default: T) = value.getOrElse(default)
+    override def emptyValue[T](id: String): Box[Option[T]] = Full(None)
+    def getOrElse[T](value:        Option[T], default: T) = value.getOrElse(default)
 
     def extractNewDataSource(req: Req): PureResult[DataSource] = {
       if (req.json_?) {
@@ -573,7 +574,7 @@ object DataSourceExtractor {
    */
   object CompleteJson extends JsonExtractorUtils[Id] {
     def monad = implicitly
-    def emptyValue[T](id:   String) = Failure(s"parameter '${id}' cannot be empty")
+    def emptyValue[T](id:   String): Box[Id[T]] = Failure(s"parameter '${id}' cannot be empty")
     def getOrElse[T](value: T, default: T) = value
 
     // Extract all fields of a DataSource from the JSON
