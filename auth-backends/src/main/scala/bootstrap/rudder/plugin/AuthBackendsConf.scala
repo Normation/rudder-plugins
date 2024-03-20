@@ -62,8 +62,8 @@ import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.domain.logger.PluginLogger
 import com.normation.rudder.rest.RoleApiMapping
-import com.normation.rudder.users._
-import com.normation.zio._
+import com.normation.rudder.users.*
+import com.normation.zio.*
 import com.typesafe.config.ConfigException
 import java.net.URI
 import java.util
@@ -100,8 +100,8 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequestEntityConverter
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
-import org.springframework.security.oauth2.client.web._
-import org.springframework.security.oauth2.core._
+import org.springframework.security.oauth2.client.web.*
+import org.springframework.security.oauth2.core.*
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.core.oidc.OidcIdToken
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo
@@ -119,8 +119,8 @@ import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestOperations
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.UnknownContentTypeException
-import scala.jdk.CollectionConverters._
-import zio.syntax._
+import scala.jdk.CollectionConverters.*
+import zio.syntax.*
 
 /*
  * Actual configuration of the plugin logic
@@ -147,10 +147,10 @@ object AuthBackendsConf extends RudderPluginModule {
   val oauthBackendNames = Set("oauth2", "oidc")
   RudderConfig.authenticationProviders.addProvider(authBackendsProvider)
   RudderConfig.authenticationProviders.addProvider(new AuthBackendsProvider() {
-    override def authenticationBackends:            Set[String] = oauthBackendNames
-    override def name:                              String      =
+    override def authenticationBackends: Set[String] = oauthBackendNames
+    override def name:                   String      =
       s"Oauth2 and OpenID Connect authentication backends provider: '${authenticationBackends.mkString("','")}"
-    override def allowedToUseBackend(name: String): Boolean     = pluginStatusService.isEnabled()
+    override def allowedToUseBackend(name: String): Boolean = pluginStatusService.isEnabled()
   })
 
   lazy val isOauthConfiguredByUser = {
@@ -164,7 +164,7 @@ object AuthBackendsConf extends RudderPluginModule {
 
   lazy val oauth2registrations = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
 
-  lazy val pluginDef = new AuthBackendsPluginDef(AuthBackendsConf.pluginStatusService)
+  lazy val pluginDef: AuthBackendsPluginDef = new AuthBackendsPluginDef(AuthBackendsConf.pluginStatusService)
 
   lazy val api = new AuthBackendsApiImpl(
     RudderConfig.restExtractorService,
@@ -315,7 +315,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def userAuthoritiesMapper = {
 
     new GrantedAuthoritiesMapper {
-      override def mapAuthorities(authorities: util.Collection[_ <: GrantedAuthority]): util.Collection[_ <: GrantedAuthority] = {
+      override def mapAuthorities(authorities: util.Collection[? <: GrantedAuthority]): util.Collection[? <: GrantedAuthority] = {
         authorities.asScala.flatMap {
           case _: OidcUserAuthority | _: OAuth2UserAuthority =>
             Some(new SimpleGrantedAuthority("ROLE_USER"))
@@ -552,7 +552,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           if (reg.roles.enabled) {
             val custom = {
               try {
-                import scala.jdk.CollectionConverters._
+                import scala.jdk.CollectionConverters.*
                 if (user.getAttributes.containsKey(reg.roles.attributeName)) {
                   user
                     .getAttribute[java.util.ArrayList[String]](reg.roles.attributeName)
@@ -762,7 +762,7 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
   private val PARAMETERIZED_RESPONSE_TYPE: ParameterizedTypeReference[java.util.Map[String, AnyRef]] =
     new ParameterizedTypeReference[java.util.Map[String, AnyRef]]() {}
 
-  private val requestEntityConverter: Converter[OAuth2UserRequest, RequestEntity[_]] = new OAuth2UserRequestEntityConverter
+  private val requestEntityConverter: Converter[OAuth2UserRequest, RequestEntity[?]] = new OAuth2UserRequestEntityConverter
 
   private val restOperations: RestOperations = {
     val restTemplate = new RestTemplate
@@ -770,7 +770,7 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
     restTemplate
   }
 
-  import scala.jdk.CollectionConverters._
+  import scala.jdk.CollectionConverters.*
 
   @throws[OAuth2AuthenticationException]
   override def loadUser(userRequest: OAuth2UserRequest): OAuth2User = {
@@ -792,7 +792,7 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
       )
       throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.toString)
     }
-    val request:               RequestEntity[_]                              = this.requestEntityConverter.convert(userRequest)
+    val request:               RequestEntity[?]                              = this.requestEntityConverter.convert(userRequest)
     val response:              ResponseEntity[java.util.Map[String, AnyRef]] = getResponse(userRequest, request)
 
     AuthBackendsLogger.debug(
@@ -819,7 +819,7 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
 
   private def getResponse(
       userRequest: OAuth2UserRequest,
-      request:     RequestEntity[_]
+      request:     RequestEntity[?]
   ): ResponseEntity[java.util.Map[String, AnyRef]] = {
     try {
       return this.restOperations.exchange(request, PARAMETERIZED_RESPONSE_TYPE)

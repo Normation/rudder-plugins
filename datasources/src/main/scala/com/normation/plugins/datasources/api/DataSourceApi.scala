@@ -38,9 +38,9 @@
 package com.normation.plugins.datasources.api
 
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.api.HttpAction._
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.api.HttpAction.*
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import sourcecode.Line
 
 sealed trait DataSourceApi extends EndpointSchema with GeneralApi with SortIndex

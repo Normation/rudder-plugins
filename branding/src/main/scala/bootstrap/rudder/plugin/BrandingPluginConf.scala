@@ -54,7 +54,7 @@ object BrandingPluginConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
-  lazy val pluginDef           = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
+  override lazy val pluginDef: BrandingPluginDef = new BrandingPluginDef(BrandingPluginConf.pluginStatusService)
 
   val brandingConfService: BrandingConfService = new BrandingConfService(BrandingConfService.defaultConfigFilePath)
   val brandingApiService:  BrandingApiService  = new BrandingApiService(brandingConfService)

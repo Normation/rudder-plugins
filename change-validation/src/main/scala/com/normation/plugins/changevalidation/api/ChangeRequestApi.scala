@@ -37,7 +37,7 @@
 
 package com.normation.plugins.changevalidation.api
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.cfclerk.services.TechniqueRepository
 import com.normation.plugins.changevalidation.ChangeRequestFilter
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
@@ -61,11 +61,11 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.GeneralApi
 import com.normation.rudder.rest.OneParam
 import com.normation.rudder.rest.RestExtractorService
-import com.normation.rudder.rest.RestUtils._
+import com.normation.rudder.rest.RestUtils.*
 import com.normation.rudder.rest.RestUtils.toJsonError
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion3
@@ -85,7 +85,7 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import net.liftweb.json.JsonAST.JArray
 import net.liftweb.json.JsonAST.JValue
-import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JsonDSL.*
 import net.liftweb.json.JString
 import sourcecode.Line
 import zio.NonEmptyChunk
@@ -164,7 +164,7 @@ class ChangeRequestApiImpl(
     restDataSerializer:   RestDataSerializer
 ) extends LiftApiModuleProvider[ChangeRequestApi] {
 
-  import com.normation.plugins.changevalidation.api.{ChangeRequestApi => API}
+  import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
 
   override def schemas: ApiModuleProvider[ChangeRequestApi] = API
 
@@ -180,8 +180,8 @@ class ChangeRequestApiImpl(
     restDataSerializer.serializeCR(cr, status, isAcceptable, version)
   }
   private[this] def unboxAnswer(actionName: String, id: ChangeRequestId, boxedAnswer: Box[LiftResponse])(implicit
-      action:                               String,
-      prettify:                             Boolean
+      action:   String,
+      prettify: Boolean
   ) = {
     boxedAnswer match {
       case Full(response) => response
@@ -236,7 +236,7 @@ class ChangeRequestApiImpl(
   }
 
   object ListChangeRequests extends LiftApiModule0 {
-    val schema        = API.ListChangeRequests
+    override val schema: ChangeRequestApi.ListChangeRequests.type = API.ListChangeRequests
     val restExtractor = restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       extractFilters(req.params) match {
@@ -284,7 +284,7 @@ class ChangeRequestApiImpl(
   }
 
   object ChangeRequestsDetails extends LiftApiModule {
-    val schema        = API.ChangeRequestsDetails
+    val schema: ChangeRequestApi.ChangeRequestsDetails.type = API.ChangeRequestsDetails
     val restExtractor = restExtractorService
     def process(
         version:    ApiVersion,
@@ -331,7 +331,7 @@ class ChangeRequestApiImpl(
   }
 
   object DeclineRequestsDetails extends LiftApiModule {
-    val schema        = API.DeclineRequestsDetails
+    val schema: ChangeRequestApi.DeclineRequestsDetails.type = API.DeclineRequestsDetails
     val restExtractor = restExtractorService
     def process(
         version:    ApiVersion,
@@ -405,7 +405,7 @@ class ChangeRequestApiImpl(
   }
 
   object AcceptRequestsDetails extends LiftApiModule {
-    val schema        = API.AcceptRequestsDetails
+    val schema: ChangeRequestApi.AcceptRequestsDetails.type = API.AcceptRequestsDetails
     val restExtractor = restExtractorService
     def process(
         version:    ApiVersion,
@@ -497,7 +497,7 @@ class ChangeRequestApiImpl(
   }
 
   object UpdateRequestsDetails extends LiftApiModule {
-    val schema        = API.UpdateRequestsDetails
+    val schema: ChangeRequestApi.UpdateRequestsDetails.type = API.UpdateRequestsDetails
     val restExtractor = restExtractorService
     def process(
         version:    ApiVersion,
@@ -561,7 +561,7 @@ class ChangeRequestApiImpl(
   }
 
   private[this] def extractFilters(params: Map[String, List[String]]): Box[ChangeRequestFilter] = {
-    import ChangeRequestFilter._
+    import ChangeRequestFilter.*
     for {
       status     <- restExtractorService.extractWorkflowStatus(params)
       byRule      = params.get("ruleId").flatMap(_.headOption).map(id => ByRule(RuleUid(id)))

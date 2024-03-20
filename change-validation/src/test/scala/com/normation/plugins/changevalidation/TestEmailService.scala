@@ -37,7 +37,7 @@
 
 package com.normation.plugins.changevalidation
 
-import better.files._
+import better.files.*
 import com.normation.errors.IOResult
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveId
@@ -50,16 +50,16 @@ import com.normation.rudder.domain.workflows.GlobalParameterChanges
 import com.normation.rudder.domain.workflows.NodeGroupChanges
 import com.normation.rudder.domain.workflows.RuleChanges
 import com.normation.rudder.web.model.LinkUtil
-import com.normation.zio._
+import com.normation.zio.*
 import org.apache.commons.io.FileUtils
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import org.junit.runner.RunWith
-import org.specs2.mutable._
+import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.BeforeAfterAll
 import org.subethamail.wiser.Wiser
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 @RunWith(classOf[JUnitRunner])
 class TestEmailService extends Specification with BeforeAfterAll {

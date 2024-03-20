@@ -40,7 +40,7 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
-import com.normation.plugins.apiauthorizations._
+import com.normation.plugins.apiauthorizations.*
 import com.normation.rudder.rest.ApiAuthorizationLevelService
 
 // service that provide ACL level only if plugin is enable
@@ -60,14 +60,16 @@ object ApiAuthorizationsConf extends RudderPluginModule {
   // override default service level
   RudderConfig.apiAuthorizationLevelService.overrideLevel(new AclLevel(pluginStatusService))
 
-  lazy val userApi   = new UserApi(
+  lazy val userApi = new UserApi(
     RudderConfig.restExtractorService,
     RudderConfig.roApiAccountRepository,
     RudderConfig.woApiAccountRepository,
     RudderConfig.tokenGenerator,
     RudderConfig.stringUuidGenerator
   )
-  lazy val pluginDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
+  override lazy val pluginDef: ApiAuthorizationsPluginDef = new ApiAuthorizationsPluginDef(
+    ApiAuthorizationsConf.pluginStatusService
+  )
 
   RudderConfig.snippetExtensionRegister.register(new ApiAccountsExtension(pluginStatusService))
   RudderConfig.snippetExtensionRegister.register(new UserInformationExtension(pluginStatusService))

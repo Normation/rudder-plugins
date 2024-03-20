@@ -46,7 +46,7 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.InternalApi
 import com.normation.rudder.rest.RestExtractorService
 import com.normation.rudder.rest.RestUtils
@@ -59,7 +59,7 @@ import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import net.liftweb.json._
+import net.liftweb.json.*
 import net.liftweb.json.NoTypeHints
 import sourcecode.Line
 
@@ -91,7 +91,7 @@ class AuthBackendsApiImpl(
 
   implicit val formats: Formats = net.liftweb.json.Serialization.formats(NoTypeHints)
 
-  def schemas = AuthBackendsApi
+  def schemas: ApiModuleProvider[AuthBackendsApi] = AuthBackendsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     AuthBackendsApi.endpoints
@@ -109,11 +109,11 @@ class AuthBackendsApiImpl(
    * enabled ones.
    */
   object GetAuthenticationInformation extends LiftApiModule0 {
-    val schema        = AuthBackendsApi.GetAuthenticationInformation
+    val schema: AuthBackendsApi.GetAuthenticationInformation.type = AuthBackendsApi.GetAuthenticationInformation
     val restExtractor = api.restExtractorService
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
-      import JsonSerialization._
+      import JsonSerialization.*
 
       (for {
         config <- authRepo.getConfigOption()

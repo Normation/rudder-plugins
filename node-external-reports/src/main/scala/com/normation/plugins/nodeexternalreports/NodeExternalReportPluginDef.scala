@@ -37,8 +37,9 @@
 package com.normation.plugins.nodeexternalreports
 
 import bootstrap.liftweb.ClassPathResource
+import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
-import com.normation.plugins._
+import com.normation.plugins.*
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
 import net.liftweb.common.Loggable
@@ -54,7 +55,8 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
 
   val basePackage = "com.normation.plugins.nodeexternalreports"
 
-  val configFiles = Seq(ClassPathResource("demo-config-1.properties"), ClassPathResource("demo-config-2.properties"))
+  val configFiles: Seq[ConfigResource] =
+    Seq(ClassPathResource("demo-config-1.properties"), ClassPathResource("demo-config-2.properties"))
 
   def init = {
     LiftRules.statelessDispatch.append(api)
