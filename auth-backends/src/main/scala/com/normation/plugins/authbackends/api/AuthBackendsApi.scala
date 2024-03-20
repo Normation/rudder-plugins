@@ -104,8 +104,9 @@ class AuthBackendsApiImpl(
    * enabled ones.
    */
   object GetAuthenticationInformation extends LiftApiModule0 {
-    val schema:                                                                                                AuthBackendsApi.GetAuthenticationInformation.type = AuthBackendsApi.GetAuthenticationInformation
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                                      = {
+    val schema: AuthBackendsApi.GetAuthenticationInformation.type = AuthBackendsApi.GetAuthenticationInformation
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import JsonSerialization.*
 
       IOResult

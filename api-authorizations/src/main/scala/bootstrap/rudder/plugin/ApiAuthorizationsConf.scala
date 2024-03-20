@@ -66,7 +66,9 @@ object ApiAuthorizationsConf extends RudderPluginModule {
     RudderConfig.tokenGenerator,
     RudderConfig.stringUuidGenerator
   )
-  lazy val pluginDef: ApiAuthorizationsPluginDef = new ApiAuthorizationsPluginDef(ApiAuthorizationsConf.pluginStatusService)
+  override lazy val pluginDef: ApiAuthorizationsPluginDef = new ApiAuthorizationsPluginDef(
+    ApiAuthorizationsConf.pluginStatusService
+  )
 
   RudderConfig.snippetExtensionRegister.register(new ApiAccountsExtension(pluginStatusService))
   RudderConfig.snippetExtensionRegister.register(new UserInformationExtension(pluginStatusService))

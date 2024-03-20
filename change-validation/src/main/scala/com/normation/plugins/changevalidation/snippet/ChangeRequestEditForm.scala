@@ -91,8 +91,8 @@ class ChangeRequestEditForm(
     override def validations: List[String => List[FieldError]] = Nil
   }
 
-  private[this] val formTracker = new FormTracker(changeRequestName)
-  private[this] def onNothingToDo: JsCmd = {
+  private[this] val formTracker: FormTracker = new FormTracker(changeRequestName)
+  def onNothingToDo:             JsCmd       = {
     formTracker.addFormError(error("There are no modifications to save."))
     updateFromClientSide
   }

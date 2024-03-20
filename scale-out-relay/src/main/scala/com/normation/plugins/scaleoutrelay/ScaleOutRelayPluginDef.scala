@@ -54,7 +54,7 @@ class ScalaOutRelayPluginDef(override val status: PluginStatus) extends DefaultP
 
   def oneTimeInit: Unit = {}
 
-  val configFiles: Seq[ConfigResource] = Seq()
+  override val configFiles: Seq[ConfigResource] = Seq()
 
   override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(ScalaOutRelayConf.api)
 }

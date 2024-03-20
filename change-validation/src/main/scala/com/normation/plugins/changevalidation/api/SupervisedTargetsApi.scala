@@ -129,8 +129,9 @@ class SupervisedTargetsApiImpl(
    * }
    */
   object GetAllTargets extends LiftApiModule0 {
-    val schema:                                                                                                SupervisedTargetsApi.GetAllTargets.type = SupervisedTargetsApi.GetAllTargets
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                            = {
+    val schema: SupervisedTargetsApi.GetAllTargets.type = SupervisedTargetsApi.GetAllTargets
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import com.normation.plugins.changevalidation.RudderJsonMapping.*
 
       (for {
@@ -157,8 +158,9 @@ class SupervisedTargetsApiImpl(
 
     // from the JSON, etract the list of target name to supervise
 
-    val schema:                                                                                                SupervisedTargetsApi.UpdateSupervisedTargets.type = SupervisedTargetsApi.UpdateSupervisedTargets
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                                      = {
+    val schema: SupervisedTargetsApi.UpdateSupervisedTargets.type = SupervisedTargetsApi.UpdateSupervisedTargets
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
         targets <-
           req
