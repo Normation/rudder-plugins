@@ -38,7 +38,8 @@
 package com.normation.rudder.rest
 
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.api.HttpAction._
+import com.normation.rudder.api.HttpAction.*
+import enumeratum.*
 import sourcecode.Line
 
 /*
@@ -46,10 +47,10 @@ import sourcecode.Line
  * package-protected `z` methods.
  */
 
-sealed trait BrandingApiSchema extends EndpointSchema with GeneralApi with SortIndex
+sealed trait BrandingApiSchema extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
 
-object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
-  import EndpointSchema.syntax._
+object BrandingApiEndpoints extends Enum[BrandingApiSchema] with ApiModuleProvider[BrandingApiSchema] {
+  import EndpointSchema.syntax.*
   final case object GetBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
     val z              = implicitly[Line].value
     val description    = "Get branding plugin configuration"
@@ -72,5 +73,6 @@ object BrandingApiEndpoints extends ApiModuleProvider[BrandingApiSchema] {
     val dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[BrandingApiSchema].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }

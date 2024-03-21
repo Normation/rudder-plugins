@@ -21,7 +21,7 @@ class SupervisedTargetsApiTest extends TraitTestApiFromYamlFiles with AfterAll {
   override def yamlDestTmpDirectory = tmpDir / "templates"
 
   import java.nio.file.attribute.PosixFilePermissions
-  import scala.jdk.CollectionConverters._
+  import scala.jdk.CollectionConverters.*
   val file         = (tmpDir / "unsupervised-targets.json")
     .createIfNotExists()
     .overwrite("""{"unsupervised":["group:0000f5d3-8c61-4d20-88a7-bb947705ba8a"]}""")

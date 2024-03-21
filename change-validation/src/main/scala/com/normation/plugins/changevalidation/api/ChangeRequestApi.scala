@@ -37,16 +37,16 @@
 
 package com.normation.plugins.changevalidation.api
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.services.TechniqueRepository
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.plugins.changevalidation.ChangeRequestFilter
 import com.normation.plugins.changevalidation.ChangeRequestJson
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
-import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl._
+import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.*
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
@@ -65,14 +65,14 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.GeneralApi
 import com.normation.rudder.rest.OneParam
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion3
 import com.normation.rudder.rest.ZeroParam
 import com.normation.rudder.rest.data.APIChangeRequestInfo
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
@@ -83,16 +83,17 @@ import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.users.UserService
 import com.normation.rudder.web.services.ReasonBehavior
 import com.normation.rudder.web.services.UserPropertyService
+import enumeratum.*
 import net.liftweb.common.Box
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
-import zio._
-import zio.json._
-import zio.syntax._
+import zio.*
+import zio.json.*
+import zio.syntax.*
 
-sealed trait ChangeRequestApi extends EndpointSchema with GeneralApi with SortIndex
-object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
+sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
 
   final case object ListChangeRequests     extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z              = implicitly[Line].value
@@ -154,7 +155,8 @@ object ChangeRequestApi       extends ApiModuleProvider[ChangeRequestApi] {
     override def name:          String                  = "updateChangeRequest"
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[ChangeRequestApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class ChangeRequestApiImpl(
@@ -168,7 +170,7 @@ class ChangeRequestApiImpl(
     userPropertyService:  UserPropertyService,
     userService:          UserService
 ) extends LiftApiModuleProvider[ChangeRequestApi] {
-  import com.normation.plugins.changevalidation.api.{ChangeRequestApi => API}
+  import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
   implicit private val diffServiceImpl: DiffService = diffService
 
   override def schemas: ApiModuleProvider[ChangeRequestApi] = API
@@ -178,7 +180,7 @@ class ChangeRequestApiImpl(
     workflowLevelService.getWorkflowService().needExternalValidation()
   }
 
-  def serialize(cr:         ChangeRequest, status: WorkflowNodeId)(implicit
+  def serialize(cr: ChangeRequest, status: WorkflowNodeId)(implicit
       techniqueByDirective: Map[DirectiveId, Technique]
   ): PureResult[ChangeRequestJson] = {
     val isAcceptable = commitRepository.isMergeable(cr)
@@ -227,7 +229,8 @@ class ChangeRequestApiImpl(
   }
 
   object ListChangeRequests extends LiftApiModule0 {
-    val schema = API.ListChangeRequests
+    val schema: ChangeRequestApi.ListChangeRequests.type = API.ListChangeRequests
+
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
 
       def listChangeRequestsByFilter(filter: ChangeRequestFilter): IOResult[Seq[ChangeRequestJson]] = {
@@ -255,7 +258,8 @@ class ChangeRequestApiImpl(
   }
 
   object ChangeRequestsDetails extends LiftApiModule {
-    val schema = API.ChangeRequestsDetails
+    val schema: ChangeRequestApi.ChangeRequestsDetails.type = API.ChangeRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -271,7 +275,8 @@ class ChangeRequestApiImpl(
   }
 
   object DeclineRequestsDetails extends LiftApiModule {
-    val schema = API.DeclineRequestsDetails
+    val schema: ChangeRequestApi.DeclineRequestsDetails.type = API.DeclineRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -282,7 +287,7 @@ class ChangeRequestApiImpl(
     ): LiftResponse = {
       // we need to check rights for validator/deployer here, API level is not sufficient.
       def actualRefuse(changeRequest: ChangeRequest, step: WorkflowNodeId)(implicit
-          techniqueByDirective:       Map[DirectiveId, Technique]
+          techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
           backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(apiUserRights, step, false).succeed
@@ -307,7 +312,8 @@ class ChangeRequestApiImpl(
   }
 
   object AcceptRequestsDetails extends LiftApiModule {
-    val schema = API.AcceptRequestsDetails
+    val schema: ChangeRequestApi.AcceptRequestsDetails.type = API.AcceptRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -318,7 +324,7 @@ class ChangeRequestApiImpl(
     ): LiftResponse = {
 
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
-          techniqueByDirective:       Map[DirectiveId, Technique]
+          techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
           nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(apiUserRights, step, false).succeed
@@ -368,7 +374,8 @@ class ChangeRequestApiImpl(
   }
 
   object UpdateRequestsDetails extends LiftApiModule {
-    val schema = API.UpdateRequestsDetails
+    val schema: ChangeRequestApi.UpdateRequestsDetails.type = API.UpdateRequestsDetails
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -379,7 +386,7 @@ class ChangeRequestApiImpl(
     ): LiftResponse = {
 
       def updateInfo(changeRequest: ChangeRequest, status: WorkflowNodeId, apiInfo: APIChangeRequestInfo)(implicit
-          techniqueByDirective:     Map[DirectiveId, Technique]
+          techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         val newInfo = apiInfo.updateCrInfo(changeRequest.info)
         if (changeRequest.info == newInfo) {
@@ -502,7 +509,7 @@ class ChangeRequestApiImpl(
   }
 
   private def extractReason(req: Req): IOResult[Option[String]] = {
-    import ReasonBehavior._
+    import ReasonBehavior.*
     (userPropertyService.reasonsFieldBehavior match {
       case Disabled => ZIO.none
       case mode     =>
@@ -521,7 +528,7 @@ class ChangeRequestApiImpl(
   }
 
   private[this] def extractFilters(params: Map[String, List[String]]): PureResult[ChangeRequestFilter] = {
-    import ChangeRequestFilter._
+    import ChangeRequestFilter.*
     for {
       status     <- extractWorkflowStatus(params)
       byRule      = params.get("ruleId").flatMap(_.headOption).map(id => ByRule(RuleUid(id)))

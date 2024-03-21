@@ -46,7 +46,7 @@ import com.normation.eventlog.EventActor
 import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.changevalidation.MockServices
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
-import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl._
+import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.*
 import com.normation.rudder.MockGlobalParam
 import com.normation.rudder.MockNodes
 import com.normation.rudder.api.ApiVersion
@@ -635,6 +635,7 @@ class ChangeRequestApiTest extends TraitTestApiFromYamlFiles with AfterAll {
       validationWorkflowService,
       List.empty,
       () => Full(true),
+      () => Full(false),
       null
     )
   )

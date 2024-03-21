@@ -4,7 +4,7 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.web.snippet.UserInformation
 import net.liftweb.common.Loggable
-import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 

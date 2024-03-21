@@ -38,9 +38,10 @@
 package com.normation.plugins.authbackends
 
 import com.normation.NamedZioLogger
+import enumeratum.*
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
-import zio.json._
+import zio.json.*
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -121,16 +122,17 @@ final object JsonSerialization {
  *         have access to regular form for emergencies (admin account for ex)
  * - remove: completely remove the HTML for the form
  */
-sealed trait LoginFormRendering { def name: String }
-final object LoginFormRendering {
+sealed trait LoginFormRendering extends EnumEntry                { def name: String }
+final object LoginFormRendering extends Enum[LoginFormRendering] {
   final case object Show   extends LoginFormRendering { val name = "show"   }
   final case object Hide   extends LoginFormRendering { val name = "hide"   }
   final case object Remove extends LoginFormRendering { val name = "remove" }
 
-  def all = ca.mrvisser.sealerate.values[LoginFormRendering]
-  def parse(s: String): Either[String, LoginFormRendering] = all
+  def values = findValues
+
+  def parse(s: String): Either[String, LoginFormRendering] = values
     .find(_.name == s.toLowerCase)
     .toRight(
-      s"Value '${s}' is not a known option for login form rendering. Accepted values: ${all.map(_.name).toList.sorted}"
+      s"Value '${s}' is not a known option for login form rendering. Accepted values: ${values.map(_.name).toList.sorted}"
     )
 }

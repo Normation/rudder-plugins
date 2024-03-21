@@ -1,6 +1,7 @@
 {
   "type": "plugin",
   "name": "${plugin-id}",
+  "description": "Display HTML or PDF files in node details",
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",

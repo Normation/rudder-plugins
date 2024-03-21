@@ -39,7 +39,7 @@ package com.normation.plugins.changevalidation
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.apply._
+import cats.syntax.apply.*
 import com.normation.BoxSpecMatcher
 import com.normation.GitVersion
 import com.normation.cfclerk.domain.TechniqueName
@@ -47,15 +47,15 @@ import com.normation.cfclerk.domain.TechniqueVersionHelper
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.DBCommon
-import com.normation.rudder.db.Doobie._
+import com.normation.rudder.db.Doobie.*
 import com.normation.rudder.domain.nodes.AddNodeGroupDiff
 import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.nodes.NodeGroupUid
-import com.normation.rudder.domain.policies._
+import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.GlobalParameter
-import com.normation.rudder.domain.workflows._
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rule.category.RuleCategoryId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
@@ -64,7 +64,7 @@ import com.normation.zio.UnsafeRun
 import com.typesafe.config.ConfigValueFactory
 import doobie.Transactor
 import doobie.specs2.analysisspec.IOChecker
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
@@ -73,7 +73,7 @@ import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.core.Fragments
-import zio.interop.catz._
+import zio.interop.catz.*
 
 @RunWith(classOf[JUnitRunner])
 class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with IOChecker with BoxSpecMatcher {

@@ -1,0 +1,109 @@
+
+def failedBuild = false
+def plugin_name = params.PLUGIN_NAME
+def version = params.PLUGIN_TAG
+def branch = params.BRANCH
+def changeUrl = env.CHANGE_URL
+def blueUrl = "${env.JOB_DISPLAY_URL}"
+def message = "Release plugin ${plugin_name} ${version}"
+def slackResponse = slackSend(channel: "ci", message: "${message} - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
+def job = ""
+def errors = []
+def running = []
+
+
+pipeline {
+    agent none
+
+
+    environment {
+        // TODO: automate
+        // we want it everywhere for plugins
+        MAVEN_ARGS = "--update-snapshots"
+    }
+
+    stages {
+        stage('Build plugin') {
+            // only publish nightly on dev branches
+            agent {
+                dockerfile {
+                    filename 'ci/plugins.Dockerfile'
+                    additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
+                    // set same timezone as some tests rely on it
+                    // and share maven cache
+                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
+                }
+            }
+            steps {
+                script {
+                  running.add("Build")
+                  updateSlack(errors, running, slackResponse, message, changeUrl)
+                  makeTarget = "licensed"
+                  if (plugin_name == "cis"  || plugin_name == "openscap") {
+                    makeTarget = ""
+                  }
+                  dir("${plugin_name}") {
+                      withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
+                        // don't archive jars
+                        options: [artifactsPublisher(disabled: true)]
+                      ) {
+                          sh script: "export PATH=$MVN_CMD_DIR:$PATH && make ${makeTarget}"
+                          archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
+                          sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${branch} -d /home/publisher/tmp/${plugin_name}-${branch}", remoteDirectory: "${plugin_name}-${branch}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                      }
+                  }
+                  running.remove("Build")
+                }
+            }
+            post {
+                failure {
+                    script {
+                        errors.add("Build")
+                        updateSlack(errors, running, slackResponse, message, changeUrl)
+                    }
+                }
+                cleanup {
+                    script {
+                        updateSlack(errors, running, slackResponse, message, changeUrl)
+                    }
+                }
+            }
+        }
+        stage('End') {
+            steps {
+                script {
+                    if (failedBuild) {
+                        error 'End of build'
+                    } else {
+                        echo 'End of build'
+                    }
+                }
+            }
+        }
+    }
+}
+
+def updateSlack(errors, running, slackResponse, message, changeUrl) {
+
+def blueUrl = "${env.JOB_DISPLAY_URL}"
+
+
+def msg ="*${message}* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>"
+
+def color = "#00A8E1"
+
+if (! errors.isEmpty()) {
+    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
+    color = "#CC3421"
+}
+if (! running.isEmpty()) {
+    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
+}
+
+if (errors.isEmpty() && running.isEmpty()) {
+    msg +=  " => All plugins built! :white_check_mark:"
+	color = "good"
+}
+
+  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+}

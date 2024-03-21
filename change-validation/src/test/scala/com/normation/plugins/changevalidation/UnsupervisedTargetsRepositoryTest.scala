@@ -12,7 +12,7 @@ import java.nio.file.attribute.PosixFilePermissions
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 @RunWith(classOf[JUnitRunner])
 class UnsupervisedTargetsRepositoryTest extends Specification with JsonSpecMatcher {

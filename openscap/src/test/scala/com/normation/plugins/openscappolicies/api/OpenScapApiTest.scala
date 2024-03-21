@@ -1,6 +1,6 @@
 package com.normation.plugins.openscappolicies.api
 
-import better.files._
+import better.files.*
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.MockNodes

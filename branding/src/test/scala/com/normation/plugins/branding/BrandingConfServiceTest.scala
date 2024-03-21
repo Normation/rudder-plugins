@@ -36,7 +36,7 @@
  */
 package com.normation.plugins.branding
 
-import better.files._
+import better.files.*
 import com.normation.plugins.branding.BrandingConf
 import com.normation.plugins.branding.BrandingConfService
 import com.normation.zio.UnsafeRun
@@ -44,7 +44,7 @@ import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
-import zio.json._
+import zio.json.*
 
 @RunWith(classOf[JUnitRunner])
 class BrandingConfServiceTest extends Specification with AfterAll {

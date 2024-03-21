@@ -38,13 +38,14 @@
 package com.normation.plugins.datasources.api
 
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.api.HttpAction._
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.api.HttpAction.*
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
+import enumeratum.*
 import sourcecode.Line
 
-sealed trait DataSourceApi extends EndpointSchema with GeneralApi with SortIndex
-object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
+sealed trait DataSourceApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[DataSourceApi] {
 
   /* Avoiding POST unreachable endpoint:
    * (note: datasource must not have id "reload")
@@ -150,5 +151,6 @@ object DataSourceApi       extends ApiModuleProvider[DataSourceApi] {
     override def dataContainer: Option[String] = Some("datasources")
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[DataSourceApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }

@@ -3,7 +3,8 @@
 # make licensed : will build a license limited version of the plugin
 #
 
-FILES = $(NAME)/change-validation-schema.sql $(NAME)/change-validation.conf $(NAME)/validation-mail.template $(NAME)/deployment-mail.template $(NAME)/cancelled-mail.template $(NAME)/deployed-mail.template
+FILES =
+OTHER_TARGETS = target/$(NAME)/change-validation-schema.sql target/$(NAME)/change-validation.conf target/$(NAME)/validation-mail.template target/$(NAME)/deployment-mail.template target/$(NAME)/cancelled-mail.template target/$(NAME)/deployed-mail.template
 SCRIPTS = postinst
 
 include ../makefiles/common-scala-plugin.mk

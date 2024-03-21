@@ -9,6 +9,8 @@ const elm_p = require('gulp-elm');
 const merge = require('merge-stream');
 const del = require('del');
 const through = require('through2');
+const sass = require('gulp-sass')(require('sass'));
+const sourcemaps = require('gulp-sourcemaps');
 
 // Derived from https://github.com/mixmaxhq/gulp-grep-contents (under MIT License)
 var grep = function(regex) {
@@ -30,7 +32,19 @@ const paths = {
         'watch': 'elm/sources/*.elm',
         'dest': 'elm/generated',
     },
+    'scss': {
+        'src': [
+          'style/*',
+        ],
+        'dest': 'resources/toserve/',
+    },
 };
+
+function gestScssDest(dirname){
+    let dir = dirname.split(path.sep);
+    dir = dir[dir.length - 3].replace('-', '');
+    return paths.scss.dest + dir
+}
 
 function clean(cb) {
     del.sync([paths.elm.dest]);
@@ -71,8 +85,18 @@ function elm(cb) {
     cb();
 };
 
+function scss(cb) {
+    src(paths.scss.src)
+      .pipe(sourcemaps.init())
+      .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
+      .pipe(sourcemaps.write())
+      .pipe(dest(gestScssDest(__dirname)));
+    cb();
+};
+
 exports.elm = series(clean, elm)
 exports.watch = series(clean, function() {
     watch(paths.elm.watch, { ignoreInitial: false }, elm);
+    watch(paths.scss.src, { ignoreInitial: false }, scss);
 });
-exports.default = series(clean, parallel(elm));
+exports.default = series(clean, parallel(elm, scss));

@@ -42,9 +42,10 @@ import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
 import com.typesafe.config.ConfigValue
+import enumeratum.*
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
-import zio._
+import zio.*
 
 /**
  * Applicative log of interest for Rudder ops.
@@ -91,13 +92,13 @@ sealed trait DataSourceType {
  * For an HTTP datasource, how to contact the
  * foreign server?
  */
-sealed trait HttpMethod { def name: String }
-final object HttpMethod {
+sealed trait HttpMethod extends EnumEntry        { def name: String }
+final object HttpMethod extends Enum[HttpMethod] {
 
   final case object GET  extends HttpMethod { override val name = "GET"  }
   final case object POST extends HttpMethod { override val name = "POST" }
 
-  def values = ca.mrvisser.sealerate.values[HttpMethod]
+  def values = findValues
 }
 
 final object DataSourceType {

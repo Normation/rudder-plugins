@@ -37,27 +37,28 @@
 
 package com.normation.plugins.datasources
 
-import DataSourceJsonCodec._
-import cats.implicits._
-import com.normation.errors._
-import com.normation.rudder.domain.properties.GenericProperty._
+import DataSourceJsonCodec.*
+import cats.implicits.*
+import com.normation.errors.*
+import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.repository.json.JsonExtractorUtils
-import com.normation.rudder.rest.RudderJsonRequest._
+import com.normation.rudder.rest.RudderJsonRequest.*
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.Patcher
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.PatcherConfiguration
-import io.scalaland.chimney.syntax._
+import io.scalaland.chimney.syntax.*
 import java.util.concurrent.TimeUnit
+import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import net.liftweb.http.Req
 import scala.concurrent.duration.FiniteDuration
 import scala.math.BigDecimal
-import scala.util.chaining._
-import zio._
-import zio.json._
+import scala.util.chaining.*
+import zio.*
+import zio.json.*
 import zio.json.ast.Json
 
 object Translate {
@@ -65,7 +66,7 @@ object Translate {
     def toScala = FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
   }
 }
-import Translate._
+import Translate.*
 
 /**
  * All the content of the datasource without it's id
@@ -388,7 +389,7 @@ object DataSourceExtractor {
   // For patching we have the strategy of not overriding the base value if the patch value is None
   // see https://chimney.readthedocs.io/en/0.8.3/supported-patching/ and "the cookbook" for scala 3 migration
   // (or more verbose solution : define the Patcher with the .ignoreNoneInPatch option instead of deriving)
-  implicit protected val patchCfg: PatcherConfiguration[_] = PatcherConfiguration.default.ignoreNoneInPatch
+  implicit protected val patchCfg: PatcherConfiguration[?] = PatcherConfiguration.default.ignoreNoneInPatch
 
   case class PatchDataSourceRunParam(
       onGeneration: Option[Boolean],
@@ -491,7 +492,7 @@ object DataSourceExtractor {
    * Utilities to extract values from params Map
    */
   implicit class Extract(params: Map[String, List[String]]) {
-    def optGet(key: String):                               Option[String]        = params.get(key).flatMap(_.headOption)
+    def optGet(key: String): Option[String] = params.get(key).flatMap(_.headOption)
     def parse[A: JsonDecoder](key: String):                PureResult[Option[A]] = {
       optGet(key) match {
         case None    => Right(None)
@@ -511,9 +512,9 @@ object DataSourceExtractor {
     * We need extraction when knowning the concrete type param of the data source extractor, because we need derivation
     */
   object OptionalJson extends JsonExtractorUtils[Option] {
-    def monad                                      = implicitly
-    def emptyValue[T](id: String)                  = Full(None)
-    def getOrElse[T](value: Option[T], default: T) = value.getOrElse(default)
+    def monad = implicitly
+    override def emptyValue[T](id: String): Box[Option[T]] = Full(None)
+    def getOrElse[T](value:        Option[T], default: T) = value.getOrElse(default)
 
     def extractNewDataSource(req: Req): PureResult[DataSource] = {
       if (req.json_?) {
@@ -572,8 +573,8 @@ object DataSourceExtractor {
    * API of extractor for complete JSON : extract all fields, all fields are thus mandatory
    */
   object CompleteJson extends JsonExtractorUtils[Id] {
-    def monad                              = implicitly
-    def emptyValue[T](id: String)          = Failure(s"parameter '${id}' cannot be empty")
+    def monad = implicitly
+    def emptyValue[T](id:   String): Box[Id[T]] = Failure(s"parameter '${id}' cannot be empty")
     def getOrElse[T](value: T, default: T) = value
 
     // Extract all fields of a DataSource from the JSON

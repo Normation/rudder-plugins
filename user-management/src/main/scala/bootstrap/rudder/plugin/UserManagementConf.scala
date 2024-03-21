@@ -38,12 +38,14 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import bootstrap.liftweb.UserFileProcessing
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.usermanagement.CheckRudderPluginEnableImpl
 import com.normation.plugins.usermanagement.UserManagementPluginDef
 import com.normation.plugins.usermanagement.UserManagementService
 import com.normation.plugins.usermanagement.api.UserManagementApiImpl
+import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users.UserAuthorisationLevel
 
 /*
@@ -62,13 +64,18 @@ object UserManagementConf extends RudderPluginModule {
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
 
-  lazy val pluginDef = new UserManagementPluginDef(UserManagementConf.pluginStatusService)
+  override lazy val pluginDef: UserManagementPluginDef = new UserManagementPluginDef(UserManagementConf.pluginStatusService)
 
   lazy val api = new UserManagementApiImpl(
     RudderConfig.userRepository,
-    RudderConfig.restExtractorService,
     RudderConfig.rudderUserListProvider,
-    new UserManagementService(RudderConfig.userRepository)
+    RudderConfig.authenticationProviders,
+    new UserManagementService(
+      RudderConfig.userRepository,
+      RudderConfig.rudderUserListProvider,
+      UserFileProcessing.getUserResourceFile()
+    ),
+    new RoleApiMapping(RudderConfig.authorizationApiMapping)
   )
 
   RudderConfig.userAuthorisationLevel.overrideLevel(new UserManagementAuthorizationLevel(pluginStatusService))

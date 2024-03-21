@@ -41,7 +41,7 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderConfig.commitAndDeployChangeRequest
 import bootstrap.liftweb.RudderConfig.doobie
 import bootstrap.liftweb.RudderConfig.workflowLevelService
-import com.normation.box._
+import com.normation.box.*
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
@@ -99,6 +99,7 @@ class ChangeValidationWorkflowLevelService(
     validationWorkflowService: TwoValidationStepsWorkflowServiceImpl,
     validationNeeded:          Seq[ValidationNeeded],
     workflowEnabledByUser:     () => Box[Boolean],
+    alwaysNeedValidation:      () => Box[Boolean],
     validatedUserRepo:         RoValidatedUserRepository
 ) extends WorkflowLevelService {
 
@@ -138,7 +139,8 @@ class ChangeValidationWorkflowLevelService(
       change:  T
   ): Box[WorkflowService] = {
     def getWorkflowAux = {
-      getWorkflow(validationNeeded.foldLeft(Full(false): Box[Boolean]) {
+      // When we "always need validation", we ignore all validationNeeded checks, otherwise we validate using these checks
+      getWorkflow(validationNeeded.foldLeft(alwaysNeedValidation()) {
         case (shouldValidate, nextCheck) =>
           shouldValidate.flatMap {
             // logic is "or": if previous should validate is true, don't check following
@@ -288,6 +290,7 @@ object ChangeValidationConf extends RudderPluginModule {
         )
       ),
       () => RudderConfig.configService.rudder_workflow_enabled().toBox,
+      () => RudderConfig.configService.rudder_workflow_validate_all().toBox,
       roValidatedUserRepository
     )
   )
@@ -295,7 +298,7 @@ object ChangeValidationConf extends RudderPluginModule {
   lazy val changeRequestMapper =
     new ChangeRequestMapper(RudderConfig.changeRequestChangesUnserialisation, RudderConfig.changeRequestChangesSerialisation)
 
-  lazy val pluginDef = new ChangeValidationPluginDef(pluginStatusService)
+  override lazy val pluginDef: ChangeValidationPluginDef = new ChangeValidationPluginDef(pluginStatusService)
 
   lazy val api = {
     val api1 = new SupervisedTargetsApiImpl(
@@ -318,8 +321,9 @@ object ChangeValidationConf extends RudderPluginModule {
       woValidatedUserRepository
     )
     new LiftApiModuleProvider[EndpointSchema] {
-      override def schemas = new ApiModuleProvider[EndpointSchema] {
-        override def endpoints = ValidatedUserApi.endpoints ::: SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints
+      override def schemas: ApiModuleProvider[EndpointSchema] = new ApiModuleProvider[EndpointSchema] {
+        override def endpoints: List[EndpointSchema] =
+          ValidatedUserApi.endpoints ::: SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints
       }
 
       override def getLiftEndpoints(): List[LiftApiModule] =

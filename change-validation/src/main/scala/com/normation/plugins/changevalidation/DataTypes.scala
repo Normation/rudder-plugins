@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory
 import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 import zio.NonEmptyChunk
-import zio.json._
+import zio.json.*
 
 /**
  * Applicative log of interest for Rudder ops.

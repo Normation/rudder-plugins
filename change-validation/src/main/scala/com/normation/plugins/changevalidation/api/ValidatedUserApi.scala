@@ -40,27 +40,28 @@ package com.normation.plugins.changevalidation.api
 import com.normation.eventlog.EventActor
 import com.normation.plugins.changevalidation.JsonValidatedUsers
 import com.normation.plugins.changevalidation.RoValidatedUserRepository
-import com.normation.plugins.changevalidation.RudderJsonMapping._
+import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.plugins.changevalidation.WoValidatedUserRepository
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
-import com.normation.rudder.rest.RudderJsonRequest._
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
+import com.normation.rudder.rest.RudderJsonRequest.*
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
-sealed trait ValidatedUserApi extends EndpointSchema with GeneralApi with SortIndex
-object ValidatedUserApi       extends ApiModuleProvider[ValidatedUserApi] {
+sealed trait ValidatedUserApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
 
   final case object ListUsers                   extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z              = implicitly[Line].value
@@ -87,7 +88,8 @@ object ValidatedUserApi       extends ApiModuleProvider[ValidatedUserApi] {
     override val name = "saveWorkflowUser"
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[ValidatedUserApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class ValidatedUserApiImpl(
@@ -95,7 +97,7 @@ class ValidatedUserApiImpl(
     writeValidatedUser: WoValidatedUserRepository
 ) extends LiftApiModuleProvider[ValidatedUserApi] {
 
-  import com.normation.plugins.changevalidation.api.{ValidatedUserApi => API}
+  import com.normation.plugins.changevalidation.api.ValidatedUserApi as API
 
   override def schemas: ApiModuleProvider[ValidatedUserApi] = API
 
@@ -108,7 +110,7 @@ class ValidatedUserApiImpl(
   }
 
   object ListUsers extends LiftApiModule0 {
-    val schema = API.ListUsers
+    val schema: ValidatedUserApi.ListUsers.type = API.ListUsers
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       readValidatedUser
@@ -120,7 +122,7 @@ class ValidatedUserApiImpl(
   }
 
   object DeleteValidatedUsersDetails extends LiftApiModule {
-    val schema = API.DeleteValidatedUsersDetails
+    val schema: ValidatedUserApi.DeleteValidatedUsersDetails.type = API.DeleteValidatedUsersDetails
 
     def process(
         version:    ApiVersion,
@@ -138,7 +140,7 @@ class ValidatedUserApiImpl(
   }
 
   object SaveWorkflowUsers extends LiftApiModule0 {
-    val schema = API.SaveWorkflowUsers
+    val schema: ValidatedUserApi.SaveWorkflowUsers.type = API.SaveWorkflowUsers
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {

@@ -47,19 +47,19 @@ import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.eventlog.AddChangeRequest
 import com.normation.rudder.domain.eventlog.DeleteChangeRequest
 import com.normation.rudder.domain.eventlog.ModifyChangeRequest
-import com.normation.rudder.domain.workflows._
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
-import com.normation.rudder.web.model._
+import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
-import net.liftweb.common._
-import net.liftweb.http._
-import net.liftweb.http.js._
-import net.liftweb.http.js.JE._
-import net.liftweb.http.js.JsCmds._
-import net.liftweb.util.Helpers._
+import net.liftweb.common.*
+import net.liftweb.http.*
+import net.liftweb.http.js.*
+import net.liftweb.http.js.JE.*
+import net.liftweb.http.js.JsCmds.*
+import net.liftweb.util.Helpers.*
 import scala.xml.NodeSeq
 import scala.xml.Text
 
@@ -75,7 +75,7 @@ object ChangeRequestDetails {
 }
 
 class ChangeRequestDetails extends DispatchSnippet with Loggable {
-  import ChangeRequestDetails._
+  import ChangeRequestDetails.*
 
   private[this] val userPropertyService          = RudderConfig.userPropertyService
   private[this] val workFlowEventLogService      = RudderConfig.workflowEventLogService
@@ -312,8 +312,8 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       SHtml.selectObj(
         nextSteps.map(v => (v, v._1.value)),
         Full(nextChosen),
-        { t: (WorkflowNodeId, stepChangeFunction) => nextChosen = t }
-      ) % ("class" -> "form-select space-bottom")
+        (t: (WorkflowNodeId, stepChangeFunction)) => nextChosen = t
+      ) % ("class" -> "form-select mb-3")
     }
 
     def buildReasonField(mandatory: Boolean, containerClass: String) = {
@@ -332,7 +332,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     }
 
     val changeMessage = {
-      import com.normation.rudder.web.services.ReasonBehavior._
+      import com.normation.rudder.web.services.ReasonBehavior.*
       userPropertyService.reasonsFieldBehavior match {
         case Disabled  => None
         case Mandatory => Some(buildReasonField(true, "subContainerReasonField"))
@@ -371,16 +371,15 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     }
 
     val introMessage                                           = {
-      <div>
-        <h4 class="col-lg-12 col-sm-12 col-xs-12 text-center">{
+      <h5 class="text-center">
+        {
         nextSteps match {
           case Nil              => "You can't confirm"
           case (next, _) :: Nil => s"The change request will be sent to the '${next}' status"
           case list             => s"Please, choose the next state for this Change request"
         }
       }
-        </h4>
-     </div>
+     </h5>
     }
     def content(default: (WorkflowNodeId, stepChangeFunction)) = {
       val classForButton = action match {
@@ -401,7 +400,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
     def updateForm(default: (WorkflowNodeId, stepChangeFunction)) = SetHtml("popupContent", content(default))
 
-    def error(msg: String) = <span class="col-lg-12 errors-container">{msg}</span>
+    def error(msg: String) = <div class="alert alert-danger">{msg}</div>
 
     def confirm(): JsCmd = {
       if (formTracker.hasErrors) {

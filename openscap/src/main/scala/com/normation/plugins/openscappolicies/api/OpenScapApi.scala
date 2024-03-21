@@ -1,21 +1,22 @@
 package com.normation.plugins.openscappolicies.api
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
-import com.normation.rudder.rest._
+import com.normation.rudder.rest.*
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.GeneralApi
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
@@ -24,8 +25,9 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
-sealed trait OpenScapApi extends EndpointSchema with GeneralApi with SortIndex
-object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
+sealed trait OpenScapApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+
+object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi] {
 
   final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
     val z              = implicitly[Line].value
@@ -43,7 +45,8 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
     override def dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class OpenScapApiImpl(
@@ -54,7 +57,7 @@ class OpenScapApiImpl(
 
   val logger = OpenscapPoliciesLogger
 
-  def schemas = OpenScapApi
+  def schemas: ApiModuleProvider[OpenScapApi] = OpenScapApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     OpenScapApi.endpoints.map {
@@ -67,7 +70,7 @@ class OpenScapApiImpl(
   }
 
   object GetOpenScapReport extends LiftApiModule {
-    val schema = OpenScapApi.GetOpenScapReport
+    val schema: OpenScapApi.GetOpenScapReport.type = OpenScapApi.GetOpenScapReport
 
     def process(
         version:    ApiVersion,
@@ -110,7 +113,7 @@ class OpenScapApiImpl(
   }
 
   object GetSanitizedOpenScapReport extends LiftApiModule {
-    val schema = OpenScapApi.GetSanitizedOpenScapReport
+    val schema: OpenScapApi.GetSanitizedOpenScapReport.type = OpenScapApi.GetSanitizedOpenScapReport
 
     def process(
         version:    ApiVersion,

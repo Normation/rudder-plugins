@@ -38,18 +38,18 @@
 package bootstrap.rudder.plugin
 
 import better.files.File
-import com.normation.errors._
+import com.normation.errors.*
 import com.normation.plugins.changevalidation.ChangeValidationLoggerPure
 import com.normation.plugins.changevalidation.OldFileFormat
 import com.normation.plugins.changevalidation.SupervisedSimpleTargets
 import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.RoNodeGroupRepository
-import io.scalaland.chimney.syntax._
+import io.scalaland.chimney.syntax.*
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import zio.ZIO
-import zio.json._
+import zio.json.*
 
 /*
  * The validation workflow level

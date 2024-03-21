@@ -1,6 +1,6 @@
 package com.normation.plugins.changevalidation
 
-import com.normation.box._
+import com.normation.box.*
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId

@@ -5,20 +5,22 @@ import com.normation.inventory.domain.NodeId
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.POST
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.EndpointSchema.syntax._
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.EndpointSchema.syntax.*
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
-sealed trait ScaleOutRelayApi extends EndpointSchema with GeneralApi with SortIndex {
+sealed trait ScaleOutRelayApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
   override def dataContainer: Option[String] = None
 }
-object ScaleOutRelayApi       extends ApiModuleProvider[ScaleOutRelayApi]           {
+
+object ScaleOutRelayApi extends Enum[ScaleOutRelayApi] with ApiModuleProvider[ScaleOutRelayApi] {
 
   final case object PromoteToRelay extends ScaleOutRelayApi with OneParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -32,14 +34,15 @@ object ScaleOutRelayApi       extends ApiModuleProvider[ScaleOutRelayApi]       
     val (action, path) = POST / "scaleoutrelay" / "demote" / "{nodeId}"
   }
 
-  override def endpoints: List[ScaleOutRelayApi] = ca.mrvisser.sealerate.values[ScaleOutRelayApi].toList.sortBy(_.z)
+  override def endpoints: List[ScaleOutRelayApi] = values.toList.sortBy(_.z)
+  def values = findValues
 }
 
 class ScaleOutRelayApiImpl(
     scaleOutRelayService: ScaleOutRelayService
 ) extends LiftApiModuleProvider[ScaleOutRelayApi] {
 
-  override def schemas = ScaleOutRelayApi
+  override def schemas: ApiModuleProvider[ScaleOutRelayApi] = ScaleOutRelayApi
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
     ScaleOutRelayApi.endpoints.map {
@@ -49,7 +52,7 @@ class ScaleOutRelayApiImpl(
   }
 
   object PromoteToRelay extends LiftApiModule {
-    val schema = ScaleOutRelayApi.PromoteToRelay
+    val schema: ScaleOutRelayApi.PromoteToRelay.type = ScaleOutRelayApi.PromoteToRelay
 
     def process(
         version: ApiVersion,
@@ -67,7 +70,7 @@ class ScaleOutRelayApiImpl(
     }
   }
   object DemoteToNode   extends LiftApiModule {
-    val schema = ScaleOutRelayApi.DemoteToNode
+    val schema: ScaleOutRelayApi.DemoteToNode.type = ScaleOutRelayApi.DemoteToNode
 
     def process(
         version: ApiVersion,

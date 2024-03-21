@@ -37,8 +37,8 @@
 
 package com.normation.plugins.changevalidation.api
 
-import com.normation.plugins.changevalidation._
-import com.normation.plugins.changevalidation.RudderJsonMapping._
+import com.normation.plugins.changevalidation.*
+import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
@@ -48,17 +48,18 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.InternalApi
-import com.normation.rudder.rest.RudderJsonRequest._
+import com.normation.rudder.rest.RudderJsonRequest.*
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import java.nio.charset.StandardCharsets
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -71,8 +72,8 @@ import zio.ZIO
  * supervision, and is able to save an updated list.
  */
 
-sealed trait SupervisedTargetsApi extends EndpointSchema with InternalApi with SortIndex
-object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi] {
+sealed trait SupervisedTargetsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
+object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
   val zz = 11
   final case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -90,7 +91,8 @@ object SupervisedTargetsApi       extends ApiModuleProvider[SupervisedTargetsApi
     override def dataContainer: Option[String] = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[SupervisedTargetsApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class SupervisedTargetsApiImpl(
@@ -98,7 +100,7 @@ class SupervisedTargetsApiImpl(
     nodeGroupRepository:      RoNodeGroupRepository
 ) extends LiftApiModuleProvider[SupervisedTargetsApi] {
 
-  def schemas = SupervisedTargetsApi
+  override def schemas: ApiModuleProvider[SupervisedTargetsApi] = SupervisedTargetsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     SupervisedTargetsApi.endpoints
@@ -129,9 +131,10 @@ class SupervisedTargetsApiImpl(
    * }
    */
   object GetAllTargets extends LiftApiModule0 {
-    val schema = SupervisedTargetsApi.GetAllTargets
+    val schema: SupervisedTargetsApi.GetAllTargets.type = SupervisedTargetsApi.GetAllTargets
+
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import com.normation.plugins.changevalidation.RudderJsonMapping._
+      import com.normation.plugins.changevalidation.RudderJsonMapping.*
 
       (for {
         groups       <- nodeGroupRepository.getFullGroupLibrary()
@@ -157,7 +160,8 @@ class SupervisedTargetsApiImpl(
 
     // from the JSON, etract the list of target name to supervise
 
-    val schema = SupervisedTargetsApi.UpdateSupervisedTargets
+    val schema: SupervisedTargetsApi.UpdateSupervisedTargets.type = SupervisedTargetsApi.UpdateSupervisedTargets
+
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
         targets <-

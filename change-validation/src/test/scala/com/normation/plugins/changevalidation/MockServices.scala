@@ -78,7 +78,7 @@ import scala.collection.immutable.SortedMap
 import zio.Chunk
 import zio.Ref
 import zio.ZIO
-import zio.syntax._
+import zio.syntax.*
 
 class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String, fullNodeGroupCategory: FullNodeGroupCategory) {
 
@@ -90,24 +90,25 @@ class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String,
       fullNodeGroupCategory.succeed
     }
 
-    override def getNodeGroupOpt(id: NodeGroupId):                      IOResult[Option[(NodeGroup, NodeGroupCategoryId)]]                = ???
-    override def getNodeGroupCategory(id: NodeGroupId):                 IOResult[NodeGroupCategory]                                       = ???
-    override def getAll():                                              IOResult[Seq[NodeGroup]]                                          = ???
-    override def getAllNodeIds():                                       IOResult[Map[NodeGroupId, Set[NodeId]]]                           = ???
-    override def getAllNodeIdsChunk():                                  IOResult[Map[NodeGroupId, Chunk[NodeId]]]                         = ???
+    override def getNodeGroupOpt(id:      NodeGroupId): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] = ???
+    override def getNodeGroupCategory(id: NodeGroupId): IOResult[NodeGroupCategory]                        = ???
+    override def getAll(): IOResult[Seq[NodeGroup]] = ???
+    override def getAllByIds(ids: Seq[NodeGroupId]): IOResult[Seq[com.normation.rudder.domain.nodes.NodeGroup]] = ???
+    override def getAllNodeIds():      IOResult[Map[NodeGroupId, Set[NodeId]]]   = ???
+    override def getAllNodeIdsChunk(): IOResult[Map[NodeGroupId, Chunk[NodeId]]] = ???
     override def getGroupsByCategory(
         includeSystem: Boolean
     ): IOResult[SortedMap[List[NodeGroupCategoryId], CategoryAndNodeGroup]] = ???
-    override def findGroupWithAnyMember(nodeIds: Seq[NodeId]):          IOResult[Seq[NodeGroupId]]                                        = ???
-    override def findGroupWithAllMember(nodeIds: Seq[NodeId]):          IOResult[Seq[NodeGroupId]]                                        = ???
-    override def getRootCategory():                                     NodeGroupCategory                                                 = ???
-    override def getRootCategoryPure():                                 IOResult[NodeGroupCategory]                                       = ???
-    override def getCategoryHierarchy:                                  IOResult[SortedMap[List[NodeGroupCategoryId], NodeGroupCategory]] = ???
-    override def getAllGroupCategories(includeSystem: Boolean):         IOResult[Seq[NodeGroupCategory]]                                  = ???
-    override def getGroupCategory(id: NodeGroupCategoryId):             IOResult[NodeGroupCategory]                                       = ???
-    override def getParentGroupCategory(id: NodeGroupCategoryId):       IOResult[NodeGroupCategory]                                       = ???
-    override def getParents_NodeGroupCategory(id: NodeGroupCategoryId): IOResult[List[NodeGroupCategory]]                                 = ???
-    override def getAllNonSystemCategories():                           IOResult[Seq[NodeGroupCategory]]                                  = ???
+    override def findGroupWithAnyMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
+    override def findGroupWithAllMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
+    override def getRootCategory():     NodeGroupCategory                                                 = ???
+    override def getRootCategoryPure(): IOResult[NodeGroupCategory]                                       = ???
+    override def getCategoryHierarchy:  IOResult[SortedMap[List[NodeGroupCategoryId], NodeGroupCategory]] = ???
+    override def getAllGroupCategories(includeSystem: Boolean):             IOResult[Seq[NodeGroupCategory]]  = ???
+    override def getGroupCategory(id:                 NodeGroupCategoryId): IOResult[NodeGroupCategory]       = ???
+    override def getParentGroupCategory(id:           NodeGroupCategoryId): IOResult[NodeGroupCategory]       = ???
+    override def getParents_NodeGroupCategory(id:     NodeGroupCategoryId): IOResult[List[NodeGroupCategory]] = ???
+    override def getAllNonSystemCategories(): IOResult[Seq[NodeGroupCategory]] = ???
   }
 
 }
@@ -132,8 +133,8 @@ class MockValidatedUsers(users: Map[EventActor, WorkflowUsers]) {
         .map(_.values.toSet)
     }
 
-    override def getValidatedUsers():           IOResult[Seq[EventActor]]    = ???
-    override def get(actor: EventActor):        IOResult[Option[EventActor]] = ???
+    override def getValidatedUsers(): IOResult[Seq[EventActor]] = ???
+    override def get(actor:        EventActor): IOResult[Option[EventActor]] = ???
     override def createUser(newVU: EventActor): IOResult[EventActor]         = ???
   }
 
@@ -144,7 +145,7 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
   object changeRequestRepository extends RoChangeRequestRepository with WoChangeRequestRepository {
 
     override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
-      import ChangeRequestFilter._
+      import ChangeRequestFilter.*
       changeRequestsByStatus.view
         .filterKeys(status => filter.status.forall(_.contains(status)))
         .toVector
@@ -250,9 +251,9 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
       null
     )
 
-    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[WorkflowStepChanged]]       = ???
-    override def getLastLog(id: ChangeRequestId):              Box[Option[WorkflowStepChanged]]    = ???
-    override def getLastWorkflowEvents():                      Box[Map[ChangeRequestId, EventLog]] = ???
+    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[WorkflowStepChanged]]    = ???
+    override def getLastLog(id:              ChangeRequestId): Box[Option[WorkflowStepChanged]] = ???
+    override def getLastWorkflowEvents(): Box[Map[ChangeRequestId, EventLog]] = ???
 
   }
 
@@ -265,10 +266,10 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         reason:    Option[String]
     ): Box[EventLog] = Full(null)
 
-    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[ChangeRequestEventLog]]     = ???
-    override def getFirstLog(id: ChangeRequestId):             Box[Option[ChangeRequestEventLog]]  = ???
-    override def getLastLog(id: ChangeRequestId):              Box[Option[ChangeRequestEventLog]]  = ???
-    override def getLastCREvents:                              Box[Map[ChangeRequestId, EventLog]] = ???
+    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[ChangeRequestEventLog]]    = ???
+    override def getFirstLog(id:             ChangeRequestId): Box[Option[ChangeRequestEventLog]] = ???
+    override def getLastLog(id:              ChangeRequestId): Box[Option[ChangeRequestEventLog]] = ???
+    override def getLastCREvents: Box[Map[ChangeRequestId, EventLog]] = ???
   }
 
   object notificationService extends NotificationService {
@@ -282,12 +283,12 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
   )
 
   object userService extends UserService {
-    val user           = new AuthenticatedUser {
-      val account                              = RudderAccount.User("admin", "admin")
-      def nodePerms                            = NodeSecurityContext.All
+    val user = new AuthenticatedUser {
+      val account:   RudderAccount.User  = RudderAccount.User("admin", "admin")
+      def nodePerms: NodeSecurityContext = NodeSecurityContext.All
       def checkRights(auth: AuthorizationType) = true
-      def getApiAuthz                          = ApiAuthorization.RW
+      def getApiAuthz: ApiAuthorization = ApiAuthorization.RW
     }
-    val getCurrentUser = user
+    val getCurrentUser: AuthenticatedUser = user
   }
 }

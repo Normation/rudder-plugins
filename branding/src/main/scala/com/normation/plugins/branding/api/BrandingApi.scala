@@ -40,9 +40,9 @@ package com.normation.plugins.branding.api
 import com.normation.plugins.branding.BrandingConf
 import com.normation.plugins.branding.BrandingConfService
 import com.normation.rudder.api.ApiVersion
-import com.normation.rudder.rest._
-import com.normation.rudder.rest.RudderJsonRequest._
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.*
+import com.normation.rudder.rest.RudderJsonRequest.*
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
@@ -50,7 +50,7 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import zio.json._
+import zio.json.*
 
 class BrandingApi(
     brandingApiService: BrandingApiService,
@@ -59,7 +59,7 @@ class BrandingApi(
 
   val dataName = "branding"
 
-  def schemas = BrandingApiEndpoints
+  override def schemas: ApiModuleProvider[BrandingApiSchema] = BrandingApiEndpoints
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     modules
@@ -73,7 +73,7 @@ class BrandingApi(
   }
 
   object GetBrandingConf extends LiftApiModule0 {
-    val schema = BrandingApiEndpoints.GetBrandingConf
+    val schema: BrandingApiEndpoints.GetBrandingConf.type = BrandingApiEndpoints.GetBrandingConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       brandingApiService
@@ -84,7 +84,7 @@ class BrandingApi(
   }
 
   object ReloadBrandingConf extends LiftApiModule0 {
-    val schema = BrandingApiEndpoints.ReloadBrandingConf
+    val schema: BrandingApiEndpoints.ReloadBrandingConf.type = BrandingApiEndpoints.ReloadBrandingConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       brandingApiService
@@ -95,7 +95,7 @@ class BrandingApi(
   }
 
   object UpdateBrandingConf extends LiftApiModule0 {
-    val schema = BrandingApiEndpoints.UpdateBrandingConf
+    val schema: BrandingApiEndpoints.UpdateBrandingConf.type = BrandingApiEndpoints.UpdateBrandingConf
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       (for {
@@ -120,7 +120,7 @@ object BrandingApiService {
 class BrandingApiService(
     brandingConfService: BrandingConfService
 ) {
-  import BrandingApiService._
+  import BrandingApiService.*
 
   def getConf()                     = {
     brandingConfService.getConf.map(RestBrandingResponse(_))

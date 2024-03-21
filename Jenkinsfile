@@ -1,10 +1,13 @@
 
 def failedBuild = false
 def minor_version = "8.1"
-def version = "${minor_version}-next"
+def version = "${minor_version}"
 def changeUrl = env.CHANGE_URL
+def slackResponse = ""
 def blueUrl = "${env.JOB_DISPLAY_URL}"
-def slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
+if (changeUrl == null) {
+  slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
+}
 def job = ""
 def errors = []
 def running = []
@@ -291,29 +294,25 @@ pipeline {
 
 def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
-def blueUrl = "${env.JOB_DISPLAY_URL}"
+  if (changeUrl == null) {
 
+    def msg ="*${version} - plugins* - <"+currentBuild.absoluteUrl+"|Link>"
 
-def msg ="*${version} - plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>"
+    def color = "#00A8E1"
 
-if (changeUrl != null) {
-  msg ="*${version} PR - plugins - build* - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue> - <"+changeUrl+"|Pull request>"
-}
+    if (! errors.isEmpty()) {
+        msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
+        color = "#CC3421"
+    }
+    if (! running.isEmpty()) {
+        msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
+    }
 
-def color = "#00A8E1"
+    if (errors.isEmpty() && running.isEmpty()) {
+        msg +=  " => All plugins built! :white_check_mark:"
+        color = "good"
+    }
 
-if (! errors.isEmpty()) {
-    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
-    color = "#CC3421"
-}
-if (! running.isEmpty()) {
-    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
-}
-
-if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  " => All plugins built! :white_check_mark:"
-	color = "good"
-}
-
-  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+    slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+  }
 }

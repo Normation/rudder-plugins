@@ -43,12 +43,12 @@ import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import doobie.Transactor
 import doobie.specs2.analysisspec.IOChecker
-import doobie.syntax.all._
+import doobie.syntax.all.*
 import net.liftweb.common.Full
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import zio.interop.catz._
+import zio.interop.catz.*
 
 @RunWith(classOf[JUnitRunner])
 class WorkflowJdbcRepositoryTest extends Specification with DBCommon with IOChecker {

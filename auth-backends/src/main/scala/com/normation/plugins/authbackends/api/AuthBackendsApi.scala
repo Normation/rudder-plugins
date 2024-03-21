@@ -47,16 +47,17 @@ import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.EndpointSchema.syntax._
+import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.InternalApi
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.implicits._
+import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
@@ -66,8 +67,9 @@ import sourcecode.Line
  *
  * It gives the list of currently configured authentication backends.
  */
-sealed trait AuthBackendsApi extends EndpointSchema with InternalApi with SortIndex
-object AuthBackendsApi       extends ApiModuleProvider[AuthBackendsApi] {
+sealed trait AuthBackendsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
+
+object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[AuthBackendsApi] {
 
   final case object GetAuthenticationInformation extends AuthBackendsApi with ZeroParam with StartsAtVersion10 {
     val z              = implicitly[Line].value
@@ -78,7 +80,8 @@ object AuthBackendsApi       extends ApiModuleProvider[AuthBackendsApi] {
     override def dataContainer: Option[String]          = None
   }
 
-  def endpoints = ca.mrvisser.sealerate.values[AuthBackendsApi].toList.sortBy(_.z)
+  def endpoints = values.toList.sortBy(_.z)
+  def values    = findValues
 }
 
 class AuthBackendsApiImpl(
@@ -86,7 +89,7 @@ class AuthBackendsApiImpl(
 ) extends LiftApiModuleProvider[AuthBackendsApi] {
   api =>
 
-  def schemas = AuthBackendsApi
+  def schemas: ApiModuleProvider[AuthBackendsApi] = AuthBackendsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     AuthBackendsApi.endpoints
@@ -104,9 +107,10 @@ class AuthBackendsApiImpl(
    * enabled ones.
    */
   object GetAuthenticationInformation extends LiftApiModule0 {
-    val schema = AuthBackendsApi.GetAuthenticationInformation
+    val schema: AuthBackendsApi.GetAuthenticationInformation.type = AuthBackendsApi.GetAuthenticationInformation
+
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import JsonSerialization._
+      import JsonSerialization.*
 
       IOResult
         .attempt("Error when trying to get group information")(

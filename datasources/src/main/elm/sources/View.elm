@@ -30,7 +30,7 @@ view model =
             span [] [ text "Data sources" ]
           ]
           , div [ class "header-buttons" ] [
-              button [ class "btn btn-success", onClick NewDataSource ] [
+              button [type_ "button", class "btn btn-success", onClick NewDataSource ] [
                 text "Create "
               , i [ class "add-icon ion ion-android-add-circle" ] []
               ]
@@ -55,7 +55,9 @@ view model =
             h1 [] [text "Node properties data sources"]
           , p [] [
               text """Nodes have properties that can be used to create groups or in techniques and directives parameters.
-              These properties are b [] [key/value] pairs, where values can be a simple string or a well formed JSON document."""
+              These properties are"""
+              , b [] [text " key/value pairs "]
+              , text "where values can be a simple string or a well formed JSON document."
             ]
           , p [] [
               text "You can automatically import node properties by creating data sources that will query a third party REST API to retrieve data and it in a given property key for each node it's available for."
@@ -76,36 +78,29 @@ view model =
 
   , case model.ui.deleteModal of
       Just datasource ->
-        div [ class "modal fade datasource-modal", id "deleteModal", tabindex -1] [
-          div [ class "modal-dialog"] [
+        div [ class "modal fade show" , style "z-index" "1050", style "display" "block"]
+        [ div [class "modal-backdrop fade show"][]
+        , div [ class "modal-dialog" ] [
             div [ class "modal-content" ] [
-            div [ class "modal-header" ] [
-              button [ type_ "button", class "close", onClick (UpdateUI {ui | deleteModal = Nothing}) ] [
-                span [] [ --aria-hidden "true", [] [
-                  text "&times;"
-                ]
+              div [ class "modal-header" ] [
+                h5 [ class "modal-title" ] [ text ("Delete " ++ datasource.name)]
+              , button [type_ "button", class "btn-close", onClick (UpdateUI {ui | deleteModal = Nothing}) ][]
               ]
-            , h5 [ class "modal-title"] [
-                text ("Delete " ++ datasource.name)
+            , div [ class "modal-body" ]
+              [ h5 [class "text-center"][text ("Are you sure you want to delete datasource '"++ datasource.name ++"'?")]
               ]
-            ]
-          , div [ class "modal-body" ] [
-              h5 [ class "text-center" ] [
-                text "Are your sure you want to delete this datasource ?"
-              ]
-            ]
-          , div [ class "modal-footer" ] [
-
-                button [ type_ "button", class "btn btn-default", onClick (UpdateUI {ui | deleteModal = Nothing})] [
-                  text "Cancel"
-                ]
+            , div [ class "modal-footer" ] [
+                button [type_ "button", class "btn btn-default", onClick (UpdateUI {ui | deleteModal = Nothing}) ]
+                [ text "Cancel " ]
               , if model.hasWriteRights then
-                  button [ type_ "button", class "btn btn-danger", onClick (DeleteCall datasource)] [
-                    text "Delete"
+                  button [type_ "button", class "btn btn-danger", onClick (DeleteCall datasource)] [
+                    text "Delete "
+                  , i [ class "fa fa-times-circle" ] []
                   ]
-                else text ""
+                else
+                  text ""
+              ]
             ]
-          ]
           ]
         ]
       Nothing -> text ""

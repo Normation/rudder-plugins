@@ -9,7 +9,8 @@
 CONFIG_FILE_NAME = node-external-reports.properties
 CONFIG_FILE_PATH = src/main/resources/$(CONFIG_FILE_NAME)
 
-FILES = $(NAME)/$(CONFIG_FILE_NAME)
+FILES =
+OTHER_TARGETS = target/$(NAME)/$(CONFIG_FILE_NAME)
 
 SCRIPTS = postinst
 
