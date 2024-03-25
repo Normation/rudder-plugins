@@ -6,7 +6,6 @@ import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
-import com.normation.zio.*
 import java.nio.file.Files
 import net.liftweb.common.Loggable
 import org.junit.runner.RunWith
@@ -25,20 +24,19 @@ class ScaleOutRelayApiTest extends Specification with TraitTestApiFromYamlFiles 
   override def yamlSourceDirectory  = "scaleoutrelay_api"
   override def yamlDestTmpDirectory = tmpDir / "templates"
 
-  val mockServices = new MockServices(restTestSetUp.mockNodes.nodeInfoService.getAll().runNow, Map.empty)
+  val mockServices = new MockServices(Map.empty)
   val modules      = List(
     new ScaleOutRelayApiImpl(
       new ScaleOutRelayService(
-        mockServices.nodeInfoService,
         mockServices.woLDAPNodeGroupRepository,
-        mockServices.nodeInfoService,
+        restTestSetUp.mockNodes.nodeFactRepo,
         restTestSetUp.mockDirectives.directiveRepo,
         restTestSetUp.mockRules.ruleRepo,
-        restTestSetUp.uuidGen,
         mockServices.policyServerManagementService,
         mockServices.eventLogRepo,
         restTestSetUp.asyncDeploymentAgent
-      )
+      ),
+      restTestSetUp.uuidGen
     )
   )
 

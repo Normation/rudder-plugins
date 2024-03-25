@@ -1,96 +1,26 @@
 package com.normation.plugins.scaleoutrelay
 
-import com.normation.errors.*
-import com.normation.eventlog.EventActor
-import com.normation.eventlog.EventLog
-import com.normation.eventlog.EventLogFilter
-import com.normation.eventlog.ModificationId
-import com.normation.inventory.domain.KeyStatus
+import com.normation.errors._
+import com.normation.eventlog.{EventActor, EventLog, EventLogFilter, ModificationId}
 import com.normation.inventory.domain.NodeId
-import com.normation.inventory.domain.SecurityToken
 import com.normation.ldap.ldif.LDIFNoopChangeRecord
-import com.normation.rudder.domain.nodes.AddNodeGroupDiff
-import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
-import com.normation.rudder.domain.nodes.ModifyNodeGroupDiff
-import com.normation.rudder.domain.nodes.Node
-import com.normation.rudder.domain.nodes.NodeGroup
-import com.normation.rudder.domain.nodes.NodeGroupCategory
-import com.normation.rudder.domain.nodes.NodeGroupCategoryId
-import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.nodes.NodeInfo
+import com.normation.rudder.domain.nodes._
 import com.normation.rudder.domain.policies.PolicyServerTarget
 import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.repository.EventLogRepository
-import com.normation.rudder.repository.WoNodeGroupRepository
-import com.normation.rudder.repository.WoNodeRepository
+import com.normation.rudder.repository.{EventLogRepository, WoNodeGroupRepository}
 import com.normation.rudder.services.eventlog.EventLogFactory
-import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.rudder.services.servers.PolicyServer
-import com.normation.rudder.services.servers.PolicyServerManagementService
-import com.normation.rudder.services.servers.PolicyServers
-import com.normation.rudder.services.servers.PolicyServersUpdateCommand
+import com.normation.rudder.services.servers.{PolicyServer, PolicyServerManagementService, PolicyServers, PolicyServersUpdateCommand}
 import com.normation.zio.UnsafeRun
 import com.unboundid.ldap.sdk.DN
 import com.unboundid.ldif.LDIFChangeRecord
 import doobie.Fragment
-import zio.Ref
-import zio.ZIO
-import zio.syntax.*
+import zio.syntax._
+import zio.{Ref, ZIO}
 
-class MockServices(nodeInfos: Map[NodeId, NodeInfo], nodeGroups: Map[NodeGroupId, NodeGroup]) {
+class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
 
-  private val (nodesRef, nodeGroupsRef): (Ref[Map[NodeId, NodeInfo]], Ref[Map[NodeGroupId, NodeGroup]]) = {
-    (Ref.Synchronized.make(nodeInfos)
-    <*> Ref.Synchronized.make(nodeGroups)).runNow
-  }
-
-  object nodeInfoService extends NodeInfoService with WoNodeRepository {
-    override def getNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = {
-      nodesRef.get.map(_.get(nodeId))
-    }
-
-    override def createNode(
-        node:   Node,
-        modId:  ModificationId,
-        actor:  EventActor,
-        reason: Option[String]
-    ): IOResult[Node] = {
-      nodeInfos
-        .get(node.id)
-        .notOptional("Cannot create node in mock without associated node info")
-        .flatMap(nodeInfo => nodesRef.update(_ + (node.id -> nodeInfo)))
-        .as(node)
-    }
-
-    override def deleteNode(
-        node:   Node,
-        modId:  ModificationId,
-        actor:  EventActor,
-        reason: Option[String]
-    ): IOResult[Node] = {
-      nodesRef.update(_ - node.id).map(_ => node)
-    }
-
-    override def getNodeInfosSeq(nodeIds: Seq[NodeId]): IOResult[Seq[NodeInfo]] = ???
-    override def getNumberOfManagedNodes: IOResult[Int]                   = ???
-    override def getAll():                IOResult[Map[NodeId, NodeInfo]] = ???
-    override def getAllNodesIds():        IOResult[Set[NodeId]]           = ???
-    override def getAllNodes():           IOResult[Map[NodeId, Node]]     = ???
-    override def getAllNodeInfos():       IOResult[Seq[NodeInfo]]         = ???
-    override def getAllSystemNodeIds():   IOResult[Seq[NodeId]]           = ???
-    override def getPendingNodeInfos():   IOResult[Map[NodeId, NodeInfo]] = ???
-    override def getPendingNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
-    override def updateNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] =
-      ???
-    override def updateNodeKeyInfo(
-        nodeId:         NodeId,
-        agentKey:       Option[SecurityToken],
-        agentKeyStatus: Option[KeyStatus],
-        modId:          ModificationId,
-        actor:          EventActor,
-        reason:         Option[String]
-    ): IOResult[Unit] = ???
-
+  private val  nodeGroupsRef:  Ref[Map[NodeGroupId, NodeGroup]] = {
+    Ref.Synchronized.make(nodeGroups).runNow
   }
 
   object woLDAPNodeGroupRepository extends WoNodeGroupRepository {

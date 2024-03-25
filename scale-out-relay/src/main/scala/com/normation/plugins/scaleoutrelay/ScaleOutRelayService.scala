@@ -1,174 +1,140 @@
 package com.normation.plugins.scaleoutrelay
 
 import com.normation.errors.*
-import com.normation.eventlog.EventActor
-import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.batch.AsyncDeploymentActor
-import com.normation.rudder.batch.AutomaticStartDeployment
-import com.normation.rudder.domain.nodes.NodeGroupCategoryId
-import com.normation.rudder.domain.nodes.NodeInfo
+import com.normation.rudder.batch.{AsyncDeploymentActor, AutomaticStartDeployment}
+import com.normation.rudder.domain.nodes.{NodeGroupCategoryId, NodeKind}
 import com.normation.rudder.domain.policies.*
-import com.normation.rudder.repository.EventLogRepository
-import com.normation.rudder.repository.WoDirectiveRepository
-import com.normation.rudder.repository.WoNodeGroupRepository
-import com.normation.rudder.repository.WoNodeRepository
-import com.normation.rudder.repository.WoRuleRepository
-import com.normation.rudder.services.nodes.NodeInfoService
-import com.normation.rudder.services.servers.PolicyServer
-import com.normation.rudder.services.servers.PolicyServerConfigurationObjects
-import com.normation.rudder.services.servers.PolicyServerManagementService
-import com.normation.utils.StringUuidGenerator
+import com.normation.rudder.facts.nodes.{ChangeContext, CoreNodeFact, NodeFactRepository, QueryContext}
+import com.normation.rudder.repository.{EventLogRepository, WoDirectiveRepository, WoNodeGroupRepository, WoRuleRepository}
+import com.normation.rudder.services.servers.{PolicyServer, PolicyServerConfigurationObjects, PolicyServerManagementService}
 import com.softwaremill.quicklens.*
 import zio.*
 import zio.syntax.*
 
 class ScaleOutRelayService(
-    nodeInfosService:              NodeInfoService,
-    woLDAPNodeGroupRepository:     WoNodeGroupRepository,
-    woLDAPNodeRepository:          WoNodeRepository,
-    woDirectiveRepository:         WoDirectiveRepository,
-    woRuleRepository:              WoRuleRepository,
-    uuidGen:                       StringUuidGenerator,
-    policyServerManagementService: PolicyServerManagementService,
-    actionLogger:                  EventLogRepository,
-    asyncDeploymentAgent:          AsyncDeploymentActor
+                            woLDAPNodeGroupRepository:     WoNodeGroupRepository,
+                            nodeFactRepository:          NodeFactRepository,
+                            woDirectiveRepository:         WoDirectiveRepository,
+                            woRuleRepository:              WoRuleRepository,
+                            policyServerManagementService: PolicyServerManagementService,
+                            actionLogger:                  EventLogRepository,
+                            asyncDeploymentAgent:          AsyncDeploymentActor
 ) {
   val SYSTEM_GROUPS = "SystemGroups"
 
-  def promoteNodeToRelay(nodeId: NodeId, actor: EventActor, reason: Option[String]): IOResult[NodeInfo] = {
-    val modId = ModificationId(uuidGen.newUuid)
+  def promoteNodeToRelay(nodeId: NodeId)(implicit cc : ChangeContext): IOResult[Unit] = {
+    implicit val qr: QueryContext = cc.toQuery
     for {
       _            <- ScaleOutRelayLoggerPure.debug(s"Start promotion of node '${nodeId.value}' to relay")
-      nodeInfo     <- nodeInfosService
-                        .getNodeInfo(nodeId)
-                        .notOptional(s"Node with UUID ${nodeId.value} is missing and can not be upgraded to relay")
-      targetedNode <- if (!nodeInfo.isPolicyServer) {
-                        val updatedNode = NodeToPolicyServer(nodeInfo)
-                        for {
-                          _        <- woLDAPNodeRepository
-                                        .deleteNode(nodeInfo.node, modId, actor, reason)
-                                        .chainError(s"Remove ${nodeInfo.node.id.value} to update it to policy server failed")
-                          newRelay <- createRelayFromNode(updatedNode, modId, actor, reason)
-                        } yield {
-                          newRelay
-                        }
-                      } else {
-                        ScaleOutRelayLoggerPure.debug(s"Node '${nodeId.value}' is already a policy server, nothing to do.") *>
-                        nodeInfo.succeed
-                      }
+      nodeInfo     <- nodeFactRepository.get(nodeId).notOptional(s"Node with UUID ${nodeId.value} is missing and can not be upgraded to relay")
+      _ <- ZIO.when ( !nodeInfo.rudderSettings.isPolicyServer) {
+        val updatedNode : CoreNodeFact = NodeToPolicyServer(nodeInfo)
+        createRelayFromNode(updatedNode)
+      }
     } yield {
-      asyncDeploymentAgent ! AutomaticStartDeployment(modId, actor)
-      targetedNode
+      asyncDeploymentAgent ! AutomaticStartDeployment(cc.modId, cc.actor)
     }
   }
 
   private[scaleoutrelay] def createRelayFromNode(
-      nodeInfo: NodeInfo,
-      modId:    ModificationId,
-      actor:    EventActor,
-      reason:   Option[String]
-  ) = {
+      nodeInfo: CoreNodeFact
+  ) ( implicit cc : ChangeContext) : IOResult[Unit] = {
 
     val objects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
 
     val promote = for {
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create entry with relay status")
-      _ <- woLDAPNodeRepository.createNode(nodeInfo.node, modId, actor, reason)
+      _ <- nodeFactRepository.save(nodeInfo)
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new special targets")
-      _ <- ZIO.foreach(objects.targets)(t => woLDAPNodeGroupRepository.createPolicyServerTarget(t, modId, actor, reason))
+      _ <- ZIO.foreach(objects.targets)(t => woLDAPNodeGroupRepository.createPolicyServerTarget(t, cc.modId, cc.actor, cc.message))
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system groups")
       _ <- ZIO.foreach(objects.groups) { g =>
-             woLDAPNodeGroupRepository.create(g, NodeGroupCategoryId(SYSTEM_GROUPS), modId, actor, reason)
+             woLDAPNodeGroupRepository.create(g, NodeGroupCategoryId(SYSTEM_GROUPS), cc.modId, cc.actor, cc.message)
            }
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system directives")
       _ <- ZIO.foreach(objects.directives.toList) {
              case (t, d) =>
-               woDirectiveRepository.saveSystemDirective(ActiveTechniqueId(t.value), d, modId, actor, reason)
+               woDirectiveRepository.saveSystemDirective(ActiveTechniqueId(t.value), d, cc.modId, cc.actor, cc.message)
            }
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system rules")
-      _ <- ZIO.foreach(objects.rules)(r => woRuleRepository.create(r, modId, actor, reason))
+      _ <- ZIO.foreach(objects.rules)(r => woRuleRepository.create(r, cc.modId, cc.actor, cc.message))
 
       // save the relay in the rudder_policy_servers entry in LDAP
       existingPolicyServers <- policyServerManagementService.getPolicyServers()
       newPolicyServers       = existingPolicyServers.copy(relays = PolicyServer(nodeInfo.id, Nil) :: existingPolicyServers.relays)
       _                     <- policyServerManagementService.savePolicyServers(newPolicyServers)
 
-      _ <- actionLogger.savePromoteToRelay(modId, actor, nodeInfo, reason)
+      _ <- actionLogger.savePromoteToRelay(cc.modId, cc.actor, nodeInfo.toNodeInfo,  cc.message)
     } yield {
-      nodeInfo
     }
 
     promote.catchAll { err =>
-      val msg = s"Promote node ${nodeInfo.node.id.value} have failed. Change were reverted. Cause was: ${err.fullMsg}"
+      val msg = s"Promote node ${nodeInfo.id.value} have failed. Change were reverted. Cause was: ${err.fullMsg}"
       (for {
         _ <- ScaleOutRelayLoggerPure.debug(s"[promote ${nodeInfo.id.value}] error, start reverting")
-        _ <- demoteRelay(nodeInfo, objects, modId, actor)
+        _ <- demoteRelay(nodeInfo, objects)
         _ <- ScaleOutRelayLoggerPure.error(msg)
       } yield {
-        nodeInfo
       }) *> Unexpected(msg).fail
     }
   }
 
-  def demoteRelayToNode(nodeId: NodeId, actor: EventActor, reason: Option[String]): IOResult[Unit] = {
-    val modId = ModificationId(uuidGen.newUuid)
+  def demoteRelayToNode(nodeId: NodeId)(implicit cc : ChangeContext): IOResult[Unit] = {
+    implicit val qr: QueryContext = cc.toQuery
     for {
       _            <- ScaleOutRelayLoggerPure.debug(s"Start demotion of relay '${nodeId.value}' to node")
-      nodeInfo     <- nodeInfosService
-                        .getNodeInfo(nodeId)
+      nodeInfo     <- nodeFactRepository
+                        .get(nodeId)
                         .notOptional(s"Relay with UUID ${nodeId.value} is missing and can not be demoted to node")
-      targetedNode <- if (nodeInfo.isPolicyServer) {
+      _ <- if (nodeInfo.rudderSettings.isPolicyServer) {
                         val configObjects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
-                        demoteRelay(nodeInfo, configObjects, modId, actor).unit *>
-                        actionLogger.saveDemoteToNode(modId, actor, nodeInfo, reason)
+                        demoteRelay(nodeInfo, configObjects).unit *>
+                        actionLogger.saveDemoteToNode(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
                       } else {
                         ScaleOutRelayLoggerPure.debug(s"Node '${nodeId.value}' is already a simple node, nothing to do.") *>
                         ZIO.unit
                       }
     } yield {
-      asyncDeploymentAgent ! AutomaticStartDeployment(modId, actor)
+      asyncDeploymentAgent ! AutomaticStartDeployment(cc.modId, cc.actor)
     }
 
   }
 
   private[scaleoutrelay] def demoteRelay(
-      newInfo: NodeInfo,
-      objects: PolicyServerConfigurationObjects,
-      modId:   ModificationId,
-      actor:   EventActor
-  ): ZIO[Any, Accumulated[RudderError], List[Unit]] = {
+      newInfo: CoreNodeFact,
+      objects: PolicyServerConfigurationObjects
+  )(implicit cc : ChangeContext): ZIO[Any, Accumulated[RudderError], List[Unit]] = {
 
     val old    = PolicyServerToNode(newInfo)
-    val reason = Some("Demote relay")
 
-    val nPromoted       = woLDAPNodeRepository.deleteNode(newInfo.node, modId, actor, reason).unit
-    val nBeforePromoted = woLDAPNodeRepository
-      .createNode(old.node, modId, actor, reason)
-      .chainError(s"Demote relay failed: restore '${newInfo.node}' configuration failed")
+    val nPromoted       = nodeFactRepository.delete(newInfo.id).unit
+    val nBeforePromoted = nodeFactRepository
+      .save(old)
+      .chainError(s"Demote relay failed: Setting node '${newInfo.id.value}' from relay to node failed")
       .unit
 
     val targets    = objects.targets.map(t => {
       woLDAPNodeGroupRepository
         .deletePolicyServerTarget(t)
-        .chainError(s"Demote relay failed: removing '${newInfo.node}' configuration failed")
+        .chainError(s"Demote relay failed: removing policy server target  for node '${newInfo.id.value}' failed")
         .unit
     })
     val groups     = objects.groups.map(g => {
       woLDAPNodeGroupRepository
-        .delete(g.id, modId, actor, reason)
+        .delete(g.id, cc.modId, cc.actor, cc.message)
         .chainError(s"Demote relay failed: removing node group '${g.id.serialize}' failed")
         .unit
     })
     val directives = objects.directives.toList.map(d => {
       woDirectiveRepository
-        .deleteSystemDirective(d._2.id.uid, modId, actor, reason)
+        .deleteSystemDirective(d._2.id.uid, cc.modId, cc.actor, cc.message)
         .chainError(s"Demote relay failed: removing directive '${d._2.id.debugString}' failed")
         .unit
     })
     val rules      = objects.rules.map(r => {
       woRuleRepository
-        .deleteSystemRule(r.id, modId, actor, reason)
+        .deleteSystemRule(r.id, cc.modId, cc.actor, cc.message)
         .catchAll { err =>
           ScaleOutRelayLoggerPure.info(s"Trying to remove residual object rule ${r.id.serialize}: ${err.fullMsg}")
         }
@@ -178,24 +144,17 @@ class ScaleOutRelayService(
     (nPromoted :: nBeforePromoted :: targets ::: groups ::: directives ::: rules).accumulate(identity)
   }
 
-  private[scaleoutrelay] def NodeToPolicyServer(nodeInf: NodeInfo) = {
+  private[scaleoutrelay] def NodeToPolicyServer(nodeInf: CoreNodeFact) = {
     nodeInf
-      .modify(_.node.isSystem)
-      .setTo(true)
-      .modify(_.node.isPolicyServer)
-      .setTo(true)
+      .modify(_.rudderSettings)
+      .setTo(nodeInf.rudderSettings.modify(_.kind).setTo(NodeKind.Relay))
   }
 
-  private[scaleoutrelay] def PolicyServerToNode(nodeInf: NodeInfo) = {
+  private[scaleoutrelay] def PolicyServerToNode(nodeInf: CoreNodeFact) = {
     nodeInf
-      .modify(_.node.isSystem)
-      .setTo(false)
-      .modify(_.node.isPolicyServer)
-      .setTo(false)
+      .modify(_.rudderSettings)
+      .setTo(nodeInf.rudderSettings.modify(_.kind).setTo(NodeKind.Node))
   }
 
-  private[scaleoutrelay] def createPolicyServer(uuid: NodeId) = {
-    PolicyServerTarget(uuid)
-  }
 
 }
