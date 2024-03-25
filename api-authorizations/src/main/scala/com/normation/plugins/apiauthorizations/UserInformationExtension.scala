@@ -81,7 +81,6 @@ class UserInformationExtension(val status: PluginStatus)(implicit val ttag: Clas
       & "#user-menu-action [style+]" #> "cursor:pointer"
       & "#user-menu-action [class+]" #> "dropdown-toggle"
       & "#user-menu-action [data-bs-toggle+]" #> "dropdown"
-      & "#user-menu-action *+" #> <i class="fa fa-angle-down" style="margin-left:15px;"></i>
       andThen "#user-menu *+" #> embedAppXml // need to be andThen, else other children mod are erased :/
     ).apply(xml)
   }
