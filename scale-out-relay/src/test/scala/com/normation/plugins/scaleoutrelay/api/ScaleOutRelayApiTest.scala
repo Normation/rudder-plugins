@@ -1,6 +1,9 @@
 package com.normation.plugins.scaleoutrelay.api
 
 import better.files.*
+import com.normation.errors.IOResult
+import com.normation.inventory.domain.NodeId
+import com.normation.plugins.scaleoutrelay.DeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.MockServices
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
@@ -12,6 +15,7 @@ import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
+import zio.*
 
 @RunWith(classOf[JUnitRunner])
 class ScaleOutRelayApiTest extends Specification with TraitTestApiFromYamlFiles with Loggable with AfterAll {
@@ -34,7 +38,9 @@ class ScaleOutRelayApiTest extends Specification with TraitTestApiFromYamlFiles 
         restTestSetUp.mockRules.ruleRepo,
         mockServices.policyServerManagementService,
         mockServices.eventLogRepo,
-        restTestSetUp.asyncDeploymentAgent
+        new DeleteNodeEntryService {
+          override def delete(nodeId: NodeId): IOResult[Unit] = ZIO.unit
+        }
       ),
       restTestSetUp.uuidGen
     )

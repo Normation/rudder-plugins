@@ -40,6 +40,7 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.scaleoutrelay.CheckRudderPluginEnableImpl
+import com.normation.plugins.scaleoutrelay.LdapDeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.ScalaOutRelayPluginDef
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayAgentSpecificGeneration
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
@@ -64,7 +65,7 @@ object ScalaOutRelayConf extends RudderPluginModule {
     RudderConfig.woRuleRepository,
     RudderConfig.policyServerManagementService,
     RudderConfig.eventLogRepository,
-    RudderConfig.asyncDeploymentAgent
+    new LdapDeleteNodeEntryService(RudderConfig.rwLdap, RudderConfig.nodeDit)
   )
 
   // add policy generation for relay

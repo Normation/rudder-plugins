@@ -1,25 +1,33 @@
 package com.normation.plugins.scaleoutrelay
 
-import com.normation.errors._
-import com.normation.eventlog.{EventActor, EventLog, EventLogFilter, ModificationId}
+import com.normation.errors.*
+import com.normation.eventlog.EventActor
+import com.normation.eventlog.EventLog
+import com.normation.eventlog.EventLogFilter
+import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.ldap.ldif.LDIFNoopChangeRecord
-import com.normation.rudder.domain.nodes._
+import com.normation.rudder.domain.nodes.*
 import com.normation.rudder.domain.policies.PolicyServerTarget
 import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.repository.{EventLogRepository, WoNodeGroupRepository}
+import com.normation.rudder.repository.EventLogRepository
+import com.normation.rudder.repository.WoNodeGroupRepository
 import com.normation.rudder.services.eventlog.EventLogFactory
-import com.normation.rudder.services.servers.{PolicyServer, PolicyServerManagementService, PolicyServers, PolicyServersUpdateCommand}
+import com.normation.rudder.services.servers.PolicyServer
+import com.normation.rudder.services.servers.PolicyServerManagementService
+import com.normation.rudder.services.servers.PolicyServers
+import com.normation.rudder.services.servers.PolicyServersUpdateCommand
 import com.normation.zio.UnsafeRun
 import com.unboundid.ldap.sdk.DN
 import com.unboundid.ldif.LDIFChangeRecord
 import doobie.Fragment
-import zio.syntax._
-import zio.{Ref, ZIO}
+import zio.Ref
+import zio.ZIO
+import zio.syntax.*
 
 class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
 
-  private val  nodeGroupsRef:  Ref[Map[NodeGroupId, NodeGroup]] = {
+  private val nodeGroupsRef: Ref[Map[NodeGroupId, NodeGroup]] = {
     Ref.Synchronized.make(nodeGroups).runNow
   }
 
