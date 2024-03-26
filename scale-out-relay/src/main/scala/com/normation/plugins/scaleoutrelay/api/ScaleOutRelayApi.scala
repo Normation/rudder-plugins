@@ -1,19 +1,22 @@
 package com.normation.plugins.scaleoutrelay.api
 
-import com.normation.eventlog.EventActor
+import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.POST
+import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.utils.StringUuidGenerator
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import org.joda.time.DateTime
 import sourcecode.Line
 
 sealed trait ScaleOutRelayApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
@@ -39,7 +42,8 @@ object ScaleOutRelayApi extends Enum[ScaleOutRelayApi] with ApiModuleProvider[Sc
 }
 
 class ScaleOutRelayApiImpl(
-    scaleOutRelayService: ScaleOutRelayService
+    scaleOutRelayService: ScaleOutRelayService,
+    uuidGen:              StringUuidGenerator
 ) extends LiftApiModuleProvider[ScaleOutRelayApi] {
 
   override def schemas: ApiModuleProvider[ScaleOutRelayApi] = ScaleOutRelayApi
@@ -62,8 +66,16 @@ class ScaleOutRelayApiImpl(
         params:  DefaultParams,
         authz:   AuthzToken
     ): LiftResponse = {
+      implicit val cc = ChangeContext(
+        ModificationId(uuidGen.newUuid),
+        authz.qc.actor,
+        new DateTime(),
+        params.reason.orElse(Some(s"Promote node ${nodeId} to relay")),
+        Some(req.remoteAddr),
+        authz.qc.nodePerms
+      )
       scaleOutRelayService
-        .promoteNodeToRelay(NodeId(nodeId), EventActor("rudder"), Some(s"Promote node ${nodeId} to relay"))
+        .promoteNodeToRelay(NodeId(nodeId))
         .chainError(s"Error when trying to promote mode $nodeId")
         .as(nodeId)
         .toLiftResponseOne(params, schema, None)
@@ -80,8 +92,16 @@ class ScaleOutRelayApiImpl(
         params:  DefaultParams,
         authz:   AuthzToken
     ): LiftResponse = {
+      implicit val cc = ChangeContext(
+        ModificationId(uuidGen.newUuid),
+        authz.qc.actor,
+        new DateTime(),
+        params.reason.orElse(Some(s"Demote relay ${nodeId}")),
+        Some(req.remoteAddr),
+        authz.qc.nodePerms
+      )
       scaleOutRelayService
-        .demoteRelayToNode(NodeId(nodeId), EventActor("rudder"), Some(s"Demote relay ${nodeId} to node"))
+        .demoteRelayToNode(NodeId(nodeId))
         .chainError(s"Error when trying to demote mode $nodeId")
         .as(nodeId)
         .toLiftResponseOne(params, schema, None)

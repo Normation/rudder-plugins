@@ -1,18 +1,21 @@
 package com.normation.plugins.scaleoutrelay.api
 
 import better.files.*
+import com.normation.errors.IOResult
+import com.normation.inventory.domain.NodeId
+import com.normation.plugins.scaleoutrelay.DeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.MockServices
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
-import com.normation.zio.*
 import java.nio.file.Files
 import net.liftweb.common.Loggable
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
+import zio.*
 
 @RunWith(classOf[JUnitRunner])
 class ScaleOutRelayApiTest extends Specification with TraitTestApiFromYamlFiles with Loggable with AfterAll {
@@ -25,20 +28,21 @@ class ScaleOutRelayApiTest extends Specification with TraitTestApiFromYamlFiles 
   override def yamlSourceDirectory  = "scaleoutrelay_api"
   override def yamlDestTmpDirectory = tmpDir / "templates"
 
-  val mockServices = new MockServices(restTestSetUp.mockNodes.nodeInfoService.getAll().runNow, Map.empty)
+  val mockServices = new MockServices(Map.empty)
   val modules      = List(
     new ScaleOutRelayApiImpl(
       new ScaleOutRelayService(
-        mockServices.nodeInfoService,
         mockServices.woLDAPNodeGroupRepository,
-        mockServices.nodeInfoService,
+        restTestSetUp.mockNodes.nodeFactRepo,
         restTestSetUp.mockDirectives.directiveRepo,
         restTestSetUp.mockRules.ruleRepo,
-        restTestSetUp.uuidGen,
         mockServices.policyServerManagementService,
         mockServices.eventLogRepo,
-        restTestSetUp.asyncDeploymentAgent
-      )
+        new DeleteNodeEntryService {
+          override def delete(nodeId: NodeId): IOResult[Unit] = ZIO.unit
+        }
+      ),
+      restTestSetUp.uuidGen
     )
   )
 

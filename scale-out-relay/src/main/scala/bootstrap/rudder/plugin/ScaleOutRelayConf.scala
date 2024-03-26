@@ -40,6 +40,7 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.scaleoutrelay.CheckRudderPluginEnableImpl
+import com.normation.plugins.scaleoutrelay.LdapDeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.ScalaOutRelayPluginDef
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayAgentSpecificGeneration
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
@@ -55,18 +56,16 @@ object ScalaOutRelayConf extends RudderPluginModule {
 
   override lazy val pluginDef: ScalaOutRelayPluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
 
-  lazy val api = new ScaleOutRelayApiImpl(scaleOutRelayService)
+  lazy val api = new ScaleOutRelayApiImpl(scaleOutRelayService, RudderConfig.stringUuidGenerator)
 
   lazy val scaleOutRelayService = new ScaleOutRelayService(
-    RudderConfig.nodeInfoService,
     RudderConfig.woNodeGroupRepository,
-    RudderConfig.woNodeRepository,
+    RudderConfig.nodeFactRepository,
     RudderConfig.woDirectiveRepository,
     RudderConfig.woRuleRepository,
-    RudderConfig.stringUuidGenerator,
     RudderConfig.policyServerManagementService,
     RudderConfig.eventLogRepository,
-    RudderConfig.asyncDeploymentAgent
+    new LdapDeleteNodeEntryService(RudderConfig.rwLdap, RudderConfig.nodeDit)
   )
 
   // add policy generation for relay
