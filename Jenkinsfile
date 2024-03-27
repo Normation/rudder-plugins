@@ -286,19 +286,14 @@ def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
   if (changeUrl == null) {
 
-    if (slackResponse == null) {
       def fixed = currentBuild.resultIsBetterOrEqualTo("SUCCESS") && currentBuild.previousBuild.resultIsWorseOrEqualTo("UNSTABLE") 
       if (errors.isEmpty() && running.isEmpty() && fixed) {
-
         def msg ="*${version} - plugins* - <"+currentBuild.absoluteUrl+"|Link>"
         msg +=  " => All plugins built! :white_check_mark:"
         def color = "good"
         slackSend(channel: "ci", message: msg, color: volor)
-      } else {
-      return slackSend(channel: "ci", message: "${version} plugins - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
-      }
-    }
-    else { 
+      } 
+      
       def msg ="*${version} - plugins* - <"+currentBuild.absoluteUrl+"|Link>"
 
       def color = "#00A8E1"
@@ -306,12 +301,11 @@ def updateSlack(errors, running, slackResponse, version, changeUrl) {
       if (! errors.isEmpty()) {
           msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
           color = "#CC3421"
+          if (slackResponse == null) {
+            slackResponse = slackSend(channel: "ci", message: msg, color: color)
+          }
           slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
       }
-        
-
       return slackResponse
-    }
-
   }
 }
