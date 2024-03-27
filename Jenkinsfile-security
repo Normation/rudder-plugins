@@ -93,6 +93,7 @@ pipeline {
         stage('End') {
             steps {
                 script {
+                    updateSlack(errors, running, slackResponse, version, changeUrl)
                     if (failedBuild) {
                         error 'End of build'
                     } else {
