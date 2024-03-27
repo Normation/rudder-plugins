@@ -292,7 +292,7 @@ def updateSlack(errors, running, slackResponse, version, changeUrl) {
       if (errors.isEmpty() && running.isEmpty() && fixed) {
         msg +=  " => All plugins built! :white_check_mark:"
         def color = "good"
-        slackSend(channel: "ci", message: msg, color: volor)
+        slackSend(channel: "ci", message: msg, color: color)
       } 
       
 
