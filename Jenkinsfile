@@ -3,15 +3,7 @@ def failedBuild = false
 def minor_version = "8.2"
 def version = "${minor_version}"
 def changeUrl = env.CHANGE_URL
-<<<<<<< HEAD
-def slackResponse = ""
-def blueUrl = "${env.JOB_DISPLAY_URL}"
-if (changeUrl == null) {
-  slackResponse = slackSend(channel: "ci", message: "${version} plugins - build - <"+currentBuild.absoluteUrl+"|Link> - <"+blueUrl+"|Blue>", color: "#00A8E1")
-}
-=======
 def slackResponse = null
->>>>>>> branches/rudder/8.0
 def job = ""
 def errors = []
 def running = []
