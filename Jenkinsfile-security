@@ -115,7 +115,7 @@ def updateSlack(errors, running, slackResponse, version, changeUrl) {
       if (errors.isEmpty() && running.isEmpty() && fixed) {
         msg +=  " => All plugin dependencies checked! :white_check_mark:"
         def color = "good"
-        slackSend(channel: "ci-security", message: msg, color: volor)
+        slackSend(channel: "ci-security", message: msg, color: color)
       } 
       
       if (! errors.isEmpty()) {
