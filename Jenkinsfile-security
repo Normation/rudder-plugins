@@ -93,6 +93,7 @@ pipeline {
         stage('End') {
             steps {
                 script {
+                    updateSlack(errors, running, slackResponse, version, changeUrl)
                     if (failedBuild) {
                         error 'End of build'
                     } else {
@@ -114,14 +115,14 @@ def updateSlack(errors, running, slackResponse, version, changeUrl) {
       if (errors.isEmpty() && running.isEmpty() && fixed) {
         msg +=  " => All plugin dependencies checked! :white_check_mark:"
         def color = "good"
-        slackSend(channel: "ci", message: msg, color: volor)
+        slackSend(channel: "ci-security", message: msg, color: volor)
       } 
       
       if (! errors.isEmpty()) {
           msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
           def color = "#CC3421"
           if (slackResponse == null) {
-            slackResponse = slackSend(channel: "ci", message: msg, color: color)
+            slackResponse = slackSend(channel: "ci-security", message: msg, color: color)
           }
           slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
       }
