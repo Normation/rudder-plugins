@@ -30,10 +30,8 @@ class SupervisedTargetsApiTest extends TraitTestApiFromYamlFiles with AfterAll {
     tmpDir,
     "unsupervised-targets.json",
     restTestSetUp.mockNodeGroups.groupLib.copy(
-      targetInfos = List(
-        restTestSetUp.mockNodeGroups.groupsTargetInfos(restTestSetUp.mockNodeGroups.g0.id),
-        restTestSetUp.mockNodeGroups.groupsTargetInfos(restTestSetUp.mockNodeGroups.g1.id)
-      )
+      targetInfos = restTestSetUp.mockNodeGroups.groupsTargetInfos.drop(1).take(1).toList // only the second
+      // the first is also added through subcategory "category_1"
     )
   )
 

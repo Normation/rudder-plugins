@@ -90,8 +90,11 @@ class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String,
       fullNodeGroupCategory.succeed
     }
 
-    override def getNodeGroupOpt(id:      NodeGroupId): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] = ???
-    override def getNodeGroupCategory(id: NodeGroupId): IOResult[NodeGroupCategory]                        = ???
+    override def categoryExists(
+        id: com.normation.rudder.domain.nodes.NodeGroupCategoryId
+    ): com.normation.errors.IOResult[Boolean] = ???
+    override def getNodeGroupOpt(id: NodeGroupId): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] = ???
+    override def getNodeGroupCategory(id: NodeGroupId): IOResult[NodeGroupCategory] = ???
     override def getAll(): IOResult[Seq[NodeGroup]] = ???
     override def getAllByIds(ids: Seq[NodeGroupId]): IOResult[Seq[com.normation.rudder.domain.nodes.NodeGroup]] = ???
     override def getAllNodeIds():      IOResult[Map[NodeGroupId, Set[NodeId]]]   = ???

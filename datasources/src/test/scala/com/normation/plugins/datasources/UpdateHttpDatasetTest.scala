@@ -537,9 +537,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     override def getAllNodesIds(): IOResult[Set[NodeId]] = ???
     override def getPendingNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
 
-    override def deleteNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
-    override def createNode(node: Node, modId: ModificationId, actor: EventActor, reason: Option[String]): IOResult[Node] = ???
-
     def updateNodeKeyInfo(
         nodeId:         NodeId,
         agentKey:       Option[SecurityToken],

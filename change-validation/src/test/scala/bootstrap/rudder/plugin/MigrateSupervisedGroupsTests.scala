@@ -31,8 +31,8 @@ class MigrateSupervisedGroupsTests extends Specification with JsonSpecMatcher wi
     tmpDir,
     "unsupervised-targets.json",
     mockNodeGroups.groupLib.copy(
-      targetInfos =
-        List(mockNodeGroups.groupsTargetInfos(mockNodeGroups.g0.id), mockNodeGroups.groupsTargetInfos(mockNodeGroups.g1.id))
+      targetInfos = restTestSetUp.mockNodeGroups.groupsTargetInfos.drop(1).take(1).toList // only the second
+      // the first is also added through subcategory "category_1"
     )
   )
 
