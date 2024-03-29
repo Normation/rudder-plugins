@@ -13,16 +13,17 @@ response:
           {
             "name" : "category 1",
             "categories" : [],
-            "targets" : []
+            "targets" : [
+                         {
+                           "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
+                           "name" : "",
+                           "description" : "",
+                           "supervised" : false
+                         }
+            ]
           }
         ],
         "targets" : [
-          {
-            "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
-            "name" : "",
-            "description" : "",
-            "supervised" : false
-          },
           {
             "id" : "group:1111f5d3-8c61-4d20-88a7-bb947705ba8a",
             "name" : "",
@@ -68,16 +69,17 @@ response:
           {
             "name" : "category 1",
             "categories" : [],
-            "targets" : []
+            "targets" : [
+                         {
+                           "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
+                           "name" : "",
+                           "description" : "",
+                           "supervised" : true
+                         }
+            ]
           }
         ],
         "targets" : [
-          {
-            "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
-            "name" : "",
-            "description" : "",
-            "supervised" : true
-          },
           {
             "id" : "group:1111f5d3-8c61-4d20-88a7-bb947705ba8a",
             "name" : "",
