@@ -39,13 +39,14 @@ package com.normation.plugins.changevalidation
 
 import bootstrap.liftweb.Boot
 import bootstrap.liftweb.Boot.redirection
+import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.ChangeValidationConf
-import com.normation.plugins._
+import com.normation.plugins.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.web.services.CurrentUser
+import com.normation.rudder.users.CurrentUser
 import net.liftweb.common.Empty
 import net.liftweb.common.Full
 import net.liftweb.http.ClasspathTemplates
@@ -88,11 +89,11 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
     ChangeValidationConf.unsupervisedTargetRepo.checkPathAndInitRepos()
   }
 
-  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(ChangeValidationConf.api)
+  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(ChangeValidationConf.api)
 
   def oneTimeInit: Unit = {}
 
-  val configFiles = Seq()
+  val configFiles: Seq[ConfigResource] = Seq()
 
   /*
    * Menu for change validation is a little bit more complex than

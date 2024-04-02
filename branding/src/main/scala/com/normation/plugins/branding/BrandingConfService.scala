@@ -37,17 +37,17 @@
 
 package com.normation.plugins.branding
 
-import better.files._
-import com.normation.box._
-import com.normation.errors._
-import com.normation.zio._
+import better.files.*
+import com.normation.box.*
+import com.normation.errors.*
+import com.normation.zio.*
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
-import net.liftweb.common._
+import net.liftweb.common.*
 import net.liftweb.json.parseOpt
-import zio._
-import zio.syntax._
+import zio.*
+import zio.syntax.*
 
 object BrandingConfService {
 

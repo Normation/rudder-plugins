@@ -164,16 +164,17 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.25.0</version>
+        <version>2.27.2</version>
         <configuration>
           <scala>
             <includes>
-              <include>**/*.scala</include>
+              <include>src/**/*.scala</include>
             </includes>
             <excludes>
             </excludes>
 
             <scalafmt>
+              <!-- version is inherited from rudder parent pom -->
               <file>../.scalafmt.conf</file>
             </scalafmt>
           </scala>
@@ -193,7 +194,14 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <inherited>false</inherited>
+        <inherited>true</inherited>
+        <configuration>
+          <scala>
+            <scalafmt>
+              <file>../.scalafmt.conf</file>
+            </scalafmt>
+          </scala>
+        </configuration>
         <executions>
           <execution>
             <phase>none</phase>
@@ -236,6 +244,7 @@
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.google.errorprone</groupId><artifactId>error_prone_annotations</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.ibm.icu</groupId><artifactId>icu4j</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.jayway.jsonpath</groupId><artifactId>json-path</artifactId><scope>provided</scope><version>${json-path-version}</version></dependency>
     <dependency><groupId>com.lihaoyi</groupId><artifactId>fastparse_${scala-binary-version}</artifactId><scope>provided</scope><version>${fastparse-version}</version></dependency>
     <dependency><groupId>com.lihaoyi</groupId><artifactId>geny_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
@@ -252,8 +261,7 @@
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-rest</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-templates</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.propensive</groupId><artifactId>magnolia_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.propensive</groupId><artifactId>mercator_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.softwaremill.magnolia1_2</groupId><artifactId>magnolia_${scala-binary-version}</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.softwaremill.quicklens</groupId><artifactId>quicklens_${scala-binary-version}</artifactId><scope>provided</scope><version>${quicklens-version}</version></dependency>
     <dependency><groupId>com.thoughtworks.paranamer</groupId><artifactId>paranamer</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope><version>${config-version}</version></dependency>
@@ -268,6 +276,7 @@
     <dependency><groupId>dev.zio</groupId><artifactId>zio-json_${scala-binary-version}</artifactId><scope>provided</scope><version>${zio-json-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_${scala-binary-version}</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-streams_${scala-binary-version}</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
+    <dependency><groupId>io.github.java-diff-utils</groupId><artifactId>java-diff-utils</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>io.scalaland</groupId><artifactId>chimney_${scala-binary-version}</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
     <dependency><groupId>javax.servlet</groupId><artifactId>javax.servlet-api</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope><version>${jodatime-version}</version></dependency>
@@ -283,6 +292,7 @@
     <dependency><groupId>net.minidev</groupId><artifactId>json-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>nu.validator</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>

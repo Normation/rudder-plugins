@@ -3,7 +3,7 @@ package com.normation.plugins.usermanagement
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
 import net.liftweb.json.JsonAST.JValue
-import net.liftweb.json.JsonDSL._
+import net.liftweb.json.JsonDSL.*
 
 object Serialization {
   def serializeRoleInfo(infos: Map[String, List[String]]): JValue = {

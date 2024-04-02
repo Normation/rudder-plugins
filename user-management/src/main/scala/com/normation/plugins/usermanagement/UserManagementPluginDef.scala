@@ -38,9 +38,10 @@
 package com.normation.plugins.usermanagement
 
 import bootstrap.liftweb.Boot
+import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.UserManagementConf
-import com.normation.plugins._
+import com.normation.plugins.*
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -59,8 +60,8 @@ class UserManagementPluginDef(override val status: PluginStatus) extends Default
 
   def oneTimeInit: Unit = {}
 
-  val configFiles = Seq()
-  override def apis: Option[LiftApiModuleProvider[_ <: EndpointSchema]] = Some(UserManagementConf.api)
+  override val configFiles: Seq[ConfigResource]                                = Seq()
+  override def apis:        Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(UserManagementConf.api)
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (

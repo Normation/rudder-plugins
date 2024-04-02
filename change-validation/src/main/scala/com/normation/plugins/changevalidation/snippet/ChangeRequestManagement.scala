@@ -41,21 +41,21 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventLog
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.domain.workflows._
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
-import com.normation.rudder.web.services.CurrentUser
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.services.JsTableData
 import com.normation.rudder.web.services.JsTableLine
 import com.normation.utils.DateFormaterService
-import net.liftweb.common._
-import net.liftweb.http._
+import net.liftweb.common.*
+import net.liftweb.http.*
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.http.SHtml
 import net.liftweb.http.SHtml.SelectableOption
-import net.liftweb.http.js.JE._
-import net.liftweb.http.js.JsCmds._
-import net.liftweb.util.Helpers._
+import net.liftweb.http.js.JE.*
+import net.liftweb.http.js.JsCmds.*
+import net.liftweb.util.Helpers.*
 import scala.xml.Elem
 import scala.xml.NodeSeq
 import scala.xml.Text
@@ -164,7 +164,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
         Map()
     }
 
-    import scala.collection.mutable.{Map => MutMap}
+    import scala.collection.mutable.Map as MutMap
 
     val eventMap = MutMap() ++ CREventsMap
 

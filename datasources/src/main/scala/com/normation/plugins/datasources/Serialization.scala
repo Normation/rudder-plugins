@@ -37,33 +37,33 @@
 
 package com.normation.plugins.datasources
 
-import cats._
-import cats.implicits._
-import com.normation.plugins.datasources.DataSourceSchedule._
-import com.normation.plugins.datasources.HttpRequestMode._
-import com.normation.rudder.domain.properties.GenericProperty._
+import cats.*
+import cats.implicits.*
+import com.normation.plugins.datasources.DataSourceSchedule.*
+import com.normation.plugins.datasources.HttpRequestMode.*
+import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.repository.json.JsonExtractorUtils
 import com.typesafe.config.ConfigRenderOptions
 import java.util.concurrent.TimeUnit
 import net.liftweb.common.Box
 import net.liftweb.common.Failure
 import net.liftweb.common.Full
-import net.liftweb.json._
+import net.liftweb.json.*
 import net.liftweb.util.ControlHelpers.tryo
 import scala.concurrent.duration.FiniteDuration
-import zio._
+import zio.*
 
 object Translate {
   implicit class DurationToScala(d: Duration) {
     def toScala = FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
   }
 }
-import Translate._
+import Translate.*
 
 object DataSourceJsonSerializer {
 
   def serialize(source: DataSource): JValue = {
-    import net.liftweb.json.JsonDSL._
+    import net.liftweb.json.JsonDSL.*
     (("name"           -> source.name.value)
     ~ ("id"            -> source.id.value)
     ~ ("description"   -> source.description)
@@ -412,16 +412,16 @@ trait DataSourceExtractor[M[_]] extends JsonExtractorUtils[M] {
 
 object DataSourceExtractor {
   object OptionalJson extends DataSourceExtractor[Option] {
-    def monad                                      = implicitly
-    def emptyValue[T](id: String)                  = Full(None)
-    def getOrElse[T](value: Option[T], default: T) = value.getOrElse(default)
+    def monad = implicitly
+    override def emptyValue[T](id: String): Box[Option[T]] = Full(None)
+    def getOrElse[T](value:        Option[T], default: T) = value.getOrElse(default)
   }
 
   type Id[X] = X
 
   object CompleteJson extends DataSourceExtractor[Id] {
-    def monad                              = implicitly
-    def emptyValue[T](id: String)          = Failure(s"parameter '${id}' cannot be empty")
+    def monad = implicitly
+    def emptyValue[T](id:   String): Box[Id[T]] = Failure(s"parameter '${id}' cannot be empty")
     def getOrElse[T](value: T, default: T) = value
   }
 }

@@ -39,16 +39,17 @@ package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
 import com.normation.rudder.ActionType
-import com.normation.rudder.domain.workflows._
+import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
-import com.normation.rudder.web.model._
-import com.normation.rudder.web.services.CurrentUser
-import net.liftweb.common._
-import net.liftweb.http._
-import net.liftweb.http.js._
-import net.liftweb.http.js.JsCmds._
-import net.liftweb.util.Helpers._
-import scala.xml._
+import com.normation.rudder.web.model.*
+import net.liftweb.common.*
+import net.liftweb.http.*
+import net.liftweb.http.js.*
+import net.liftweb.http.js.JsCmds.*
+import net.liftweb.util.FieldError
+import net.liftweb.util.Helpers.*
+import scala.xml.*
 
 object ChangeRequestEditForm {
   def form = ChooseTemplate(
@@ -65,7 +66,7 @@ class ChangeRequestEditForm(
     SuccessCallback: ChangeRequestInfo => JsCmd
 ) extends DispatchSnippet with Loggable {
 
-  import ChangeRequestEditForm._
+  import ChangeRequestEditForm.*
 
   private[this] val containerId     = "changeRequestDetails"
   private[this] val workflowService = RudderConfig.workflowLevelService.getWorkflowService()
@@ -87,11 +88,11 @@ class ChangeRequestEditForm(
     override def subContainerClassName = "col-xs-12"
     override def setFilter             = notNull _ :: trim _ :: Nil
     override val maxLen                = 255
-    override def validations           = Nil
+    override def validations: List[String => List[FieldError]] = Nil
   }
 
-  private[this] val formTracker = new FormTracker(changeRequestName)
-  private[this] def onNothingToDo: JsCmd = {
+  private[this] val formTracker: FormTracker = new FormTracker(changeRequestName)
+  def onNothingToDo:             JsCmd       = {
     formTracker.addFormError(error("There are no modifications to save."))
     updateFromClientSide
   }

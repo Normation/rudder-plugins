@@ -38,16 +38,17 @@
 package com.normation.plugins.changevalidation.comet
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.box._
+import com.normation.box.*
 import com.normation.plugins.changevalidation.EitherWorkflowService
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
+import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
-import com.normation.rudder.web.services.CurrentUser
-import net.liftweb.common._
-import net.liftweb.http._
-import scala.xml._
+import com.normation.rudder.users.CurrentUser
+import net.liftweb.common.*
+import net.liftweb.http.*
+import scala.xml.*
 
 class WorkflowInformation extends CometActor with CometListener with Loggable {
   private[this] def workflowService = {
@@ -57,7 +58,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
 
   private[this] val isValidator = CurrentUser.checkRights(AuthorizationType.Validator.Edit)
   private[this] val isDeployer  = CurrentUser.checkRights(AuthorizationType.Deployer.Edit)
-  def registerWith              = asyncWorkflow
+  def registerWith: AsyncWorkflowInfo = asyncWorkflow
 
   override val defaultHtml = NodeSeq.Empty
 

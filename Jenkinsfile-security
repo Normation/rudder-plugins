@@ -1,11 +1,11 @@
 
 def version = "8.0"
 def changeUrl = env.CHANGE_URL
-def slackResponse = slackSend(channel: "ci-security", message: "*${version} plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>", color: "#00A8E1")
 def job = ""
 def errors = []
 def running = []
 def failedBuild = false
+def slackResponse = null
 
 
 pipeline {
@@ -58,7 +58,6 @@ pipeline {
                         stage("${it}") {
                             script {
                                 running.add("${it}")
-                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                                 try {
@@ -79,12 +78,12 @@ pipeline {
                                     // Mark the build as failure since it's actually an error
                                     errors.add("${it}")
                                     failedBuild = true
+                                    slackResponse = updateSlack(errors, running, slackResponse, version, changeUrl)
                                     slackSend(channel: slackResponse.threadId, message: "Dependency check error on plugin ${it} - <${currentBuild.absoluteUrl}console|Console>", color: "#CC3421")
                                 }
                             }
                             script {
                                 running.remove("${it}")
-                                updateSlack(errors, running, slackResponse, version, changeUrl)
                             }
                         }
                     }
@@ -94,6 +93,7 @@ pipeline {
         stage('End') {
             steps {
                 script {
+                    updateSlack(errors, running, slackResponse, version, changeUrl)
                     if (failedBuild) {
                         error 'End of build'
                     } else {
@@ -108,25 +108,24 @@ pipeline {
 
 def updateSlack(errors, running, slackResponse, version, changeUrl) {
 
-def msg ="*${version} - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+  def msg ="*${version} - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link>"
+  if (changeUrl == null) {
 
-if (changeUrl != null) {
-  msg ="*${version} PR - plugins - dependency check* - <"+currentBuild.absoluteUrl+"|Link> - <"+changeUrl+"|Pull request>"
-}
-
-def color = "#00A8E1"
-
-if (! errors.isEmpty()) {
-    msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
-    color = "#CC3421"
-}
-if (! running.isEmpty()) {
-    msg += "\n*Running* :arrow_right: ("+running.size()+")\n  • " + running.join("\n  • ")
-}
-
-if (errors.isEmpty() && running.isEmpty()) {
-    msg +=  " => All plugin dependencies checked! :white_check_mark:"
-	color = "good"
-}
-  slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+      def fixed = currentBuild.resultIsBetterOrEqualTo("SUCCESS") && currentBuild.previousBuild.resultIsWorseOrEqualTo("UNSTABLE") 
+      if (errors.isEmpty() && running.isEmpty() && fixed) {
+        msg +=  " => All plugin dependencies checked! :white_check_mark:"
+        def color = "good"
+        slackSend(channel: "ci-security", message: msg, color: color)
+      } 
+      
+      if (! errors.isEmpty()) {
+          msg += "\n*Errors* :x: ("+errors.size()+")\n  • " + errors.join("\n  • ")
+          def color = "#CC3421"
+          if (slackResponse == null) {
+            slackResponse = slackSend(channel: "ci-security", message: msg, color: color)
+          }
+          slackSend(channel: slackResponse.channelId, message: msg, timestamp: slackResponse.ts, color: color)
+      }
+      return slackResponse
+  }
 }

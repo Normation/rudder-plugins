@@ -39,10 +39,10 @@ package com.normation.plugins.datasources
 
 import com.normation.BoxSpecMatcher
 import com.normation.rudder.domain.properties.GenericProperty
-import com.normation.zio._
-import net.liftweb.common._
+import com.normation.zio.*
+import net.liftweb.common.*
 import org.junit.runner.RunWith
-import org.specs2.mutable._
+import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])

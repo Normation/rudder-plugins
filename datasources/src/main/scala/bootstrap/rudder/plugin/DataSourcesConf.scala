@@ -38,18 +38,18 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.box._
-import com.normation.errors._
+import com.normation.box.*
+import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.RudderPluginModule
-import com.normation.plugins.datasources._
+import com.normation.plugins.datasources.*
 import com.normation.plugins.datasources.api.DataSourceApiImpl
 import com.normation.rudder.batch.AsyncDeploymentActor
 import com.normation.rudder.batch.AutomaticStartDeployment
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.rudder.services.servers.NewNodePostAcceptHooks
-import com.normation.zio._
+import com.normation.zio.*
 import net.liftweb.common.Box
 import org.joda.time.DateTime
 
@@ -70,7 +70,7 @@ class OnUpdatedNodeRegenerate(regenerate: AsyncDeploymentActor) {
  */
 object DatasourcesConf extends RudderPluginModule {
 
-  import bootstrap.liftweb.{RudderConfig => Cfg}
+  import bootstrap.liftweb.RudderConfig as Cfg
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
@@ -118,6 +118,6 @@ object DatasourcesConf extends RudderPluginModule {
     Cfg.stringUuidGenerator
   )
 
-  lazy val pluginDef = new DataSourcesPluginDef(DatasourcesConf.pluginStatusService)
+  override lazy val pluginDef: DataSourcesPluginDef = new DataSourcesPluginDef(DatasourcesConf.pluginStatusService)
 
 }

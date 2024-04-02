@@ -39,8 +39,8 @@ package com.normation.plugins.datasources
 
 import ch.qos.logback.classic.Level
 import com.normation.BoxSpecMatcher
-import com.normation.box._
-import com.normation.errors._
+import com.normation.box.*
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.KeyStatus
@@ -48,8 +48,8 @@ import com.normation.inventory.domain.NodeId
 import com.normation.inventory.domain.SecurityToken
 import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.PluginEnableImpl
-import com.normation.plugins.datasources.DataSourceSchedule._
-import com.normation.rudder.domain.eventlog._
+import com.normation.plugins.datasources.DataSourceSchedule.*
+import com.normation.rudder.domain.eventlog.*
 import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.policies.GlobalPolicyMode
@@ -57,7 +57,8 @@ import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GenericProperty
-import com.normation.rudder.domain.properties.GenericProperty._
+import com.normation.rudder.domain.properties.GenericProperty.*
+import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.queries.CriterionComposition
 import com.normation.rudder.domain.queries.NodeInfoMatcher
@@ -68,29 +69,29 @@ import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.utils.StringUuidGeneratorImpl
-import com.normation.zio._
+import com.normation.zio.*
 import com.normation.zio.ZioRuntime
-import com.softwaremill.quicklens._
+import com.softwaremill.quicklens.*
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
-import net.liftweb.common._
+import net.liftweb.common.*
 import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
 import org.specs2.matcher.EqualityMatcher
 import org.specs2.matcher.MatchResult
-import org.specs2.mutable._
+import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
 import org.specs2.specification.AfterAll
 import org.specs2.specification.core.Fragment
 import scala.annotation.nowarn
 import scala.util.Random
-import zhttp.http._
-import zhttp.http.Method._
+import zhttp.http.*
+import zhttp.http.Method.*
 import zhttp.service.EventLoopGroup
 import zhttp.service.Server
 import zhttp.service.server.ServerChannelFactory
-import zio.{System => _, _}
-import zio.syntax._
+import zio.{System as _, *}
+import zio.syntax.*
 import zio.test.Annotations
 import zio.test.TestClock
 
@@ -231,7 +232,7 @@ object CmdbServerStarted {
  * - /datasources/parallel: test that datasource parallel limits are well set and respected
  */
 object CmdbServer {
-  import com.normation.plugins.datasources.Data._
+  import com.normation.plugins.datasources.Data.*
 
   // for debugging - of course works correctly only if sequential
   val counterError   = zio.Ref.make(0).runNow
@@ -425,7 +426,7 @@ object CmdbServer {
 @nowarn("msg=a type was inferred to be `\\w+`; this may indicate a programming error.")
 @RunWith(classOf[JUnitRunner])
 class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Loggable with AfterAll {
-  import com.normation.plugins.datasources.Data._
+  import com.normation.plugins.datasources.Data.*
   val makeTestClock = TestClock.default.build
 
 //  implicit val blockingExecutionContext = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
@@ -444,7 +445,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   // utility to compact render a json string
   // will throws exceptions if errors
   def compact(json: String): String = {
-    import net.liftweb.json._
+    import net.liftweb.json.*
     compactRender(parse(json))
   }
 
@@ -487,12 +488,12 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       List.empty
     )
   )
-  val fetch         = new GetDataset(interpolation)
+  val fetch: GetDataset = new GetDataset(interpolation)
 
   val parameterRepo = new RoParameterRepository() {
-    def getAllGlobalParameters()                  = Seq().succeed
-    def getAllOverridable()                       = Seq().succeed
-    def getGlobalParameter(parameterName: String) = None.succeed
+    override def getAllGlobalParameters(): IOResult[Seq[GlobalParameter]]  = Seq().succeed
+    def getAllOverridable():               ZIO[Any, Nothing, Seq[Nothing]] = Seq().succeed
+    def getGlobalParameter(parameterName: String): IOResult[Option[GlobalParameter]] = None.succeed
   }
 
   class TestNodeRepoInfo(initNodeInfo: Map[NodeId, NodeInfo]) extends WoNodeRepository with NodeInfoService {
@@ -519,22 +520,32 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
     // NodeInfoService
     def getAll() = synchronized(Full(nodes)).toIO
-    def getNumberOfManagedNodes: Int = nodes.size - 1
-    def getAllNodes()                                                                                              = throw new IllegalAccessException("Thou shall not used that method here")
-    def getAllSystemNodeIds()                                                                                      = throw new IllegalAccessException("Thou shall not used that method here")
-    def getDeletedNodeInfoPure(nodeId: NodeId)                                                                     = throw new IllegalAccessException("Thou shall not used that method here")
-    def getDeletedNodeInfos()                                                                                      = throw new IllegalAccessException("Thou shall not used that method here")
-    def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition) =
+    def getNumberOfManagedNodes: Int                         = nodes.size - 1
+    def getAllNodes():           IOResult[Map[NodeId, Node]] = throw new IllegalAccessException("Thou shall not used that method here")
+    def getAllSystemNodeIds():   IOResult[Seq[NodeId]]       = throw new IllegalAccessException("Thou shall not used that method here")
+    def getDeletedNodeInfoPure(nodeId: NodeId): Nothing = throw new IllegalAccessException("Thou shall not used that method here")
+    def getDeletedNodeInfos():                                                                                      IOResult[Map[NodeId, NodeInfo]] = throw new IllegalAccessException(
+      "Thou shall not used that method here"
+    )
+    def getLDAPNodeInfo(nodeIds: Set[NodeId], predicates: Seq[NodeInfoMatcher], composition: CriterionComposition): Nothing                         =
       throw new IllegalAccessException("Thou shall not used that method here")
-    def getNode(nodeId: NodeId)                                                                                    = throw new IllegalAccessException("Thou shall not used that method here")
-    def getNodeInfo(nodeId: NodeId)                                                                                = throw new IllegalAccessException("Thou shall not used that method here")
-    def getNodeInfos(nodeIds: Set[NodeId])                                                                         = throw new IllegalAccessException("Thou shall not used that method here")
-    def getNodeInfosSeq(nodeIds: Seq[NodeId])                                                                      = throw new IllegalAccessException("Thou shall not used that method here")
-    def getNodeInfoPure(nodeId: NodeId)                                                                            = throw new IllegalAccessException("Thou shall not used that method here")
-    def getPendingNodeInfoPure(nodeId: NodeId)                                                                     = throw new IllegalAccessException("Thou shall not used that method here")
-    def getPendingNodeInfos()                                                                                      = throw new IllegalAccessException("Thou shall not used that method here")
+    def getNode(nodeId: NodeId): Nothing = throw new IllegalAccessException("Thou shall not used that method here")
+    def getNodeInfo(nodeId: NodeId):           IOResult[Option[NodeInfo]] = throw new IllegalAccessException(
+      "Thou shall not used that method here"
+    )
+    def getNodeInfos(nodeIds: Set[NodeId]):    IOResult[Set[NodeInfo]]    = throw new IllegalAccessException(
+      "Thou shall not used that method here"
+    )
+    def getNodeInfosSeq(nodeIds: Seq[NodeId]): IOResult[Seq[NodeInfo]]    = throw new IllegalAccessException(
+      "Thou shall not used that method here"
+    )
+    def getNodeInfoPure(nodeId:        NodeId): Nothing = throw new IllegalAccessException("Thou shall not used that method here")
+    def getPendingNodeInfoPure(nodeId: NodeId): Nothing = throw new IllegalAccessException("Thou shall not used that method here")
+    def getPendingNodeInfos(): IOResult[Map[NodeId, NodeInfo]] = throw new IllegalAccessException(
+      "Thou shall not used that method here"
+    )
 
-    override def getAllNodesIds():                   IOResult[Set[NodeId]]      = ???
+    override def getAllNodesIds(): IOResult[Set[NodeId]] = ???
     override def getDeletedNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
     override def getPendingNodeInfo(nodeId: NodeId): IOResult[Option[NodeInfo]] = ???
 
@@ -548,7 +559,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         modId:          ModificationId,
         actor:          EventActor,
         reason:         Option[String]
-    ) = throw new IllegalAccessException("Thou shall not used that method here")
+    ): IOResult[Unit] = throw new IllegalAccessException("Thou shall not used that method here")
 
     def getAllNodeInfos(): IOResult[Seq[NodeInfo]] = ???
   }
@@ -678,7 +689,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         val res     = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
-          infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+          infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
         ) and (
           infos.getAll().toBox.flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
             NodeProperty.apply("test-http-service", testArray(i)._2.forceParse, None, Some(DataSource.providerName))
@@ -704,7 +715,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         val res     = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
-          infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+          infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
         ) and (
           infos.getAll().toBox.flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
             NodeProperty.apply("test-http-service", testArray(i)._3.forceParse, None, Some(DataSource.providerName))
@@ -1036,7 +1047,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res     = http.queryAll(ds, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
-        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
       ) and (CmdbServer.counterError.get.runNow must_=== 0) and (CmdbServer.counterSuccess.get.runNow must_=== nodeIds.size)
     }
 
@@ -1056,7 +1067,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res     = http.queryAll(ds, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
-        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
       ) and (CmdbServer.counterError.get.runNow must_=== 0) and (CmdbServer.counterSuccess.get.runNow must_=== nodeIds.size)
     }
 
@@ -1092,7 +1103,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       logger.setLevel(Level.WARN)
 
       res must beLeft and (
-        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
       )
 
     }
@@ -1144,7 +1155,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       val res     = http.queryAll(datasource, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
-        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+        infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
       )
     }
 
@@ -1219,7 +1230,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
      */
     type PROPS = Map[NodeId, Option[ConfigValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(
-        finalStateCond:       PROPS => MatchResult[PROPS]
+        finalStateCond: PROPS => MatchResult[PROPS]
     ): MatchResult[Any] = {
       val infos      = new TestNodeRepoInfo(NodeConfigData.allNodesInfo)
       val http       =
@@ -1251,7 +1262,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res.either.runNow must beRight(matcher) and (
         if (expectMod) {
-          infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq: _*)
+          infos.updates.toMap must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
         } else {
           true must_=== true
         }
@@ -1266,7 +1277,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
     "have a working 'delete property' option" in {
       test404prop(propName = "test-404", initValue = Some("test-404"), onMissing = MissingNodeBehavior.Delete, expectMod = true) {
-        props => props must havePairs(props.keySet.map(x => (x, None)).toSeq: _*)
+        props => props must havePairs(props.keySet.map(x => (x, None)).toSeq*)
       }
     }
     "have a working 'default value property' option" in {
@@ -1275,11 +1286,11 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         initValue = Some("test-404"),
         onMissing = MissingNodeBehavior.DefaultValue("foo".toConfigValue),
         expectMod = true
-      )(props => props must havePairs(props.keySet.map(x => (x, Some("foo".toConfigValue))).toSeq: _*))
+      )(props => props must havePairs(props.keySet.map(x => (x, Some("foo".toConfigValue))).toSeq*))
     }
     "have a working 'don't touch - not exists' option" in {
       test404prop(propName = "test-404", initValue = None, onMissing = MissingNodeBehavior.NoChange, expectMod = false) { props =>
-        props must havePairs(props.keySet.map(x => (x, None)).toSeq: _*)
+        props must havePairs(props.keySet.map(x => (x, None)).toSeq*)
       }
     }
     "have a working 'don't touch - exists' option" in {
@@ -1288,7 +1299,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         initValue = Some("test-404"),
         onMissing = MissingNodeBehavior.NoChange,
         expectMod = false
-      )(props => props must havePairs(props.keySet.map(x => (x, Some("test-404".toConfigValue))).toSeq: _*))
+      )(props => props must havePairs(props.keySet.map(x => (x, Some("test-404".toConfigValue))).toSeq*))
     }
   }
 

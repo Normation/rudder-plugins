@@ -36,15 +36,15 @@
  */
 package com.normation.plugins.changevalidation
 
-import cats.implicits._
+import cats.implicits.*
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 import net.liftweb.common.Box
 import net.liftweb.common.Loggable
-import zio.interop.catz._
+import zio.interop.catz.*
 
 /**
  * Repository to manage the Workflow part
@@ -65,7 +65,7 @@ trait WoWorkflowRepository {
 
 class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with Loggable {
 
-  import doobie._
+  import doobie.*
 
   val SELECT_SQL = fr"SELECT id, state FROM Workflow "
 
@@ -85,7 +85,7 @@ class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with
 
 class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with Loggable {
 
-  import doobie._
+  import doobie.*
 
   def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
     val process = {

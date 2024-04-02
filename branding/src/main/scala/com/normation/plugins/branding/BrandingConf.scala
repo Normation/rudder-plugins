@@ -37,7 +37,7 @@
 
 package com.normation.plugins.branding
 
-import net.liftweb.common._
+import net.liftweb.common.*
 import net.liftweb.json.Formats
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.NoTypeHints
