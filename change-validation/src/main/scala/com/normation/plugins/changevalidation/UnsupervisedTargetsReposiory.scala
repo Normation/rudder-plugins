@@ -62,7 +62,7 @@ class UnsupervisedTargetsRepository(
                       // try to create it
                       IOResult
                         .attempt(s"Error when creating directory '$directory'. Please correct the problem.")(
-                          f.createDirectory()
+                          f.createDirectories()
                         )
                         .onError(err => ZIO.foreach(err.failureOption.map(_.fullMsg))(ChangeValidationLoggerPure.error(_)))
                     }
