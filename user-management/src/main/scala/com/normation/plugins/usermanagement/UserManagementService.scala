@@ -35,8 +35,13 @@ import zio.syntax.*
 case class UserFileInfo(userOrigin: List[UserOrigin], digest: String)
 case class UserOrigin(user: User, hashValidHash: Boolean)
 
-case class User(username: String, password: String, permissions: Set[String]) {
-  def toNode: Node = <user name={username} password={password} permissions={permissions.mkString(",")} />
+case class User(username: String, password: String, permissions: Set[String], tenants: Option[String]) {
+  def toNode: Node = <user name={username} password={password} permissions={permissions.mkString(",")} tenants={tenants.orNull}/>
+}
+object User                                                                                            {
+  def make(username: String, password: String, permissions: Set[String], tenants: String): User = {
+    User(username, password, permissions, if (tenants.isEmpty) None else Some(tenants))
+  }
 }
 
 object UserOrigin {
@@ -310,7 +315,7 @@ class UserManagementService(
 
                _ <- (userXML \\ "authentication").head match {
                       case e: Elem =>
-                        val newXml = e.copy(child = e.child ++ User(id, "", Set.empty).toNode)
+                        val newXml = e.copy(child = e.child ++ User.make(id, "", Set.empty, "").toNode)
                         UserManagementIO.replaceXml(userXML, newXml, file)
                       case _ =>
                         Unexpected(s"Wrong formatting : ${file.path}").fail
@@ -338,8 +343,8 @@ class UserManagementService(
                        if (isPreHashed) fileUser.password
                        else getHash((userXML \\ "authentication" \ "@hash").text).encode(fileUser.password)
                      }
-
-                     User(newUsername, newPassword, newRoles).toNode
+                     val tenants     = (user \ "@tenants").text
+                     User.make(newUsername, newPassword, newRoles, tenants).toNode
 
                    case other => other
                  }
@@ -372,9 +377,12 @@ class UserManagementService(
                         val digest = (userXML \\ "authentication" \ "@hash").text.toUpperCase
                         val users  = e
                           .map(u => {
+                            val name         = (u \ "@name").text
                             val password     = (u \ "@password").text
+                            val permissions  = ((u \ "@role") ++ (u \ "@permissions")).map(_.text).toSet
+                            val tenants      = (u \ "@tenants").text
                             val user         =
-                              User((u \ "@name").text, (u \ "@password").text, ((u \ "@role") ++ (u \ "@permissions")).map(_.text).toSet)
+                              User.make(name, password, permissions, tenants)
                             val hasValidHash = UserOrigin.verifyHash(digest, password)
                             UserOrigin(user, hasValidHash)
                           })

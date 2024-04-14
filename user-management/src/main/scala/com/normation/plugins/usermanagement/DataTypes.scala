@@ -67,7 +67,8 @@ final case class UpdateUserFile(
 )
 
 object UpdateUserFile {
-  implicit val transformer: Transformer[UpdateUserFile, User] = Transformer.derive[UpdateUserFile, User]
+  implicit val transformer: Transformer[UpdateUserFile, User] =
+    Transformer.define[UpdateUserFile, User].enableOptionDefaultsToNone.buildTransformer
 }
 
 final case class UpdateUserInfo(
@@ -415,7 +416,8 @@ final case class JsonUserFormData(
 )
 
 object JsonUserFormData {
-  implicit val transformer:           Transformer[JsonUserFormData, User]           = Transformer.derive[JsonUserFormData, User]
+  implicit val transformer:           Transformer[JsonUserFormData, User]           =
+    Transformer.define[JsonUserFormData, User].enableOptionDefaultsToNone.buildTransformer
   implicit val transformerUpdateUser: Transformer[JsonUserFormData, UpdateUserFile] =
     Transformer.derive[JsonUserFormData, UpdateUserFile]
 }
