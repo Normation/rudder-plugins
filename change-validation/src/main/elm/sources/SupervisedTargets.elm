@@ -302,7 +302,7 @@ view model =
         [ div [ class "row" ]
             [ div [ class "col-xs-12" ]
                 [ displayCategory model.allTargets
-                , div [ class "panel-footer" ] [ button [ onClick SendSave, class "btn btn-success pull-right" ] [ text "Save" ] ]
+                , div [ class "card-footer" ] [ button [ onClick SendSave, class "btn btn-success right" ] [ text "Save" ] ]
                 ]
             ]
         , div [ class "toasties"] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
@@ -334,18 +334,18 @@ displayCategory category =
         listGroupId =
             "list-group-" ++ htmlId
     in
-    div [ class "panel-group" ]
-        [ div [ class "panel panel-default" ]
-            [ div [ class "panel-heading", Html.Attributes.id listGroupHeadingId ]
-                [ h4 [ class "panel-title" ]
-                    [ a [ Html.Attributes.href ("#" ++ listGroupId), Html.Attributes.attribute "role" "button", Html.Attributes.attribute "data-bs-toggle" "collapse", Html.Attributes.attribute "aria-expanded" "true", Html.Attributes.attribute "aria-controls" listGroupId ]
+    div [ class "card rounded-0" ]
+        [ div [ class "card-body p-0" ]
+            [ div [ class "card-title", Html.Attributes.id listGroupHeadingId ]
+                [ div [ class "fs-5" ]
+                    [ a [ class "show", Html.Attributes.href ("#" ++ listGroupId), Html.Attributes.attribute "role" "button", Html.Attributes.attribute "data-bs-toggle" "collapse", Html.Attributes.attribute "aria-expanded" "true", Html.Attributes.attribute "aria-controls" listGroupId ]
                         [ span [ class "fa fa-folder" ] []
                         , text category.name
                         ]
                     ]
                 ]
-            , div [ class "panel-collapse collapse in", Html.Attributes.id listGroupId, Html.Attributes.attribute "role" "tabpanel", Html.Attributes.attribute "aria-labelledby" listGroupHeadingId, Html.Attributes.attribute "aria-expanded" "true" ]
-                (List.append subcats [ ul [ class "list-group" ] targets ])
+            , div [ class "panel-collapse collapse show", Html.Attributes.id listGroupId, Html.Attributes.attribute "role" "tabpanel", Html.Attributes.attribute "aria-labelledby" listGroupHeadingId, Html.Attributes.attribute "aria-expanded" "true" ]
+                (List.append subcats [ ul [ class "list-group list-group-flush" ] targets ])
             ]
         ]
 

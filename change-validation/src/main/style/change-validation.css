@@ -207,11 +207,7 @@ ul.clipboard-list > li:last-child{
 }
 
 /* --- PANEL --- */
-#supervised-targets-app .panel-group{
-  margin-bottom: 0;
-}
-
-#supervised-targets-app .panel-footer{
+#supervised-targets-app .card-footer{
   margin-bottom: 20px;
   border: 1px solid #dddddd;
   border-top: none;
@@ -221,25 +217,26 @@ ul.clipboard-list > li:last-child{
   padding: 10px;
 }
 
-#supervised-targets-app .panel-footer .btn{
+#supervised-targets-app .card-footer .btn{
   min-width: 95px;
 }
 
-#supervised-targets-app .panel-default > .panel-heading {
+#supervised-targets-app .card-body > .card-title {
   background-color: #f9f9f9;
   margin: 0;
   padding: 0;
   border-bottom : 1px solid #ededed;
 }
 
-#supervised-targets-app .panel-group .panel-group:last-of-type > .panel > .panel-heading{
+#supervised-targets-app .card .card:last-of-type > .card-body > .card-title{
   border-bottom: none;
 }
-#supervised-targets-app .panel-group .panel-group:last-of-type > .panel > .panel-heading + .panel-collapse{
+/*TODO*/
+#supervised-targets-app .card .card:last-of-type > .card-body > .card-title + .panel-collapse{
   border-top : 1px solid #ededed;
 }
 
-#supervised-targets-app .panel-default > .panel-heading a{
+#supervised-targets-app .card-body > .card-title a{
   display: block;
   position: relative;
   padding: 10px 15px 10px 42px;
@@ -247,12 +244,12 @@ ul.clipboard-list > li:last-child{
   transition-duration: .2s;
 }
 
-#supervised-targets-app .panel-default > .panel-heading a:hover{
+#supervised-targets-app .card-body > .card-title a:hover{
   color: #337ab7;
 }
 
-#supervised-targets-app .panel-group .panel-group .panel-default > .panel-heading a:before,
-#supervised-targets-app .panel-group .list-group .list-group-item .node-name:before {
+#supervised-targets-app .card .card .card-body > .card-title a:before,
+#supervised-targets-app .card .list-group .list-group-item .node-name:before {
   content: "";
   position: absolute;
   top: 18px;
@@ -261,28 +258,29 @@ ul.clipboard-list > li:last-child{
   border-top: 1px solid #ddd;
 }
 
-#supervised-targets-app .panel-default > .panel-heading a .fa,
+#supervised-targets-app .card-body > .card-title a .fa,
 #supervised-targets-app .list-group .list-group-item .node-name .fa{
   color: #bbb !important;
   position: absolute;
+  top: 15px;
   left: 15px;
 }
 
-#supervised-targets-app .panel{
+#supervised-targets-app .card{
   background-color: #fdfdfd;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
-#supervised-targets-app .panel-group .panel-group,
-#supervised-targets-app .panel-group .list-group{
+#supervised-targets-app .card .card,
+#supervised-targets-app .card .list-group{
   padding-left: 42px;
   margin-bottom: 0;
   position: relative;
 }
 
-#supervised-targets-app .panel-group .panel-group:before,
-#supervised-targets-app .panel-group .list-group:before {
+#supervised-targets-app .card .card:before,
+#supervised-targets-app .card .list-group:before {
   content: "";
   position: absolute;
   top: 0;
@@ -292,25 +290,30 @@ ul.clipboard-list > li:last-child{
   left: 21px;
 }
 
-#supervised-targets-app .panel-group .panel-group .panel{
-  border-radius : 0;
-  border-right  : none;
-  border-bottom : none;
-  border-top    : none;
+#supervised-targets-app .card .card{
+  border: none;
   box-shadow    : none;
-  border-left   : none;
 }
 
-#supervised-targets-app .panel-group .panel-group .panel-heading{
+#supervised-targets-app .card .card .card-title{
   border-left: 1px solid #ededed;
 }
 
-#supervised-targets-app .panel-group .panel-group:last-child .panel-heading{
+#supervised-targets-app .card .card:last-child .card-title{
   border-bottom: none;
 }
 
-#supervised-targets-app .panel-group .list-group{
+#supervised-targets-app .card .list-group{
   border-top: none;
+}
+
+#supervised-targets-app .card + .card > .card-body > .card-title {
+  border-top: 1px solid #ededed;
+}
+
+/* This unsets the list-group-flush for an isolated category */
+#supervised-targets-app .card > .card-body > * > .card + .list-group-flush > .list-group-item:first-child {
+  border-top: 1px solid #ededed;
 }
 
 #supervised-targets-app .list-group .list-group-item{
