@@ -60,8 +60,10 @@ import com.normation.rudder.domain.properties.*
 import com.normation.rudder.domain.properties.GroupProperty
 import com.normation.rudder.domain.queries.Query
 import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.rule.category.RuleCategory
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
@@ -101,6 +103,7 @@ class ChangeRequestChangesForm(
   def dispatch = {
     case "changes" =>
       _ => {
+        implicit val qc: QueryContext = CurrentUser.queryContext
         changeRequest match {
           case cr: ConfigurationChangeRequest =>
             ruleCategoryRepository.getRootCategory().toBox match {
@@ -133,7 +136,8 @@ class ChangeRequestChangesForm(
       }
   }
 
-  class ChangesTreeNode(changeRequest: ConfigurationChangeRequest, rootRuleCategory: RuleCategory) extends JsTreeNode {
+  class ChangesTreeNode(changeRequest: ConfigurationChangeRequest, rootRuleCategory: RuleCategory)(implicit qc: QueryContext)
+      extends JsTreeNode {
 
     def directiveChild(directiveUid: DirectiveId) = new JsTreeNode {
       def changes       = changeRequest.directives(directiveUid).changes
@@ -260,7 +264,7 @@ class ChangeRequestChangesForm(
       groups:           List[NodeGroupChange] = Nil,
       rules:            List[RuleChange] = Nil,
       globalParams:     List[GlobalParameterChange] = Nil
-  ) = {
+  )(implicit qc: QueryContext) = {
     val crLogs = changeRequestEventLogService.getChangeRequestHistory(changeRequest.id).getOrElse(Seq())
     val wfLogs = workFlowEventLogService.getChangeRequestHistory(changeRequest.id).getOrElse(Seq())
 
@@ -369,7 +373,9 @@ class ChangeRequestChangesForm(
       default: NodeSeq
   ) = diff.map(value => displayFormDiff(value, name)).getOrElse(default)
 
-  private[this] def displayRule(rule: Rule, rootRuleCategory: RuleCategory, groupLib: FullNodeGroupCategory): NodeSeq = {
+  private[this] def displayRule(rule: Rule, rootRuleCategory: RuleCategory, groupLib: FullNodeGroupCategory)(implicit
+      qc: QueryContext
+  ): NodeSeq = {
     val categoryName =
       ruleCategoryService.shortFqdn(rootRuleCategory, rule.categoryId).getOrElse("Error while looking for category")
     ("#ruleID" #> createRuleLink(rule.id) &
@@ -388,7 +394,7 @@ class ChangeRequestChangesForm(
       rule:             Rule,
       groupLib:         FullNodeGroupCategory,
       rootRuleCategory: RuleCategory
-  ) = {
+  )(implicit qc: QueryContext) = {
 
     val categoryName =
       ruleCategoryService.shortFqdn(rootRuleCategory, rule.categoryId).getOrElse("Error while looking for category")
@@ -429,7 +435,7 @@ class ChangeRequestChangesForm(
     </div>
   }
 
-  private[this] def displayGroup(group: NodeGroup) = (
+  private[this] def displayGroup(group: NodeGroup)(implicit qc: QueryContext) = (
     "#groupID" #> createGroupLink(group.id) &
       "#groupName" #> group.name &
       "#shortDescription" #> group.description &
@@ -457,7 +463,7 @@ class ChangeRequestChangesForm(
   private[this] def displayGroupDiff(
       diff:  ModifyNodeGroupDiff,
       group: NodeGroup
-  ) = {
+  )(implicit qc: QueryContext) = {
     def displayQuery(query: Option[Query])            = query match {
       case None    => "None"
       case Some(q) => q.toJSONString
@@ -565,7 +571,7 @@ class ChangeRequestChangesForm(
       groups:           List[NodeGroupChange],
       rules:            List[RuleChange],
       globalParameters: List[GlobalParameterChange]
-  ) = <ul> {
+  )(implicit qc: QueryContext) = <ul> {
     directives.flatMap(directiveChange => {
       <li>{
         directiveChange.change
