@@ -48,6 +48,7 @@ import com.normation.rudder.domain.eventlog.AddChangeRequest
 import com.normation.rudder.domain.eventlog.DeleteChangeRequest
 import com.normation.rudder.domain.eventlog.ModifyChangeRequest
 import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.users.CurrentUser
@@ -119,7 +120,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       (xml => {
         changeRequest match {
           case eb: EmptyBox => NodeSeq.Empty
-          case Full(cr) => displayHeader(cr)
+          case Full(cr) => displayHeader(cr)(CurrentUser.queryContext)
         }
       })
 
@@ -142,7 +143,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
               cr.owner,
               step,
               cr.id,
-              changeDetailsCallback(cr) _
+              changeDetailsCallback(cr)(_)(CurrentUser.queryContext)
             ).display
         }
       })
@@ -162,13 +163,13 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       _ => {
         changeRequest match {
           case eb: EmptyBox => NodeSeq.Empty
-          case Full(cr) => displayWarnUnmergeable(cr)
+          case Full(cr) => displayWarnUnmergeable(cr)(CurrentUser.queryContext)
         }
       }
     )
   }
 
-  def displayActionButton(cr: ChangeRequest, step: WorkflowNodeId): NodeSeq = {
+  def displayActionButton(cr: ChangeRequest, step: WorkflowNodeId)(implicit qc: QueryContext): NodeSeq = {
     val authz   = Nil // we are sideStepping it, see: https://issues.rudder.io/issues/22595
     val isOwner = cr.owner == CurrentUser.actor.name
 
@@ -215,7 +216,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     })(actionButtons)
   }
 
-  private[this] def changeDetailsCallback(cr: ChangeRequest)(statusUpdate: ChangeRequestInfo) = {
+  private[this] def changeDetailsCallback(cr: ChangeRequest)(statusUpdate: ChangeRequestInfo)(implicit qc: QueryContext) = {
     workflowService match {
       case ws: TwoValidationStepsWorkflowServiceImpl =>
         val newCR = ws.updateChangeRequestInfo(cr, statusUpdate, CurrentUser.actor, None)
@@ -229,7 +230,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     }
   }
 
-  def displayHeader(cr: ChangeRequest) = {
+  def displayHeader(cr: ChangeRequest)(implicit qc: QueryContext) = {
     // last action on the change Request (name/description changed):
     val (action, date) = changeRequestEventLogService.getLastLog(cr.id) match {
       case eb: EmptyBox => ("Error when retrieving the last action", None)
@@ -277,7 +278,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
   }
 
-  def displayWarnUnmergeable(cr: ChangeRequest): NodeSeq = {
+  def displayWarnUnmergeable(cr: ChangeRequest)(implicit qc: QueryContext): NodeSeq = {
     step.map { wfId =>
       if (!workflowService.isPending(wfId) || commitAndDeployChangeRequest.isMergeable(cr)) {
         NodeSeq.Empty
@@ -291,7 +292,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       action:    String,
       nextSteps: Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId])],
       cr:        ChangeRequest
-  ) = {
+  )(implicit qc: QueryContext) = {
     type stepChangeFunction = (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]
 
     def closePopup: JsCmd = {

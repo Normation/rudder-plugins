@@ -59,7 +59,9 @@ import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNode
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.domain.workflows.WorkflowStepChange
+import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.facts.nodes.NodeSecurityContext
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.CategoryAndNodeGroup
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.repository.RoNodeGroupRepository
@@ -86,14 +88,15 @@ class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String,
 
   object nodeGroupRepo extends RoNodeGroupRepository {
 
-    override def getFullGroupLibrary(): IOResult[FullNodeGroupCategory] = {
+    override def getFullGroupLibrary():                                       IOResult[FullNodeGroupCategory]                    = {
       fullNodeGroupCategory.succeed
     }
 
     override def categoryExists(
         id: com.normation.rudder.domain.nodes.NodeGroupCategoryId
     ): com.normation.errors.IOResult[Boolean] = ???
-    override def getNodeGroupOpt(id: NodeGroupId): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] = ???
+    override def getNodeGroupOpt(id: NodeGroupId)(implicit qc: QueryContext): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] =
+      ???
     override def getNodeGroupCategory(id: NodeGroupId): IOResult[NodeGroupCategory] = ???
     override def getAll(): IOResult[Seq[NodeGroup]] = ???
     override def getAllByIds(ids: Seq[NodeGroupId]): IOResult[Seq[com.normation.rudder.domain.nodes.NodeGroup]] = ???
@@ -101,7 +104,7 @@ class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String,
     override def getAllNodeIdsChunk(): IOResult[Map[NodeGroupId, Chunk[NodeId]]] = ???
     override def getGroupsByCategory(
         includeSystem: Boolean
-    ): IOResult[SortedMap[List[NodeGroupCategoryId], CategoryAndNodeGroup]] = ???
+    )(implicit qc: QueryContext): IOResult[SortedMap[List[NodeGroupCategoryId], CategoryAndNodeGroup]] = ???
     override def findGroupWithAnyMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
     override def findGroupWithAllMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
     override def getRootCategory():     NodeGroupCategory                                                 = ???
@@ -238,11 +241,11 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
 
   object commitAndDeployChangeRequest extends CommitAndDeployChangeRequestService {
 
-    override def save(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequest] = Full(
+    def save(changeRequest: ChangeRequest)(implicit cc: ChangeContext): Box[ChangeRequest] = Full(
       changeRequest
     )
 
-    override def isMergeable(changeRequest: ChangeRequest): Boolean = {
+    def isMergeable(changeRequest: ChangeRequest)(implicit qc: QueryContext): Boolean = {
       // can depend on "mergeable" changeRequest by their id to vary test cases
       true
     }

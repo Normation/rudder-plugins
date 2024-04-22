@@ -61,6 +61,7 @@ import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
@@ -181,7 +182,8 @@ class ChangeRequestApiImpl(
   }
 
   def serialize(cr: ChangeRequest, status: WorkflowNodeId)(implicit
-      techniqueByDirective: Map[DirectiveId, Technique]
+      techniqueByDirective: Map[DirectiveId, Technique],
+      qc:                   QueryContext
   ): PureResult[ChangeRequestJson] = {
     val isAcceptable = commitRepository.isMergeable(cr)
     ChangeRequestJson.from(cr, status, isAcceptable)
@@ -232,12 +234,13 @@ class ChangeRequestApiImpl(
     val schema: ChangeRequestApi.ListChangeRequests.type = API.ListChangeRequests
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      implicit val qc: QueryContext = authzToken.qc
 
       def listChangeRequestsByFilter(filter: ChangeRequestFilter): IOResult[Seq[ChangeRequestJson]] = {
         for {
           crsWithStatus <- readChangeRequest.getByFilter(filter)
           serialized    <- crsWithStatus.sortBy(_._1.id.value).accumulate {
-                             case (cr, status) => getDirectiveTechniques(cr).flatMap(serialize(cr, status)(_).toIO)
+                             case (cr, status) => getDirectiveTechniques(cr).flatMap(serialize(cr, status)(_, qc).toIO)
                            }
         } yield {
           serialized
@@ -268,8 +271,9 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
+      implicit val qc: QueryContext = authzToken.qc
       withChangeRequestContext(sid, params, schema, "find")((changeRequest, status, techniqueByDirective) =>
-        serialize(changeRequest, status)(techniqueByDirective).toIO
+        serialize(changeRequest, status)(techniqueByDirective, qc).toIO
       ).toLiftResponseOne(params, schema, Some(sid))
     }
   }
@@ -285,6 +289,7 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
+      implicit val qc: QueryContext = authzToken.qc
       // we need to check rights for validator/deployer here, API level is not sufficient.
       def actualRefuse(changeRequest: ChangeRequest, step: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
@@ -299,7 +304,7 @@ class ChangeRequestApiImpl(
           (_, func)   = stepFunc
           reason     <- extractReason(req)
           result     <- func(changeRequest.id, authzToken.qc.actor, reason).toIO
-          serialized <- serialize(changeRequest, result)(techniqueByDirective).toIO
+          serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
         }
@@ -322,7 +327,7 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-
+      implicit val qc: QueryContext = authzToken.qc
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
@@ -336,7 +341,7 @@ class ChangeRequestApiImpl(
           (_, func)   = stepFunc
           reason     <- extractReason(req)
           result     <- func(changeRequest.id, authzToken.qc.actor, reason).toIO
-          serialized <- serialize(changeRequest, result)(techniqueByDirective).toIO
+          serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
         }
@@ -384,7 +389,7 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-
+      implicit val qc: QueryContext = authzToken.qc
       def updateInfo(changeRequest: ChangeRequest, status: WorkflowNodeId, apiInfo: APIChangeRequestInfo)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
@@ -396,7 +401,7 @@ class ChangeRequestApiImpl(
           val newCR = ChangeRequest.updateInfo(changeRequest, newInfo)
           for {
             updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None).toIO
-            serialized <- serialize(updated, status)(techniqueByDirective).toIO
+            serialized <- serialize(updated, status).toIO
           } yield {
             serialized
           }

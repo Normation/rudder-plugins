@@ -49,6 +49,8 @@ import com.normation.rudder.domain.eventlog.ChangeRequestDiff
 import com.normation.rudder.domain.eventlog.DeleteChangeRequestDiff
 import com.normation.rudder.domain.eventlog.ModifyToChangeRequestDiff
 import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.facts.nodes.ChangeContext
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
@@ -59,6 +61,7 @@ import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.common.*
+import org.joda.time.DateTime
 import zio.*
 
 /**
@@ -73,15 +76,17 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
 
   def current: WorkflowService = if (cond().getOrElse(false)) whenTrue else whenFalse
 
-  override def startWorkflow(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]):         Box[ChangeRequestId]                      =
-    current.startWorkflow(changeRequest, actor, reason)
-  override def openSteps:                                                                                      List[WorkflowNodeId]                      =
+  override def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext):                     Box[ChangeRequestId]                      =
+    current.startWorkflow(changeRequest)
+  override def openSteps:                                                                                   List[WorkflowNodeId]                      =
     current.openSteps
-  override def closedSteps:                                                                                    List[WorkflowNodeId]                      =
+  override def closedSteps:                                                                                 List[WorkflowNodeId]                      =
     current.closedSteps
-  override def stepsValue:                                                                                     List[WorkflowNodeId]                      =
+  override def stepsValue:                                                                                  List[WorkflowNodeId]                      =
     current.stepsValue
-  override def findNextSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): WorkflowAction                            =
+  override def findNextSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean)(implicit
+      qc: QueryContext
+  ): WorkflowAction =
     current.findNextSteps(currentUserRights, currentStep, isCreator)
   override def findBackSteps(
       currentUserRights: Seq[String],
@@ -89,15 +94,15 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
       isCreator:         Boolean
   ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId])] =
     current.findBackSteps(currentUserRights, currentStep, isCreator)
-  override def findStep(changeRequestId: ChangeRequestId):                                                     Box[WorkflowNodeId]                       =
+  override def findStep(changeRequestId: ChangeRequestId):                                                  Box[WorkflowNodeId]                       =
     current.findStep(changeRequestId)
-  override def getAllChangeRequestsStep():                                                                     Box[Map[ChangeRequestId, WorkflowNodeId]] =
+  override def getAllChangeRequestsStep():                                                                  Box[Map[ChangeRequestId, WorkflowNodeId]] =
     current.getAllChangeRequestsStep()
-  override def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean):    Boolean                                   =
+  override def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean                                   =
     current.isEditable(currentUserRights, currentStep, isCreator)
-  override def isPending(currentStep: WorkflowNodeId):                                                         Boolean                                   =
+  override def isPending(currentStep: WorkflowNodeId):                                                      Boolean                                   =
     current.isPending(currentStep)
-  override def needExternalValidation():                                                                       Boolean                                   = current.needExternalValidation()
+  override def needExternalValidation():                                                                    Boolean                                   = current.needExternalValidation()
 }
 
 object TwoValidationStepsWorkflowServiceImpl {
@@ -191,7 +196,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       currentUserRights: Seq[String],
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
-  ): WorkflowAction = {
+  )(implicit qc: QueryContext): WorkflowAction = {
 
     def deployAction(action: (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]) = {
       if (canDeploy(isCreator, selfDeployment))
@@ -282,10 +287,10 @@ class TwoValidationStepsWorkflowServiceImpl(
     roWorkflowRepo.getAllChangeRequestsState()
   }
 
-  def startWorkflow(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequestId] = {
+  def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext): Box[ChangeRequestId] = {
     ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
     for {
-      saved <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), actor, reason)
+      saved <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), cc.actor, cc.message)
       _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
       _      = notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
     } yield {
@@ -382,12 +387,15 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
+  )(implicit
+      qc:              QueryContext
   ): Box[WorkflowNodeId] = {
     ChangeValidationLogger.debug(s"${name}: deploy change for change request '${changeRequestId.value}'")
     for {
       optcr <- roChangeRequestRepository.get(changeRequestId)
       cr    <- Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database"
-      saved <- commit.save(cr, actor, reason)
+      saved <-
+        commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, new DateTime(), reason, None, qc.nodePerms))
       _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
       state <- changeStep(from, Deployed, changeRequestId, actor, reason)
     } yield {
@@ -418,7 +426,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  )(implicit qc: QueryContext): Box[WorkflowNodeId] = {
     onSuccessWorkflow(Validation, changeRequestId, actor, reason)
   }
 
@@ -442,7 +450,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  )(implicit qc: QueryContext): Box[WorkflowNodeId] = {
     onSuccessWorkflow(Deployment, changeRequestId, actor, reason)
   }
 

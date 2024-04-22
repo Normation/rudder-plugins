@@ -10,6 +10,7 @@ import com.normation.ldap.ldif.LDIFNoopChangeRecord
 import com.normation.rudder.domain.nodes.*
 import com.normation.rudder.domain.policies.PolicyServerTarget
 import com.normation.rudder.domain.workflows.ChangeRequestId
+import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.repository.EventLogRepository
 import com.normation.rudder.repository.WoNodeGroupRepository
 import com.normation.rudder.services.eventlog.EventLogFactory
@@ -95,12 +96,9 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
         whyDescription: Option[String]
     ): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def move(
-        group:          NodeGroupId,
-        containerId:    NodeGroupCategoryId,
-        modId:          ModificationId,
-        actor:          EventActor,
-        whyDescription: Option[String]
-    ): IOResult[Option[ModifyNodeGroupDiff]] = ???
+        group:       NodeGroupId,
+        containerId: NodeGroupCategoryId
+    )(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def addGroupCategorytoCategory(
         that:           NodeGroupCategory,
         into:           NodeGroupCategoryId,
