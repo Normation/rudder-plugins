@@ -210,16 +210,12 @@ pipeline {
                                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 
                                     script {
-                                        makeTarget = "licensed"
-                                        if (p == "cis"  || p == "openscap") {
-                                            makeTarget = ""
-                                        }
                                         dir("${p}") {
                                           withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
                                             // don't archive jars
                                             options: [artifactsPublisher(disabled: true)]
                                           ) {
-                                            sh script: "export PATH=$MVN_CMD_DIR:$PATH && make ${makeTarget}", label: "build ${p} plugin"
+                                            sh script: "export PATH=$MVN_CMD_DIR:$PATH && make ${(p == "cis" || p == "openscap")  ? "" : "licensed"}", label: "build ${p} plugin"
                                             if (changeRequest()) {
                                                 archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
                                                 sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
