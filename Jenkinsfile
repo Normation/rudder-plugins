@@ -206,15 +206,14 @@ pipeline {
                                 script {
                                     running.add("Build - ${p}")
                                     stageSuccess.put(p,false)
-                                }
-                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-
                                     makeTarget = "licensed"
                                     if (p == "cis"  || p == "openscap") {
                                       makeTarget = ""
                                     }
-                                    dir("${p}") {
+                                }
+                                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 
+                                   dir("${p}") {
                                         withMaven(globalMavenSettingsConfig: "1bfa2e1a-afda-4cb4-8568-236c44b94dbf",
                                           // don't archive jars
                                           options: [artifactsPublisher(disabled: true)]
