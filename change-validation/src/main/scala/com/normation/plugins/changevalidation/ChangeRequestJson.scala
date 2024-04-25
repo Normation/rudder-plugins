@@ -578,7 +578,6 @@ object GroupChangeJson {
   )
 
   object GroupJson {
-    implicit val nodeGroupIdEncoder: JsonEncoder[NodeGroupId] = JsonEncoder[String].contramap[NodeGroupId](_.serialize)
     implicit val serverListEncoder:  JsonEncoder[Set[NodeId]] =
       JsonEncoder[List[String]].contramap[Set[NodeId]](_.toList.map(_.value).sorted)
     implicit val targetEncoder:      JsonEncoder[GroupTarget] = JsonEncoder[String].contramap[GroupTarget](_.target)
@@ -659,9 +658,6 @@ object GroupChangeJson {
   )
 
   object ModifyGroupJson {
-    implicit lazy val nodeGroupIdEncoder:         JsonEncoder[NodeGroupId]         = JsonEncoder[String].contramap[NodeGroupId](_.serialize)
-    implicit lazy val nodeGroupCategoryIdEncoder: JsonEncoder[NodeGroupCategoryId] =
-      JsonEncoder[String].contramap[NodeGroupCategoryId](_.value)
     implicit lazy val nodeIdEncoder:              JsonEncoder[NodeId]              = JsonEncoder[String].contramap[NodeId](_.value)
     implicit lazy val queryEncoder:               JsonEncoder[Query]               = JsonEncoder[String].contramap[Query](_.toString)
     implicit lazy val encoder:                    JsonEncoder[ModifyGroupJson]     =
