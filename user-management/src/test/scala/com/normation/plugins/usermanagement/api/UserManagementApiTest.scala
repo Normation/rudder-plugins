@@ -80,7 +80,7 @@ class UserManagementApiTest extends Specification with TraitTestApiFromYamlFiles
         "file",
         List.empty,
         List.empty,
-        "",
+        None,
         None,
         None
       )
