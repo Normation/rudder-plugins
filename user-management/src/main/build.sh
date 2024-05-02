@@ -1,1 +1,0 @@
-../../../plugins-common/build.sh

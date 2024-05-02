@@ -1,10 +1,10 @@
 package com.normation.plugins.changevalidation
 
-import bootstrap.liftweb.FileUserDetailListProvider
-import bootstrap.liftweb.ValidatedUserList
 import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.Doobie
+import com.normation.rudder.users.FileUserDetailListProvider
+import com.normation.rudder.users.ValidatedUserList
 import doobie.*
 import doobie.implicits.*
 import net.liftweb.common.Loggable

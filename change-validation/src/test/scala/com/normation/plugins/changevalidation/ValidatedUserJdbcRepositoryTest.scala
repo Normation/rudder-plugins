@@ -2,14 +2,14 @@ package com.normation.plugins.changevalidation
 
 import better.files.File
 import better.files.Resource
-import bootstrap.liftweb.FileUserDetailListProvider
-import bootstrap.liftweb.UserFile
 import cats.syntax.apply.*
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.DBCommon
 import com.normation.rudder.rest.AuthorizationApiMapping
 import com.normation.rudder.rest.RoleApiMapping
-import com.normation.rudder.users.UserAuthorisationLevel
+import com.normation.rudder.users.FileUserDetailListProvider
+import com.normation.rudder.users.UserFile
+import com.normation.rudder.users.UserFileProcessing
 import com.normation.zio.UnsafeRun
 import doobie.Transactor
 import doobie.implicits.*
@@ -68,16 +68,13 @@ class ValidatedUserJdbcRepositoryTest extends Specification with DBCommon with I
       .map(url => () => IOUtils.toInputStream(File(url).contentAsString(), StandardCharsets.UTF_8))
       .getOrElse(() => IOUtils.toInputStream("non-xml-content", StandardCharsets.UTF_8))
 
-    val usersFile      = {
+    val usersFile          = {
       UserFile("test-users.xml", getUsersInputStream)
     }
-    val authLevel      = new UserAuthorisationLevel {
-      override def userAuthEnabled: Boolean = true
-      override def name:            String  = "Test user auth level"
-    }
-    val roleApiMapping = new RoleApiMapping(AuthorizationApiMapping.Core)
+    val roleApiMapping     = new RoleApiMapping(AuthorizationApiMapping.Core)
+    val userFileProcessing = new UserFileProcessing(0)
 
-    val res = new FileUserDetailListProvider(roleApiMapping, authLevel, usersFile)
+    val res = new FileUserDetailListProvider(roleApiMapping, usersFile, userFileProcessing)
     res.reload()
     res
   }
