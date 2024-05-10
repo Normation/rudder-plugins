@@ -85,7 +85,7 @@ class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], u
 
     override def getAll(): IOResult[List[UserInfo]] = userInfos.succeed
 
-    override def get(userId: String): IOResult[Option[UserInfo]] = {
+    override def get(userId: String, isCaseSensitive: Boolean): IOResult[Option[UserInfo]] = {
       userInfos.find(_.id == userId).succeed
     }
 
