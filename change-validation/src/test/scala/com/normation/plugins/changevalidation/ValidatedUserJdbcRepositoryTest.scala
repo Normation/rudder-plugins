@@ -9,7 +9,6 @@ import com.normation.rudder.rest.AuthorizationApiMapping
 import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users.FileUserDetailListProvider
 import com.normation.rudder.users.UserFile
-import com.normation.rudder.users.UserFileProcessing
 import com.normation.zio.UnsafeRun
 import doobie.Transactor
 import doobie.implicits.*
@@ -68,13 +67,12 @@ class ValidatedUserJdbcRepositoryTest extends Specification with DBCommon with I
       .map(url => () => IOUtils.toInputStream(File(url).contentAsString(), StandardCharsets.UTF_8))
       .getOrElse(() => IOUtils.toInputStream("non-xml-content", StandardCharsets.UTF_8))
 
-    val usersFile          = {
+    val usersFile      = {
       UserFile("test-users.xml", getUsersInputStream)
     }
-    val roleApiMapping     = new RoleApiMapping(AuthorizationApiMapping.Core)
-    val userFileProcessing = new UserFileProcessing(0)
+    val roleApiMapping = new RoleApiMapping(AuthorizationApiMapping.Core)
 
-    val res = new FileUserDetailListProvider(roleApiMapping, usersFile, userFileProcessing)
+    val res = new FileUserDetailListProvider(roleApiMapping, usersFile)
     res.reload()
     res
   }
