@@ -23,7 +23,7 @@ if [ "$RELEASE" = true ]; then
 fi
 
 # We need the gulpfile in current working directory
-cp ../../../plugins-common/gulpfile.js .
+cp ../../../plugins-common/gulpfile.mjs .
 
 # Ensure correct versions
 npm_config_loglevel=error npm ci --no-audit
