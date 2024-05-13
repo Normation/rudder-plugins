@@ -27,6 +27,6 @@ plugin-doc-assets/
 elm-upgrade*.log
 .shellcheck
 node_modules
-*/*/*/gulpfile.js
+*/*/*/gulpfile.mjs
 **/toserve/*/*.css
 **/toserve/*/*.scss

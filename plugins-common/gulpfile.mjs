@@ -1,16 +1,18 @@
-const fs = require('fs');
-const path = require('path');
-const { watch, series, parallel, src, dest } = require('gulp');
-const rename = require('gulp-rename');
-const mode = require('gulp-mode');
+import gulp from 'gulp';
+const { task, watch, series, parallel, src, dest } = gulp;
+import fs from 'fs';
+import path from 'path';
+import rename from 'gulp-rename';
+import mode from 'gulp-mode';
 const profile = mode();
-const terser = require('gulp-terser');
-const elm_p = require('gulp-elm');
-const merge = require('merge-stream');
-const del = require('del');
-const through = require('through2');
-const sass = require('gulp-sass')(require('sass'));
-const sourcemaps = require('gulp-sourcemaps');
+import terser from 'gulp-terser';
+import elm_p from 'gulp-elm';
+import { deleteSync } from 'del';
+import through from 'through2';
+import * as dartSass from 'sass';
+import gulpSass from 'gulp-sass';
+const sass = gulpSass(dartSass);
+import sourcemaps from 'gulp-sourcemaps';
 
 // Derived from https://github.com/mixmaxhq/gulp-grep-contents (under MIT License)
 var grep = function(regex) {
@@ -25,6 +27,8 @@ var grep = function(regex) {
         callback();
     });
 }
+
+const __dirname = path.resolve();
 
 const paths = {
     'elm': {
@@ -47,7 +51,19 @@ function gestScssDest(dirname){
 }
 
 function clean(cb) {
-    del.sync([paths.elm.dest]);
+    let mergeCleanPaths = function(){
+        let getCleanPaths = function(p){
+            let files  = (p + '/**');
+            let parent = ('!' + p);
+            return [files, parent];
+        }
+        return [].concat(
+            getCleanPaths(paths.elm.dest),
+            getCleanPaths(gestScssDest(__dirname))
+        );
+    }
+    let cleanPaths = mergeCleanPaths();
+    deleteSync(cleanPaths);
     cb();
 }
 
@@ -86,7 +102,8 @@ function elm(cb) {
 };
 
 function scss(cb) {
-    src(paths.scss.src)
+
+    src(paths.scss.src, { encoding: false })
       .pipe(sourcemaps.init())
       .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
       .pipe(sourcemaps.write())
@@ -94,9 +111,11 @@ function scss(cb) {
     cb();
 };
 
-exports.elm = series(clean, elm)
-exports.watch = series(clean, function() {
+task('elm', series(clean, elm));
+
+task('watch', series(clean, function() {
     watch(paths.elm.watch, { ignoreInitial: false }, elm);
     watch(paths.scss.src, { ignoreInitial: false }, scss);
-});
-exports.default = series(clean, parallel(elm, scss));
+}));
+
+task('default', series(clean, parallel(elm, scss)));
