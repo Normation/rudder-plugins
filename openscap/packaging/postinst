@@ -2,5 +2,17 @@
 set -e
 CONFIGURATION_PATH=/opt/rudder/share/plugins/openscap
 
+mkdir -p /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin
+echo "<xml>
+  <name>OpenSCAP Policies plugin</name>
+  <description>
+    Techniques from the OpenSCAP Policies plugin
+  </description>
+</xml>
+" > /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin/category.xml
+
+cd /var/rudder/configuration-repository/techniques
+git add OpenSCAP_Policies_plugin/category.xml && git commit -m "Creating the category" && rudder server reload-techniques
+
 # Import Techniques
 curl --silent --insecure --header "X-API-TOKEN: $(cat /var/rudder/run/api-token)" --request POST https://localhost/rudder/api/latest/archives/import --form "archive=@${CONFIGURATION_PATH}/openscap_technique.zip"
