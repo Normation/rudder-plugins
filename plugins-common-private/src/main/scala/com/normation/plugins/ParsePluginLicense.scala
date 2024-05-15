@@ -37,7 +37,8 @@
 
 package com.normation.plugins
 
-import com.normation.license._
+import com.normation.license.*
+import com.normation.license.MaybeLicenseError.Maybe
 import com.normation.rudder.domain.logger.PluginLogger
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -75,14 +76,14 @@ trait LicensedPluginCheck extends PluginStatus {
   /*
    * we don't want to check each time if the license is ok or not. So we only change if license or key file is updated
    */
-  def getModDate(path: String): Option[FileTime] = {
+  def getModDate(path: String): Option[FileTime]                         = {
     try {
       Some(Files.getLastModifiedTime(Paths.get(path)))
     } catch {
       case NonFatal(ex) => None
     }
   }
-  def readLicense = {
+  def readLicense:              Maybe[(License.CheckedLicense, Version)] = {
     val lic = LicenseReader.readAndCheckLicenseFS(
       pluginResourceLicense,
       pluginResourcePublickey,
@@ -105,7 +106,7 @@ trait LicensedPluginCheck extends PluginStatus {
     LicenseError.IO("License not initialized yet or missing licenses related files.")
   )
 
-  def maybeLicense = {
+  def maybeLicense: Maybe[(License.CheckedLicense, Version)] = {
     val licenseMod = getModDate(pluginResourceLicense)
     val pubkeyMod  = getModDate(pluginResourcePublickey)
     if (licenseMod != licenseModDate || pubkeyMod != pubkeyModDate) {
