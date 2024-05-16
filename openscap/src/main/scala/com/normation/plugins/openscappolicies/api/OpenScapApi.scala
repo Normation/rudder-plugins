@@ -5,6 +5,7 @@ import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.rest.*
@@ -36,6 +37,7 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
     val (action, path) = GET / "openscap" / "report" / "{id}"
 
     override def dataContainer: Option[String] = Some("openscap")
+    override val authz : List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
   }
 
   final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
@@ -44,6 +46,7 @@ object OpenScapApi       extends ApiModuleProvider[OpenScapApi] {
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
 
     override def dataContainer: Option[String] = Some("openscap")
+    override val authz : List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
   }
 
   def endpoints = ca.mrvisser.sealerate.values[OpenScapApi].toList.sortBy(_.z)
