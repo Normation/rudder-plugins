@@ -141,6 +141,23 @@
               <commandlineArgs>--release</commandlineArgs>
             </configuration>
           </execution>
+
+
+          <execution>
+            <id>elm-review</id>
+            <phase>test</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>npx</executable>
+              <workingDirectory>src/main/elm</workingDirectory>
+              <commandlineArgs>elm-review</commandlineArgs>
+            </configuration>
+          </execution>
+
+
+        
         </executions>
       </plugin>
       <plugin>
