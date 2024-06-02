@@ -33,7 +33,7 @@ std-files: plugins-common generate-pom build-files
 	echo "${VERSION}"
 
 build-licensed-files:
-	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
+	$(MVN_CMD) -Dlimited -Dmaven.test.skip=true -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
