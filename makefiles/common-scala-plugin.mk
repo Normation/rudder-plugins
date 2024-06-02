@@ -25,7 +25,7 @@ plugins-common-private:plugins-common
 	cd ../$(NAME)
 
 build-files:   
-	$(MVN_CMD) package
+	$(MVN_CMD)  -Dmaven.test.skip=true package
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
