@@ -17,7 +17,7 @@ getDataSources  model =
     req =
       request
         { method  = "GET"
-        , headers = []
+        , headers = [header "X-Requested-With" "XMLHttpRequest"]
         , url     = getUrl model "datasources"
         , body    = emptyBody
         , expect  = expectJson GetDataSources (decodeDataList decodeDataSource [ "datasources"] )
@@ -33,7 +33,7 @@ saveDataSource  model isNew datasource =
     req =
       request
         { method  = if isNew then "PUT" else "POST"
-        , headers = []
+        , headers = [header "X-Requested-With" "XMLHttpRequest"]
         , url     = getUrl model ("datasources" ++ if isNew then "" else "/"++ datasource.id)
         , body    = jsonBody (encodeDataSource datasource)
         , expect  = expectJson SaveDataSource (decodeDataList decodeDataSource [ "datasources"] |> headList )
@@ -50,7 +50,7 @@ deleteDataSource  model datasource =
     req =
       request
         { method  = "DELETE"
-        , headers = []
+        , headers = [header "X-Requested-With" "XMLHttpRequest"]
         , url     = getUrl model ("datasources/" ++ datasource.id)
         , body    = emptyBody
         , expect  = expectJson DeleteDataSource (decodeDelete ["data", "datasources"])

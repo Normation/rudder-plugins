@@ -112,7 +112,7 @@ getTargets model =
         req =
             request
                 { method = "GET"
-                , headers = []
+                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson GetTargets decodeApiCategory
@@ -133,7 +133,7 @@ saveTargets model =
         req =
             request
                 { method = "POST"
-                , headers = []
+                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
                 , url = model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
                 , body = jsonBody (encodeTargets (getSupervisedIds model.allTargets))
                 , expect = expectJson SaveTargets decodeApiSave

@@ -1,6 +1,6 @@
 module ApiCalls exposing (..)
 
-import Http exposing (emptyBody, expectJson, jsonBody, request)
+import Http exposing (emptyBody, expectJson, header, jsonBody, request)
 import JsonDecoders exposing (decodeApiDeleteUsername, decodeUserList)
 import DataTypes exposing (..)
 import JsonEncoders exposing (encodeUsernames)
@@ -15,7 +15,7 @@ getUsers model =
     req =
       request
         { method  = "GET"
-        , headers = []
+        , headers = [header "X-Requested-With" "XMLHttpRequest"]
         , url     = getUrl model "users"
         , body    = emptyBody
         , expect  = expectJson GetUsers decodeUserList
@@ -31,7 +31,7 @@ removeValidatedUser username model =
     req =
       request
         { method  = "DELETE"
-        , headers = []
+        , headers = [header "X-Requested-With" "XMLHttpRequest"]
         , url     = getUrl model ("validatedUsers/" ++ username)
         , body    = emptyBody
         , expect  = expectJson RemoveUser decodeApiDeleteUsername
@@ -47,7 +47,7 @@ saveWorkflow usernames model =
     req =
       request
         { method  = "POST"
-        , headers = []
+        , headers = [header "X-Requested-With" "XMLHttpRequest"]
         , url     = getUrl model "validatedUsers"
         , body    = jsonBody (encodeUsernames usernames)
         , expect  = expectJson SaveWorkflow decodeUserList

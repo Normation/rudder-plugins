@@ -199,7 +199,7 @@ apiRequestTemplate msg method path model =
         req =
             request
                 { method = method
-                , headers = []
+                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson msg decodeApiUserToken
@@ -229,7 +229,7 @@ deleteUserToken model =
         req =
             request
                 { method = "DELETE"
-                , headers = []
+                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson DeleteUserToken decodeDeleteToken
