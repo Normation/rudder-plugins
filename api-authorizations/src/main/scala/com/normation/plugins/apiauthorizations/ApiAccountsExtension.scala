@@ -114,14 +114,33 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
         </head_merge>
         <script>
         //<![CDATA[
+          function waitForElm(selector) {
+            return new Promise(resolve => {
+              if (document.querySelector(selector)) {
+                return resolve(document.querySelector(selector));
+              }
+
+              const observer = new MutationObserver(mutations => {
+                if (document.querySelector(selector)) {
+                  observer.disconnect();
+                  resolve(document.querySelector(selector));
+                }
+              });
+
+              observer.observe(document.body, {
+                childList: true,
+                subtree: true
+              });
+            });
+          }
           var appAcl;
-          $(document).ready(function(){
-            app.ports.initAcl.subscribe(function(){
+          $(document).ready(async function(){
+            async function initAcl(){
               // init elm app
-              var node = document.getElementById("apiauthorization-content");
+              var node = await waitForElm("#apiauthorization-content");
               var initValues = {
                   contextPath : contextPath
-                , token: { id: "account.id", acl: []}
+                , token: {id: "account.id", acl: []}
                 , rudderApis: rudderApis
               };
 
@@ -131,10 +150,16 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
               appAcl.ports.giveAcl.subscribe(function(acl) {
                 app.ports.getCheckedAcl.send(acl)
               });
+            }
+            app.ports.initAcl.subscribe(async function () {
+              await initAcl();
             });
             //get the acl list of the selected account
-            app.ports.shareAcl.subscribe(function(acl){
-              appAcl.ports.getToken.send(acl)
+            app.ports.shareAcl.subscribe(async function(token){
+              await initAcl();
+              if (appAcl !== undefined) {
+                appAcl.ports.getToken.send(token)
+              }
             });
           });
         // ]]>
