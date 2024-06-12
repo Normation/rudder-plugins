@@ -54,10 +54,8 @@ import com.normation.zio.*
 import com.softwaremill.quicklens.*
 import com.typesafe.config.ConfigValue
 import net.minidev.json.JSONArray
-import net.minidev.json.JSONAware
 import net.minidev.json.JSONStyle
 import net.minidev.json.JSONValue
-import scala.util.control.NonFatal
 import scalaj.http.Http
 import scalaj.http.HttpOptions
 import zio.*
@@ -338,18 +336,10 @@ object JsonSelect {
     }
 
     for {
-      jsonValue <-
-        IOResult.attemptZIO(try {
-          json.read[JSONAware](path).succeed
-        } catch {
-          case _: ClassCastException =>
-            try {
-              json.read[Any](path).toString.succeed
-            } catch {
-              case NonFatal(ex) => SystemError(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", ex).fail
-            }
-          case NonFatal(ex) => SystemError(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", ex).fail
-        })
+      jsonValue <- ZIO
+                     .attempt(json.read[JSONArray](path))
+                     .catchSome { case _: ClassCastException => ZIO.attempt(json.read[Any](path)) }
+                     .mapError(ex => SystemError(s"Error when trying to get path '${path.getPath}': ${ex.getMessage}", ex))
       // we want to special process the case where the list has only one value to let the
       // user access them directly WITHOUT having to lift it from the array.
       // The case with no data is considered to be "".
