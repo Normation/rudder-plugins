@@ -22,7 +22,10 @@ if [ "$RELEASE" = true ]; then
   rm -rf node_modules
 fi
 
-# We need the gulpfile in current working directory
+# We need the gulpfile in current working directory, and to remove the old one (.js) if it is present
+if [ -f "gulpfile.js" ]; then
+rm gulpfile.js
+fi
 cp ../../../plugins-common/gulpfile.mjs .
 
 # Ensure correct versions
