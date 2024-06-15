@@ -156,13 +156,13 @@ class TwoValidationStepsWorkflowServiceImpl(
     // We need to remap back to the original type to fetch the id of the CR created
     val save          = diff match {
       case _:      AddChangeRequestDiff      =>
-        woChangeRequestRepository.createChangeRequest(diff.changeRequest, actor, reason).map(AddChangeRequestDiff)
+        woChangeRequestRepository.createChangeRequest(diff.changeRequest, actor, reason).map(AddChangeRequestDiff.apply)
       case modify: ModifyToChangeRequestDiff =>
         woChangeRequestRepository
           .updateChangeRequest(changeRequest, actor, reason)
           .map(_ => modify) // For modification the id is already correct
       case _:      DeleteChangeRequestDiff   =>
-        woChangeRequestRepository.deleteChangeRequest(changeRequest.id, actor, reason).map(DeleteChangeRequestDiff)
+        woChangeRequestRepository.deleteChangeRequest(changeRequest.id, actor, reason).map(DeleteChangeRequestDiff.apply)
     }
 
     for {

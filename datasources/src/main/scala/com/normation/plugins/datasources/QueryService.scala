@@ -40,17 +40,21 @@ package com.normation.plugins.datasources
 import cats.data.NonEmptyList
 import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
+import com.normation.rudder.facts.nodes.ChangeContext
+import com.normation.rudder.facts.nodes.CoreNodeFact
+import com.normation.rudder.facts.nodes.NodeFactChangeEvent
+import com.normation.rudder.facts.nodes.NodeFactRepository
+import com.normation.rudder.facts.nodes.NodeSecurityContext
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.RoParameterRepository
-import com.normation.rudder.repository.WoNodeRepository
-import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
+import org.joda.time.DateTime
 import zio.*
 import zio.syntax.*
 
@@ -99,8 +103,8 @@ object QueryService {
    * for given datasource
    */
   def updateNode(
-      nodeInfo:          NodeInfo,
-      repository:        WoNodeRepository,
+      nodeInfo:          CoreNodeFact,
+      repository:        NodeFactRepository,
       optProperty:       Option[NodeProperty],
       cause:             UpdateCause,
       enforceSameOrigin: Boolean // for deletion, we want to be able to remove only prop set by datasource provider
@@ -119,16 +123,22 @@ object QueryService {
             NodeUpdateResult.Unchanged(nodeInfo.id).succeed
           case _                                      =>
             for {
-              newProps    <- CompareProperties.updateProperties(nodeInfo.properties, Some(property :: Nil)).toIO
-              newNode      = nodeInfo.node.copy(properties = newProps)
-              nodeUpdated <-
-                repository
-                  .updateNode(newNode, cause.modId, cause.actor, cause.reason)
-                  .chainError(
-                    s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
-                  )
+              newProps <- CompareProperties.updateProperties(nodeInfo.properties.toList, Some(property :: Nil)).toIO
+              newNode   = nodeInfo.copy(properties = Chunk.fromIterable(newProps))
+              res      <- repository
+                            .save(newNode)(
+                              ChangeContext(cause.modId, cause.actor, DateTime.now(), cause.reason, None, NodeSecurityContext.All)
+                            )
+                            .chainError(
+                              s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"
+                            )
             } yield {
-              NodeUpdateResult.Updated(nodeUpdated.id)
+              res.event match {
+                case _: NodeFactChangeEvent.UpdatedPending | _: NodeFactChangeEvent.Updated =>
+                  NodeUpdateResult.Updated(newNode.id)
+                case _                                                                      =>
+                  NodeUpdateResult.Unchanged(newNode.id)
+              }
             }
         }
     }
@@ -140,9 +150,8 @@ object QueryService {
  * actually updated (== property's value actually changed) nodes
  */
 class HttpQueryDataSourceService(
-    nodeInfo:         NodeInfoService,
+    factRepository:   NodeFactRepository,
     parameterRepo:    RoParameterRepository,
-    nodeRepository:   WoNodeRepository,
     interpolCompiler: InterpolatedValueCompiler,
     onUpdatedHook:    (Set[NodeId], UpdateCause) => IOResult[Unit],
     globalPolicyMode: () => IOResult[GlobalPolicyMode]
@@ -225,17 +234,17 @@ class HttpQueryDataSourceService(
   private[this] def buildOneNodeTask(
       datasourceId:     DataSourceId,
       datasource:       DataSourceType.HTTP,
-      nodeInfo:         NodeInfo,
-      policyServers:    Map[NodeId, NodeInfo],
+      nodeInfo:         CoreNodeFact,
+      policyServers:    Map[NodeId, CoreNodeFact],
       globalPolicyMode: GlobalPolicyMode,
       parameters:       Set[GlobalParameter],
       cause:            UpdateCause
   ): IOResult[NodeUpdateResult] = {
     (for {
-      policyServer <- (policyServers.get(nodeInfo.policyServerId) match {
+      policyServer <- (policyServers.get(nodeInfo.rudderSettings.policyServerId) match {
                         case None    =>
                           Inconsistency(
-                            s"PolicyServer with ID '${nodeInfo.policyServerId.value}' was not found for node '${nodeInfo.hostname}' ('${nodeInfo.id.value}'). Abort."
+                            s"PolicyServer with ID '${nodeInfo.rudderSettings.policyServerId.value}' was not found for node '${nodeInfo.fqdn}' ('${nodeInfo.id.value}'). Abort."
                           ).fail
                         case Some(p) => p.succeed
                       })
@@ -250,11 +259,11 @@ class HttpQueryDataSourceService(
                         datasource.requestTimeOut,
                         datasource.requestTimeOut
                       )
-      nodeResult   <- QueryService.updateNode(nodeInfo, nodeRepository, optProperty, cause, enforceSameOrigin = false)
+      nodeResult   <- QueryService.updateNode(nodeInfo, factRepository, optProperty, cause, enforceSameOrigin = false)
     } yield {
       nodeResult
     }).chainError(
-      s"Error when getting data from datasource '${datasourceId.value}' for node ${nodeInfo.hostname} (${nodeInfo.id.value}):"
+      s"Error when getting data from datasource '${datasourceId.value}' for node ${nodeInfo.fqdn} (${nodeInfo.id.value}):"
     )
   }
 
@@ -268,8 +277,8 @@ class HttpQueryDataSourceService(
   ): IOResult[Set[NodeUpdateResult]] = {
 
     def tasks(
-        nodes:            Map[NodeId, NodeInfo],
-        policyServers:    Map[NodeId, NodeInfo],
+        nodes:            Map[NodeId, CoreNodeFact],
+        policyServers:    Map[NodeId, CoreNodeFact],
         globalPolicyMode: GlobalPolicyMode,
         parameters:       Set[GlobalParameter]
     ): IOResult[List[Either[RudderError, NodeUpdateResult]]] = {
@@ -309,7 +318,7 @@ class HttpQueryDataSourceService(
     val timeout = datasource.requestTimeOut
 
     // filter out nodes with "disabled" state
-    val nodes = info.nodes.filter { case (k, v) => v.state != NodeState.Ignored }
+    val nodes = info.nodes.filter { case (k, v) => v.rudderSettings.state != NodeState.Ignored }
 
     for {
       mode         <- globalPolicyMode()
@@ -333,14 +342,14 @@ class HttpQueryDataSourceService(
       cause:            UpdateCause
   ): IOResult[Set[NodeUpdateResult]] = {
     for {
-      nodes        <- nodeInfo.getAll()
-      policyServers = nodes.filter { case (_, n) => n.isPolicyServer }
+      nodes        <- factRepository.getAll()(QueryContext.systemQC)
+      policyServers = nodes.filter(_._2.rudderSettings.isPolicyServer)
       parameters   <- parameterRepo.getAllGlobalParameters().map(_.toSet)
       updated      <- querySubsetByNode(
                         datasourceId,
                         datasource,
                         globalPolicyMode,
-                        PartialNodeUpdate(nodes, policyServers, parameters),
+                        PartialNodeUpdate(nodes.toMap, policyServers.toMap, parameters),
                         cause,
                         onUpdatedHook
                       )
@@ -353,9 +362,9 @@ class HttpQueryDataSourceService(
     import com.normation.rudder.domain.properties.GenericProperty.*
     val deleteProp = DataSource.nodeProperty(datasource.value, "".toConfigValue)
     for {
-      nodes <- nodeInfo.getAll()
+      nodes <- factRepository.getAll()(QueryContext.systemQC)
       res   <- ZIO.foreach(nodes.values)(node =>
-                 QueryService.updateNode(node, nodeRepository, Some(deleteProp), cause, enforceSameOrigin = true)
+                 QueryService.updateNode(node, factRepository, Some(deleteProp), cause, enforceSameOrigin = true)
                )
     } yield res.toSet
   }
@@ -369,12 +378,12 @@ class HttpQueryDataSourceService(
   ): IOResult[NodeUpdateResult] = {
     for {
       mode         <- globalPolicyMode()
-      allNodes     <- nodeInfo.getAll()
+      allNodes     <- factRepository.getAll()(QueryContext.systemQC)
       node         <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
-      policyServers = allNodes.filter(_._1 == node.policyServerId)
+      policyServers = allNodes.filter(_._1 == node.rudderSettings.policyServerId)
       parameters   <- parameterRepo.getAllGlobalParameters().map(_.toSet)
       updated      <-
-        buildOneNodeTask(datasourceId, datasource, node, policyServers, mode, parameters, cause)
+        buildOneNodeTask(datasourceId, datasource, node, policyServers.toMap, mode, parameters, cause)
           .timeout(datasource.requestTimeOut)
           .notOptional(
             s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'"

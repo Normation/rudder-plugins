@@ -8,6 +8,7 @@ import com.normation.rudder.db.DBCommon
 import com.normation.rudder.rest.AuthorizationApiMapping
 import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users.FileUserDetailListProvider
+import com.normation.rudder.users.PasswordEncoderDispatcher
 import com.normation.rudder.users.UserFile
 import com.normation.zio.UnsafeRun
 import doobie.Transactor
@@ -72,7 +73,7 @@ class ValidatedUserJdbcRepositoryTest extends Specification with DBCommon with I
     }
     val roleApiMapping = new RoleApiMapping(AuthorizationApiMapping.Core)
 
-    val res = new FileUserDetailListProvider(roleApiMapping, usersFile)
+    val res = new FileUserDetailListProvider(roleApiMapping, usersFile, new PasswordEncoderDispatcher(12))
     res.reload()
     res
   }

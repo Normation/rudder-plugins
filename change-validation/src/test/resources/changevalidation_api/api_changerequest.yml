@@ -2980,6 +2980,7 @@ response:
                 {
                   "action" : "delete",
                   "change" : {
+                    "type": "GlobalParameterDeleteChangeJson",
                     "id" : "jsonParam",
                     "value" : {
                       "array" : [
@@ -2993,8 +2994,7 @@ response:
                       },
                       "string" : "a string"
                     },
-                    "description" : "a simple string param",
-                    "type": "GlobalParameterDeleteChangeJson"
+                    "description" : "a simple string param"
                   }
                 }
               ]
@@ -3054,6 +3054,7 @@ response:
                 {
                   "action" : "create",
                   "change" : {
+                    "type" : "DirectiveCreateChangeJson",
                     "id" : "16617aa8-1f02-4e4a-87b6-d0bcdfb4019f",
                     "displayName" : "directive 16617aa8-1f02-4e4a-87b6-d0bcdfb4019f",
                     "shortDescription" : "",
@@ -3241,8 +3242,7 @@ response:
                     "enabled" : false,
                     "system" : false,
                     "policyMode" : "default",
-                    "tags" : [],
-                    "type" : "DirectiveCreateChangeJson"
+                    "tags" : []
                   }
                 }
               ],
@@ -3322,6 +3322,7 @@ response:
                 {
                   "action" : "create",
                   "change" : {
+                    "type" : "DirectiveCreateChangeJson",
                     "id" : "16617aa8-1f02-4e4a-87b6-d0bcdfb4019f",
                     "displayName" : "directive 16617aa8-1f02-4e4a-87b6-d0bcdfb4019f",
                     "shortDescription" : "",
@@ -3509,8 +3510,7 @@ response:
                     "enabled" : false,
                     "system" : false,
                     "policyMode" : "default",
-                    "tags" : [],
-                    "type" : "DirectiveCreateChangeJson"
+                    "tags" : []
                   }
                 }
               ],
@@ -3601,6 +3601,7 @@ response:
                 {
                   "action" : "create",
                   "change" : {
+                    "type" : "GroupCreateChangeJson",
                     "id" : "0000f5d3-8c61-4d20-88a7-bb947705ba8a",
                     "displayName" : "Real nodes",
                     "description" : "",
@@ -3632,13 +3633,12 @@ response:
                       {
                         "name" : "stringParam",
                         "value" : "string",
-                        "provider" : "datasources",
-                        "inheritMode" : "map"
+                        "inheritMode" : "map",
+                        "provider" : "datasources"
                       }
                     ],
-                    "system" : false,
                     "target" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
-                    "type" : "GroupCreateChangeJson"
+                    "system" : false
                   }
                 }
               ],

@@ -1,6 +1,8 @@
 package com.normation.plugins.apiauthorizations
 
 import better.files.*
+import com.normation.errors.IOResult
+import com.normation.errors.effectUioUnit
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiAccount
 import com.normation.rudder.api.ApiAccountId
@@ -16,24 +18,21 @@ import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserService
 import java.nio.file.Files
-import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import org.joda.time.DateTimeUtils
 import org.junit.runner.RunWith
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
-import org.specs2.specification.BeforeAfterAll
+import zio.*
+import zio.test.*
+import zio.test.junit.ZTestJUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Loggable with BeforeAfterAll {
-
-  sequential
+@RunWith(classOf[ZTestJUnitRunner])
+class UserApiTest extends ZIOSpecDefault {
 
   val restTestSetUp = RestTestSetUp.newEnv
 
   val tmpDir: File = File(Files.createTempDirectory("rudder-test-"))
-  override def yamlSourceDirectory  = "authorizations_api"
-  override def yamlDestTmpDirectory = tmpDir / "templates"
+  val yamlSourceDirectory  = "authorizations_api"
+  val yamlDestTmpDirectory = tmpDir / "templates"
 
   // date used when `DateTime.now` is called e.g. when creating a new token
   val fixedDate = DateTime.parse("2023-12-12T12:12:12.000Z")
@@ -78,7 +77,7 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, Some(userService))
 
-  override def transformations: Map[String, String => String] = Map()
+  val transformations: Map[String, String => String] = Map()
 
   // we are testing error cases, so we don't want to output error log for them
   org.slf4j.LoggerFactory
@@ -86,15 +85,25 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  override def beforeAll(): Unit = {
-    // set current time to the fixed date so that we can test dates in yaml files
-    DateTimeUtils.setCurrentMillisFixed(fixedDate.getMillis)
-  }
+  override def spec: Spec[TestEnvironment with Scope, Any] = {
+    (suite("All REST tests defined in files") {
 
-  override def afterAll(): Unit = {
-    tmpDir.delete()
+      for {
+        // set current time to the fixed date so that we can test dates in yaml files
+        _ <- IOResult.attempt(DateTimeUtils.setCurrentMillisFixed(fixedDate.getMillis))
+        s <- TraitTestApiFromYamlFiles.doTest(
+               yamlSourceDirectory,
+               yamlDestTmpDirectory,
+               liftRules,
+               Nil,
+               transformations
+             )
+        _ <- effectUioUnit(
+               if (java.lang.System.getProperty("tests.clean.tmp") != "false") IOResult.attempt(restTestSetUp.cleanup())
+               else ZIO.unit
+             )
+      } yield s
+    })
   }
-
-  doTest(semanticJson = true)
 
 }

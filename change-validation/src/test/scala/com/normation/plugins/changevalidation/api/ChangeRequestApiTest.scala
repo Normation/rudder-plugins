@@ -42,6 +42,8 @@ import bootstrap.rudder.plugin.ChangeValidationWorkflowLevelService
 import com.normation.cfclerk.domain.InputVariableSpec
 import com.normation.cfclerk.domain.SectionSpec
 import com.normation.cfclerk.domain.TechniqueName
+import com.normation.errors.IOResult
+import com.normation.errors.effectUioUnit
 import com.normation.eventlog.EventActor
 import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.changevalidation.MockServices
@@ -97,18 +99,17 @@ import java.nio.file.Files
 import net.liftweb.common.Full
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-import org.specs2.specification.AfterAll
+import zio.*
+import zio.test.*
+import zio.test.junit.ZTestJUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-class ChangeRequestApiTest extends TraitTestApiFromYamlFiles with AfterAll {
-  sequential
-
+@RunWith(classOf[ZTestJUnitRunner])
+class ChangeRequestApiTest extends ZIOSpecDefault {
   val restTestSetUp = RestTestSetUp.newEnv
 
   val tmpDir: File = File(Files.createTempDirectory("rudder-test-"))
-  override def yamlSourceDirectory  = "changevalidation_api"
-  override def yamlDestTmpDirectory = tmpDir / "templates"
+  val yamlSourceDirectory  = "changevalidation_api"
+  val yamlDestTmpDirectory = tmpDir / "templates"
 
   val actor = EventActor("test-user")
 
@@ -643,7 +644,7 @@ class ChangeRequestApiTest extends TraitTestApiFromYamlFiles with AfterAll {
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, Some(mockServices.userService))
 
-  override def transformations: Map[String, String => String] = Map()
+  val transformations: Map[String, String => String] = Map()
 
   // we are testing error cases, so we don't want to output error log for them
   org.slf4j.LoggerFactory
@@ -651,10 +652,23 @@ class ChangeRequestApiTest extends TraitTestApiFromYamlFiles with AfterAll {
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  override def afterAll(): Unit = {
-    tmpDir.delete()
-  }
+  override def spec: Spec[TestEnvironment with Scope, Any] = {
+    (suite("All REST tests defined in files") {
 
-  doTest(List("api_changerequest.yml"), semanticJson = true)
+      for {
+        s <- TraitTestApiFromYamlFiles.doTest(
+               yamlSourceDirectory,
+               yamlDestTmpDirectory,
+               liftRules,
+               List("api_changerequest.yml"),
+               transformations
+             )
+        _ <- effectUioUnit(
+               if (java.lang.System.getProperty("tests.clean.tmp") != "false") IOResult.attempt(restTestSetUp.cleanup())
+               else ZIO.unit
+             )
+      } yield s
+    })
+  }
 
 }

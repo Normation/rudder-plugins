@@ -81,9 +81,8 @@ object DatasourcesConf extends RudderPluginModule {
   lazy val dataSourceRepository = new DataSourceRepoImpl(
     new DataSourceJdbcRepository(Cfg.doobie),
     new HttpQueryDataSourceService(
-      Cfg.nodeInfoService,
+      Cfg.nodeFactRepository,
       Cfg.roLDAPParameterRepository,
-      Cfg.woNodeRepository,
       Cfg.interpolationCompiler,
       regenerationHook.hook _,
       () => Cfg.configService.rudder_global_policy_mode()

@@ -2,22 +2,24 @@ package com.normation.plugins.authbackends
 package api
 
 import better.files.File
+import com.normation.errors.IOResult
+import com.normation.errors.effectUioUnit
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import java.nio.file.Files
-import net.liftweb.common.Loggable
-import org.specs2.mutable.Specification
-import org.specs2.specification.AfterAll
+import org.junit.runner.RunWith
+import zio.*
+import zio.test.*
+import zio.test.junit.ZTestJUnitRunner
 
-class AuthBackendsApiTest extends Specification with Loggable with TraitTestApiFromYamlFiles with AfterAll {
-  sequential
-
+@RunWith(classOf[ZTestJUnitRunner])
+class AuthBackendsApiTest extends ZIOSpecDefault {
   val restTestSetUp = RestTestSetUp.newEnv
 
   val tmpDir: File = File(Files.createTempDirectory("rudder-test-"))
-  override def yamlSourceDirectory  = "authbackends_api"
-  override def yamlDestTmpDirectory = tmpDir / "templates"
+  val yamlSourceDirectory  = "authbackends_api"
+  val yamlDestTmpDirectory = tmpDir / "templates"
 
   val fakeJsonAuthConfiguration = JsonAuthConfiguration(
     declaredProviders = "provider1, provider2",
@@ -56,7 +58,7 @@ class AuthBackendsApiTest extends Specification with Loggable with TraitTestApiF
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
 
-  override def transformations: Map[String, String => String] = Map()
+  val transformations: Map[String, String => String] = Map()
 
   // we are testing error cases, so we don't want to output error log for them
   org.slf4j.LoggerFactory
@@ -64,9 +66,23 @@ class AuthBackendsApiTest extends Specification with Loggable with TraitTestApiF
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  override def afterAll(): Unit = {
-    tmpDir.delete()
-  }
+  override def spec: Spec[TestEnvironment with Scope, Any] = {
+    (suite("All REST tests defined in files") {
 
-  doTest(semanticJson = true)
+      for {
+        s <- TraitTestApiFromYamlFiles.doTest(
+               yamlSourceDirectory,
+               yamlDestTmpDirectory,
+               liftRules,
+               Nil,
+               transformations
+             )
+        _ <- effectUioUnit(
+               if (java.lang.System.getProperty("tests.clean.tmp") != "false") IOResult.attempt(restTestSetUp.cleanup())
+               else ZIO.unit
+             )
+      } yield s
+    })
+
+  }
 }

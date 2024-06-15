@@ -35,8 +35,8 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
     val description    = "Get OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
 
-    override def dataContainer: Option[String] = None
-    override val authz : List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
+    override def dataContainer: Option[String]          = None
+    override val authz:         List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
   }
 
   final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
@@ -44,8 +44,8 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
     val description    = "Get sanitized OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
 
-    override def dataContainer: Option[String] = None
-    override val authz : List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
+    override def dataContainer: Option[String]          = None
+    override val authz:         List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
   }
 
   def endpoints = values.toList.sortBy(_.z)

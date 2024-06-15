@@ -48,6 +48,7 @@ import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
+import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.normation.zio.*
@@ -91,8 +92,8 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
   def getNode(
       datasourceName:    DataSourceId,
       datasource:        DataSourceType.HTTP,
-      node:              NodeInfo,
-      policyServer:      NodeInfo,
+      node:              CoreNodeFact,
+      policyServer:      CoreNodeFact,
       globalPolicyMode:  GlobalPolicyMode,
       parameters:        Set[GlobalParameter],
       connectionTimeout: Duration,
@@ -235,22 +236,22 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
   }
 
   def compileInput(
-      node:             NodeInfo,
-      policyServer:     NodeInfo,
+      node:             CoreNodeFact,
+      policyServer:     CoreNodeFact,
       globalPolicyMode: GlobalPolicyMode,
       parameters:       Map[String, ParamInterpolationContext => IOResult[String]]
   )(input: String): IOResult[String] = {
 
     // we inject some props that are useful as identity pivot (like short name)
     // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}
-    val injectedPropsJson = s"""{"short-hostname": "${node.hostname.split("\\.")(0)}"}"""
+    val injectedPropsJson = s"""{"short-hostname": "${node.fqdn.split("\\.")(0)}"}"""
 
     for {
       compiled <- compiler.compileParam(input).toIO
       injected <- GenericProperty.parseValue(injectedPropsJson).toIO
       // build interpolation context from node:
       enhanced  =
-        node.modify(_.node.properties).using(props => NodeProperty.apply("datasources-injected", injected, None, None) :: props)
+        node.modify(_.properties).using(props => NodeProperty.apply("datasources-injected", injected, None, None) +: props)
       context   = ParamInterpolationContext(enhanced, policyServer, globalPolicyMode, parameters, 5)
       bounded  <- compiled(context)
     } yield {

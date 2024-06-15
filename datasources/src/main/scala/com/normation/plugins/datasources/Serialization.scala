@@ -496,7 +496,7 @@ object DataSourceExtractor {
     def parse[A: JsonDecoder](key: String):                PureResult[Option[A]] = {
       optGet(key) match {
         case None    => Right(None)
-        case Some(x) => JsonDecoder[A].decodeJson(x).map(Some(_)).left.map(Unexpected)
+        case Some(x) => JsonDecoder[A].decodeJson(x).map(Some(_)).left.map(Unexpected.apply)
       }
     }
     def parseString[A](key: String, decoder: String => A): PureResult[Option[A]] = {

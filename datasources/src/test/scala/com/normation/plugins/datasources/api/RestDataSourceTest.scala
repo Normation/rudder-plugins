@@ -49,15 +49,15 @@ import com.normation.zio.*
 import io.scalaland.chimney.syntax.*
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit.SECONDS
-import net.liftweb.common.Loggable
 import org.junit.runner.RunWith
+import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
 import zio.*
 import zio.json.*
 import zio.json.ast.Json
 
 @RunWith(classOf[JUnitRunner])
-class RestDataSourceTest extends TraitTestApiFromYamlFiles with Loggable {
+class RestDataSourceTest extends Specification {
 
   val restTestSetUp = RestTestSetUp.newEnv
 
@@ -78,10 +78,6 @@ class RestDataSourceTest extends TraitTestApiFromYamlFiles with Loggable {
   restTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
 
   val tmpDir: File = File(Files.createTempDirectory("rudder-test-"))
-  override def yamlSourceDirectory  = "datasources_api"
-  override def yamlDestTmpDirectory = tmpDir / "templates"
-
-  override def transformations: Map[String, String => String] = Map()
 
   val baseSourceType = DataSourceType.HTTP(
     "",
@@ -259,7 +255,4 @@ class RestDataSourceTest extends TraitTestApiFromYamlFiles with Loggable {
     }
 
   }
-
-  // Execute API request/response test cases from .yml files
-  doTest()
 }

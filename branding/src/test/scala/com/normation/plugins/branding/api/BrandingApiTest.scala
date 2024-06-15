@@ -7,19 +7,17 @@ import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import com.normation.utils.StringUuidGeneratorImpl
 import java.nio.file.Files
-import net.liftweb.common.Loggable
 import org.junit.runner.RunWith
-import org.specs2.mutable.Specification
-import org.specs2.runner.JUnitRunner
-import org.specs2.specification.AfterAll
+import zio.*
+import zio.test.*
+import zio.test.junit.ZTestJUnitRunner
 
-@RunWith(classOf[JUnitRunner])
-class BrandingApiTest extends Specification with TraitTestApiFromYamlFiles with Loggable with AfterAll {
-  sequential
+@RunWith(classOf[ZTestJUnitRunner])
+class BrandingApiTest extends ZIOSpecDefault {
 
   val tmpDir: File = File(Files.createTempDirectory("rudder-test-"))
-  override def yamlSourceDirectory  = "branding_api"
-  override def yamlDestTmpDirectory = tmpDir / "templates"
+  val yamlSourceDirectory  = "branding_api"
+  val yamlDestTmpDirectory = tmpDir / "templates"
 
   val fakeBrandingConf: String = s"""
     {
@@ -68,7 +66,7 @@ class BrandingApiTest extends Specification with TraitTestApiFromYamlFiles with 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
 
-  override def transformations: Map[String, String => String] = Map()
+  val transformations: Map[String, String => String] = Map()
 
   // we are testing error cases, so we don't want to output error log for them
   org.slf4j.LoggerFactory
@@ -76,10 +74,19 @@ class BrandingApiTest extends Specification with TraitTestApiFromYamlFiles with 
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  override def afterAll(): Unit = {
-    tmpDir.delete()
-  }
+  override def spec: Spec[TestEnvironment with Scope, Any] = {
+    (suite("All REST tests defined in files") {
 
-  doTest(semanticJson = true)
+      for {
+        s <- TraitTestApiFromYamlFiles.doTest(
+               yamlSourceDirectory,
+               yamlDestTmpDirectory,
+               liftRules,
+               Nil,
+               transformations
+             )
+      } yield s
+    })
+  }
 
 }

@@ -46,8 +46,8 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.datasources.DataSourceSchedule.*
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.domain.eventlog.*
-import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.properties.GlobalParameter
+import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.utils.StringUuidGenerator
 import com.normation.zio.*
 import doobie.*
@@ -60,10 +60,10 @@ import zio.json.*
 import zio.syntax.*
 
 final case class PartialNodeUpdate(
-    nodes:         Map[NodeId, NodeInfo] // the node to update
-    ,
-    policyServers: Map[NodeId, NodeInfo] // there policy servers
-    ,
+    // the node to update
+    nodes:         Map[NodeId, CoreNodeFact],
+    // there policy servers
+    policyServers: Map[NodeId, CoreNodeFact],
     parameters:    Set[GlobalParameter]
 )
 

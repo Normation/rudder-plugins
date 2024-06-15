@@ -578,10 +578,10 @@ object GroupChangeJson {
   )
 
   object GroupJson {
-    implicit val serverListEncoder:  JsonEncoder[Set[NodeId]] =
+    implicit val serverListEncoder: JsonEncoder[Set[NodeId]] =
       JsonEncoder[List[String]].contramap[Set[NodeId]](_.toList.map(_.value).sorted)
-    implicit val targetEncoder:      JsonEncoder[GroupTarget] = JsonEncoder[String].contramap[GroupTarget](_.target)
-    implicit val encoder:            JsonEncoder[GroupJson]   = DeriveJsonEncoder.gen[GroupJson]
+    implicit val targetEncoder:     JsonEncoder[GroupTarget] = JsonEncoder[String].contramap[GroupTarget](_.target)
+    implicit val encoder:           JsonEncoder[GroupJson]   = DeriveJsonEncoder.gen[GroupJson]
   }
 
   final case class PropertiesJson( // we sort the properties by name on serialization
@@ -658,9 +658,9 @@ object GroupChangeJson {
   )
 
   object ModifyGroupJson {
-    implicit lazy val nodeIdEncoder:              JsonEncoder[NodeId]              = JsonEncoder[String].contramap[NodeId](_.value)
-    implicit lazy val queryEncoder:               JsonEncoder[Query]               = JsonEncoder[String].contramap[Query](_.toString)
-    implicit lazy val encoder:                    JsonEncoder[ModifyGroupJson]     =
+    implicit lazy val nodeIdEncoder: JsonEncoder[NodeId]          = JsonEncoder[String].contramap[NodeId](_.value)
+    implicit lazy val queryEncoder:  JsonEncoder[Query]           = JsonEncoder[String].contramap[Query](_.toString)
+    implicit lazy val encoder:       JsonEncoder[ModifyGroupJson] =
       DeriveJsonEncoder.gen[ModifyGroupJson]
 
     def from(

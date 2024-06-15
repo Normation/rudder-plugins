@@ -86,12 +86,9 @@ class ScaleOutRelayAgentSpecificGeneration(pluginInfo: PluginStatus) extends Age
   import com.normation.rudder.services.policies.write.BuildBundleSequence.InputFile
   import com.normation.rudder.services.policies.write.BuildBundleSequence.TechniqueBundles
   override def getBundleVariables(
-      systemInputs: List[InputFile],
-      sytemBundles: List[TechniqueBundles],
-      userInputs:   List[InputFile],
-      userBundles:  List[TechniqueBundles],
-      runHooks:     List[NodeRunHook]
+      inputs:   List[InputFile],
+      bundles:  List[TechniqueBundles],
+      runHooks: List[NodeRunHook]
   ): BundleSequenceVariables =
-    CfengineBundleVariables.getBundleVariables(escape, systemInputs, sytemBundles, userInputs, userBundles, runHooks)
-
+    CfengineBundleVariables.getBundleVariables(escape, inputs, bundles, runHooks)
 }
