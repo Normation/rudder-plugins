@@ -52,14 +52,17 @@ function gestScssDest(dirname){
 
 function clean(cb) {
     let mergeCleanPaths = function(){
-        let getCleanPaths = function(p){
+        let getCleanPaths = function(p, extension){
             let files  = (p + '/**');
+            if (!!extension) {
+              files = files + extension;
+	    }
             let parent = ('!' + p);
             return [files, parent];
         }
         return [].concat(
             getCleanPaths(paths.elm.dest),
-            getCleanPaths(gestScssDest(__dirname))
+            getCleanPaths(gestScssDest(__dirname), 'css')
         );
     }
     let cleanPaths = mergeCleanPaths();
