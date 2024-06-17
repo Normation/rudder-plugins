@@ -6,7 +6,7 @@ ARG USER_ID=1000
 COPY ci/user.sh .
 # For building js and python plugins
 RUN ./user.sh $USER_ID && \
-    apt-get update && apt-get install -y python3-docopt poppler-utils curl wget unzip zip gpg
+    apt-get update && apt-get install -y python3-docopt curl wget unzip zip gpg make
 
 # We need a recent node
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg
