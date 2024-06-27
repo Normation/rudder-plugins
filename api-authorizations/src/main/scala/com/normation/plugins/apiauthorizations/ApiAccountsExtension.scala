@@ -97,7 +97,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
     val json       = write(categories)
 
     // now, add declaration of a JS variable: var rudderApis = [{ ... }]
-    xml ++ Script(JsRaw(s"""var rudderApis = $json;"""))
+    xml ++ Script(JsRaw(s"""var rudderApis = $json;""")) // JsRaw ok, comes from json
   }
 
   // change variables in api path {xxx] into *
