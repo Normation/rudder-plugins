@@ -135,7 +135,9 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
               <h3>You will be redirected to the change requests page</h3>
             </div> ++
             Script(
-              JsRaw(s"""setTimeout("location.href = '${S.contextPath}/secure/plugins/changes/changeRequests';",5000);""")
+              JsRaw(
+                s"""setTimeout("location.href = '${S.contextPath}/secure/plugins/changes/changeRequests';",5000);"""
+              ) // JsRaw ok, const
             )
           case Full(cr) =>
             new ChangeRequestEditForm(
@@ -305,7 +307,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
           .openOr(<div class="error">Cannot find the status of this change request</div>)
       ) &
       SetHtml("changeRequestChanges", new ChangeRequestChangesForm(cr).dispatch("changes")(NodeSeq.Empty)) &
-      JsRaw("""hideBsModal('popupContent');""")
+      JsRaw("""hideBsModal('popupContent');""") // JsRaw ok, const
     }
 
     var nextChosen                                                = nextSteps.head
@@ -412,7 +414,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
           case Full(next) =>
             SetHtml("workflowActionButtons", displayActionButton(cr, next)) &
             SetHtml("newStatus", Text(next.value)) &
-            closePopup & JsRaw(""" initBsModal("successWorkflow"); """)
+            closePopup & JsRaw(""" initBsModal("successWorkflow"); """) // JsRaw ok, const
           case eb: EmptyBox =>
             val fail = eb ?~! "could not change Change request step"
             formTracker.addFormError(error(fail.msg))
