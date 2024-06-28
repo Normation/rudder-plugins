@@ -56,6 +56,7 @@ import net.liftweb.http.SHtml.SelectableOption
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*
 import net.liftweb.util.Helpers.*
+import org.apache.commons.text.StringEscapeUtils
 import scala.xml.Elem
 import scala.xml.NodeSeq
 import scala.xml.Text
@@ -78,7 +79,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     case "display" =>
       xml => {
         xml ++
-        Script(OnLoad(JsRaw(dataTableInit)))
+        Script(OnLoad(JsRaw(dataTableInit))) // JsRaw ok, escaped
       }
   }
 
@@ -130,10 +131,13 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     })
   }
   def dataTableInit = {
-    val refresh = AnonFunc(SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().json.toJsCmd})")))
+    val refresh = AnonFunc(
+      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().json.toJsCmd})"))
+    ) // JsRaw ok, from json
 
     val filter = initFilter match {
-      case Full(filter) => s"$$('#${changeRequestTableId}').dataTable().fnFilter('${filter}',1,true,false,true);"
+      case Full(filter) =>
+        s"$$('#${changeRequestTableId}').dataTable().fnFilter('${StringEscapeUtils.escapeEcmaScript(filter)}',1,true,false,true);"
       case eb: EmptyBox => s"$$('#${changeRequestTableId}').dataTable().fnFilter('pending',1,true,false,true);"
     }
     s"""
@@ -200,11 +204,15 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
             $$('#${changeRequestTableId}').dataTable().fnFilter(".",1);
           }"""
     }
-    val onChange       = ("onchange" -> JsRaw(filterFunction))
+    val onChange       = ("onchange" -> JsRaw(filterFunction)) // JsRaw ok, const
 
     def filterForm(select: Elem, btnClass: String, transform: String => NodeSeq) = {
       val submit = {
-        SHtml.a(Text(""), JsRaw(s"$$('.expand').click();"), ("class", s"btn btn-default btn-expand btn-${btnClass}")) ++
+        SHtml.a(
+          Text(""),
+          JsRaw(s"$$('.expand').click();"), // JsRaw ok, const
+          ("class", s"btn btn-default btn-expand btn-${btnClass}")
+        ) ++
         SHtml.ajaxSubmit(
           "",
           () => SetHtml("actualFilter", transform(value)),
