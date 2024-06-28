@@ -1224,13 +1224,15 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         nodeIds.map(n => if (expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n): NodeUpdateResult)
       )
 
-      res.either.runNow must beRight(matcher) and (
-        if (expectMod) {
-          updates.get.runNow must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
-        } else {
-          updates.get.runNow must beEmpty
-        }
-      ) and ({
+      res.either
+        .flatMap(r => {
+          updates.get.map(u => {
+            (r must beRight(matcher)) and (
+              u must (if (expectMod) havePairs(nodeIds.map(x => (x, 1)).toSeq*) else empty)
+            )
+          })
+        })
+        .runNow and ({
         // none should have "test-404"
         val props = infos
           .getAll()(QueryContext.testQC)
