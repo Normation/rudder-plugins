@@ -72,6 +72,7 @@ import net.liftweb.http.*
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*
 import net.liftweb.util.Helpers.*
+import org.apache.commons.text.StringEscapeUtils
 import org.joda.time.DateTime
 import scala.xml.*
 
@@ -123,7 +124,7 @@ class ChangeRequestChangesForm(
                   cr.rules.values.map(_.changes).toList,
                   cr.globalParams.values.map(_.changes).toList
                 ))(form) ++
-                Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");"""))
+                Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");""")) // JsRaw ok, const
 
               case eb: EmptyBox =>
                 val e = eb ?~! "An error occurred when trying to get data from base. "
@@ -305,7 +306,7 @@ class ChangeRequestChangesForm(
             { "sWidth": "100px" }
           ],
         } );
-        $$('.dataTables_filter input').attr("placeholder", "Filter"); """)
+        $$('.dataTables_filter input').attr("placeholder", "Filter"); """) // JsRaw ok, const
 
     ("#crBody" #> lines).apply(CRTable) ++
     Script(
@@ -710,7 +711,8 @@ class ChangeRequestChangesForm(
     "#description" #> displaySimpleDiff(diff.modDescription, "description", Text(param.description)))(globalParameterXML)
   }
 
-  private[this] def displayFormDiff[T](diff: SimpleDiff[T], name: String)(implicit fun: T => String = (t: T) => t.toString) = {
+  private[this] def displayFormDiff[T](diff: SimpleDiff[T], rawName: String)(implicit fun: T => String = (t: T) => t.toString) = {
+    val name = StringEscapeUtils.escapeEcmaScript(rawName)
     <pre style="width:200px;" id={s"before${name}"}
     class="nodisplay">{fun(diff.oldValue)}</pre>
     <pre style="width:200px;" id={s"after${name}"}
@@ -724,7 +726,7 @@ class ChangeRequestChangesForm(
             var after  = "after${name}";
             var result = "result${name}";
             makeDiff(before,after,result);"""
-        )
+        ) // JsRaw ok, escaped
       )
     )
   }

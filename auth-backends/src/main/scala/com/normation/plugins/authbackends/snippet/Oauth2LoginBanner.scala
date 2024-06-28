@@ -129,7 +129,7 @@ class Oauth2LoginBanner(
                                     | if(urlVars.get('login_error')) {{
                                     |   $('#errorInfoSSO').toggle(true);
                                     | }}
-                                    |""".stripMargin))) ++
+                                    |""".stripMargin))) ++ // JsRaw ok, const
               <button id="toggleLoginFormButton" class="btn btn-sm btn-light btn-outline-secondary border">show non-SSO login form
                             </button><div id="toggleLoginForm" style="display: none">{x}</div>
             case LoginFormRendering.Remove => NodeSeq.Empty
