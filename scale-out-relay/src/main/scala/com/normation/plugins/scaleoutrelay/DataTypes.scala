@@ -38,6 +38,7 @@
 package com.normation.plugins.scaleoutrelay
 
 import com.normation.NamedZioLogger
+import com.normation.errors.PureResult
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.domain.Constants
 import com.normation.rudder.services.policies.NodeRunHook
@@ -47,7 +48,6 @@ import com.normation.rudder.services.policies.write.AgentSpecificFile
 import com.normation.rudder.services.policies.write.AgentSpecificGeneration
 import com.normation.rudder.services.policies.write.CFEngineAgentSpecificGeneration
 import com.normation.rudder.services.policies.write.CfengineBundleVariables
-import net.liftweb.common.Box
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
 
@@ -78,7 +78,7 @@ class ScaleOutRelayAgentSpecificGeneration(pluginInfo: PluginStatus) extends Age
     agentNodeProps.nodeId != Constants.ROOT_POLICY_SERVER_ID
   }
 
-  override def write(cfg: AgentNodeWritableConfiguration): Box[List[AgentSpecificFile]] = {
+  override def write(cfg: AgentNodeWritableConfiguration): PureResult[List[AgentSpecificFile]] = {
     CFEngineAgentSpecificGeneration.write(cfg)
   }
 
@@ -89,6 +89,6 @@ class ScaleOutRelayAgentSpecificGeneration(pluginInfo: PluginStatus) extends Age
       inputs:   List[InputFile],
       bundles:  List[TechniqueBundles],
       runHooks: List[NodeRunHook]
-  ): BundleSequenceVariables =
-    CfengineBundleVariables.getBundleVariables(escape, inputs, bundles, runHooks)
+  ): PureResult[BundleSequenceVariables] =
+    Right(CfengineBundleVariables.getBundleVariables(escape, inputs, bundles, runHooks))
 }
