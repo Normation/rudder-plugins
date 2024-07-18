@@ -116,8 +116,8 @@ class ChangeRequestApiTest extends TraitTestApiFromYamlFiles with AfterAll {
     SectionSpec(
       name = "sections",
       children = Seq(
-        InputVariableSpec("PACKAGE_LIST", "", id = None),
-        InputVariableSpec("PACKAGE_STATE", "", id = None),
+        InputVariableSpec("PACKAGE_LIST", "", None, "", id = None),
+        InputVariableSpec("PACKAGE_STATE", "", None, "", id = None),
         SectionSpec(
           name = "Package",
           children = Seq(
