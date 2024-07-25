@@ -26,7 +26,9 @@ class OpenScapApiTest extends ZIOSpecDefault {
 
   val policySanitizationFile = better.files.Resource
     .url("antisamy.xml")
-    .map(_.getPath().toString)
+    // here, we need to use a toURI, because antisamy will do a File(policyFile) etc, and "@" is changed to "%40"
+    // See: https://issues.rudder.io/issues/25193
+    .map(_.toURI.getPath().toString)
     .getOrElse("non_existing_file")
   val reportSanitizer        = new ReportSanitizer(policySanitizationFile)
 

@@ -64,11 +64,11 @@ object OpenScapProperties {
     case x         => // so, it should be a full path, check it
       val config = new File(x)
       if (config.exists && config.canRead) {
-        ApplicationLogger.info(s"Use configuration file defined by JVM property -D${CONFIG_FILE_KEY} : ${config.getPath}")
+        ApplicationLogger.info(s"Use configuration file defined by JVM property -D${CONFIG_FILE_KEY} : ${config.toURI.getPath}")
         FileSystemResource(config)
       } else {
         ApplicationLogger.error(s"Can not find configuration file specified by JVM property ${CONFIG_FILE_KEY} ${x} ; abort")
-        throw new IllegalArgumentException("Configuration file not found: %s".format(config.getPath))
+        throw new IllegalArgumentException("Configuration file not found: %s".format(config.toURI.getPath))
       }
   }
 
