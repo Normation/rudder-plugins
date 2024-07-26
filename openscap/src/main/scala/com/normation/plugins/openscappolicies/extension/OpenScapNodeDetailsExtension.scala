@@ -44,18 +44,18 @@ class OpenScapNodeDetailsExtension(
           existence match {
             case false =>
               <div id="openScap" class="inner-portlet">
-                  <h3 class="page-title">OpenSCAP reporting</h3>
-                  <div class="col-sm-12 callout-fade callout-info">
-                    <div class="marker">
-                      <span class="fa fa-info-circle"></span>
-                    </div>
-                    <p>That tab gives access to OpenSCAP report configured for that node.</p>
-                    <br/>
-                    <div class="error">There are no OpenSCAP report available yet for node
-                      {snippet.nodeId.value}
-                    </div>
+                <h3 class="page-title mt-0">OpenSCAP reporting</h3>
+                <div class="col-sm-12 callout-fade callout-info">
+                  <div class="marker">
+                    <span class="fa fa-info-circle"></span>
+                  </div>
+                  <p>That tab gives access to OpenSCAP report configured for that node.</p>
+                  <br/>
+                  <div class="error">There are no OpenSCAP report available yet for node
+                    {snippet.nodeId.value}
                   </div>
                 </div>
+              </div>
 
             case true =>
               frameContent(snippet.nodeId)(openScapExtensionXml)
@@ -79,7 +79,7 @@ class OpenScapNodeDetailsExtension(
               )
             } &
             "#node_logs" #> { (x: NodeSeq) =>
-              x ++ (<div id="openscap_reports">
+              x ++ (<div id="openscap_reports" class="tab-pane">
                     {content}
                    </div>)
             }
