@@ -493,7 +493,7 @@ See the example configuration file below for details about these property values
 You can configure an `OAuth2` or `OIDC` provider so that users that are correctly authenticated with it can be automatically created in Rudder. This allows to avoid changing `rudder-users.xml` file.
 By default, user provisioned by that way don't have any rights. You will need to also configure roles provisioning through your IdP (see previous section).
 
-To allow IdP provisioning of users, set property `enableProvisionning` to `true` (default `false`).
+To allow IdP provisioning of users, set property `enableProvisioning` to `true` (default `false`).
 
 See the example configuration file below for details about that property.
 
@@ -617,7 +617,7 @@ rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
 # enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
 # Users provisioned through that channel don't have roles, you will need to also
 # provisioned roles thanks to IdP.
-rudder.auth.oauth2.provider.okta.enableProvisionning=true
+rudder.auth.oauth2.provider.okta.enableProvisioning=true
 ```
 
 
