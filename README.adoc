@@ -480,6 +480,14 @@ manage both user and authorisation in the same place.
 
 This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
 
+[WARNING]
+
+====
+
+xref:plugins:user-management.adoc#_unitary_permission_a_right[Unitary rights] like `node_all`, `technique_read`, `rule_write` etc are not supported to describe a user's authorisations through OIDC. It must be a xref:plugins:user-management.adoc#_pre_defined_roles[pre-defined role] or a xref:plugins:user-management.adoc#_custom_roles[custom role]
+
+====
+
 You need three additional properties to enable and configure that property for a given OIDC provider:
 - the first, `roles.enabled` allows to enable the feature,
 - the second, `roles.attribute` defines the name of the OIDC token attribute which holds the list of roles,
@@ -556,7 +564,7 @@ rudder.auth.oauth2.provider.okta.scope=openid  email profile
 # The value of that attribute will be used to retrieved Rudder internal user, its rights, etc.
 rudder.auth.oauth2.provider.okta.userNameAttributeName=email
 #
-# The next 4 URLs are the redirection URLs towards the IdP and which correspdonds to
+# The next 4 URLs are the redirection URLs towards the IdP and which corresponds to
 # each step of the authentication process (yes, the protocol does a lot of redirection):
 # - `uri.auth`: first URL, Rudder ask for a code request. User is then redirected by
 #    the IdP towards its own login form. It then redirect to Rudder with a code to process.
@@ -605,8 +613,14 @@ rudder.auth.oauth2.provider.okta.roles.override=true
 # Mapping between IdP role name ("entitlements") and Rudder internal naming scheme.
 #
 # It is common for the IdP to use its own naming scheme, or to have several IdP using
-# diffenent naming incompatible naming scheme for roles. The following property allows
-# to map an IdP entitlement into a rudder role name (custom or builtin)
+# different naming incompatible naming scheme for roles. The following property allows
+# to map an IdP entitlement into a rudder role name (custom or pre-defined)
+#
+# Unitary right like `node_all` `rule_read` `technique_write` cannot be mapped.
+# If none of the pre-defined role suits you, please create a custom role to be able to map it.
+# see https://docs.rudder.io/reference/8.1/plugins/user-management.html#_custom_roles
+#
+# Check the list of pre-defined roles: https://docs.rudder.io/reference/8.1/plugins/user-management.html#_pre_defined_roles
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
 # You can restrict the role that The IdP can assign to only role mapped to entitlements.
@@ -736,3 +750,20 @@ In the log, you see:
 
 It means that the value used for `rudder.auth.oauth2.provider.${registrationKey}.userNameAttributeName` was correctly returned in the profile list for the authenticated user, but that value was not found in Rudder user configuration files `/opt/rudder/etc/rudder-users.xml`.
 Check that one of the entries in that file has the corresponding value for its `name` attribute.
+
+
+**User role unknown**
+
+In the log, you see:
+
+----
+[timestamp] TRACE auth-backends - IdP configuration has registered role mapping: [(role-oidc-a,node_all)]
+[timestamp] DEBUG auth-backends - Principal 'toto@acme.com': mapping IdP provided role 'role-oidc-a' to Rudder role 'node_all'
+[timestamp] DEBUG auth-backends - Role 'role-oidc-a' does not match any Rudder role, ignoring it for user toto@acme.com
+----
+
+It means that the role `node_all` is not recognized. It is because it is not a ref:plugins:user-management.adoc#_pre_defined_roles[pre-defined role] or a xref:plugins:user-management.adoc#_custom_roles[custom role]
+
+In this case you should create a custom role (let's say `access_to_node`) with the permission `node_all`
+that you will map to your IdP role `role-oidc-a` and modifying the parameter `mapping.entitlements` in the OIDC config file like so:
+`rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.role-oidc-a=access_to_node`
