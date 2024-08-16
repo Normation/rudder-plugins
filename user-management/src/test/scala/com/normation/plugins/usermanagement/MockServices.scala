@@ -12,6 +12,7 @@ import com.normation.rudder.users.UserAuthorisationLevel
 import com.normation.rudder.users.UserInfo
 import com.normation.rudder.users.UserRepository
 import com.normation.rudder.users.UserSession
+import com.normation.rudder.users.UserStatus
 import java.nio.charset.StandardCharsets
 import org.apache.commons.io.IOUtils
 import org.joda.time.DateTime
@@ -89,6 +90,7 @@ class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], u
       userInfos.find(_.id == userId).succeed
     }
 
+    override def getStatuses(userIds: List[String]): IOResult[Map[String, UserStatus]] = ???
   }
 
   val usersInputStream = () => IOUtils.toInputStream(usersFile.contentAsString, StandardCharsets.UTF_8)
