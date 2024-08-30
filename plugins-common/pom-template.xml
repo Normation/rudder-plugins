@@ -303,7 +303,7 @@
     <dependency><groupId>io.github.java-diff-utils</groupId><artifactId>java-diff-utils</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>io.scalaland</groupId><artifactId>chimney_${scala-binary-version}</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
     <dependency><groupId>io.scalaland</groupId><artifactId>chimney-macro-commons_${scala-version}</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
-    <dependency><groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId><scope>provided</scope>><version>${servlet-version}</version></dependency>
+    <dependency><groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId><scope>provided</scope><version>${servlet-version}</version></dependency>
     <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope><version>${jodatime-version}</version></dependency>
     <dependency><groupId>net.java.dev.jna</groupId><artifactId>jna</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_${scala-binary-version}</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
