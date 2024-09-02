@@ -11,16 +11,26 @@ response:
         "name" : "GroupRoot",
         "categories" : [
           {
+            "name" : "a category to be deleted",
+            "categories" : [],
+            "targets" : []
+          },
+          {
             "name" : "category 1",
             "categories" : [],
             "targets" : [
-                         {
-                           "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
-                           "name" : "",
-                           "description" : "",
-                           "supervised" : false
-                         }
+              {
+                "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
+                "name" : "",
+                "description" : "",
+                "supervised" : false
+              }
             ]
+          },
+          {
+            "name" : "system category 1",
+            "categories" : [],
+            "targets" : []
           }
         ],
         "targets" : [
@@ -67,16 +77,26 @@ response:
         "name" : "GroupRoot",
         "categories" : [
           {
+            "name" : "a category to be deleted",
+            "categories" : [],
+            "targets" : []
+          },
+          {
             "name" : "category 1",
             "categories" : [],
             "targets" : [
-                         {
-                           "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
-                           "name" : "",
-                           "description" : "",
-                           "supervised" : true
-                         }
+              {
+                "id" : "group:0000f5d3-8c61-4d20-88a7-bb947705ba8a",
+                "name" : "",
+                "description" : "",
+                "supervised" : true
+              }
             ]
+          },
+          {
+            "name" : "system category 1",
+            "categories" : [],
+            "targets" : []
           }
         ],
         "targets" : [
