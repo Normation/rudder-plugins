@@ -651,7 +651,11 @@ response:
                     "group_real_nodes"
                   ],
                   "properties" : [
-                    {
+                     {
+                       "name" : "hiddenProp",
+                       "value" : "hidden prop value"
+                     },
+                     {               
                       "name" : "jsonParam",
                       "value" : {
                         "array" : [
@@ -708,6 +712,10 @@ response:
                   },
                   "properties" : {
                     "from" : [
+                      {
+                        "name" : "hiddenProp",
+                        "value" : "hidden prop value"
+                      },
                       {
                         "name" : "jsonParam",
                         "value" : {
@@ -792,6 +800,10 @@ response:
                   ],
                   "properties" : [
                     {
+                       "name" : "hiddenProp",
+                       "value" : "hidden prop value"
+                     },
+                     {
                       "name" : "jsonParam",
                       "value" : {
                         "array" : [
@@ -1704,6 +1716,10 @@ response:
                   ],
                   "properties" : [
                     {
+                      "name" : "hiddenProp", 
+                      "value" : "hidden prop value" 
+                    }, 
+                    { 
                       "name" : "jsonParam",
                       "value" : {
                         "array" : [
@@ -1760,6 +1776,10 @@ response:
                   },
                   "properties" : {
                     "from" : [
+                      {
+                        "name" : "hiddenProp",
+                        "value" : "hidden prop value"
+                      },
                       {
                         "name" : "jsonParam",
                         "value" : {
@@ -1843,6 +1863,10 @@ response:
                     "group_real_nodes"
                   ],
                   "properties" : [
+                    {
+                      "name" : "hiddenProp",
+                      "value" : "hidden prop value"
+                    },
                     {
                       "name" : "jsonParam",
                       "value" : {
@@ -2769,6 +2793,10 @@ response:
                   ],
                   "properties" : [
                     {
+                      "name" : "hiddenProp",
+                      "value" : "hidden prop value"
+                    },
+                    {
                       "name" : "jsonParam",
                       "value" : {
                         "array" : [
@@ -2825,6 +2853,10 @@ response:
                   },
                   "properties" : {
                     "from" : [
+                      {
+                        "name" : "hiddenProp",
+                        "value" : "hidden prop value"
+                      },
                       {
                         "name" : "jsonParam",
                         "value" : {
@@ -2908,6 +2940,10 @@ response:
                     "group_real_nodes"
                   ],
                   "properties" : [
+                    {
+                      "name" : "hiddenProp",
+                      "value" : "hidden prop value"
+                    },
                     {
                       "name" : "jsonParam",
                       "value" : {
@@ -3617,6 +3653,10 @@ response:
                       "group_real_nodes"
                     ],
                     "properties" : [
+                      {
+                        "name" : "hiddenProp",
+                        "value" : "hidden prop value"
+                      },
                       {
                         "name" : "jsonParam",
                         "value" : {

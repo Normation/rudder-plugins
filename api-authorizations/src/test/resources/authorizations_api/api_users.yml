@@ -76,10 +76,10 @@ response:
             "id" : "user1",
             "name" : "user1",
             "token" : "generated-test-token",
-            "tokenGenerationDate" : "2023-12-12T13:12:12+01:00",
+            "tokenGenerationDate" : "2023-12-12T12:12:12Z",
             "kind" : "user",
             "description" : "API token for user 'user1'",
-            "creationDate" : "2023-12-12T13:12:12+01:00",
+            "creationDate" : "2023-12-12T12:12:12Z",
             "enabled" : true,
             "expirationDateDefined" : false
           }
