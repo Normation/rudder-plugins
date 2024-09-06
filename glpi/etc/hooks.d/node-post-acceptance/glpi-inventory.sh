@@ -12,7 +12,7 @@
 # - 0     : success, no log (apart if debug one)          , continue to next hook
 # - 1-31  : error  , error   log in /var/log/rudder/webapp/, stop processing
 # - 32-63 : warning, warning log in /var/log/rudder/webapp/, continue to next hook
-# - 64-255: reserved for futur use case. Behavior may change without notice. 
+# - 64-255: reserved for future use case. Behavior may change without notice. 
 
 /opt/rudder/bin/glpi-plugin send-one $RUDDER_NODE_ID
 

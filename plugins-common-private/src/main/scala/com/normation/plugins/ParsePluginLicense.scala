@@ -70,7 +70,7 @@ trait LicensedPluginCheck extends PluginStatus {
 // this one is generally provided by NodeInfoService
   def getNumberOfNodes: Int
 
-// this one is only for evolution / futur check. No need to override it for now.
+// this one is only for evolution / future check. No need to override it for now.
   def checkAny: Option[Map[String, String] => Either[String, Unit]] = None
 
   /*
