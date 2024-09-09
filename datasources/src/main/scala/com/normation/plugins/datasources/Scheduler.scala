@@ -56,7 +56,7 @@ final case class UpdateCause(
 )
 
 /**
- * This object represent a statefull scheduler for fetching (or whatever action)
+ * This object represent a stateful scheduler for fetching (or whatever action)
  * data from datasource.
  * Its contract is that:
  * - data source is immutable for that scheduler
