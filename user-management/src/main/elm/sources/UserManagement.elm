@@ -2,7 +2,7 @@ module UserManagement exposing (processApiError, update)
 
 import ApiCalls exposing (activateUser, addUser, disableUser, getRoleConf, getUsersConf, postReloadConf, updateUser, updateUserInfo)
 import Browser
-import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), mergeUserNewInfo, userProviders)
+import DataTypes exposing (Model, Msg(..), PanelMode(..), StateInput(..), Username, mergeUserNewInfo, userProviders)
 import Dict exposing (fromList)
 import Http exposing (..)
 import Init exposing (createErrorNotification, createSuccessNotification, defaultConfig, init, subscriptions)
@@ -11,9 +11,6 @@ import Toasty
 import View exposing (view)
 import List
 import List.FlatMap
-import DataTypes exposing (User)
-import DataTypes exposing (UI)
-import DataTypes exposing (UserForm)
 
 main =
     Browser.element
@@ -126,7 +123,7 @@ update msg model =
              case result of
                   Ok username ->
                       (model, getUsersConf model)
-                        |> createSuccessNotification (username ++ " have been modified")
+                        |> createUserNotification username model
 
                   Err err ->
                        processApiError err model
@@ -135,7 +132,7 @@ update msg model =
              case result of
                   Ok username ->
                       (model, getUsersConf model)
-                        |> createSuccessNotification (username ++ " have been modified")
+                        |> createUserNotification username model
 
                   Err err ->
                        processApiError err model
@@ -321,6 +318,24 @@ update msg model =
                 newUserForm = {userForm | login = ""}
             in
                 ({model | ui = newUI, userForm = newUserForm}, Cmd.none)
+
+-- When a user with admin rights is updated, changes will not have effect now: session is kept until it expires
+createUserNotification : Username -> Model -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+createUserNotification username model = 
+    let
+        hasAdminRights =
+            model.users
+                |> Dict.get username
+                |> Maybe.map (.authz)
+                |> Maybe.map (List.any (\auth -> "any_rights" == auth || String.startsWith "administration_" auth))
+                |> Maybe.withDefault False
+        message =
+            if hasAdminRights then
+                username ++ " has been modified, change will be taken into account on next login"
+            else
+                username ++ " has been modified"
+    in
+        createSuccessNotification message
 
 processApiError : Error -> Model -> ( Model, Cmd Msg )
 processApiError err model =

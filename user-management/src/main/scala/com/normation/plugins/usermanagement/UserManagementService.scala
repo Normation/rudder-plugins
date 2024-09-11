@@ -350,7 +350,7 @@ class UserManagementService(
                  }
                }).transform(toUpdate).head
       _     <- UserManagementIO.replaceXml(userXML, newXml, file)
-      _     <- userService.reloadPure()
+      _     <- userService.reloadPure() // this is also required to invalidate sessions
     } yield ()
   }
 
