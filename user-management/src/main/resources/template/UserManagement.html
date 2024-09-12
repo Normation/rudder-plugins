@@ -21,13 +21,7 @@
           <div id="user-management-app">
             <div id="user-management-content"/>
           </div>
-          <script>
-            var main = document.getElementById("user-management-content")
-            var initValues = {
-                 contextPath : contextPath
-                };
-            var app  = Elm.UserManagement.init({node: main, flags: initValues});
-          </script>
+          <div data-lift="UserManagementSnippet.render"/>
         </div>
       </div>
     </div>

@@ -12,13 +12,13 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
 
-init : { contextPath : String } -> ( Model, Cmd Msg )
+init : { contextPath : String, userId : String } -> ( Model, Cmd Msg )
 init flags =
     let
         initUi = UI Closed False
         initUserInfoForm = UserInfoForm "" "" Dict.empty
         initUserForm = UserForm "" "" True False [] initUserInfoForm [] ValidInputs 
-        initModel = Model flags.contextPath "" (fromList []) (fromList []) [] None Toasty.initialState initUserForm initUi [] Dict.empty
+        initModel = Model flags.contextPath flags.userId "" (fromList []) (fromList []) [] None Toasty.initialState initUserForm initUi [] Dict.empty
     in
     ( initModel
     , getUsersConf initModel
