@@ -449,7 +449,7 @@ displayRightPanel model user =
 
         formSubmitSection provider =
             [ div [ class "btn-container" ]
-                [ button [ class "btn btn-sm btn-danger btn-delete", onClick (OpenDeleteModal user.login) ] [ text "Delete" ]
+                [ displayDeleteButton model user
                 , displayToggleStatusButton model user
                 , button
                     [ class "btn btn-sm btn-success btn-save"
@@ -492,6 +492,13 @@ displayRightPanel model user =
                 ++ (displayUserInfo model.userForm True :: rolesAuthzInformationSection)
             )
         ]
+
+displayDeleteButton : Model -> User -> Html Msg
+displayDeleteButton model user = -- Do not display button for current user
+    if user.login == model.userId then
+        text ""
+    else
+        button [ class "btn btn-sm btn-danger btn-delete", onClick (OpenDeleteModal user.login) ] [ text "Delete" ]
 
 displayToggleStatusButton : Model -> User -> Html Msg
 displayToggleStatusButton model user = -- Do not display button when active : user cannot disable itself
