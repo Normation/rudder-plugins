@@ -201,7 +201,6 @@ pipeline {
                         returnStdout: true
                     ).trim().split(' ')
                     PLUGINS.each { p ->
-                        parallelStages[p] = {
                             stage("Build ${p}") {
                                 script {
                                     running.add("Build - ${p}")
@@ -235,9 +234,7 @@ pipeline {
                                     running.remove("Build - ${p}")
                                 }
                             }
-                        }
                     }
-                    parallel parallelStages
                 }
 
             }
