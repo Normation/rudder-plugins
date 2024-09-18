@@ -234,7 +234,6 @@ pipeline {
                                     running.remove("Build - ${p}")
                                 }
                             }
-                        }
                     }
                 }
 
