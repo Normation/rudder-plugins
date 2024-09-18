@@ -520,7 +520,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
                 DateTime.now(),
                 s"Provisioning is enabled for ${protocolName} '${idp}'"
               )
-            ) *> ApplicationLoggerPure.User.info(
+            ) *> ApplicationLoggerPure.Auth.info(
             s"User '${user.getName}' automatically created because provisioning is enabled for ${protocolName} '${idp}'"
           )).runNow
 
@@ -614,7 +614,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
             }
 
             if (mappedRoles.nonEmpty) {
-              ApplicationLoggerPure.Authz.logEffect.info(
+              ApplicationLoggerPure.Auth.logEffect.info(
                 s"Principal '${rudder.getUsername}' role list extended with ${protocolName} provided roles: [${Role
                     .toDisplayNames(mappedRoles)
                     .mkString(", ")}] (override: ${reg.roles.over})"

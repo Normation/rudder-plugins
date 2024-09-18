@@ -61,6 +61,8 @@ object UserOrigin {
 
 object UserManagementIO {
 
+  private val logger = ApplicationLoggerPure.Auth
+
   def replaceXml(currentXml: NodeSeq, newXml: Node, file: File): IOResult[Unit] = {
     // create a backup of rudder-user.xml and roll it back in case of errors during update
     def withBackup(source: File)(mod: IOResult[Unit]) = {
@@ -71,7 +73,7 @@ object UserManagementIO {
         _      <- mod.foldZIO(
                     // failure: we try to restore the backup
                     err =>
-                      ApplicationLoggerPure.Authz.error(
+                      logger.error(
                         s"Error when trying to save updated rudder user authorizations, roll-backing to back-upped version. Error was: ${err.fullMsg}"
                       ) *>
                       IOResult
@@ -81,10 +83,10 @@ object UserManagementIO {
                             // there, we are in big problem: error in rollback too, likely an FS problem, advice admin
                             val msg =
                               s"Error when reverting rudder-users.xlm, you will likely need to have a manual action. Backup file is here and won't be deleted automatically: ${backup.pathAsString}. Error was: ${err2.fullMsg}"
-                            ApplicationLoggerPure.Authz.error(msg) *> Unexpected(msg).fail
+                            logger.error(msg) *> Unexpected(msg).fail
                           },
                           ok => {
-                            effectUioUnit(backup.delete(swallowIOExceptions = true)) *> ApplicationLoggerPure.Authz
+                            effectUioUnit(backup.delete(swallowIOExceptions = true)) *> logger
                               .info(s"User file correctly roll-backed") *> Unexpected(
                               s"And error happened when trying to save rudder-user.xml file, backup version was restore. Error was: ${err.fullMsg}"
                             ).fail
