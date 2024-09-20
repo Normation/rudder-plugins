@@ -51,22 +51,11 @@ import com.normation.rudder.domain.eventlog.*
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
-import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
-import com.normation.rudder.facts.nodes.ChangeContext
-import com.normation.rudder.facts.nodes.CoreNodeFact
-import com.normation.rudder.facts.nodes.CoreNodeFactRepository
-import com.normation.rudder.facts.nodes.NodeFactChangeEvent
-import com.normation.rudder.facts.nodes.NodeFactChangeEventCallback
-import com.normation.rudder.facts.nodes.NodeFactChangeEventCC
-import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.NodeSecurityContext
-import com.normation.rudder.facts.nodes.NoopFactStorage
-import com.normation.rudder.facts.nodes.NoopGetNodesBySoftwareName
-import com.normation.rudder.facts.nodes.QueryContext
+import com.normation.rudder.facts.nodes.*
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
@@ -74,12 +63,10 @@ import com.normation.rudder.services.policies.NodeConfigData
 import com.normation.rudder.tenants.DefaultTenantService
 import com.normation.utils.StringUuidGeneratorImpl
 import com.normation.zio.*
-import com.normation.zio.ZioRuntime
 import com.softwaremill.quicklens.*
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValue
 import net.liftweb.common.*
-import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import org.slf4j.LoggerFactory
 import org.specs2.matcher.EqualityMatcher
@@ -1197,42 +1184,39 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(
         finalStateCond: PROPS => MatchResult[PROPS]
     ): MatchResult[Any] = {
-      val (updates, infos) = buildNodeRepo(NodeConfigData.allNodeFacts)
+      val initNodeFacts    = initValue match {
+        case None       => NodeConfigData.allNodeFacts
+        case Some(init) =>
+          NodeConfigData.allNodeFacts.view
+            .mapValues(n => n.copy(properties = n.properties :+ NodeProperty.apply(propName, init.toConfigValue, None, None)))
+            .toMap
+      }
+      val (updates, infos) = buildNodeRepo(initNodeFacts)
       val http             =
         new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
       val datasource       = NewDataSource(propName, url = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
-      val nodes = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw")
+      val nodes   = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw")
       // set a value for all propName if asked
-      val modId = ModificationId("set-test-404")
-      nodes.values.foreach { node =>
-        val newProps = CompareProperties
-          .updateProperties(
-            node.properties.toList,
-            Some(List(NodeProperty.apply(propName, initValue.getOrElse("").toConfigValue, None, None)))
-          )
-          .toBox
-          .openOrThrowException("test must be able to set prop")
-        val up       = node.modify(_.properties).setTo(Chunk.fromIterable(newProps))
-        infos.save(up)(ChangeContext(modId, actor, DateTime.now(), None, None, NodeSecurityContext.All)).runNow
-      }
-
-      val res = updates.set(Map()) *> http.queryAll(datasource, UpdateCause(modId, actor, None))
-
+      val modId   = ModificationId("set-test-404")
       val nodeIds = nodes.keySet
       val matcher = ===(
         nodeIds.map(n => if (expectMod) NodeUpdateResult.Updated(n) else NodeUpdateResult.Unchanged(n): NodeUpdateResult)
       )
 
-      res.either
-        .flatMap(r => {
+      (for {
+
+        res <- http.queryAll(datasource, UpdateCause(modId, actor, None))
+
+        result <-
           updates.get.map(u => {
-            (r must beRight(matcher)) and (
+            (res must matcher) and (
               u must (if (expectMod) havePairs(nodeIds.map(x => (x, 1)).toSeq*) else empty)
             )
           })
-        })
-        .runNow and ({
+      } yield {
+        result
+      }).runNow and ({
         // none should have "test-404"
         val props = infos
           .getAll()(QueryContext.testQC)
