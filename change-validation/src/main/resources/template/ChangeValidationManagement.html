@@ -132,7 +132,7 @@ data-lift="with-cached-resource">
 		<li>
 		  <span>/var/rudder/plugins/change-validation/validation-mail.template</span>
 		  <a class="btn-goto btn-clipboard"
-		    data-clipboard-text="/var/rudder/plugins/change-validation/validation-mail.template"
+		    onclick="copy('/var/rudder/plugins/change-validation/validation-mail.template')"
 		    data-toggle='tooltip' data-placement='bottom' data-container="html"
 		    title="Copy to clipboard">
 		    <i class="far fa-clipboard"></i>
@@ -141,7 +141,7 @@ data-lift="with-cached-resource">
 		<li>
 		  <span>/var/rudder/plugins/change-validation/deployment-mail.template</span>
 		  <a class="btn-goto btn-clipboard"
-		    data-clipboard-text="/var/rudder/plugins/change-validation/deployment-mail.template"
+		    onclick="copy('/var/rudder/plugins/change-validation/deployment-mail.template')"
 		    data-toggle='tooltip' data-placement='bottom' data-container="html"
 		    title="Copy to clipboard">
 		    <i class="far fa-clipboard"></i>
@@ -150,7 +150,7 @@ data-lift="with-cached-resource">
 		<li>
 		  <span>/var/rudder/plugins/change-validation/cancelled-mail.template</span>
 		  <a class="btn-goto btn-clipboard"
-		    data-clipboard-text="/var/rudder/plugins/change-validation/cancelled-mail.template"
+		    onclick="copy('/var/rudder/plugins/change-validation/cancelled-mail.template')"
 		    data-toggle='tooltip' data-placement='bottom' data-container="html"
 		    title="Copy to clipboard">
 		    <i class="far fa-clipboard"></i>
@@ -159,7 +159,7 @@ data-lift="with-cached-resource">
 		<li>
 		  <span>/var/rudder/plugins/change-validation/deployed-mail.template</span>
 		  <a class="btn-goto btn-clipboard"
-		    data-clipboard-text="/var/rudder/plugins/change-validation/deployed-mail.template"
+		    onclick="copy('/var/rudder/plugins/change-validation/deployed-mail.template')"
 		    data-toggle='tooltip' data-placement='bottom' data-container="html"
 		    title="Copy to clipboard">
 		    <i class="far fa-clipboard"></i>
@@ -318,7 +318,6 @@ data-lift="with-cached-resource">
   <script>
     $(document).ready(function () {
       buildScrollSpyNav();
-      new ClipboardJS('.btn-clipboard');
     });
   </script>
 </body>
