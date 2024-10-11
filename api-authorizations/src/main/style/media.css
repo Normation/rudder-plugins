@@ -30,9 +30,11 @@
 }
 #user-token-app a.deleteToken{
   color:#a94442 !important;
+  pointer-events: inherit;
 }
 #user-token-app a.createToken{
   color:#8fb92a !important;
+  pointer-events: inherit;
 }
 #user-token-app a.deleteToken:hover{
   background-color: #d9534f !important;
