@@ -512,9 +512,9 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           val idp = optReg.map(_.registration.getRegistrationId).getOrElse("")
           // provisioning is enabled, create the user and try again
           (userRepository
-            .setExistingUsers(
+            .addUser(
               protocolId,
-              List(user.getName),
+              user.getName,
               EventTrace(
                 RudderEventActor,
                 DateTime.now(),
