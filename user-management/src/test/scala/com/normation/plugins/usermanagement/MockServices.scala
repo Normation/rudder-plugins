@@ -51,6 +51,8 @@ class MockServices(userInfos: List[UserInfo], userSessions: List[UserSession], u
         isCaseSensitive: Boolean
     ): IOResult[Set[String]] = ???
 
+    override def addUser(origin: String, user: String, trace: EventTrace, isCaseSensitive: Boolean): IOResult[Boolean] = ???
+
     override def disable(
         userId:            List[String],
         notLoggedSince:    Option[DateTime],
