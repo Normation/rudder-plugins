@@ -64,11 +64,16 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
 
   val layout = {
     <li class="nav-item dropdown notifications-menu">
-      <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
+      <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
         <span>CR</span>
         <span id="number" class="badge rudder-badge"></span>
       </a>
-      <ul class="dropdown-menu" role="menu"></ul>
+      <ul class="dropdown-menu" role="menu">
+        <li id="workflow-app">
+          <ul class="menu">
+          </ul>
+        </li>
+      </ul>
     </li>
   }
 
@@ -120,7 +125,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   def pendingModifications = {
     val xml = pendingModificationRec(workflowService)
 
-    ".dropdown-menu *+" #> xml
+    "#workflow-app ul *+" #> xml
   }
 
   private[this] def pendingModificationRec(workflowService: WorkflowService): NodeSeq = {
@@ -129,10 +134,12 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id) match {
           case Full(seq) =>
             <li>
-              <a href="/secure/plugins/changes/changeRequests/Pending_validation">
-                <i class="fa fa fa-flag-o"></i>
-                Pending review
-                <span class="label pull-right">{seq.size}</span>
+              <a href="/secure/plugins/changes/changeRequests/Pending_validation" class="pe-auto">
+                <span>
+                  <i class="pe-2 fa fa-flag-o"></i>
+                  Pending review
+                </span>
+                <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
               </a>
             </li>
           case e: EmptyBox =>
@@ -147,7 +154,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   def pendingDeployment = {
     val xml = pendingDeploymentRec(workflowService)
 
-    ".dropdown-menu *+" #> xml
+    "#workflow-app ul *+" #> xml
   }
 
   private[this] def pendingDeploymentRec(workflowService: WorkflowService): NodeSeq = {
@@ -156,10 +163,12 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id) match {
           case Full(seq) =>
             <li>
-              <a href="/secure/plugins/changes/changeRequests/Pending_deployment">
-                <i class="fa fa fa-flag-checkered"></i>
-                Pending deployment
-                <span class="label pull-right">{seq.size}</span>
+              <a href="/secure/plugins/changes/changeRequests/Pending_deployment" class="pe-auto">
+                <span>
+                  <i class="pe-2 fa fa-flag-checkered"></i>
+                  Pending deployment
+                </span>
+                <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
               </a>
             </li>
           case e: EmptyBox =>
