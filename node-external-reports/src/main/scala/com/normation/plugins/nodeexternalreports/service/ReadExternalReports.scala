@@ -38,7 +38,8 @@ package com.normation.plugins.nodeexternalreports.service
 
 import com.normation.box.*
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.facts.nodes.NodeFactRepository
+import com.normation.rudder.facts.nodes.QueryContext
 import com.typesafe.config.*
 import java.io.File
 import net.liftweb.common.*
@@ -74,7 +75,7 @@ final case class NodeExternalReports(
  * Read the reports configuration file and build the
  * awaited reports
  */
-class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile: String) extends Loggable {
+class ReadExternalReports(nodeFactRepo: NodeFactRepository, val reportConfigFile: String) extends Loggable {
 
   private[this] var config: Box[ExternalReports] = null
 
@@ -124,12 +125,12 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
    * with the correct report file for that node.
    * A Node says that no file was found
    */
-  def getExternalReports(nodeId: NodeId): Box[NodeExternalReports] = {
+  def getExternalReports(nodeId: NodeId)(implicit qc: QueryContext): Box[NodeExternalReports] = {
     if (config == null) loadAndUpdateConfig()
 
     for {
       conf    <- config
-      optNode <- nodeInfoService.getNodeInfo(nodeId).toBox
+      optNode <- nodeFactRepo.get(nodeId).toBox
       node    <- optNode match {
                    case None    => Failure(s"The node with ID '${nodeId}' was not found, we can't add external information")
                    case Some(n) => Full(n)
@@ -141,7 +142,7 @@ class ReadExternalReports(nodeInfoService: NodeInfoService, val reportConfigFile
           case (key, report) =>
             val fileName = {
               val uuidName     = report.reportName(node.id.value).toLowerCase
-              val hostnameName = report.reportName(node.hostname).toLowerCase
+              val hostnameName = report.reportName(node.fqdn).toLowerCase
 
               if ((new File(report.rootDirectory, hostnameName)).exists) {
                 Some(hostnameName)

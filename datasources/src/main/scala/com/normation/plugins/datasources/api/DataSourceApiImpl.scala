@@ -51,37 +51,36 @@ import com.normation.plugins.datasources.RestResponseMessage
 import com.normation.plugins.datasources.UpdateCause
 import com.normation.plugins.datasources.api.DataSourceApi as API
 import com.normation.rudder.api.ApiVersion
-import com.normation.rudder.domain.nodes.Node
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GenericProperty.*
-import com.normation.rudder.repository.WoNodeRepository
+import com.normation.rudder.facts.nodes.ChangeContext
+import com.normation.rudder.facts.nodes.CoreNodeFact
+import com.normation.rudder.facts.nodes.NodeFactRepository
+import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import com.normation.rudder.services.nodes.NodeInfoService
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.syntax.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import org.joda.time.DateTime
+import zio.Chunk
 import zio.syntax.*
 
 class DataSourceApiImpl(
-    extractor:       RestExtractorService,
-    dataSourceRepo:  DataSourceRepository with DataSourceUpdateCallbacks,
-    nodeInfoService: NodeInfoService,
-    nodeRepos:       WoNodeRepository,
-    uuidGen:         StringUuidGenerator
+    dataSourceRepo: DataSourceRepository with DataSourceUpdateCallbacks,
+    nodeFactRepo:   NodeFactRepository,
+    uuidGen:        StringUuidGenerator
 ) extends LiftApiModuleProvider[API] {
   api =>
 
   val kind = "datasources"
 
   override def schemas: ApiModuleProvider[API] = API
-
-  type ActionType = RestUtils.ActionType
 
   import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson.*
 
@@ -106,7 +105,6 @@ class DataSourceApiImpl(
 
   object ReloadAllDatasourcesOneNode extends LiftApiModule {
     val schema: DataSourceApi.ReloadAllDatasourcesOneNode.type = API.ReloadAllDatasourcesOneNode
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -126,7 +124,6 @@ class DataSourceApiImpl(
 
   object ReloadOneDatasourceAllNodes extends LiftApiModule {
     val schema: DataSourceApi.ReloadOneDatasourceAllNodes.type = API.ReloadOneDatasourceAllNodes
-    val restExtractor = extractor
     def process(
         version:      ApiVersion,
         path:         ApiPath,
@@ -146,7 +143,6 @@ class DataSourceApiImpl(
 
   object ReloadOneDatasourceOneNode extends LiftApiModule {
     val schema: DataSourceApi.ReloadOneDatasourceOneNode.type = API.ReloadOneDatasourceOneNode
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -167,7 +163,6 @@ class DataSourceApiImpl(
 
   object ClearValueOneDatasourceAllNodes extends LiftApiModule {
     val schema: DataSourceApi.ClearValueOneDatasourceAllNodes.type = API.ClearValueOneDatasourceAllNodes
-    val restExtractor = extractor
     def process(
         version:      ApiVersion,
         path:         ApiPath,
@@ -182,8 +177,8 @@ class DataSourceApiImpl(
         UpdateCause(modId, authzToken.qc.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
 
       (for {
-        nodes <- nodeInfoService.getAllNodes()
-        _     <- nodes.values.accumulate(node => erase(cause(node.id), node, DataSourceId(datasourceId)))
+        nodes <- nodeFactRepo.getAll()(authzToken.qc)
+        _     <- nodes.values.accumulate(node => erase(cause(node.id), node, DataSourceId(datasourceId), authzToken.qc.nodePerms))
         res    = s"Data for all nodes, for data source '${datasourceId}', cleared"
       } yield res)
         .chainError(s"Could not clear data source property '${datasourceId}'")
@@ -193,7 +188,6 @@ class DataSourceApiImpl(
 
   object ClearValueOneDatasourceOneNode extends LiftApiModule {
     val schema: DataSourceApi.ClearValueOneDatasourceOneNode.type = API.ClearValueOneDatasourceOneNode
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -207,13 +201,12 @@ class DataSourceApiImpl(
         ModificationId(uuidGen.newUuid),
         authzToken.qc.actor,
         Some(s"API request to clear '${datasourceId}' on node '${nodeId}'"),
-        false
+        triggeredByGeneration = false
       )
 
       (for {
-        optNode <- nodeInfoService.getNodeInfo(NodeId(nodeId))
-        node    <- optNode.notOptional(s"Node with ID '${nodeId}' was not found")
-        updated <- erase(cause, node.node, DataSourceId(datasourceId))
+        node    <- nodeFactRepo.get(NodeId(nodeId))(authzToken.qc).notOptional(s"Node with ID '${nodeId}' was not found")
+        updated <- erase(cause, node, DataSourceId(datasourceId), authzToken.qc.nodePerms)
         res      = s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"
       } yield res)
         .chainError(s"Could not clear data source property '${datasourceId}'")
@@ -222,9 +215,8 @@ class DataSourceApiImpl(
   }
 
   object ReloadAllDatasourcesAllNodes extends LiftApiModule0 {
-    val schema: DataSourceApi.ReloadAllDatasourcesAllNodes.type = API.ReloadAllDatasourcesAllNodes
-    val restExtractor = extractor
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                DataSourceApi.ReloadAllDatasourcesAllNodes.type = API.ReloadAllDatasourcesAllNodes
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                                    = {
       // reloadData All Nodes All Datasources
       dataSourceRepo
         .onUserAskUpdateAllNodes(authzToken.qc.actor)
@@ -235,9 +227,8 @@ class DataSourceApiImpl(
   }
 
   object GetAllDataSources extends LiftApiModule0 {
-    val schema: DataSourceApi.GetAllDataSources.type = API.GetAllDataSources
-    val restExtractor = extractor
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                DataSourceApi.GetAllDataSources.type = API.GetAllDataSources
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                         = {
       (for {
         sources <- dataSourceRepo.getAll
       } yield {
@@ -250,7 +241,6 @@ class DataSourceApiImpl(
 
   object GetDataSource extends LiftApiModule {
     val schema: DataSourceApi.GetDataSource.type = API.GetDataSource
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -270,7 +260,6 @@ class DataSourceApiImpl(
 
   object DeleteDataSource extends LiftApiModule {
     val schema: DataSourceApi.DeleteDataSource.type = API.DeleteDataSource
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -296,9 +285,8 @@ class DataSourceApiImpl(
   }
 
   object CreateDataSource extends LiftApiModule0 {
-    val schema: DataSourceApi.CreateDataSource.type = API.CreateDataSource
-    val restExtractor = extractor
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                DataSourceApi.CreateDataSource.type = API.CreateDataSource
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                        = {
       (for {
         source <- extractNewDataSource(req).toIO
         _      <- dataSourceRepo.save(source)
@@ -311,7 +299,6 @@ class DataSourceApiImpl(
 
   object UpdateDataSource extends LiftApiModule {
     val schema: DataSourceApi.UpdateDataSource.type = API.UpdateDataSource
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -336,20 +323,25 @@ class DataSourceApiImpl(
   }
 
   /// utilities ///
-  private[this] def erase(cause: UpdateCause, node: Node, datasourceId: DataSourceId): IOResult[NodeUpdateResult] = {
+  private[this] def erase(
+      cause:        UpdateCause,
+      node:         CoreNodeFact,
+      datasourceId: DataSourceId,
+      nodePerms:    NodeSecurityContext
+  ): IOResult[NodeUpdateResult] = {
     val newProp = DataSource.nodeProperty(datasourceId.value, "".toConfigValue)
     node.properties.find(_.name == newProp.name) match {
       case None    => NodeUpdateResult.Unchanged(node.id).succeed
       case Some(p) =>
         if (p.provider == newProp.provider) {
           for {
-            newProps    <- CompareProperties.updateProperties(node.properties, Some(newProp :: Nil)).toIO
-            newNode      = node.copy(properties = newProps)
-            nodeUpdated <- nodeRepos
-                             .updateNode(newNode, cause.modId, cause.actor, cause.reason)
-                             .chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
+            newProps <- CompareProperties.updateProperties(node.properties.toList, Some(newProp :: Nil)).toIO
+            newNode   = node.copy(properties = Chunk.fromIterable(newProps))
+            _        <- nodeFactRepo
+                          .save(newNode)(ChangeContext(cause.modId, cause.actor, DateTime.now, cause.reason, None, nodePerms))
+                          .chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
           } yield {
-            NodeUpdateResult.Updated(nodeUpdated.id)
+            NodeUpdateResult.Updated(newNode.id)
           }
         } else {
           Unexpected(

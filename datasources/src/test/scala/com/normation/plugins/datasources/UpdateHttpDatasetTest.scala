@@ -60,7 +60,6 @@ import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
-import com.normation.rudder.tenants.DefaultTenantService
 import com.normation.utils.StringUuidGeneratorImpl
 import com.normation.zio.*
 import com.softwaremill.quicklens.*
@@ -503,15 +502,9 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
                            }
                          }
                        }
-      ts            <- DefaultTenantService.make(Nil)
-      repo          <- CoreNodeFactRepository.make(
-                         NoopFactStorage,
-                         NoopGetNodesBySoftwareName,
-                         ts,
-                         Map(),
+      repo          <- CoreNodeFactRepository.makeNoop(
                          initNodeInfo,
-                         Chunk(updateCallback),
-                         Chunk()
+                         callbacks = Chunk(updateCallback)
                        )
     } yield (updates, repo)).runNow
   }

@@ -61,11 +61,11 @@ object NodeExternalReportsConf extends RudderPluginModule {
         x
     }
 
-    new ReadExternalReports(RudderConfig.nodeInfoService, configPath)
+    new ReadExternalReports(RudderConfig.nodeFactRepository, configPath)
   }
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
 
   lazy val externalNodeReportApi = new NodeExternalReportApi(readReport)
 

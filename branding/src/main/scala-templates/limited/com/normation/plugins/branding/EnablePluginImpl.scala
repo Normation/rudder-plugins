@@ -38,15 +38,15 @@
 package com.normation.plugins.branding
 
 import com.normation.plugins.LicensedPluginCheck
-import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.facts.nodes.NodeFactRepository
 import com.normation.zio.*
 
-final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends LicensedPluginCheck {
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extends LicensedPluginCheck {
   // here are processed variables
   def pluginResourcePublickey = "${plugin-resource-publickey}"
   def pluginResourceLicense   = "${plugin-resource-license}"
   def pluginDeclaredVersion   = "${plugin-declared-version}"
   def pluginId                = "${plugin-fullname}"
 
-  override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes.runNow
+  override def getNumberOfNodes: Int = nodeFactRepo.getNumberOfManagedNodes().runNow
 }

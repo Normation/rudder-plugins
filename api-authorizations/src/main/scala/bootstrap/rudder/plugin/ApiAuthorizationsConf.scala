@@ -55,7 +55,7 @@ class AclLevel(status: PluginStatus) extends ApiAuthorizationLevelService {
  */
 object ApiAuthorizationsConf extends RudderPluginModule {
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
 
   // override default service level
   RudderConfig.apiAuthorizationLevelService.overrideLevel(new AclLevel(pluginStatusService))

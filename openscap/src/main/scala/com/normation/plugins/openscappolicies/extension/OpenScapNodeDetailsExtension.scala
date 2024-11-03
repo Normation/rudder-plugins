@@ -5,12 +5,15 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
+
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.*
+
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
@@ -34,7 +37,7 @@ class OpenScapNodeDetailsExtension(
     // Actually extend
     def display(): NodeSeq = {
       val nodeId  = snippet.nodeId
-      val content = openScapReader.checkOpenScapReportExistence(nodeId) match {
+      val content = openScapReader.checkOpenScapReportExistence(nodeId)(CurrentUser.queryContext) match {
         case eb: EmptyBox =>
           val e = eb ?~! "Can not display OpenSCAP report for that node"
           (<div class="error">

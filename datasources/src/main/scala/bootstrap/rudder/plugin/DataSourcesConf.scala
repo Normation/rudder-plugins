@@ -74,7 +74,7 @@ object DatasourcesConf extends RudderPluginModule {
   import bootstrap.liftweb.RudderConfig as Cfg
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
 
   lazy val regenerationHook = new OnUpdatedNodeRegenerate(RudderConfig.asyncDeploymentAgent)
 
@@ -112,10 +112,8 @@ object DatasourcesConf extends RudderPluginModule {
   )
 
   val dataSourceApi9 = new DataSourceApiImpl(
-    Cfg.restExtractorService,
     dataSourceRepository,
-    Cfg.nodeInfoService,
-    Cfg.woNodeRepository,
+    Cfg.nodeFactRepository,
     Cfg.stringUuidGenerator
   )
 

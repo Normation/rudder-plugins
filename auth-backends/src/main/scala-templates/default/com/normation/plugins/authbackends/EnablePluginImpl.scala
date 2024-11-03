@@ -38,10 +38,10 @@
 package com.normation.plugins.authbackends
 
 import com.normation.plugins.PluginEnableImpl
-import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.facts.nodes.NodeFactRepository
 
 /*
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends PluginEnableImpl
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extends PluginEnableImpl

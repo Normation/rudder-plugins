@@ -40,10 +40,13 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
 import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
+
 import net.liftweb.common.*
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.*
+
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
@@ -63,7 +66,7 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
    */
   def addExternalReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq) = {
 
-    val (tabTitle, content) = externalReport.getExternalReports(snippet.nodeId) match {
+    val (tabTitle, content) = externalReport.getExternalReports(snippet.nodeId)(CurrentUser.queryContext) match {
       case eb: EmptyBox =>
         val e = eb ?~! "Can not display external reports for that node"
         ("External reports", <div class="error">{e.messageChain}</div>)

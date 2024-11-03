@@ -44,7 +44,7 @@ class OpenScapApiTest extends ZIOSpecDefault {
 
   val mockNodes            = new MockNodes()
   val openScapReportReader = new OpenScapReportReader(
-    mockNodes.nodeInfoService,
+    mockNodes.nodeFactRepo,
     restTestSetUp.mockDirectives.directiveRepo,
     null,
     null,

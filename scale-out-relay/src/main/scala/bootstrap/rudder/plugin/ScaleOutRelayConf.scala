@@ -52,7 +52,7 @@ import com.normation.plugins.scaleoutrelay.api.ScaleOutRelayApiImpl
 object ScalaOutRelayConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
 
   override lazy val pluginDef: ScalaOutRelayPluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
 

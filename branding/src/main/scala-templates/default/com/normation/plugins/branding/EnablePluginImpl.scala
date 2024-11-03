@@ -38,6 +38,6 @@
 package com.normation.plugins.branding
 
 import com.normation.plugins.PluginEnableImpl
-import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.facts.nodes.NodeFactRepository
 
-final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends PluginEnableImpl
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extends PluginEnableImpl

@@ -6,9 +6,10 @@ import com.normation.cfclerk.domain.TechniqueName
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.OpenScapReport
+import com.normation.rudder.facts.nodes.NodeFactRepository
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.FindExpectedReportRepository
 import com.normation.rudder.repository.RoDirectiveRepository
-import com.normation.rudder.services.nodes.NodeInfoService
 import net.liftweb.common.*
 import net.liftweb.util.Helpers.tryo
 
@@ -17,7 +18,7 @@ import net.liftweb.util.Helpers.tryo
  * It is n /var/rudder/shared-files/root/NodeId/openscap.html
  */
 class OpenScapReportReader(
-    nodeInfoService:              NodeInfoService,
+    nodeFactRepo:                 NodeFactRepository,
     directiveRepository:          RoDirectiveRepository,
     pluginDirectiveRepository:    GetActiveTechniqueIds,
     findExpectedReportRepository: FindExpectedReportRepository,
@@ -82,8 +83,8 @@ class OpenScapReportReader(
    * Checks if the report exists, return True if exists, of False otherwise.
    * Everything else is a failure
    */
-  def checkOpenScapReportExistence(nodeId: NodeId): Box[Boolean] = {
-    nodeInfoService.getNodeInfo(nodeId).toBox match {
+  def checkOpenScapReportExistence(nodeId: NodeId)(implicit qc: QueryContext): Box[Boolean] = {
+    nodeFactRepo.get(nodeId).toBox match {
       case t: EmptyBox =>
         val errMessage = s"Node with id ${nodeId.value} does not exist"
         logger.error(errMessage)
@@ -131,7 +132,7 @@ class OpenScapReportReader(
    * If the file is not there, fails
    * Used for API
    */
-  def getOpenScapReport(nodeId: NodeId): Box[Option[OpenScapReport]] = {
+  def getOpenScapReport(nodeId: NodeId)(implicit qc: QueryContext): Box[Option[OpenScapReport]] = {
     val path = computePathFromNodeId(nodeId)
     for {
       reportExists <- checkOpenScapReportExistence(nodeId)

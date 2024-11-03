@@ -98,7 +98,7 @@ object OpenscapPoliciesConf extends RudderPluginModule {
     throw new IllegalArgumentException(s"OpenSCAP sanitization file not found: ${POLICY_SANITIZATION_FILE}")
   }
 
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeInfoService)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
 
   lazy val pluginDef: OpenscapPoliciesPluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
@@ -106,7 +106,7 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   lazy val reportSanitizer      = new ReportSanitizer(POLICY_SANITIZATION_FILE)
   lazy val openScapReportReader = new OpenScapReportReader(
-    RudderConfig.nodeInfoService,
+    RudderConfig.nodeFactRepository,
     RudderConfig.roDirectiveRepository,
     getActiveTechniqueIds,
     RudderConfig.findExpectedReportRepository,

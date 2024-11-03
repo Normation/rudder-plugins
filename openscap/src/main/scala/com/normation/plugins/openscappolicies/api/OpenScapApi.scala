@@ -84,7 +84,7 @@ class OpenScapApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        report <- openScapReportReader.getOpenScapReport(NodeId(nodeId))
+        report <- openScapReportReader.getOpenScapReport(NodeId(nodeId))(authzToken.qc)
       } yield {
         logger.info(s"Report for node ${nodeId} has been found ")
         report
@@ -127,7 +127,9 @@ class OpenScapApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        report       <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenSCAP report for node ${nodeId}"
+        report       <- openScapReportReader.getOpenScapReport(NodeId(nodeId))(
+                          authzToken.qc
+                        ) ?~! s"Cannot get OpenSCAP report for node ${nodeId}"
         existence    <- Box(report) ?~! s"Report not found for node ${nodeId}"
         sanitizedXml <- reportSanitizer.sanitizeReport(existence).toBox ?~! "Error while sanitizing report"
       } yield {
