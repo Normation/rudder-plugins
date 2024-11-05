@@ -14,7 +14,6 @@
 
 RUDDER_OPT=/opt/rudder
 RUDDER_VAR=/var/rudder
-SYSTEM_TOKEN=$(cat /var/rudder/run/api-token)
 
 DOWNLOAD_COMMAND="curl --silent --show-error --globoff"
 
@@ -38,7 +37,7 @@ echo "Rudder relay installation script starting, using UUID ${RELAY_UUID}."
 
 # Scale-out-relay API call (must have the plugin installed)
 API_URL="http://127.0.0.1:8080/rudder/api/latest"
-response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header "X-API-Token: ${SYSTEM_TOKEN}" --request POST "${API_URL}/scaleoutrelay/promote/${RELAY_UUID}")
+response=$(${DOWNLOAD_COMMAND} --location --proxy '' --header @/var/rudder/run/api-token-header --request POST "${API_URL}/scaleoutrelay/promote/${RELAY_UUID}")
 code=$?
 
 if [ ${code} -ne 0 ]; then
