@@ -1,5 +1,5 @@
-ARG JDK_VERSION=11
-FROM maven:3-openjdk-${JDK_VERSION}
+ARG JDK_VERSION=17
+FROM maven:3-amazoncorretto-${JDK_VERSION}-debian
 LABEL ci=rudder/ci/dep-check.Dockerfile
 
 ARG USER_ID=1000
