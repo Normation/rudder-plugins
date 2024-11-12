@@ -267,7 +267,7 @@ rudder.auth.ldap.connection.bind.dn=cn=rudder,ou=services,dc=mycorp,dc=com
 rudder.auth.ldap.connection.bind.password=secret
 
 #
-# If your directory uses remote links that need to be deferenced
+# If your directory uses remote links that need to be dereferenced
 # for resolving the actual entry, for example in the case of an
 # AD forest, you need to uncomment the following option.
 #
