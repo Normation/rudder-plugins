@@ -55,5 +55,5 @@ final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extend
   def pluginDeclaredVersion   = "${plugin-declared-version}"
   def pluginId                = "${plugin-fullname}"
 
-  override def getNumberOfNodes: Int = nodeFactRepo.getNumberOfManagedNodes.runNow
+  override def getNumberOfNodes: Int = nodeFactRepo.getNumberOfManagedNodes().runNow
 }
