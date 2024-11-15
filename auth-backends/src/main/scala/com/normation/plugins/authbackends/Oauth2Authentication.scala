@@ -120,7 +120,8 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
   val A_ROLES_ATTRIBUTE      = "roles.attribute"
   val A_ROLES_OVERRIDE       = "roles.override"
   val A_ENFORCE_ROLE_MAPPING = "roles.mapping.restricted"
-  val A_ROLE_MAPPING         = "roles.mapping.entitlements"
+  val A_ROLE_MAPPING         = "roles.mapping.entitlements"        // ie: OIDC role = Rudder role
+  val A_ROLE_REVERSE_MAPPING = "roles.mapping.reverseEntitlements" // ie: Rudder role = OIDC role (overrides mapping)
   val A_PROVISIONING         = "enableProvisioning"
 
   val authMethods = {
@@ -156,6 +157,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
     A_ROLES_OVERRIDE       -> "keep user configured roles in rudder-user.xml or override them with the one provided in the token",
     A_PROVISIONING         -> "allows the automatic creation of users in Rudder in they successfully authenticate with OIDC",
     A_ROLE_MAPPING         -> s"provide a map of alias `IdP role name` -> `Rudder role name`, where each IdP role name is a sub-key of '${A_ROLE_MAPPING}'",
+    A_ROLE_REVERSE_MAPPING -> s"provide a map of alias `Rudder role name` -> `IdP role name`, where each IdP role name is a sub-key of '${A_ROLE_MAPPING}', useful when the IdP role name contains '='",
     A_ENFORCE_ROLE_MAPPING -> "if true (default), restricts roles available by the IdP to the role defined in mapping entitlement. Else the map provides alias for Rudder internal role names."
   )
 
@@ -277,6 +279,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
       provisioningAllowed <- read(A_PROVISIONING).catchAll(_ => "false".succeed)
       enforceRoleMapping  <- read(A_ENFORCE_ROLE_MAPPING).catchAll(_ => "false".succeed)
       roleMapping         <- readMap(A_ROLE_MAPPING)
+      roleReverseMapping  <- readMap(A_ROLE_REVERSE_MAPPING)
     } yield {
       RudderClientRegistration(
         ClientRegistration
@@ -304,7 +307,7 @@ object RudderPropertyBasedOAuth2RegistrationDefinition {
         ),
         toBool(provisioningAllowed),
         toBool(enforceRoleMapping),
-        roleMapping
+        roleMapping ++ roleReverseMapping.map { case (a, b) => (b, a) }
       )
     }
   }
