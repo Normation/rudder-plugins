@@ -5,10 +5,6 @@
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
-  "depends": {
-    "apt": [ "rudder-api-client" ],
-    "rpm": [ "rudder-api-client" ]
-  },
   "jar-files": [ "/opt/rudder/share/plugins/${plugin-name}/${plugin-name}/${plugin-name}.jar" ],
   "content": {
     "files.txz": "/opt/rudder/share/plugins/${plugin-name}/"
