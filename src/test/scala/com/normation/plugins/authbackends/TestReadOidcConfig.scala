@@ -38,7 +38,6 @@ package com.normation.plugins.authbackends
 
 import com.normation.zio.*
 import com.typesafe.config.ConfigFactory
-import java.io.StringReader
 import org.junit.runner.RunWith
 import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
@@ -46,42 +45,37 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class TestReadOidcConfig extends Specification {
 
-  val oidcConfig = {
-    """rudder.auth.oauth2.provider.registrations=someidp
-      |rudder.auth.oauth2.provider.someidp.name=Some ID
-      |rudder.auth.oauth2.provider.someidp.ui.infoMessage="Hey, log in to Some Idp!"
-      |rudder.auth.oauth2.provider.someidp.client.id=xxxClientIdxxx
-      |rudder.auth.oauth2.provider.someidp.client.secret=xxxClientPassxxx
-      |rudder.auth.oauth2.provider.someidp.scope=openid email profile groups
-      |rudder.auth.oauth2.provider.someidp.userNameAttributeName=email
-      |rudder.auth.oauth2.provider.someidp.uri.auth="https://someidp/oauth2/v1/authorize"
-      |rudder.auth.oauth2.provider.someidp.uri.token="https://someidp/oauth2/v1/token"
-      |rudder.auth.oauth2.provider.someidp.uri.userInfo="https://someidp/oauth2/v1/userinfo"
-      |rudder.auth.oauth2.provider.someidp.uri.jwkSet="https://someidp/oauth2/v1/keys"
-      |rudder.auth.oauth2.provider.someidp.client.redirect="{baseUrl}/login/oauth2/code/{registrationId}"
-      |rudder.auth.oauth2.provider.someidp.grantType=authorization_code
-      |rudder.auth.oauth2.provider.someidp.authMethod=basic
-      |rudder.auth.oauth2.provider.someidp.roles.enabled=true
-      |rudder.auth.oauth2.provider.someidp.roles.attribute=customroles
-      |rudder.auth.oauth2.provider.someidp.roles.override=true
-      |rudder.auth.oauth2.provider.someidp.roles.mapping.enforced=true
-      |rudder.auth.oauth2.provider.someidp.roles.mapping.entitlements.rudder_admin=administrator
-      |rudder.auth.oauth2.provider.someidp.roles.mapping.entitlements.rudder_readonly=readonly
-      |rudder.auth.oauth2.provider.someidp.enableProvisioning=true
-      |""".stripMargin
-  }
-
-  val config = ConfigFactory.parseReader(new StringReader(oidcConfig))
-  val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+  // WARNING: HOCON doesn't behave the same if you read from a file or from a string, so for the test to be relevant,
+  // we need to load from files.
 
   "reading the configuration should works" >> {
+
+    val config = ConfigFactory.parseResources("oidc/oidc_simple.properties")
+    val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+
     regs.keySet === Set("someidp")
   }
 
   "we should have two entitlement mapping" >> {
+
+    val config = ConfigFactory.parseResources("oidc/oidc_simple.properties")
+    val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+
     regs("someidp").roleMapping === Map(
       "rudder_admin"    -> "administrator",
       "rudder_readonly" -> "readonly"
     )
   }
+
+  "we can use complex roles names with the reverse mapping" >> {
+    val config = ConfigFactory.parseResources("oidc/oidc_reverse_role_mapping.properties")
+    val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+
+    regs("someidp").roleMapping === Map(
+      "rudder_admin"                                                                       -> "administrator",
+      "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
+      "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
+    )
+  }
+
 }
