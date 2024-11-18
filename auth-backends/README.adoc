@@ -627,6 +627,16 @@ rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=read
 # When the following properties is true, roles that don't appear in `mapping.entitlements`
 # will be filtered-out.
 rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
+# In some case, you OIDC provided roles will contains illegal character that can't be use in the
+# left part of the `entitlement` key - typically an equal. You can reverse the order of mapping with
+# the `reverseEntitlements`, in whicn the Rudder role name is on the left and the OIDC IdP role
+# name is on the right. If the same key is defined in both `entitlements` and `reverseEntitlements`,
+# then the value defined in `reverseEntitlements` is used.
+# In the following example, OIDC role `rudder_readonly` will be mapped to local `readonly2` role,
+# overriding the value previously defined above:
+#rudder.auth.oauth2.provider.okta.roles.mapping.reverseEntitlements.readonly2=rudder_readonly
+# And here, we map the IdP role "name=Alice,ou=users" to Rudder role "readonly"
+#rudder.auth.oauth2.provider.okta.roles.mapping.reverseEntitlements.readonly=name=Alice,ou=users
 
 # enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
 # Users provisioned through that channel don't have roles, you will need to also
