@@ -1,4 +1,1 @@
-{
-  "GHSA-grv7-fg5c-xmjg": "Dev dependency vulnerability (braces/sass)",
-  "GHSA-c2qf-rxjj-qqgw": "Dev dependency vulnerabilityi (semver)"
-}
+../../../plugins-common/.nsprc
