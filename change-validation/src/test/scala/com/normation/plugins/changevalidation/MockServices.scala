@@ -44,6 +44,8 @@ import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiAuthorization
+import com.normation.rudder.config.StatelessUserPropertyService
+import com.normation.rudder.config.UserPropertyService
 import com.normation.rudder.domain.eventlog.ChangeRequestDiff
 import com.normation.rudder.domain.eventlog.ChangeRequestEventLog
 import com.normation.rudder.domain.eventlog.WorkflowStepChanged
@@ -71,8 +73,6 @@ import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestServi
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserService
-import com.normation.rudder.web.services.StatelessUserPropertyService
-import com.normation.rudder.web.services.UserPropertyService
 import com.normation.zio.UnsafeRun
 import net.liftweb.common.Box
 import net.liftweb.common.Full
