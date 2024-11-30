@@ -23,6 +23,16 @@ usage() {
 
 NODE_UUID=$1
 
+TRIGGER_AGENT_RUN=false
+
+while getopts "r" opt; do
+  case $opt in
+    r)
+      TRIGGER_AGENT_RUN=true
+      ;;
+  esac
+done
+
 # Check arguments
 if [ "${NODE_UUID}" = "" ]; then
 	echo "ERROR: Need the UUID of the Node as an argument, aborting."
@@ -32,6 +42,7 @@ elif [ "${NODE_UUID}" = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeee" ]; then
 	echo "ERROR: Please use a real UUID, not the one supplied in the documentation, aborting."
 	exit 1
 fi
+
 
 # Scale-out-relay API call (must have the plugin installed)
 API_URL="http://127.0.0.1:8080/rudder/api/latest"
@@ -59,6 +70,12 @@ else
 	echo -n "INFO: Triggering promises generation..."
 	${DOWNLOAD_COMMAND} --location --proxy '' --header @/var/rudder/run/api-token-header --request POST -k "${API_URL}/system/reload/techniques"
 	echo " Done."
+
+    if [ "$TRIGGER_AGENT_RUN" = true ]; then
+	    echo -n "INFO: Triggering agent run on relay ${NODE_UUID}..."
+	    ${DOWNLOAD_COMMAND} --location --proxy '' --header @/var/rudder/run/api-token-header --request POST -k "${API_URL}/nodes/${NODE_UUID}/applyPolicy"
+	    echo " Done."
+    fi
 
 	echo "Success: all steps completed successfully."
 	exit 0

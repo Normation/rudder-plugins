@@ -23,6 +23,17 @@ usage() {
 
 RELAY_UUID=$1
 
+TRIGGER_AGENT_RUN=false
+
+while getopts "r" opt; do
+  case $opt in
+    r)
+      TRIGGER_AGENT_RUN=true
+      ;;
+  esac
+done
+
+
 # Check arguments
 if [ "${RELAY_UUID}" = "" ]; then
 	echo "ERROR: Need the UUID of the Relay server as an argument, aborting."
@@ -61,6 +72,12 @@ else
 	echo -n "INFO: Triggering promises generation..."
 	${DOWNLOAD_COMMAND} --location --proxy '' --header @/var/rudder/run/api-token-header --request POST -k "${API_URL}/system/reload/techniques"
 	echo " Done."
+
+    if [ "$TRIGGER_AGENT_RUN" = true ]; then
+	    echo -n "INFO: Triggering agent run on relay ${RELAY_UUID}..."
+	    ${DOWNLOAD_COMMAND} --location --proxy '' --header @/var/rudder/run/api-token-header --request POST -k "${API_URL}/nodes/${RELAY_UUID}/applyPolicy"
+	    echo " Done."
+    fi
 
 	echo "Success: all steps completed successfully."
 	exit 0
