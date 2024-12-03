@@ -111,7 +111,7 @@ class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit v
       case _                                 => <div class="motd"></div>
     }
     (".logo-container" #> logoContainer &
-    ".plugin-info" #> bar &
+    ".plugin-info" #> ((x: NodeSeq) => bar ++ x) &
     ".plugin-info *+" #> brandingCss &
     ".motd" #> motd)(xml)
   }
