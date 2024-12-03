@@ -2,7 +2,7 @@ module UserApiToken exposing (Model, Msg(..), Token, TokenFeatureStatus, apiRequ
 
 import Browser
 import Html exposing (..)
-import Html.Attributes exposing (class, disabled)
+import Html.Attributes exposing (class)
 import Html.Events exposing (..)
 import Http exposing (..)
 import Json.Decode exposing (..)
@@ -65,6 +65,7 @@ type Msg
 decodeTokenFeatureStatus : Decoder TokenFeatureStatus
 decodeTokenFeatureStatus =
     string
+        |> at [ "data" ]
         |> andThen
             (\status ->
                 case status of
@@ -309,11 +310,11 @@ tokenPresent featureStatus token isNewToken =
                 ( Enabled, True ) ->
                     ( "fa fa-check", "enabled", "text-success" )
 
-                ( Enabled, False ) ->
-                    ( "fa-ban", "disabled", "text-info" )
-
                 ( Disabled, True ) ->
                     ( "fa-ban", "enabled", "text-info" )
+
+                ( Enabled, False ) ->
+                    ( "fa-ban", "disabled", "text-info" )
 
                 ( Disabled, False ) ->
                     ( "fa-ban", "disabled", "text-info" )
@@ -380,19 +381,14 @@ tokenPresent featureStatus token isNewToken =
 
 tokenAbsent : TokenFeatureStatus -> List (Html Msg)
 tokenAbsent featureStatus =
-    [ li [] [ a [ class "no-click no-token" ] [ text "You don't have an API token yet." ] ]
-    , li [ class "footer" ]
-        [ a
-            [ class "createToken"
-            , if featureStatus == Enabled then
-                onClick CreateButton
-
-              else
-                disabled True
-            ]
-            [ text "Create an API token" ]
+    if featureStatus == Disabled then
+        [ li [] [ a [ class "no-click no-token" ] [ text "You don't have an API token." ] ]
         ]
-    ]
+
+    else
+        [ li [] [ a [ class "no-click no-token" ] [ text "You don't have an API token yet." ] ]
+        , li [ class "footer" ] [ a [ class "createToken", onClick CreateButton ] [ text "Create an API token" ] ]
+        ]
 
 
 errorItem : Model -> Html Msg
@@ -409,7 +405,7 @@ featureWarningItem : Model -> Html Msg
 featureWarningItem model =
     case model.featureStatus of
         Disabled ->
-            li [ class "warning" ] [ a [ class "no-click" ] [ i [ class "fa fa-warning text-warning-rudder" ] [], text "User REST API token feature is disabled" ] ]
+            li [ class "text-warning" ] [ a [ class "no-click text-center text-warning" ] [ i [ class "fa fa-warning text-warning" ] [], text "User REST API token feature is disabled" ] ]
 
         Enabled ->
             text ""

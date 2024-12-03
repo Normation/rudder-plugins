@@ -63,6 +63,8 @@ object ApiAuthorizationsConf extends RudderPluginModule {
   lazy val userApi = new UserApiImpl(
     RudderConfig.roApiAccountRepository,
     RudderConfig.woApiAccountRepository,
+    RudderConfig.userRepository,
+    RudderConfig.authenticationProviders,
     RudderConfig.tokenGenerator,
     RudderConfig.stringUuidGenerator
   )
