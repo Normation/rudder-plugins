@@ -75,6 +75,7 @@ import net.liftweb.util.Helpers.*
 import org.apache.commons.text.StringEscapeUtils
 import org.joda.time.DateTime
 import scala.xml.*
+import zio.json.*
 
 object ChangeRequestChangesForm {
   def form = ChooseTemplate(
@@ -442,7 +443,7 @@ class ChangeRequestChangesForm(
       "#shortDescription" #> group.description &
       "#query" #> (group.query match {
         case None    => Text("None")
-        case Some(q) => Text(q.toJSONString)
+        case Some(q) => Text(q.toJson)
       }) &
       "#isDynamic" #> group.isDynamic &
       "#properties" #> <ul>{group.properties.map(p => <li>{p.name}: {p.valueAsString}</li>)}</ul> &
@@ -467,7 +468,7 @@ class ChangeRequestChangesForm(
   )(implicit qc: QueryContext) = {
     def displayQuery(query: Option[Query])            = query match {
       case None    => "None"
-      case Some(q) => q.toJSONString
+      case Some(q) => q.toJson
     }
     def displayServerList(servers: Set[NodeId]): String = {
       servers.map(_.value).toList.sortBy(s => s).mkString("\n")

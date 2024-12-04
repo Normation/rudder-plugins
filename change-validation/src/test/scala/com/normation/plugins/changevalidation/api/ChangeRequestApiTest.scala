@@ -73,9 +73,9 @@ import com.normation.rudder.domain.policies.Tags
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.DeleteGlobalParameterDiff
 import com.normation.rudder.domain.properties.ModifyToGlobalParameterDiff
-import com.normation.rudder.domain.queries.And
-import com.normation.rudder.domain.queries.NodeReturnType
+import com.normation.rudder.domain.queries.CriterionComposition.*
 import com.normation.rudder.domain.queries.Query
+import com.normation.rudder.domain.queries.QueryReturnType.*
 import com.normation.rudder.domain.queries.ResultTransformation
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ChangeRequestInfo

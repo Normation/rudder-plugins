@@ -53,6 +53,8 @@ import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.DELETE
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.api.HttpAction.POST
+import com.normation.rudder.config.ReasonBehavior
+import com.normation.rudder.config.UserPropertyService
 import com.normation.rudder.domain.nodes.NodeGroupUid
 import com.normation.rudder.domain.policies.DirectiveId
 import com.normation.rudder.domain.policies.DirectiveUid
@@ -69,6 +71,7 @@ import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.GeneralApi
 import com.normation.rudder.rest.OneParam
+import com.normation.rudder.rest.RudderJsonRequest.*
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion3
 import com.normation.rudder.rest.ZeroParam
@@ -82,8 +85,6 @@ import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.users.UserService
-import com.normation.rudder.web.services.ReasonBehavior
-import com.normation.rudder.web.services.UserPropertyService
 import enumeratum.*
 import net.liftweb.common.Box
 import net.liftweb.http.LiftResponse
@@ -172,7 +173,9 @@ class ChangeRequestApiImpl(
     userService:          UserService
 ) extends LiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
-  implicit private val diffServiceImpl: DiffService = diffService
+
+  implicit def reasonBehavior:          ReasonBehavior = userPropertyService.reasonsFieldBehavior
+  implicit private val diffServiceImpl: DiffService    = diffService
 
   override def schemas: ApiModuleProvider[ChangeRequestApi] = API
 
@@ -302,7 +305,7 @@ class ChangeRequestApiImpl(
               s"Could not decline ChangeRequest ${id} details cause is: could not decline ChangeRequest ${id}, because status '${step.value}' cannot be cancelled."
             )
           (_, func)   = stepFunc
-          reason     <- extractReason(req)
+          reason     <- extractReason(req).toIO
           result     <- func(changeRequest.id, authzToken.qc.actor, reason).toIO
           serialized <- serialize(changeRequest, result).toIO
         } yield {
@@ -339,7 +342,7 @@ class ChangeRequestApiImpl(
               s"Could not accept ChangeRequest ${id} details cause is: you could not send Change Request from '${step.value}' to '${targetStep.value}'."
             )
           (_, func)   = stepFunc
-          reason     <- extractReason(req)
+          reason     <- extractReason(req).toIO
           result     <- func(changeRequest.id, authzToken.qc.actor, reason).toIO
           serialized <- serialize(changeRequest, result).toIO
         } yield {
@@ -511,25 +514,6 @@ class ChangeRequestApiImpl(
       params.get("name").flatMap(_.headOption),
       params.get("description").flatMap(_.headOption)
     )
-  }
-
-  private def extractReason(req: Req): IOResult[Option[String]] = {
-    import ReasonBehavior.*
-    (userPropertyService.reasonsFieldBehavior match {
-      case Disabled => ZIO.none
-      case mode     =>
-        val reason = req.params.get("reason").flatMap(_.headOption)
-        (mode: @unchecked) match {
-          case Mandatory =>
-            reason
-              .notOptional("Reason field is mandatory and should be at least 5 characters long")
-              .reject {
-                case s if s.lengthIs < 5 => Inconsistency("Reason field should be at least 5 characters long")
-              }
-              .map(Some(_))
-          case Optionnal => reason.succeed
-        }
-    }).chainError("There was an error while extracting reason message")
   }
 
   private[this] def extractFilters(params: Map[String, List[String]]): PureResult[ChangeRequestFilter] = {
