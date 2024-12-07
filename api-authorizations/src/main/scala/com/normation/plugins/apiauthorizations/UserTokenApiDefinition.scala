@@ -37,6 +37,8 @@
 
 package com.normation.plugins.apiauthorizations
 
+import bootstrap.liftweb.AuthBackendProvidersManager
+import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api.*
 import com.normation.rudder.apidata.JsonApiAcl
@@ -45,6 +47,7 @@ import com.normation.rudder.rest.*
 import com.normation.rudder.rest.UserApi
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.*
+import com.normation.rudder.users.UserRepository
 import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.Transformer
@@ -54,10 +57,12 @@ import org.joda.time.DateTime
 import zio.json.*
 
 class UserApiImpl(
-    readApi:        RoApiAccountRepository,
-    writeApi:       WoApiAccountRepository,
-    tokenGenerator: TokenGenerator,
-    uuidGen:        StringUuidGenerator
+    readApi:                     RoApiAccountRepository,
+    writeApi:                    WoApiAccountRepository,
+    userRepository:              UserRepository,
+    authBackendProvidersManager: AuthBackendProvidersManager,
+    tokenGenerator:              TokenGenerator,
+    uuidGen:                     StringUuidGenerator
 ) extends LiftApiModuleProvider[UserApi] {
   api =>
 
@@ -69,10 +74,11 @@ class UserApiImpl(
     UserApi.endpoints
       .map(e => {
         e match {
-          case UserApi.GetApiToken    => GetApiToken
-          case UserApi.CreateApiToken => CreateApiToken
-          case UserApi.DeleteApiToken => DeleteApiToken
-          case UserApi.UpdateApiToken => UpdateApiToken
+          case UserApi.GetTokenFeatureStatus => GetTokenFeatureStatus
+          case UserApi.GetApiToken           => GetApiToken
+          case UserApi.CreateApiToken        => CreateApiToken
+          case UserApi.DeleteApiToken        => DeleteApiToken
+          case UserApi.UpdateApiToken        => UpdateApiToken
         }
       })
       .toList
@@ -83,6 +89,27 @@ class UserApiImpl(
    * (so that we enforce only one token by user - that could be change in the future
    * by only enforcing the name)
    */
+
+  object GetTokenFeatureStatus extends LiftApiModule0 {
+    val schema: UserApi.GetTokenFeatureStatus.type = UserApi.GetTokenFeatureStatus
+
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      val username = authzToken.qc.actor.name
+      (for {
+        userInfo <- userRepository.get(username).notOptional("Could not get token feature status for unknown user in base")
+        provider  = userInfo.managedBy
+        status   <- authBackendProvidersManager
+                      .getProviderProperties()
+                      .get(provider)
+                      .map(_.restTokenFeatureSwitch)
+                      .notOptional("Could not get token feature status for unknown provider")
+      } yield {
+        status.name
+      })
+        .chainError(s"Error when trying to get user '${username}' API token configuration status")
+        .toLiftResponseOne(params, schema, None)
+    }
+  }
 
   object GetApiToken extends LiftApiModule0 {
     val schema: UserApi.GetApiToken.type = UserApi.GetApiToken
