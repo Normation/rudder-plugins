@@ -37,6 +37,7 @@
 
 package com.normation.plugins.openscappolicies
 
+import com.normation.NamedZioLogger
 import com.normation.inventory.domain.NodeId
 import net.liftweb.common.*
 import org.slf4j.LoggerFactory
@@ -48,5 +49,9 @@ object OpenscapPoliciesLogger extends Logger {
   override protected def _logger = LoggerFactory.getLogger("openscap")
 }
 
+object OpenscapPoliciesLoggerPure extends NamedZioLogger {
+  override def loggerName: String = "openscap"
+}
+
 // other data types for you plugin
-case class OpenScapReport(nodeId: NodeId, content: String)
+case class OpenScapReport(nodeId: NodeId, hostname: String, content: String)
