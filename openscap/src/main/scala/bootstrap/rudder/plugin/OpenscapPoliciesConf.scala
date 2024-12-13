@@ -47,7 +47,6 @@ import com.normation.plugins.openscappolicies.api.OpenScapApiImpl
 import com.normation.plugins.openscappolicies.extension.OpenScapNodeDetailsExtension
 import com.normation.plugins.openscappolicies.services.GetActiveTechniqueIds
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
-import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.domain.logger.ApplicationLogger
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -104,7 +103,6 @@ object OpenscapPoliciesConf extends RudderPluginModule {
 
   lazy val getActiveTechniqueIds = new GetActiveTechniqueIds(RudderConfig.rudderDit, RudderConfig.roLDAPConnectionProvider)
 
-  lazy val reportSanitizer      = new ReportSanitizer(POLICY_SANITIZATION_FILE)
   lazy val openScapReportReader = new OpenScapReportReader(
     RudderConfig.nodeFactRepository,
     RudderConfig.roDirectiveRepository,
@@ -113,9 +111,9 @@ object OpenscapPoliciesConf extends RudderPluginModule {
     openScapReportDirPath = "/var/rudder/shared-files/root/files/"
   )
 
-  lazy val openScapApiImpl = new OpenScapApiImpl(openScapReportReader, reportSanitizer)
+  lazy val openScapApiImpl = new OpenScapApiImpl(openScapReportReader)
   // other service instantiation / initialization
   RudderConfig.snippetExtensionRegister.register(
-    new OpenScapNodeDetailsExtension(pluginStatusService, openScapReportReader, reportSanitizer)
+    new OpenScapNodeDetailsExtension(pluginStatusService, openScapReportReader)
   )
 }
