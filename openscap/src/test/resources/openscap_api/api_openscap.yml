@@ -10,9 +10,10 @@ description: Get OpenSCAP report for a non-existing node
 method: GET
 url: /api/latest/openscap/report/node_void123
 response:
-  code: 404
+  code: 500
   type: text
-  content: Could not get the OpenSCAP report for node ${nodeId} <- Node with id node_void123 not found
+  content: >- 
+    Could not get the OpenSCAP report for node node_void123: Inconsistency: Node with id node_void123 does not exist
 ---
 description: Get sanitized OpenSCAP report for a node
 method: GET
@@ -20,12 +21,13 @@ url: /api/latest/openscap/sanitized/node2
 response:
   code: 200
   type: text
-  content: <a rel="nofollow" href="https://example.com"/>
+  content: "<!DOCTYPE html><a href=\"https://example.com\" rel=\"nofollow\">not a trap!</a>\n<div>\n content\n</div>"
 ---
 description: Get sanitized OpenSCAP report for a non-existing node
 method: GET
 url: /api/latest/openscap/sanitized/node_void123
 response:
-  code: 404
+  code: 500
   type: text
-  content: <div class="error">Could not get the sanitized OpenSCAP report for node ${nodeId} &lt;- Cannot get OpenSCAP report for node node_void123 &lt;- Node with id node_void123 not found</div>
+  content: >-
+    Could not get the OpenSCAP report for node node_void123: Inconsistency: Node with id node_void123 does not exist
