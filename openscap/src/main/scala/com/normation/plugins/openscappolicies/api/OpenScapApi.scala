@@ -37,6 +37,7 @@
 
 package com.normation.plugins.openscappolicies.api
 
+import com.normation.errors.SystemError
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
@@ -44,6 +45,7 @@ import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.EndpointSchema
@@ -55,6 +57,7 @@ import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.zio.*
 import enumeratum.*
+import java.io.IOException
 import net.liftweb.http.InMemoryResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -104,7 +107,7 @@ class OpenScapApiImpl(
     }
   }
 
-  def getReport(nodeId: NodeId, postProcessContent: String => String): LiftResponse = {
+  def getReport(nodeId: NodeId, postProcessContent: String => String)(implicit qc: QueryContext): LiftResponse = {
     (for {
       opt    <- openScapReportReader.getOpenScapReportFile(nodeId)
       report <- opt match {
@@ -126,13 +129,20 @@ class OpenScapApiImpl(
       case Right(None)         =>
         logger.trace("No report found")
         InMemoryResponse(
-          s"No OpenSCAP report found for node '${nodeId}''".getBytes(),
+          s"No OpenSCAP report found for node '${nodeId.value}'".getBytes(),
           ("Content-Type" -> "text/txt") :: Nil,
           Nil,
           404
         )
       case Left(err)           =>
-        val errorMessage = s"Could not get the OpenSCAP report for node ${nodeId.value}: ${err.fullMsg}"
+        val errorMessage = {
+          val prefix = s"Could not get the OpenSCAP report for node ${nodeId.value}: "
+          prefix ++ (err match {
+            // we don't want to get a stack trace for file errors
+            case SystemError(msg, ex: IOException) => s"${msg}; cause was: ${ex.getMessage}"
+            case _                                 => err.fullMsg
+          })
+        }
         logger.info(errorMessage) // this is info level, because it can be expected errors like "no report"
         InMemoryResponse(errorMessage.getBytes(), Nil, Nil, 500)
     }
@@ -149,6 +159,7 @@ class OpenScapApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
+      implicit val qc: QueryContext = authzToken.qc
       getReport(NodeId(nodeId), identity)
     }
   }
@@ -164,6 +175,7 @@ class OpenScapApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
+      implicit val qc: QueryContext = authzToken.qc
       getReport(NodeId(nodeId), ReportSanitizer.sanitizeHTMLReport)
     }
   }

@@ -41,6 +41,7 @@ import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import com.normation.zio.*
 import net.liftweb.common.Full
@@ -69,7 +70,7 @@ class OpenScapNodeDetailsExtension(
     // Actually extend
     def display(): NodeSeq = {
       val nodeId  = snippet.nodeId
-      val content = openScapReader.getOpenScapReportFile(nodeId).either.runNow match {
+      val content = openScapReader.getOpenScapReportFile(nodeId)(CurrentUser.queryContext).either.runNow match {
         case Left(err) =>
           val e = s"Can not display OpenSCAP report for that node: ${err.fullMsg}"
           <div class="error">{e}</div>
