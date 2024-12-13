@@ -124,16 +124,25 @@ class OpenScapReportReader(
    */
   def getOpenScapReportFile(nodeId: NodeId)(implicit qc: QueryContext): IOResult[Option[(String, File)]] = {
     for {
-      nodeInfo  <- nodeFactRepo.get(nodeId).notOptional(s"Node with id ${nodeId.value} does not exist")
-      path       = computePathFromNodeId(nodeInfo.id)
-      reportFile = File(path)
-      exists    <- IOResult.attempt(reportFile.exists())
-      res       <- if (!exists) {
-                     None.succeed
-                   } else {
-                     OpenscapPoliciesLoggerPure.debug(s"OpenSCAP report for node '${nodeId.value}' exists at ${path}") *>
-                     Some((nodeInfo.fqdn, reportFile)).succeed
-                   }
+      nodeInfo   <- nodeFactRepo.get(nodeId).notOptional(s"Node with id ${nodeId.value} does not exist")
+      path        = computePathFromNodeId(nodeInfo.id)
+      reportFile  = File(path)
+      exists     <- IOResult.attempt(reportFile.exists())
+      isFile     <- IOResult.attempt(reportFile.isRegularFile)
+      isReadable <- IOResult.attempt(reportFile.isReadable)
+      res        <- if (!exists) {
+                      None.succeed
+                    } else if (!isFile || !isReadable) {
+                      OpenscapPoliciesLoggerPure
+                        .warn(s"OpenSCAP report for node '${nodeId.value}' is not a file or is not readable at ${path}")
+                        .as(None)
+                    } else {
+                      OpenscapPoliciesLoggerPure
+                        .debug(s"OpenSCAP report for node '${nodeId.value}' exists at ${path}")
+                        .as(
+                          Some((nodeInfo.fqdn, reportFile))
+                        )
+                    }
     } yield res
   }
 
@@ -143,7 +152,9 @@ class OpenScapReportReader(
    */
   def getOpenScapReportContent(nodeId: NodeId, hostname: String, file: File): IOResult[OpenScapReport] = {
     for {
-      content <- IOResult.attempt(s"Error when retrieving report content")(file.contentAsString(StandardCharsets.UTF_8))
+      content <- IOResult.attempt(s"Error when retrieving content of report file ${file.name}")(
+                   file.contentAsString(StandardCharsets.UTF_8)
+                 )
     } yield OpenScapReport(nodeId, hostname, content)
   }
 }
