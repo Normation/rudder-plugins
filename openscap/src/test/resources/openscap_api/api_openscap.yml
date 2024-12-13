@@ -31,3 +31,12 @@ response:
   type: text
   content: >-
     Could not get the OpenSCAP report for node node_void123: Inconsistency: Node with id node_void123 does not exist
+---
+description: Get OpenSCAP report for a node with file reading issue
+method: GET
+url: /api/latest/openscap/report/root
+response:
+  code: 404
+  type: text
+  content: >-
+    No OpenSCAP report found for node 'root'

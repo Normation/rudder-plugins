@@ -44,9 +44,14 @@ class OpenScapApiTest extends ZIOSpecDefault {
       """<script>bad js</script><a href="https://example.com">not a trap!</a><div onMouseover="bad things;">content</div>"""
     )
 
+  val rootReportFile = openScapReportDir
+    .createChild("root/", asDirectory = true)
+    // create a directory instead of a file, attempting to read the content should throw an exception
+    .createChild(OpenScapReportReader.OPENSCAP_REPORT_FILENAME, asDirectory = true)
+
   val mockNodes            = new MockNodes()
   val openScapReportReader = new OpenScapReportReader(
-    mockNodes.nodeInfoService,
+    mockNodes.nodeFactRepo,
     restTestSetUp.mockDirectives.directiveRepo,
     null,
     null,

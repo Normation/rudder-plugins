@@ -22,9 +22,6 @@ target/openscap_technique.zip: target/rudderc
 target/remove_configuration:
 	cp packaging/remove_configuration target/remove_configuration
 
-target/openscap.properties:
-	cp src/main/resources/openscap.properties target/openscap.properties
-
 clean:
 	rm -f $(FULL_NAME)-*.rpkg pom.xml
 	rm -rf target
