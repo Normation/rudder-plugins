@@ -37,19 +37,25 @@
 
 package com.normation.plugins.openscappolicies.extension
 
-import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
+import com.normation.plugins.openscappolicies.OpenScapReport
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
+import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import com.normation.zio.*
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
+import net.liftweb.http.SHtml
+import net.liftweb.http.js.JsCmds.Run
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
+import zio.ZIO
 
 class OpenScapNodeDetailsExtension(
     val status:     PluginStatus,
@@ -70,15 +76,21 @@ class OpenScapNodeDetailsExtension(
     // Actually extend
     def display(): NodeSeq = {
       val nodeId  = snippet.nodeId
-      val content = openScapReader.getOpenScapReportFile(nodeId)(CurrentUser.queryContext).either.runNow match {
-        case Left(err) =>
-          val e = s"Can not display OpenSCAP report for that node: ${err.fullMsg}"
-          <div class="error">{e}</div>
+      val content = {
+        (for {
+          info   <- openScapReader.getOpenScapReportFile(nodeId)(CurrentUser.queryContext)
+          report <- ZIO.foreach(info) { case (hostname, file) => openScapReader.getOpenScapReportContent(nodeId, hostname, file) }
+        } yield {
+          report
+        }).either.runNow match {
+          case Left(err) =>
+            val e = s"Can not display OpenSCAP report for that node: ${err.fullMsg}"
+            <div class="error">{e}</div>
 
-        case Right(opt) =>
-          opt match {
-            case None =>
-              <div id="openScap" class="inner-portlet">
+          case Right(opt) =>
+            opt match {
+              case None =>
+                <div id="openScap" class="inner-portlet">
                 <h3 class="page-title mt-0">OpenSCAP reporting</h3>
                 <div class="col-sm-12 callout-fade callout-info">
                   <div class="marker">
@@ -92,9 +104,10 @@ class OpenScapNodeDetailsExtension(
                 </div>
               </div>
 
-            case Some((hostname, _)) =>
-              frameContent(snippet.nodeId, hostname)(openScapExtensionXml)
-          }
+              case Some(report) =>
+                frameContent(report)(openScapExtensionXml)
+            }
+        }
       }
 
       val tabTitle = "OpenSCAP"
@@ -129,13 +142,45 @@ class OpenScapNodeDetailsExtension(
 
   }
 
-  def frameContent(nodeId: NodeId, hostname: String): CssSel = {
+  def frameContent(report: OpenScapReport): CssSel = {
+    val sanitizedReport = ReportSanitizer.sanitizeHTMLReport(report.content)
 
-    "iframe [src]" #> s"/secure/api/openscap/sanitized/${nodeId.value}" &
-    ".sanitized [href]" #> s"/secure/api/openscap/sanitized/${nodeId.value}" &
-    ".original [href]" #> s"/secure/api/openscap/report/${nodeId.value}" &
-    ".original [download]" #> s"OpenSCAP report for ${hostname} (${nodeId.value}).html"
+    "iframe [srcdoc]" #> sanitizedReport &
+    ".sanitized" #> openNewTabReportButton(sanitizedReport) &
+    ".original" #> downloadReportButton(report)
 
+  }
+
+  // download sanitized file content
+  private def downloadReportButton(report: OpenScapReport) = {
+    import report.*
+    val base64   = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))
+    val fileName = s"OpenSCAP report for ${hostname} (${nodeId.value}).html"
+    val download = Run(
+      s"""saveByteArray("${fileName}", "application/zip", base64ToArrayBuffer("${base64}"));"""
+    )
+
+    SHtml.ajaxButton(
+      <span class="text-muted"><i class="fa fa-exclamation-triangle text-secondary"></i>Download original report (with JS enabled)</span>,
+      () => download,
+      ("class", "btn btn-default")
+    )
+  }
+
+  private def openNewTabReportButton(sanitizedReport: String) = {
+    // since report has many lines, use template literals, there could also be escape sequences
+    // we can use String.raw safely because the report is already sanitized
+    val openNewTab = Run(
+      s"""
+      var newWindow = window.open();
+      newWindow.document.write(String.raw`${sanitizedReport}`);
+      """
+    )
+    SHtml.ajaxButton(
+      <span><i class="fa fa-external-link text-light"></i>Open report in a new tab</span>,
+      () => Run(openNewTab),
+      ("class", "btn btn-primary")
+    )
   }
 
   private def openScapExtensionXml = {
@@ -145,12 +190,13 @@ class OpenScapNodeDetailsExtension(
           <div class="marker">
             <span class="fa fa-info-circle"></span>
           </div>
-          <p>That tab gives access to OpenSCAP report configured for that node. Below is the raw report as sent by the node.</p>
+          <p>That tab gives access to OpenSCAP report configured for that node. Below is the report sent by the node, sanitized to prevent script execution.</p>
           <br/>
-          <p><b><a class="sanitized" href=""  target="_blank">Open sanitized report in a new tab</a></b></p>
-          <p><a class="original" href="" download="">You can also download the original report, with JS enabled, here</a></p>
+          <p><a class="sanitized"></a></p>
+          <p><a class="original"></a></p>
         </div>
-        <iframe width="100%" height="600"></iframe>
+        <iframe width="100%" height="600" srcdoc="">
+        </iframe>
       </div>
   }
 }
