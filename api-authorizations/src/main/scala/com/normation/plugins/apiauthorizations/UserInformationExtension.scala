@@ -1,21 +1,51 @@
 package com.normation.plugins.apiauthorizations
 
+import bootstrap.liftweb.AuthBackendProvidersManager
+import com.normation.errors.*
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
+import com.normation.rudder.domain.appconfig.FeatureSwitch.*
+import com.normation.rudder.users.CurrentUser
+import com.normation.rudder.users.UserRepository
 import com.normation.rudder.web.snippet.UserInformation
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class UserInformationExtension(val status: PluginStatus)(implicit val ttag: ClassTag[UserInformation])
-    extends PluginExtensionPoint[UserInformation] with Loggable {
+class UserInformationExtension(
+    val status:                  PluginStatus,
+    userRepository:              UserRepository,
+    authBackendProvidersManager: AuthBackendProvidersManager
+)(implicit
+    val ttag:                    ClassTag[UserInformation]
+) extends PluginExtensionPoint[UserInformation] with Loggable {
 
   def pluginCompose(snippet: UserInformation): Map[String, NodeSeq => NodeSeq] = Map(
-    "userCredentials" -> render _
+    "userCredentials" -> render
   )
 
-  def render(xml: NodeSeq) = {
+  def render(xml: NodeSeq): NodeSeq = {
+    (for {
+      user     <- CurrentUser.get.toRight(Inconsistency("Could not find user name to get REST API token feature switch")).toIO
+      userInfo <- userRepository.get(user.getUsername).notOptional("Could not get token feature status for unknown user in base")
+      provider  = userInfo.managedBy
+      status   <- authBackendProvidersManager
+                    .getProviderProperties()
+                    .get(provider)
+                    .map(_.restTokenFeatureSwitch)
+                    .notOptional("Could not get token feature status for unknown provider")
+    } yield {
+      status
+    }).runNow match {
+      case Enabled  => renderMenu(xml)
+      // even if plugin is enabled, if the user REST API token feature is disabled they should not see the menu
+      case Disabled => xml
+    }
+  }
+
+  private def renderMenu(xml: NodeSeq) = {
     /* xml is a menu entry which looks like:
       <li class="user user-menu">
         <a href="#">

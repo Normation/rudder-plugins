@@ -63,6 +63,8 @@ object ApiAuthorizationsConf extends RudderPluginModule {
   lazy val userApi = new UserApiImpl(
     RudderConfig.roApiAccountRepository,
     RudderConfig.woApiAccountRepository,
+    RudderConfig.userRepository,
+    RudderConfig.authenticationProviders,
     RudderConfig.tokenGenerator,
     RudderConfig.stringUuidGenerator
   )
@@ -71,5 +73,7 @@ object ApiAuthorizationsConf extends RudderPluginModule {
   )
 
   RudderConfig.snippetExtensionRegister.register(new ApiAccountsExtension(pluginStatusService))
-  RudderConfig.snippetExtensionRegister.register(new UserInformationExtension(pluginStatusService))
+  RudderConfig.snippetExtensionRegister.register(
+    new UserInformationExtension(pluginStatusService, RudderConfig.userRepository, RudderConfig.authenticationProviders)
+  )
 }
