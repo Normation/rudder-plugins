@@ -69,6 +69,8 @@ class UserApiTest extends ZIOSpecDefault {
     new UserApiImpl(
       mockServices.apiAccountRepository,
       mockServices.apiAccountRepository,
+      null,
+      null,
       mockServices.tokenGenerator,
       restTestSetUp.uuidGen
     )
