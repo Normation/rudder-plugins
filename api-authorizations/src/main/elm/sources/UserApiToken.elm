@@ -1,7 +1,7 @@
-module UserApiToken exposing (Model, Msg(..), Token, apiRequestTemplate, createUserToken, decodeApiUserToken, decodeDeleteToken, decodeToken, deleteUserToken, getUserToken, init, main, printError, response, subscriptions, tokenAbsent, tokenPresent, update, updateFromApiResult, updateFromDelete, view)
+module UserApiToken exposing (Model, Msg(..), Token, TokenFeatureStatus, apiRequestTemplate, createUserToken, decodeApiUserToken, decodeDeleteToken, decodeToken, deleteUserToken, getUserToken, init, main, printError, response, subscriptions, tokenAbsent, tokenPresent, update, updateFromApiResult, updateFromDelete, view)
 
-import Html exposing (..)
 import Browser
+import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (..)
 import Http exposing (..)
@@ -40,11 +40,18 @@ type alias Model =
     , token : Maybe Token
     , error : Maybe (Html Msg)
     , isNewToken : Bool
+    , featureStatus : TokenFeatureStatus
     }
 
 
+type TokenFeatureStatus
+    = Enabled
+    | Disabled
+
+
 type Msg
-    = GetUserToken (Result Http.Error (Maybe Token))
+    = GetUserTokenFeatureStatus (Result Http.Error TokenFeatureStatus)
+    | GetUserToken (Result Http.Error (Maybe Token))
     | CreateUserToken (Result Http.Error (Maybe Token))
     | DeleteUserToken (Result Http.Error (Maybe String))
     | CreateButton
@@ -53,6 +60,24 @@ type Msg
 
 
 -- JSON decoder / encoder
+
+
+decodeTokenFeatureStatus : Decoder TokenFeatureStatus
+decodeTokenFeatureStatus =
+    string
+        |> at [ "data" ]
+        |> andThen
+            (\status ->
+                case status of
+                    "enabled" ->
+                        succeed Enabled
+
+                    "disabled" ->
+                        succeed Disabled
+
+                    _ ->
+                        fail <| "Invalid configuration for token status : " ++ status
+            )
 
 
 decodeToken : Decoder Token
@@ -96,10 +121,10 @@ init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
         initModel =
-            Model flags.contextPath Nothing Nothing False
+            Model flags.contextPath Nothing Nothing False Disabled
     in
     ( initModel
-    , getUserToken initModel
+    , getUserTokenFeatureStatus initModel
     )
 
 
@@ -111,44 +136,53 @@ printError : Http.Error -> Html Msg
 printError error =
     case error of
         BadUrl s ->
-          text s
+            text s
 
         Timeout ->
-          text "Request timed out. Please try again"
+            text "Request timed out. Please try again"
 
         NetworkError ->
-          text "There was a network error. Please try again"
+            text "There was a network error. Please try again"
 
         BadStatus code ->
-          text ("Response error code " ++ String.fromInt code)
+            text ("Response error code " ++ String.fromInt code)
 
         _ ->
-          text("There was an error during request")
+            text "There was an error during request"
 
 
-
-response : Result Http.Error a -> Model -> (Model -> a -> Maybe Token) -> ( Model, Cmd Msg )
+response : Result Http.Error a -> Model -> (Model -> a -> Model) -> Model
 response resp model fmod =
+    case resp of
+        Err err ->
+            { model | error = Just (printError err), token = Nothing }
+
+        Ok a ->
+            fmod model a |> (\m -> { m | error = Nothing })
+
+
+tokenResponse : Result Http.Error a -> Model -> (Model -> a -> Maybe Token) -> ( Model, Cmd Msg )
+tokenResponse resp model fmod =
+    ( response resp model (\m token -> { m | token = fmod m token }), Cmd.none )
+
+
+updateFromFeatureStatus : Result Http.Error TokenFeatureStatus -> Model -> ( Model, Cmd Msg )
+updateFromFeatureStatus resp model =
     let
         newModel =
-            case resp of
-                Err err ->
-                    { model | error = Just (printError err), token = Nothing }
-
-                Ok maybeA ->
-                    { model | error = Nothing, token = fmod model maybeA }
+            response resp model (\m featureStatus -> { m | featureStatus = featureStatus })
     in
-    ( newModel, Cmd.none )
+    ( newModel, getUserToken newModel )
 
 
 updateFromApiResult : Result Http.Error (Maybe Token) -> Model -> ( Model, Cmd Msg )
 updateFromApiResult resp model =
     let
         id : Model -> Maybe Token -> Maybe Token
-        id m maybeToken =
+        id _ maybeToken =
             maybeToken
     in
-    response resp model id
+    tokenResponse resp model id
 
 
 updateFromDelete : Result Http.Error (Maybe String) -> Model -> ( Model, Cmd Msg )
@@ -164,17 +198,20 @@ updateFromDelete resp model =
                     -- that means an error, let token as it was in model
                     m.token
     in
-    response resp model updateDel
+    tokenResponse resp model updateDel
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetUserTokenFeatureStatus res ->
+            updateFromFeatureStatus res model
+
         GetUserToken res ->
             updateFromApiResult res model
 
         CreateUserToken res ->
-            updateFromApiResult res { model | isNewToken = True}
+            updateFromApiResult res { model | isNewToken = True }
 
         DeleteUserToken res ->
             updateFromDelete res model
@@ -188,6 +225,26 @@ update msg model =
 
 
 -- API
+
+
+getUserTokenFeatureStatus : Model -> Cmd Msg
+getUserTokenFeatureStatus model =
+    let
+        url =
+            model.contextPath ++ "/secure/api/user/api/token/status"
+
+        req =
+            request
+                { method = "GET"
+                , headers = []
+                , url = url
+                , body = emptyBody
+                , expect = expectJson GetUserTokenFeatureStatus decodeTokenFeatureStatus
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
 
 
 apiRequestTemplate : (Result Http.Error (Maybe Token) -> Msg) -> String -> String -> Model -> Cmd Msg
@@ -207,7 +264,7 @@ apiRequestTemplate msg method path model =
                 , tracker = Nothing
                 }
     in
-     req
+    req
 
 
 getUserToken : Model -> Cmd Msg
@@ -237,7 +294,7 @@ deleteUserToken model =
                 , tracker = Nothing
                 }
     in
-      req
+    req
 
 
 
@@ -255,80 +312,98 @@ tokenPresent token isNewToken =
 
                 False ->
                     ( "fa-ban", "disabled", "text-info" )
-        hasClearTextToken = not (String.isEmpty token.token)
+
+        hasClearTextToken =
+            not (String.isEmpty token.token)
     in
     [ if hasClearTextToken then
-      li []
-      [ a [ class "no-click" ]
-        [ span [ class "fa fa-key" ] []
-        , text "Your personal token: "
-        , div [ class "help-block" ] [ b [] [ text token.token ] ]
-        ]
-      ]
-    else
-      li []
-      [ a [ class "no-click" ]
-        [ span [ class "fa fa-key" ] []
-        , text "You have a personal token."
-        ]
-      ]
-    , if isNewToken then
-      li []
-      [ a [ class "no-click" ]
-        [ span [ class "fa fa-exclamation-triangle" ] []
-        , text "Copy it now as it will not be re-displayed"
-        ]
-      ]
-    else
-      if hasClearTextToken then
         li []
-        [ a [ class "no-click" ]
-          [ span [ class "fa fa-exclamation-triangle" ] []
-          , text "Deprecated token format, please re-create"
-          ]
-        ]
+            [ a [ class "no-click" ]
+                [ span [ class "fa fa-key" ] []
+                , text "Your personal token: "
+                , div [ class "help-block" ] [ b [] [ text token.token ] ]
+                ]
+            ]
+
+      else
+        li []
+            [ a [ class "no-click" ]
+                [ span [ class "fa fa-key" ] []
+                , text "You have a personal token."
+                ]
+            ]
+    , if isNewToken then
+        li []
+            [ a [ class "no-click" ]
+                [ span [ class "fa fa-exclamation-triangle" ] []
+                , text "Copy it now as it will not be re-displayed"
+                ]
+            ]
+
+      else if hasClearTextToken then
+        li []
+            [ a [ class "no-click" ]
+                [ span [ class "fa fa-exclamation-triangle" ] []
+                , text "Deprecated token format, please re-create"
+                ]
+            ]
+
       else
         text ""
     , li []
         [ a [ class "no-click" ]
-          [ span [ class "fa fa-calendar" ] []
-          , text "Generated on "
-          , b [] [ text token.generationDate ]
-          ]
+            [ span [ class "fa fa-calendar" ] []
+            , text "Generated on "
+            , b [] [ text token.generationDate ]
+            ]
         ]
     , li []
         [ a [ class "no-click" ]
-          [ span [ class ("fa " ++ statusIcon) ] []
-          , text "Status: "
-          , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
-          ]
+            [ span [ class ("fa " ++ statusIcon) ] []
+            , text "Status: "
+            , b [ class ("text-capitalize " ++ statusClass) ] [ text statusTxt ]
+            ]
         ]
     , li [ class "footer" ] [ a [ class "deleteToken", onClick DeleteButton ] [ text "Delete API token" ] ]
     ]
 
 
-tokenAbsent : Model -> List (Html Msg)
-tokenAbsent model =
+tokenAbsent : List (Html Msg)
+tokenAbsent =
     [ li [] [ a [ class "no-click no-token" ] [ text "You don't have an API token yet." ] ]
     , li [ class "footer" ] [ a [ class "createToken", onClick CreateButton ] [ text "Create an API token" ] ]
     ]
 
 
+errorItem : Model -> Html Msg
+errorItem model =
+    case model.error of
+        Just error ->
+            li [ class "error" ] [ a [ class "no-click" ] [ error ] ]
+
+        Nothing ->
+            text ""
+
+
 view : Model -> Html Msg
 view model =
-    ul [ class "menu" ]
-        ([ case model.error of
-            Just error ->
-                li [ class "error" ] [ a [ class "no-click" ] [ error ] ]
+    case model.featureStatus of
+        Enabled ->
+            viewMenu model
 
-            Nothing ->
-                text ""
-         ]
-            ++ (case model.token of
+        Disabled ->
+            text ""
+
+
+viewMenu : Model -> Html Msg
+viewMenu model =
+    ul [ class "menu" ]
+        (errorItem model
+            :: (case model.token of
                     Just token ->
                         tokenPresent token model.isNewToken
 
                     Nothing ->
-                        tokenAbsent model
+                        tokenAbsent
                )
         )
