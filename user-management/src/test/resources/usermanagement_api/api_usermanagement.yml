@@ -9,11 +9,14 @@ response:
       "result" : "success",
       "data" : {
         "digest" : "BCRYPT",
-        "roleListOverride" : "override",
+        "roleListOverride" : "no-override",
         "authenticationBackends" : [],
         "providerProperties" : {
           "file" : {
-            "roleListOverride" : "override"
+            "roleListOverride" : "no-override"
+          },
+          "rootAdmin": {
+              "roleListOverride": "no-override"
           }
         },
         "users" : [
