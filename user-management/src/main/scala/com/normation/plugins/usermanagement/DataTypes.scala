@@ -42,6 +42,7 @@ import bootstrap.liftweb.ProviderRoleExtension
 import com.normation.rudder.Rights
 import com.normation.rudder.Role
 import com.normation.rudder.Role.Custom
+import com.normation.rudder.domain.appconfig.FeatureSwitch
 import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserStatus
 import com.normation.utils.DateFormaterService
@@ -85,6 +86,7 @@ object Serialisation {
   implicit val userStatusEncoder:                    JsonEncoder[UserStatus]                    = JsonEncoder[String].contramap(_.value)
   implicit val providerRoleExtensionEncoder:         JsonEncoder[ProviderRoleExtension]         =
     JsonEncoder[String].contramap(_.name)
+  implicit val featureSwitchEncoder:                 JsonEncoder[FeatureSwitch]                 = JsonEncoder[String].contramap(_.entryName)
   implicit val authBackendProviderPropertiesEncoder: JsonEncoder[AuthBackendProviderProperties] =
     DeriveJsonEncoder.gen[AuthBackendProviderProperties]
 

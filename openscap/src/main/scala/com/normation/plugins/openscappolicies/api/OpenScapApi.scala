@@ -1,6 +1,43 @@
+/*
+ *************************************************************************************
+ * Copyright 2024 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+
+ *
+ *************************************************************************************
+ */
+
 package com.normation.plugins.openscappolicies.api
 
-import com.normation.box.*
+import com.normation.errors.SystemError
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
@@ -8,6 +45,7 @@ import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.EndpointSchema
@@ -17,19 +55,20 @@ import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.zio.*
 import enumeratum.*
-import net.liftweb.common.Box
-import net.liftweb.common.EmptyBox
-import net.liftweb.common.Full
+import java.io.IOException
 import net.liftweb.http.InMemoryResponse
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
+import zio.syntax.*
 
 sealed trait OpenScapApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
 
 object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi] {
 
+  // use that endpoint to get the original report. Be careful, can XSS
   final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
     val z              = implicitly[Line].value
     val description    = "Get OpenSCAP report for a node"
@@ -53,8 +92,7 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
 }
 
 class OpenScapApiImpl(
-    openScapReportReader: OpenScapReportReader,
-    reportSanitizer:      ReportSanitizer
+    openScapReportReader: OpenScapReportReader
 ) extends LiftApiModuleProvider[OpenScapApi] {
   api =>
 
@@ -64,12 +102,50 @@ class OpenScapApiImpl(
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     OpenScapApi.endpoints.map {
-      case e =>
-        e match {
-          case OpenScapApi.GetOpenScapReport          => GetOpenScapReport
-          case OpenScapApi.GetSanitizedOpenScapReport => GetSanitizedOpenScapReport
+      case OpenScapApi.GetOpenScapReport          => GetOpenScapReport
+      case OpenScapApi.GetSanitizedOpenScapReport => GetSanitizedOpenScapReport
+    }
+  }
+
+  def getReport(nodeId: NodeId, postProcessContent: String => String)(implicit qc: QueryContext): LiftResponse = {
+    (for {
+      opt    <- openScapReportReader.getOpenScapReportFile(nodeId)
+      report <- opt match {
+                  case None                   => None.succeed
+                  case Some((hostname, file)) =>
+                    openScapReportReader.getOpenScapReportContent(nodeId, hostname, file).map(Some.apply)
+                }
+    } yield {
+      report
+    }).either.runNow match {
+      case Right(Some(report)) =>
+        logger.trace("doing in memory response")
+        InMemoryResponse(
+          postProcessContent(report.content).getBytes(),
+          ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
+          Nil,
+          200
+        )
+      case Right(None)         =>
+        logger.trace("No report found")
+        InMemoryResponse(
+          s"No OpenSCAP report found for node '${nodeId.value}'".getBytes(),
+          ("Content-Type" -> "text/txt") :: Nil,
+          Nil,
+          404
+        )
+      case Left(err)           =>
+        val errorMessage = {
+          val prefix = s"Could not get the OpenSCAP report for node ${nodeId.value}: "
+          prefix ++ (err match {
+            // we don't want to get a stack trace for file errors
+            case SystemError(msg, ex: IOException) => s"${msg}; cause was: ${ex.getMessage}"
+            case _                                 => err.fullMsg
+          })
         }
-    }.toList
+        logger.info(errorMessage) // this is info level, because it can be expected errors like "no report"
+        InMemoryResponse(errorMessage.getBytes(), Nil, Nil, 500)
+    }
   }
 
   object GetOpenScapReport extends LiftApiModule {
@@ -83,35 +159,8 @@ class OpenScapApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      (for {
-        report <- openScapReportReader.getOpenScapReport(NodeId(nodeId))
-      } yield {
-        logger.info(s"Report for node ${nodeId} has been found ")
-        report
-      }) match {
-        case Full(Some(report)) =>
-          logger.trace("doing in memory response")
-          InMemoryResponse(
-            report.content.getBytes(),
-            ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
-            Nil,
-            200
-          )
-        case Full(None)         =>
-          logger.trace("No report found")
-          InMemoryResponse(
-            s"No OpenSCAP report found for nodeId ${nodeId}".getBytes(),
-            ("Content-Type" -> "text/txt") ::
-            Nil,
-            Nil,
-            404
-          )
-        case eb: EmptyBox =>
-          val errorMessage = eb ?~! "Could not get the OpenSCAP report for node ${nodeId}"
-          logger.error(errorMessage.messageChain)
-          InMemoryResponse(errorMessage.messageChain.getBytes(), Nil, Nil, 404)
-      }
-
+      implicit val qc: QueryContext = authzToken.qc
+      getReport(NodeId(nodeId), identity)
     }
   }
 
@@ -126,33 +175,8 @@ class OpenScapApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      (for {
-        report       <- openScapReportReader.getOpenScapReport(NodeId(nodeId)) ?~! s"Cannot get OpenSCAP report for node ${nodeId}"
-        existence    <- Box(report) ?~! s"Report not found for node ${nodeId}"
-        sanitizedXml <- reportSanitizer.sanitizeReport(existence).toBox ?~! "Error while sanitizing report"
-      } yield {
-        logger.trace(s"Report for node ${nodeId} has been found and sanitized")
-        sanitizedXml
-      }) match {
-        case Full(sanitizedReport) =>
-          logger.trace("Doing in memory response")
-          InMemoryResponse(
-            sanitizedReport.toString().getBytes(),
-            ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
-            Nil,
-            200
-          )
-        case eb: EmptyBox =>
-          val errorMessage = eb ?~! "Could not get the sanitized OpenSCAP report for node ${nodeId}"
-          logger.error(errorMessage.messageChain)
-          val html         = <div class="error">{errorMessage.messageChain}</div>
-          InMemoryResponse(
-            html.toString().getBytes(),
-            ("Content-Type", "text/html") :: ("Content-Disposition", "inline") :: Nil,
-            Nil,
-            404
-          )
-      }
+      implicit val qc: QueryContext = authzToken.qc
+      getReport(NodeId(nodeId), ReportSanitizer.sanitizeHTMLReport)
     }
   }
 }

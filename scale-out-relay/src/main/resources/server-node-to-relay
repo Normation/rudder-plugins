@@ -63,5 +63,6 @@ else
 	echo " Done."
 
 	echo "Success: all steps completed successfully."
+	echo "TIP: on the relay you can trigger 'rudder agent run' to download updated policies immediately."
 	exit 0
 fi

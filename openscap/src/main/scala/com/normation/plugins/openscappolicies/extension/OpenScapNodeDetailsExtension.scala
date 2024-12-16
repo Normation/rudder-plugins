@@ -1,12 +1,49 @@
+/*
+ *************************************************************************************
+ * Copyright 2024 Normation SAS
+ *************************************************************************************
+ *
+ * This file is part of Rudder.
+ *
+ * Rudder is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * In accordance with the terms of section 7 (7. Additional Terms.) of
+ * the GNU General Public License version 3, the copyright holders add
+ * the following Additional permissions:
+ * Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+ * Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+ * Public License version 3, when you create a Related Module, this
+ * Related Module is not considered as a part of the work and may be
+ * distributed under the license agreement of your choice.
+ * A "Related Module" means a set of sources files including their
+ * documentation that, without modification of the Source Code, enables
+ * supplementary functions or services in addition to those offered by
+ * the Software.
+ *
+ * Rudder is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+
+ *
+ *************************************************************************************
+ */
+
 package com.normation.plugins.openscappolicies.extension
 
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
-import com.normation.plugins.openscappolicies.services.ReportSanitizer
+import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
-import net.liftweb.common.EmptyBox
+import com.normation.zio.*
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import net.liftweb.util.CssSel
@@ -15,9 +52,8 @@ import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
 class OpenScapNodeDetailsExtension(
-    val status:      PluginStatus,
-    openScapReader:  OpenScapReportReader,
-    reportSanitizer: ReportSanitizer
+    val status:     PluginStatus,
+    openScapReader: OpenScapReportReader
 )(implicit val ttag: ClassTag[ShowNodeDetailsFromNode])
     extends PluginExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
 
@@ -34,15 +70,14 @@ class OpenScapNodeDetailsExtension(
     // Actually extend
     def display(): NodeSeq = {
       val nodeId  = snippet.nodeId
-      val content = openScapReader.checkOpenScapReportExistence(nodeId) match {
-        case eb: EmptyBox =>
-          val e = eb ?~! "Can not display OpenSCAP report for that node"
-          (<div class="error">
-            {e.messageChain}
-          </div>)
-        case Full(existence) =>
-          existence match {
-            case false =>
+      val content = openScapReader.getOpenScapReportFile(nodeId)(CurrentUser.queryContext).either.runNow match {
+        case Left(err) =>
+          val e = s"Can not display OpenSCAP report for that node: ${err.fullMsg}"
+          <div class="error">{e}</div>
+
+        case Right(opt) =>
+          opt match {
+            case None =>
               <div id="openScap" class="inner-portlet">
                 <h3 class="page-title mt-0">OpenSCAP reporting</h3>
                 <div class="col-sm-12 callout-fade callout-info">
@@ -57,8 +92,8 @@ class OpenScapNodeDetailsExtension(
                 </div>
               </div>
 
-            case true =>
-              frameContent(snippet.nodeId)(openScapExtensionXml)
+            case Some((hostname, _)) =>
+              frameContent(snippet.nodeId, hostname)(openScapExtensionXml)
           }
       }
 
@@ -94,10 +129,12 @@ class OpenScapNodeDetailsExtension(
 
   }
 
-  def frameContent(nodeId: NodeId): CssSel = {
+  def frameContent(nodeId: NodeId, hostname: String): CssSel = {
 
-    "iframe [src]" #> s"/secure/api/openscap/report/${nodeId.value}" &
-    "a [href]" #> s"/secure/api/openscap/report/${nodeId.value}"
+    "iframe [src]" #> s"/secure/api/openscap/sanitized/${nodeId.value}" &
+    ".sanitized [href]" #> s"/secure/api/openscap/sanitized/${nodeId.value}" &
+    ".original [href]" #> s"/secure/api/openscap/report/${nodeId.value}" &
+    ".original [download]" #> s"OpenSCAP report for ${hostname} (${nodeId.value}).html"
 
   }
 
@@ -110,7 +147,8 @@ class OpenScapNodeDetailsExtension(
           </div>
           <p>That tab gives access to OpenSCAP report configured for that node. Below is the raw report as sent by the node.</p>
           <br/>
-          <p><b><a href="">You can also download this report here</a></b></p>
+          <p><b><a class="sanitized" href=""  target="_blank">Open sanitized report in a new tab</a></b></p>
+          <p><a class="original" href="" download="">You can also download the original report, with JS enabled, here</a></p>
         </div>
         <iframe width="100%" height="600"></iframe>
       </div>

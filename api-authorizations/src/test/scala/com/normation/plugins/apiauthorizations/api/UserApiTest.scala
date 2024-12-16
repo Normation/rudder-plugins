@@ -70,6 +70,8 @@ class UserApiTest extends Specification with TraitTestApiFromYamlFiles with Logg
     new UserApiImpl(
       mockServices.apiAccountRepository,
       mockServices.apiAccountRepository,
+      null,
+      null,
       mockServices.tokenGenerator,
       restTestSetUp.uuidGen
     )
