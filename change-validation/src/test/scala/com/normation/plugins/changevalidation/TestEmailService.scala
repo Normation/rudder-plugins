@@ -150,7 +150,7 @@ class TestEmailService extends Specification with BeforeAfterAll {
           |  <li>Author: No One</li>
           |  <li>Description: this CR is for test</li>
           |</ul>
-          |<a href="https://my.rudder.server/rudder/secure/plugins/changes/changeRequest/42">Click here to review and validate</a></li>
+          |<a href="https://my.rudder.server/rudder/secure/configurationManager/changes/changeRequest/42">Click here to review and validate</a></li>
           |
           |""".stripMargin
       }

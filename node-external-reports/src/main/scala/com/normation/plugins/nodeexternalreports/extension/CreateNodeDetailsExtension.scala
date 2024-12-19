@@ -42,11 +42,9 @@ import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
 import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
-
 import net.liftweb.common.*
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.*
-
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 

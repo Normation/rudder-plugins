@@ -66,10 +66,10 @@ import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users.*
 import com.normation.zio.*
 import com.typesafe.config.ConfigException
-import java.net.URI
-import java.util
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import java.net.URI
+import java.util
 import org.joda.time.DateTime
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware

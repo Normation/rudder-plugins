@@ -37,10 +37,8 @@
 
 package com.normation.plugins.changevalidation
 
-import bootstrap.liftweb.Boot
 import bootstrap.liftweb.Boot.redirection
 import bootstrap.liftweb.ConfigResource
-import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins.*
 import com.normation.rudder.AuthorizationType
@@ -58,7 +56,6 @@ import net.liftweb.http.RedirectWithState
 import net.liftweb.http.RewriteRequest
 import net.liftweb.http.RewriteResponse
 import net.liftweb.sitemap.Loc.Hidden
-import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
@@ -72,18 +69,18 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
     // URL rewrites
     LiftRules.statefulRewrite.append {
       case RewriteRequest(
-            ParsePath("secure" :: "plugins" :: "changes" :: "changeRequests" :: filter :: Nil, _, _, _),
+            ParsePath("secure" :: "configurationManager" :: "changes" :: "changeRequests" :: filter :: Nil, _, _, _),
             GetRequest,
             _
           ) => {
-        RewriteResponse("secure" :: "plugins" :: "changes" :: "changeRequests" :: Nil, Map("filter" -> filter))
+        RewriteResponse("secure" :: "configurationManager" :: "changes" :: "changeRequests" :: Nil, Map("filter" -> filter))
       }
       case RewriteRequest(
-            ParsePath("secure" :: "plugins" :: "changes" :: "changeRequest" :: crId :: Nil, _, _, _),
+            ParsePath("secure" :: "configurationManager" :: "changes" :: "changeRequest" :: crId :: Nil, _, _, _),
             GetRequest,
             _
           ) =>
-        RewriteResponse("secure" :: "plugins" :: "changes" :: "changeRequest" :: Nil, Map("crId" -> crId))
+        RewriteResponse("secure" :: "configurationManager" :: "changes" :: "changeRequest" :: Nil, Map("crId" -> crId))
     }
 
     // init directory to save JSON
@@ -107,39 +104,23 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
       CurrentUser.checkRights(AuthorizationType.Deployer.Read)
 
     (Menu("changeRequests", <span>Change Requests</span>) /
-    "secure" / "plugins" / "changes"
-    >> LocGroup("changeValidation")
+    "secure" / "configurationManager" / "changes"
     >> Hidden
     >> TestAccess(() => {
       if (status.isEnabled() && canViewPage)
         Empty
       else
-        Full(RedirectWithState("/secure/utilities/eventLogs", redirection))
+        Full(RedirectWithState("/secure/index", redirection))
     })).submenus(
       Menu("changeRequestsList", <span>Change requests</span>) /
-      "secure" / "plugins" / "changes" / "changeRequests"
+      "secure" / "configurationManager" / "changes" / "changeRequests"
       >> Hidden
       >> Template(() => ClasspathTemplates("template" :: "changeRequests" :: Nil) openOr <div>Template not found</div>),
       Menu("changeRequestDetails", <span>Change request</span>) /
-      "secure" / "plugins" / "changes" / "changeRequest"
+      "secure" / "configurationManager" / "changes" / "changeRequest"
       >> Hidden
       >> Template(() => ClasspathTemplates("template" :: "changeRequest" :: Nil) openOr <div>Template not found</div>)
     )
-  }
-
-  override def pluginMenuEntry: List[(Menu, Option[String])] = {
-    (
-      (
-        Menu("770-changeValidationManagement", <span>Change validation</span>) /
-        "secure" / "plugins" / "changeValidationManagement"
-        >> LocGroup("pluginsGroup")
-        >> TestAccess(() => Boot.userIsAllowed("/secure/index", AuthorizationType.Administration.Read))
-        >> Template(() =>
-          ClasspathTemplates("template" :: "ChangeValidationManagement" :: Nil) openOr <div>Template not found</div>
-        )
-      ).toMenu,
-      Some(MenuUtils.administrationMenu)
-    ) :: Nil
   }
 
   override def updateSiteMap(menus: List[Menu]): List[Menu] = {

@@ -44,6 +44,7 @@ import com.normation.plugins.branding.BrandingPluginDef
 import com.normation.plugins.branding.CheckRudderPluginEnableImpl
 import com.normation.plugins.branding.api.BrandingApi
 import com.normation.plugins.branding.api.BrandingApiService
+import com.normation.plugins.branding.snippet.BrandingResources
 import com.normation.plugins.branding.snippet.CommonBranding
 import com.normation.plugins.branding.snippet.LoginBranding
 
@@ -62,6 +63,7 @@ object BrandingPluginConf extends RudderPluginModule {
     new BrandingApi(brandingApiService, RudderConfig.stringUuidGenerator)
 
   RudderConfig.rudderApi.addModules(brandingApi.getLiftEndpoints())
+  RudderConfig.snippetExtensionRegister.register(new BrandingResources(pluginDef.status))
   RudderConfig.snippetExtensionRegister.register(new CommonBranding(pluginStatusService))
   RudderConfig.snippetExtensionRegister.register(new LoginBranding(pluginStatusService, pluginDef.version))
 }

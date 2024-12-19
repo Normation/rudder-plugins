@@ -37,18 +37,11 @@
 
 package com.normation.plugins.authbackends
 
-import bootstrap.liftweb.Boot
 import bootstrap.liftweb.ConfigResource
 import bootstrap.rudder.plugin.AuthBackendsConf
 import com.normation.plugins.*
-import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 
 class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
@@ -65,16 +58,6 @@ class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPl
 
   override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(AuthBackendsConf.api)
 
-  override def pluginMenuEntry: List[(Menu, Option[String])] = {
-    (
-      (Menu("authBackensdManagement", <span>Authentication backends</span>) /
-      "secure" / "plugins" / "authBackendsManagement"
-      >> LocGroup("pluginsGroup")
-      >> TestAccess(() => Boot.userIsAllowed("/secure/index", Administration.Read))
-      >> Template(() =>
-        ClasspathTemplates("template" :: "AuthBackendsManagement" :: Nil) openOr <div>Template not found</div>
-      )).toMenu,
-      None
-    ) :: Nil
-  }
+  // no menu, the doc will be directly in plugin
+  override def pluginMenuEntry: List[(Menu, Option[String])] = Nil
 }

@@ -136,7 +136,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
             </div> ++
             Script(
               JsRaw(
-                s"""setTimeout("location.href = '${S.contextPath}/secure/plugins/changes/changeRequests';",5000);"""
+                s"""setTimeout("location.href = '${S.contextPath}/secure/configurationManager/changes/changeRequests';",5000);"""
               ) // JsRaw ok, const
             )
           case Full(cr) =>
@@ -269,7 +269,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       case (None, Some(_))              => step
       case (Some(date), Some(stepDate)) => if (date.isAfter(stepDate)) action else step
     }
-    ("#backButton [href]" #> "/secure/plugins/changes/changeRequests" &
+    ("#backButton [href]" #> "/secure/configurationManager/changes/changeRequests" &
     "#nameTitle *" #> s"CR #${cr.id}: ${cr.info.name}" &
     "#CRStatus *" #> workflowService
       .findStep(cr.id)

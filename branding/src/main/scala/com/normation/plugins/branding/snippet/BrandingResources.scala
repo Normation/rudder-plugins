@@ -37,18 +37,23 @@
 
 package com.normation.plugins.branding.snippet
 
-import net.liftweb.http.DispatchSnippet
+import com.normation.plugins.PluginExtensionPoint
+import com.normation.plugins.PluginStatus
+import com.normation.rudder.web.ChooseTemplate
+import com.normation.rudder.web.snippet.administration.Settings
 import net.liftweb.http.LiftRules
+import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class BrandingResources extends DispatchSnippet {
+class BrandingResources(val status: PluginStatus)(implicit val ttag: ClassTag[Settings]) extends PluginExtensionPoint[Settings] {
 
   private[this] def link(s: String) = s"/${LiftRules.resourceServerPath}/branding/${s}"
 
-  override def dispatch = {
-    case "css" =>
-      (_: NodeSeq) => <link type="text/css" rel="stylesheet" href={link("rudder-branding.css")} ></link>
-    case "js"  =>
-      (_: NodeSeq) => <script type="text/javascript" src={link("rudder-branding.js")}></script>
-  }
+  private def template: NodeSeq = ChooseTemplate("template" :: "brandingManagement" :: Nil, "component-body")
+
+  override def pluginCompose(snippet: Settings): Map[String, NodeSeq => NodeSeq] = Map(
+    "body" -> Settings.addTab("brandingTab", "Branding configuration", template),
+    "css"  -> ((_: NodeSeq) => <link type="text/css" rel="stylesheet" href={link("rudder-branding.css")} ></link>),
+    "js"   -> ((_: NodeSeq) => <script type="text/javascript" src={link("rudder-branding.js")}></script>)
+  )
 }

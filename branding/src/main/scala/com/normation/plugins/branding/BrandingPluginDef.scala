@@ -37,21 +37,12 @@
 
 package com.normation.plugins.branding
 
-import bootstrap.liftweb.Boot
 import bootstrap.liftweb.ConfigResource
-import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.DefaultPluginDef
 import com.normation.plugins.PluginStatus
-import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
 
 class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
@@ -64,17 +55,4 @@ class BrandingPluginDef(override val status: PluginStatus) extends DefaultPlugin
   def oneTimeInit: Unit = {}
 
   val configFiles: Seq[ConfigResource] = Seq()
-
-  override def pluginMenuEntry: List[(Menu, Option[String])] = {
-    (
-      (Menu("640-brandingManagement", <span>Branding</span>) /
-      "secure" / "administration" / "brandingManagement"
-      >> LocGroup("administrationGroup")
-      >> TestAccess(() => Boot.userIsAllowed("/secure/administration/policyServerManagement", Administration.Read))
-      >> Template(() =>
-        ClasspathTemplates("template" :: "brandingManagement" :: Nil) openOr <div>Template not found</div>
-      )).toMenu,
-      Some(MenuUtils.utilitiesMenu)
-    ) :: Nil
-  }
 }

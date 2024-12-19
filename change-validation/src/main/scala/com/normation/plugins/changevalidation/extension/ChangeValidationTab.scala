@@ -1,6 +1,6 @@
 /*
  *************************************************************************************
- * Copyright 2014 Normation SAS
+ * Copyright 2024 Normation SAS
  *************************************************************************************
  *
  * This file is part of Rudder.
@@ -30,47 +30,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+
  *
  *************************************************************************************
  */
 
-package com.normation.plugins.nodeexternalreports
+package com.normation.plugins.changevalidation.extension
 
-import bootstrap.liftweb.ClassPathResource
-import bootstrap.liftweb.ConfigResource
-import bootstrap.liftweb.MenuUtils
-import com.normation.plugins.*
+import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
-import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
-import net.liftweb.common.Loggable
-import net.liftweb.http.ClasspathTemplates
-import net.liftweb.http.LiftRules
-import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.LocPath.stringToLocPath
-import net.liftweb.sitemap.Menu
+import com.normation.rudder.web.ChooseTemplate
+import com.normation.rudder.web.snippet.administration.Settings
+import scala.reflect.ClassTag
+import scala.xml.NodeSeq
 
-class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val status: PluginStatus)
-    extends DefaultPluginDef with Loggable {
+class ChangeValidationTab(val status: PluginStatus)(implicit val ttag: ClassTag[Settings])
+    extends PluginExtensionPoint[Settings] {
 
-  val basePackage = "com.normation.plugins.nodeexternalreports"
+  private val template = ChooseTemplate("template" :: "ChangeValidationManagement" :: Nil, "component-body")
 
-  val configFiles: Seq[ConfigResource] =
-    Seq(ClassPathResource("demo-config-1.properties"), ClassPathResource("demo-config-2.properties"))
-
-  def init = {
-    LiftRules.statelessDispatch.append(api)
-  }
-
-  def oneTimeInit: Unit = {}
-
-  override def pluginMenuEntry: List[(Menu, Option[String])] = {
-    (
-      (Menu("160-nodeExternalReportInfo", <span>Node external reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
-      Template(() => {
-        ClasspathTemplates("nodeExternalReports" :: Nil) openOr
-        <div>Template not found</div>
-      })).toMenu,
-      Some(MenuUtils.nodeManagementMenu)
-    ) :: Nil
-  }
+  override def pluginCompose(snippet: Settings): Map[String, NodeSeq => NodeSeq] = Map(
+    "body" -> Settings.addTab("changeValidationTab", "Change validation", template)
+  )
 }

@@ -1,34 +1,20 @@
-<!doctype html>
-<html>
+<xml:group>
+  <component-body>
 
-<head>
-<meta charset="utf8" />
-<!-- everything here will be ignored and replaced by common-layout -->
-</head>
-
-<body data-lift-content-id="plugin-main">
-<div id="plugin-main" data-lift="surround?with=common-layout;at=content">
 <head_merge>
-<title>Rudder - Change Validation</title>
-<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen"
-data-lift="with-cached-resource">
-<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen"
-data-lift="with-cached-resource">
-<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
-<script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
-<script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
+  <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen"
+  data-lift="with-cached-resource">
+  <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen"
+  data-lift="with-cached-resource">
+  <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
+  <script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
+  <script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
 </head_merge>
 
 <div class="rudder-template">
 
 <div class="one-col">
-<div class="main-header">
-  <div class="header-title">
-    <h1>
-      <span>Change validation</span>
-    </h1>
-  </div>
-</div>
+
 <div class="one-col-main">
 
   <div class="template-sidebar sidebar-left">
@@ -258,7 +244,7 @@ data-lift="with-cached-resource">
                         </div>
                       </div>
                     </div>
-                    
+
                   </div>
                   </lift:authz>
                   <div>
@@ -320,6 +306,5 @@ data-lift="with-cached-resource">
       buildScrollSpyNav();
     });
   </script>
-</body>
-
-</html>
+  </component-body>
+</xml:group>

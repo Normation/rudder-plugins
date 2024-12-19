@@ -1,9 +1,10 @@
-<html>
-<body data-lift-content-id="branding-main">
-  <div id="branding-main" data-lift="surround?with=common-layout;at=content">
+
+<xml:group>
+  <component-body>
+
+  <lift:authz role="administration_read">
    <head_merge>
 
-   <title>Plugin Branding</title>
    <meta charset="utf8" />
    <link rel="stylesheet" type="text/css" href="/toserve/branding/toasty.css" media="screen" data-lift="with-cached-resource">
    <link rel="stylesheet" type="text/css" href="/toserve/branding/media.css"  media="screen" data-lift="with-cached-resource">
@@ -20,7 +21,7 @@
        $('#headerBar > .background > span').text(settings.labelTxt);
      });
    </script>
-  </div>
-</body>
-</html>
+  </lift:authz>
 
+  </component-body>
+</xml:group>

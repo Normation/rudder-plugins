@@ -134,7 +134,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id) match {
           case Full(seq) =>
             <li>
-              <a href="/secure/plugins/changes/changeRequests/Pending_validation" class="pe-auto">
+              <a href="/secure/configurationManager/changes/changeRequests/Pending_validation" class="pe-auto">
                 <span>
                   <i class="pe-2 fa fa-flag-o"></i>
                   Pending review
@@ -163,7 +163,7 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id) match {
           case Full(seq) =>
             <li>
-              <a href="/secure/plugins/changes/changeRequests/Pending_deployment" class="pe-auto">
+              <a href="/secure/configurationManager/changes/changeRequests/Pending_deployment" class="pe-auto">
                 <span>
                   <i class="pe-2 fa fa-flag-checkered"></i>
                   Pending deployment

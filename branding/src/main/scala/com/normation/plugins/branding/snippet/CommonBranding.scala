@@ -78,7 +78,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
       </div>
       case _                          => NodeSeq.Empty
     }
-    var (customWideLogo, customSmallLogo, rudderLogo) = data match {
+    val (customWideLogo, customSmallLogo, rudderLogo) = data match {
       case Right(d) =>
         (
           d.wideLogo.commonWideLogo,
@@ -87,12 +87,11 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
               <a target="_blank" href="https://www.rudder.io/" class="rudder-branding-footer">
               {
                 if (d.wideLogo.enable && d.wideLogo.data.isDefined)
-                  <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-white.svg" class="rudder-branding-logo-lg"/>
+                  <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo/rudder-logo-rect-white.svg" class="rudder-branding-logo-lg"/>
                 else NodeSeq.Empty
-              }
-              {
+              }{
                 if (d.smallLogo.enable && d.smallLogo.data.isDefined)
-                  <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg"    class="rudder-branding-logo-sm"/>
+                  <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo/rudder-logo-square-white.svg" class="rudder-branding-logo-sm"/>
                 else NodeSeq.Empty
               }
             </a>
@@ -104,7 +103,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
       case _        =>
         (
           <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-nologo.svg" class="rudder-branding-logo-lg"/>,
-          <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo-rudder-sm.svg"     class="rudder-branding-logo-sm"/>,
+          <img alt="Rudder" data-lift="with-cached-resource" src="/images/logo/rudder-logo-square-white.svg" class="rudder-branding-logo-sm"/>,
           NodeSeq.Empty
         )
     }

@@ -71,6 +71,7 @@ import com.normation.plugins.changevalidation.api.SupervisedTargetsApi
 import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
 import com.normation.plugins.changevalidation.api.ValidatedUserApi
 import com.normation.plugins.changevalidation.api.ValidatedUserApiImpl
+import com.normation.plugins.changevalidation.extension.ChangeValidationTab
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
 import com.normation.rudder.domain.policies.RuleUid
@@ -332,4 +333,5 @@ object ChangeValidationConf extends RudderPluginModule {
   }
 
   RudderConfig.snippetExtensionRegister.register(new TopBarExtension(pluginStatusService))
+  RudderConfig.snippetExtensionRegister.register(new ChangeValidationTab(pluginDef.status))
 }

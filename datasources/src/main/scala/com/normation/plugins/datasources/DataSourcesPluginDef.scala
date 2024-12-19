@@ -48,7 +48,6 @@ import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.zio.*
 import net.liftweb.http.ClasspathTemplates
-import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.sitemap.Loc.Template
 import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
@@ -73,7 +72,6 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
     (
       (Menu("150-dataSourceManagement", <span>Data sources</span>) /
       "secure" / "plugins" / "dataSourceManagement"
-      >> LocGroup("pluginsGroup")
       >> TestAccess(() => Boot.userIsAllowed("/secure/index", Administration.Read))
       >> Template(() =>
         ClasspathTemplates("template" :: "dataSourceManagement" :: Nil) openOr <div>Template not found</div>

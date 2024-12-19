@@ -105,7 +105,7 @@ object JsonColor {
 final case class Logo(enable: Boolean, name: Option[String], data: Option[String]) {
   def loginLogo = (enable, data) match {
     case (true, Some(d)) => (<div class="custom-branding-logo" style={"background-image: url(" ++ d ++ ");"}></div>)
-    case (_, _)          => <img src="/images/logo-rudder.svg" data-lift="with-cached-resource" alt="Rudder"/>
+    case (_, _)          => <img src="/images/logo/rudder-logo-rect-black.svg" data-lift="with-cached-resource" alt="Rudder"/>
   }
 
   def commonWideLogo  = (enable, data) match {
@@ -116,7 +116,7 @@ final case class Logo(enable: Boolean, name: Option[String], data: Option[String
           .sidebar-collapse .logo-lg{{display: none !important;}}
         </style>
       </span>
-    case (_, _)          => <img src="/images/logo-rudder-white.svg" data-lift="with-cached-resource" alt="Rudder"/>
+    case (_, _)          => <img src="/images/logo/rudder-logo-rect-white.svg" data-lift="with-cached-resource" alt="Rudder"/>
   }
   def commonSmallLogo = (enable, data) match {
     case (true, Some(d)) =>
@@ -133,7 +133,7 @@ final case class Logo(enable: Boolean, name: Option[String], data: Option[String
           }}
         </style>
       </span>
-    case (_, _)          => <img src="/images/logo-rudder-sm.svg" data-lift="with-cached-resource" alt="Rudder"/>
+    case (_, _)          => <img src="/images/logo/rudder-logo-square-white.svg" data-lift="with-cached-resource" alt="Rudder"/>
   }
 }
 
