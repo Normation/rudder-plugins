@@ -296,9 +296,32 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 
 ---- end of ldap authentication properties to copy ----
 ```
-=== LDAP backend logger
+=== Debugging LDAP authentication
 
-In addition to the common loggers, LDAP backend use the `org.springframework.security.ldap` namespace.
+LDAP authentication problem are often a pain to analyse and debug. In the following paragraph, we will see several
+tips that can help you find why that damn configuration doesn't work when everything is right.
+
+==== Check everything, step by step
+
+The best way to make an LDAP authentication work is to check each part independently, and as much as possible with
+standard LDAP tools, so that you can be sure that the problem is on the Rudder side of things.
+
+- 1/ check that Rudder service user can connect (bind) to LDAP backend with `rudder.auth.ldap.connection.bind.dn` and
+  `rudder.auth.ldap.connection.bind.password` on `rudder.auth.ldap.connection.url`
+- 2/ check that Rudder service users can find one user (let's call her ALICE) you know is in the LDAP directory for sure
+  with a search request on branch `rudder.auth.ldap.searchbase` (relative to the base DN in the connection URL) with
+  the filter defined in `rudder.auth.ldap.filter`. If you don't see your user and if you use referer links (like often
+  in AD), check that `rudder.auth.ldap.connection.derefLink` is true (it's not always mandatory but can be, depending
+  on your directory configuration)
+- 4/ check that you can authenticate (bind) with ALICE
+- 5/ check that ALICE is well declared in the Rudder `rudder-users.xml` file.
+
+If all that step are independently validated, it's time to check for other clues, like an error message in Rudder logs.
+
+==== LDAP logger
+
+In addition to the common loggers (in particular `application.authentication` one) , LDAP backend uses the
+`org.springframework.security.ldap` namespace.
 You can configure the corresponding logger in `/opt/rudder/etc/logback.xml` at debug or trace level by adding the line:
 
 ====
@@ -307,7 +330,7 @@ You can configure the corresponding logger in `/opt/rudder/etc/logback.xml` at d
 
 ====
 
-This will lead to trace looking like the following in the different case of errors/success/
+This will lead to trace looking like the following in the different case of errors/success/etc.
 
 ==== LDAP/AD server not reachable
 
@@ -394,6 +417,19 @@ org.springframework.ldap.AuthenticationException: [LDAP: error code 49 - Invalid
 	at org.springframework.ldap.core.support.AbstractContextSource.createContext(AbstractContextSource.java:363)
     ...
 ----
+
+==== User no present in rudder-users.xml with a complex AD directory topology
+
+We saw in nature a case where an LDAP error was returned in log, but the root cause was that the corresponding user
+was not declared in `rudder-users.xml`. The sibylline error was:
+
+----
+[LDAP: error code 32 - 0000208D: NameErr: DSID-03100245, problem 2001 (NO_OBJECT), data 0, best match of:
+
+'DC=com,DC=example,DC=people'
+----
+
+It was an AD error that seems to have been triggered by some unexpected request by Rudder in that case. 
 
 === Using a certificate for secure connection to LDAP/AD
 
