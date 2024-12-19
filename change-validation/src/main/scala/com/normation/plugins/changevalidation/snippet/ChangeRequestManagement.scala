@@ -55,6 +55,7 @@ import net.liftweb.http.SHtml
 import net.liftweb.http.SHtml.SelectableOption
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*
+import net.liftweb.http.js.JsObj
 import net.liftweb.util.Helpers.*
 import org.apache.commons.text.StringEscapeUtils
 import scala.xml.Elem
@@ -99,7 +100,9 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     val date =
       eventsMap.get(changeRequest.id).map(event => DateFormaterService.serialize(event.creationDate)).getOrElse("Unknown")
 
-    val json = {
+    override def json(freshName: () => String): JsObj = toJson
+
+    val toJson = {
       JsObj(
         "id"               -> changeRequest.id.value,
         "name"             -> changeRequest.info.name,
@@ -132,7 +135,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
   }
   def dataTableInit = {
     val refresh = AnonFunc(
-      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().json.toJsCmd})"))
+      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().toJson.toJsCmd})"))
     ) // JsRaw ok, from json
 
     val filter = initFilter match {
