@@ -65,7 +65,6 @@ class RestDataSourceTest extends TraitTestApiFromYamlFiles with Loggable {
 
   val mockNodes      = new MockNodes()
   val dataSourceApi9 = new DataSourceApiImpl(
-    restTestSetUp.restExtractorService,
     datasourceRepo,
     mockNodes.nodeInfoService,
     null,
