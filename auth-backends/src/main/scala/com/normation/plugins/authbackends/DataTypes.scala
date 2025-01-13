@@ -107,7 +107,11 @@ final case class JsonLdapConfig(
     ldapFilter:   ConfigOption
 )
 
-final object JsonSerialization {
+final case class BasePath(base: String, id: String) {
+  def path(key: String) = base + "." + id + "." + key
+}
+
+object JsonSerialization {
   implicit val configOptionEncoder:    JsonEncoder[ConfigOption]          = DeriveJsonEncoder.gen[ConfigOption]
   implicit val jsonAdminConfigEncoder: JsonEncoder[JsonAdminConfig]       = DeriveJsonEncoder.gen[JsonAdminConfig]
   implicit val jsonFileConfigEncoder:  JsonEncoder[JsonFileConfig]        = DeriveJsonEncoder.gen[JsonFileConfig]
