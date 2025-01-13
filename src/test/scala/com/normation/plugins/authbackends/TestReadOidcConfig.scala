@@ -36,11 +36,15 @@
  */
 package com.normation.plugins.authbackends
 
+import bootstrap.rudder.plugin.RudderTokenMapping
+import com.normation.rudder.facts.nodes.NodeSecurityContext
+import com.normation.rudder.tenants.TenantId
 import com.normation.zio.*
 import com.typesafe.config.ConfigFactory
 import org.junit.runner.RunWith
 import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
+import zio.Chunk
 
 @RunWith(classOf[JUnitRunner])
 class TestReadOidcConfig extends Specification {
@@ -48,34 +52,128 @@ class TestReadOidcConfig extends Specification {
   // WARNING: HOCON doesn't behave the same if you read from a file or from a string, so for the test to be relevant,
   // we need to load from files.
 
-  "reading the configuration should works" >> {
+  "reading an OIDC configuration" should {
+    val registration = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
 
-    val config = ConfigFactory.parseResources("oidc/oidc_simple.properties")
-    val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+    "read the correct name" in {
 
-    regs.keySet === Set("someidp")
+      val config = ConfigFactory.parseResources("oidc/oidc_simple.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      regs.keySet === Set("someidp")
+    }
+
+    "have two entitlements mapping" in {
+
+      val config = ConfigFactory.parseResources("oidc/oidc_simple.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      (regs("someidp").roles.mapping === Map(
+        "rudder_admin"    -> "administrator",
+        "rudder_readonly" -> "readonly"
+      )) and (regs("someidp").tenants.mapping === Map(
+        "rudder_TA" -> "TA",
+        "rudder_TB" -> "TB"
+      ))
+    }
+
+    "be able to use complex roles names with the reverse mapping" in {
+      val config = ConfigFactory.parseResources("oidc/oidc_reverse_role_mapping.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      (regs("someidp").roles.mapping === Map(
+        "rudder_admin"                                                                       -> "administrator",
+        "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
+        "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
+      )) and (
+        regs("someidp").tenants.mapping === Map(
+          "rudder_TA"                                                                          -> "TA",
+          "rudder_TB"                                                                          -> "TB_OVERRIDDEN",
+          "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "TA"
+        )
+      )
+    }
+
   }
 
-  "we should have two entitlement mapping" >> {
+  "tenants mapping" should {
+    val config       = ConfigFactory.parseResources("oidc/oidc_tenants.properties")
+    val registration = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
+    val regs         = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
-    val config = ConfigFactory.parseResources("oidc/oidc_simple.properties")
-    val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+    "work for simple tenants" in {
+      val tokenValues = Set("rudder_TA", "rudder_TB")
+      val tenants     =
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
 
-    regs("someidp").roleMapping === Map(
-      "rudder_admin"    -> "administrator",
-      "rudder_readonly" -> "readonly"
-    )
+      tenants === NodeSecurityContext.ByTenants(Chunk(TenantId("TA"), TenantId("TB")))
+    }
+
+    "work for no tenants" in {
+      val tokenValues = Set.empty[String]
+      val tenants     =
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+
+      tenants === NodeSecurityContext.None
+    }
+
+    "work for none" in {
+      val tokenValues = Set("rudder_none", "rudder_TA")
+      val tenants     =
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+
+      tenants === NodeSecurityContext.None
+    }
+
+    "work for all" in {
+      val tokenValues = Set("rudder_all", "rudder_TA")
+      val tenants     =
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+
+      tenants === NodeSecurityContext.All
+    }
   }
 
-  "we can use complex roles names with the reverse mapping" >> {
-    val config = ConfigFactory.parseResources("oidc/oidc_reverse_role_mapping.properties")
-    val regs   = RudderPropertyBasedOAuth2RegistrationDefinition.readAllRegistrations(config).runNow.toMap
+  "reading a JWT configuration" should {
+    val registration = RudderPropertyBasedJwtRegistrationDefinition.make().runNow
 
-    regs("someidp").roleMapping === Map(
-      "rudder_admin"                                                                       -> "administrator",
-      "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
-      "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
-    )
+    "read the correct name" in {
+
+      val config = ConfigFactory.parseResources("jwt/jwt_simple.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      regs.keySet === Set("someidp")
+    }
+
+    "have two entitlements mapping" in {
+
+      val config = ConfigFactory.parseResources("jwt/jwt_simple.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      (regs("someidp").roles.mapping === Map(
+        "rudder_admin"    -> "administrator",
+        "rudder_readonly" -> "readonly"
+      )) and (regs("someidp").tenants.mapping === Map(
+        "rudder_TA" -> "TA",
+        "rudder_TB" -> "TB"
+      ))
+    }
+
+    "be able to use complex roles names with the reverse mapping" in {
+      val config = ConfigFactory.parseResources("jwt/jwt_reverse_role_mapping.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      (regs("someidp").roles.mapping === Map(
+        "rudder_admin"                                                                       -> "administrator",
+        "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
+        "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
+      )) and (
+        regs("someidp").tenants.mapping === Map(
+          "rudder_TA"                                                                          -> "TA",
+          "rudder_TB"                                                                          -> "TB_OVERRIDDEN",
+          "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "TA"
+        )
+      )
+    }
   }
-
 }
