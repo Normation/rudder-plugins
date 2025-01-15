@@ -67,6 +67,19 @@ final case class PartialNodeUpdate(
     parameters:    Set[GlobalParameter]
 )
 
+object DataSourceRepository {
+
+  /*
+   * Datasource ID must be a valid property key.
+   * It should be normalized to [a-zA-Z09_-]
+   */
+  val validId = """([\p{Alnum}_-])+""".r
+  def checkId(id: String): PureResult[Unit] = {
+    if (validId.matches(id)) Right(())
+    else Left(Inconsistency(s"Data source id must match ${validId.toString()} but was: '${id}''"))
+  }
+}
+
 trait DataSourceRepository {
 
   /*
@@ -286,10 +299,7 @@ class DataSourceRepoImpl(
       _ <- backend
              .save(source)
              .chainError(s"Error when saving data source '${source.name.value}' (${source.id.value})")
-             .foldZIO(
-               err => DataSourceLoggerPure.error(err.fullMsg),
-               ok => ok.succeed
-             )
+             .tapError(err => DataSourceLoggerPure.error(err.fullMsg))
       _ <- updateDataSourceScheduler(source, delay = None)
       _ <- DataSourceLoggerPure.debug(s"Data source '${source.name.value}' (${source.id.value}) updated")
     } yield {
@@ -464,13 +474,14 @@ class DataSourceJdbcRepository(
       result
     }
 
-    DataSource.reservedIds.get(source.id) match {
+    DataSourceRepository.checkId(source.id.value).toIO *>
+    (DataSource.reservedIds.get(source.id) match {
       case None =>
         transactIOResult(s"Error when saving datasource '${source.id.value}'")(xa => sql.map(_ => source).transact(xa))
 
       case Some(msg) =>
         Inconsistency(s"You can't use the reserved data sources id '${source.id.value}': ${msg}").fail
-    }
+    })
   }
 
   override def delete(sourceId: DataSourceId, cause: UpdateCause): IOResult[DataSourceId] = {

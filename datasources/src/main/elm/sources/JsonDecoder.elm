@@ -114,8 +114,8 @@ decodeType =
 decodeDataSource : Decoder DataSource
 decodeDataSource =
   succeed DataSource
-    |> required "name" string
     |> required "id" string
+    |> required "name" string
     |> required "description" string
     |> required "enabled" bool
     |> required "updateTimeout" int

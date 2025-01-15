@@ -65,8 +65,8 @@ type alias HTTPType =
     }
 
 type alias DataSource =
-    { name : String
-    , id : String
+    { id : String
+    , name : String
     , description : String
     , enabled : Bool
     , updateTimeout : Int

@@ -15,10 +15,52 @@ datasourceForm : Model -> DataSource -> Maybe DataSource -> Html Msg
 datasourceForm model datasource origin =
   let
 
+    isNew = case origin of
+              Nothing -> True
+              Just o -> False
+
+    (nameTitle, attributeTitle) = if isNew
+                                    then ("New data source", [style "opacity"  "0.4"] )
+                                  else
+                                   if String.isEmpty datasource.name
+                                     then ("Unnamed", [ style "font-style" "italic", style "color" "#777"])
+                                     else (datasource.name, [])
+
+    idWarning =
+      if isNew then
+        span [ class "ms-2  text-warning" ] [
+          span [ class "fa fa-info-circle me-1"] []
+          , text "Key name cannot be modified after creation."
+        ]
+      else
+        text ""
+
+    nameError =
+      if (String.isEmpty datasource.name)
+      then
+        span [ class "text-danger"] [
+          text "Name is required"
+        ]
+      else
+        text ""
+
+    idError =
+      if (String.isEmpty datasource.id)
+      then
+        span [ class "text-danger"] [
+          text "Key is required"
+        ]
+      else
+        text ""
+
+    urlError =
+      case datasource.type_ of
+        HTTP tpe -> (String.isEmpty tpe.url)
+
     baseForm = [
               div [ class "form-group" ] [
                 label [ for "name" ] [ text "Name" ]
-              , input [ type_ "text", class "form-control", id "name", value datasource.name, name "datasourceName", onInput (\s -> UpdateDataSource { datasource | name = s}) ] [] --, required ng-model "selectedDatasource.name", ng-change "updateKeyName(selectedDatasource.name)" ] [
+              , input [ type_ "text", class "form-control", id "name", value datasource.name, name "datasourceName", onInput (\s -> UpdateDataSource { datasource | name = s}) ] []
               , nameError
               ]
             , div [ class "form-group" ] [
@@ -82,45 +124,7 @@ datasourceForm model datasource origin =
           []
 
     headerDescription = if String.isEmpty datasource.description then text "" else p [] [ text datasource.description ]
-
-    isNew = case origin of
-              Nothing -> True
-              Just o -> False
-    (nameTitle, attributeTitle) = if isNew
-                                    then ("New data source", [style "opacity"  "0.4"] )
-                                  else
-                                   if String.isEmpty datasource.name
-                                     then ("Unnamed", [ style "font-style" "italic", style "color" "#777"])
-                                     else (datasource.name, [])
-
-    idWarning =
-      if isNew then
-        span [ class "ms-2  text-warning" ] [
-          span [ class "fa fa-info-circle me-1"] []
-          , text "Key name cannot be modified after creation."
-        ]
-      else
-        text ""
-
-    nameError =
-      if (not isNew && String.isEmpty datasource.name)
-      then
-        span [ class "text-danger"] [
-          text "Name is required"
-        ]
-      else
-        text ""
-
-    idError =
-      if (not isNew && String.isEmpty datasource.id)
-      then
-        span [ class "text-danger"] [
-          text "Key is required"
-        ]
-      else
-        text ""
-
-    forms = List.concat [ baseForm,  typeForm model.ui datasource ]
+    forms = List.concat [ baseForm,  typeForm model.ui datasource urlError ]
   in
         div [ class "main-container datasource-bloc" ] [
           div [ class "main-header" ] [
@@ -163,18 +167,28 @@ httpMethodForm httpData =
     ]
   ]
 
-urlForm: HTTPType -> Html Msg
-urlForm httpData =
-
-            div [ class "form-group clearfix" ] [
-                label [ for "url"] [ text "URL" ]
-              , input [ type_ "text", class "form-control has-example-help", id "url", value httpData.url, onInput (\s -> UpdateHTTPData { httpData | url = s}) ] []
-              , div [ class "example-help" ] [
-                  text "You can use Rudder variable expansion ("
-                , pre [] [ text "${rudder.node.xxx}, ${rudder.param.xxx}, ${node.properties[xxx]}"]
-                , text ") here. They will be replaced by their values for each node at the time the HTTP query is run."
-                ]
-              ]
+urlForm: HTTPType -> Bool -> Html Msg
+urlForm httpData displayError =
+  let
+    urlError =
+      if (displayError)
+      then
+        span [ class "text-danger"] [
+          text "URL is required"
+        ]
+      else
+        text ""
+  in
+    div [ class "form-group clearfix" ] [
+        label [ for "url"] [ text "URL" ]
+      , input [ type_ "text", class "form-control has-example-help", id "url", value httpData.url, onInput (\s -> UpdateHTTPData { httpData | url = s}) ] []
+      , urlError
+      , div [ class "example-help" ] [
+          text "You can use Rudder variable expansion ("
+        , pre [] [ text "${rudder.node.xxx}, ${rudder.param.xxx}, ${node.properties[xxx]}"]
+        , text ") here. They will be replaced by their values for each node at the time the HTTP query is run."
+        ]
+      ]
 
 postForm : UI -> HTTPType -> Html Msg
 postForm ui httpData =
@@ -405,20 +419,21 @@ updateTrigger ui datasource =
     frequency =
       case   schedule.type_ of
         Scheduled ->
+          -- schedule.duration is a number of second
           let
-            hours = (schedule.duration // 60)
-            minutes = (modBy 60 schedule.duration )
+            hours = (schedule.duration // 3600)
+            minutes = (modBy 60 (schedule.duration // 60))
 
           in
                 div [ class "input-group group-update-frequency mt-1 mb-2" ] [
                     input [ type_ "number", class "form-control ", id "updateFrequency-hours", Html.Attributes.min "0", value (String.fromInt hours)
-                          , onInput (\s -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | duration = ((Maybe.withDefault hours (String.toInt s)) * 60)+ minutes}}})
+                          , onInput (\s -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | duration = ((Maybe.withDefault hours (String.toInt s)) * 3600)+ (minutes*60)}}})
                           ] []
                   , label [ for "updateFrequency-hours", class "input-group-text"] [
                       text (String.Extra.pluralize "hour" "hours" hours)
                     ]
                   , input [ type_ "number", class "form-control ", id "updateFrequency-minutes",  Html.Attributes.min "0", value (String.fromInt minutes)
-                          , onInput (\s -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | duration = (Maybe.withDefault minutes (String.toInt s))+ (hours*60)}}})
+                          , onInput (\s -> UpdateDataSource { datasource| runParameters = { params | schedule = {schedule | duration = ((Maybe.withDefault minutes (String.toInt s)) * 60) + (hours*3600)}}})
                           ] []
                   , label [ for "updateFrequency-minutes", class "input-group-text"] [ --
                       text (String.Extra.pluralize "minute" "minutes" minutes)
@@ -580,13 +595,13 @@ nodeBehaviour ui data =
                 else text ""
               ]
 
-typeForm : UI -> DataSource -> List (Html Msg)
-typeForm ui  datasource =
+typeForm : UI -> DataSource -> Bool -> List (Html Msg)
+typeForm ui datasource urlError =
   case datasource.type_ of
     HTTP data ->
         [ httpMethodForm data
         , if (data.method == POST) then postForm ui data else  text ""
-        , urlForm data
+        , urlForm data urlError
         , headersForm ui data
         , jsonPathForm data
         , advancedOptions datasource ui data
