@@ -5,10 +5,10 @@ import Model exposing (..)
 import List.Extra
 import Messages exposing (..)
 import Port exposing (..)
-import Utils exposing (errorMessage)
+import Utils exposing (errorMessage, nameToId)
 
 
-newDataSource = DataSource "" "" "" True 0 (RunParameters False False (Schedule NotScheduled 60)) (HTTP (HTTPType "" GET "" True [] 0 [] ByNode 10 Delete))
+newDataSource = DataSource "" "" "" True (5*60) (RunParameters False False (Schedule Scheduled 30)) (HTTP (HTTPType "" GET "" True [] 30 [] ByNode 10 Delete))
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -60,23 +60,32 @@ update msg model =
     SaveCall d ->
       let
          listDatasources = model.dataSources
+         id = if(String.isEmpty d.id) then (nameToId d.name) else d.id
+         hasError =
+            case d.type_ of
+              HTTP tpe -> (String.isEmpty d.name) || (String.isEmpty id) || (String.isEmpty tpe.url)
+         updated = { d | id = id }
       in
-        case model.mode of
-          -- Creation scenario
-          ShowDatasource _ Nothing ->
-            let
-              dataSource = {d | id = if String.isEmpty d.id then d.name else d.id }
-            in
-              ( { model | dataSources = dataSource :: listDatasources }
-              , Cmd.batch [saveDataSource model True dataSource, successNotification ("Datasource '"++ dataSource.name ++"' successfully created") ]
+        if(hasError)
+        then
+          ( model
+          , Cmd.batch [ errorNotification ("Please fill missing values") ]
+          )
+        else
+
+          case model.mode of
+            -- Creation scenario
+            ShowDatasource _ Nothing ->
+                ( { model | dataSources = updated :: listDatasources }
+                , Cmd.batch [saveDataSource model True updated, successNotification ("Datasource '"++ updated.name ++"' successfully created") ]
+                )
+            -- Update scenario
+            ShowDatasource _ (Just _) ->
+              ( { model | dataSources = if(List.any (\dts -> dts.id == updated.id) listDatasources) then listDatasources else updated :: listDatasources}
+              , Cmd.batch [saveDataSource model False updated, successNotification ("Datasource '"++ updated.name ++"' successfully updated") ]
               )
-          -- Update scenario
-          ShowDatasource _ (Just _) ->
-            ( { model | dataSources = if(List.any (\dts -> dts.id == d.id) listDatasources) then listDatasources else d :: listDatasources}
-            , Cmd.batch [saveDataSource model False d, successNotification ("Datasource '"++ d.name ++"' successfully updated") ]
-            )
-          _ ->
-            (model, Cmd.none)
+            _ ->
+              (model, Cmd.none)
 
 
     OpenDeleteModal datasource ->

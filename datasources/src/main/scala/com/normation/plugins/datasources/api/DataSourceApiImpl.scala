@@ -85,22 +85,19 @@ class DataSourceApiImpl(
   import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson.*
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    API.endpoints
-      .map(e => {
-        e match {
-          case API.ReloadAllDatasourcesOneNode     => ReloadAllDatasourcesOneNode
-          case API.ReloadOneDatasourceAllNodes     => ReloadOneDatasourceAllNodes
-          case API.ReloadOneDatasourceOneNode      => ReloadOneDatasourceOneNode
-          case API.ReloadAllDatasourcesAllNodes    => ReloadAllDatasourcesAllNodes
-          case API.ClearValueOneDatasourceAllNodes => ClearValueOneDatasourceAllNodes
-          case API.ClearValueOneDatasourceOneNode  => ClearValueOneDatasourceOneNode
-          case API.GetAllDataSources               => GetAllDataSources
-          case API.GetDataSource                   => GetDataSource
-          case API.DeleteDataSource                => DeleteDataSource
-          case API.CreateDataSource                => CreateDataSource
-          case API.UpdateDataSource                => UpdateDataSource
-        }
-      })
+    API.endpoints.map {
+      case API.ReloadAllDatasourcesOneNode     => ReloadAllDatasourcesOneNode
+      case API.ReloadOneDatasourceAllNodes     => ReloadOneDatasourceAllNodes
+      case API.ReloadOneDatasourceOneNode      => ReloadOneDatasourceOneNode
+      case API.ReloadAllDatasourcesAllNodes    => ReloadAllDatasourcesAllNodes
+      case API.ClearValueOneDatasourceAllNodes => ClearValueOneDatasourceAllNodes
+      case API.ClearValueOneDatasourceOneNode  => ClearValueOneDatasourceOneNode
+      case API.GetAllDataSources               => GetAllDataSources
+      case API.GetDataSource                   => GetDataSource
+      case API.DeleteDataSource                => DeleteDataSource
+      case API.CreateDataSource                => CreateDataSource
+      case API.UpdateDataSource                => UpdateDataSource
+    }
   }
 
   object ReloadAllDatasourcesOneNode extends LiftApiModule {

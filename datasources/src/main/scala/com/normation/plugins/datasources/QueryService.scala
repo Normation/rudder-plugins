@@ -322,14 +322,16 @@ class HttpQueryDataSourceService(
 
     for {
       mode         <- globalPolicyMode()
+      _            <- DataSourceLoggerPure.trace(s"Start querying data for ${nodes.size} nodes")
       updated      <- tasks(nodes, info.policyServers, mode, info.parameters)
                         .timeout(timeout)
                         .notOptional(
                           s"Timeout error after ${zio.Duration.fromJava(timeout).render}"
-                        )
+                        ).timed
+      _            <- DataSourceLoggerPure.trace(s"Done querying data for ${nodes.size} nodes in ${updated._1.toString}")
       // execute hooks
-      _            <- onUpdatedHook(updated.collect { case Right(NodeUpdateResult.Updated(id)) => id }.toSet, cause)
-      gatherErrors <- accumulateErrors(updated)
+      _            <- onUpdatedHook(updated._2.collect { case Right(NodeUpdateResult.Updated(id)) => id }.toSet, cause)
+      gatherErrors <- accumulateErrors(updated._2)
     } yield {
       gatherErrors
     }
