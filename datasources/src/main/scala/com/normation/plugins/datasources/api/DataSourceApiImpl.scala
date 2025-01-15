@@ -69,7 +69,6 @@ import net.liftweb.http.Req
 import zio.syntax.*
 
 class DataSourceApiImpl(
-    extractor:       RestExtractorService,
     dataSourceRepo:  DataSourceRepository with DataSourceUpdateCallbacks,
     nodeInfoService: NodeInfoService,
     nodeRepos:       WoNodeRepository,
@@ -86,27 +85,23 @@ class DataSourceApiImpl(
   import com.normation.plugins.datasources.DataSourceExtractor.OptionalJson.*
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    API.endpoints
-      .map(e => {
-        e match {
-          case API.ReloadAllDatasourcesOneNode     => ReloadAllDatasourcesOneNode
-          case API.ReloadOneDatasourceAllNodes     => ReloadOneDatasourceAllNodes
-          case API.ReloadOneDatasourceOneNode      => ReloadOneDatasourceOneNode
-          case API.ReloadAllDatasourcesAllNodes    => ReloadAllDatasourcesAllNodes
-          case API.ClearValueOneDatasourceAllNodes => ClearValueOneDatasourceAllNodes
-          case API.ClearValueOneDatasourceOneNode  => ClearValueOneDatasourceOneNode
-          case API.GetAllDataSources               => GetAllDataSources
-          case API.GetDataSource                   => GetDataSource
-          case API.DeleteDataSource                => DeleteDataSource
-          case API.CreateDataSource                => CreateDataSource
-          case API.UpdateDataSource                => UpdateDataSource
-        }
-      })
+    API.endpoints.map {
+      case API.ReloadAllDatasourcesOneNode     => ReloadAllDatasourcesOneNode
+      case API.ReloadOneDatasourceAllNodes     => ReloadOneDatasourceAllNodes
+      case API.ReloadOneDatasourceOneNode      => ReloadOneDatasourceOneNode
+      case API.ReloadAllDatasourcesAllNodes    => ReloadAllDatasourcesAllNodes
+      case API.ClearValueOneDatasourceAllNodes => ClearValueOneDatasourceAllNodes
+      case API.ClearValueOneDatasourceOneNode  => ClearValueOneDatasourceOneNode
+      case API.GetAllDataSources               => GetAllDataSources
+      case API.GetDataSource                   => GetDataSource
+      case API.DeleteDataSource                => DeleteDataSource
+      case API.CreateDataSource                => CreateDataSource
+      case API.UpdateDataSource                => UpdateDataSource
+    }
   }
 
   object ReloadAllDatasourcesOneNode extends LiftApiModule {
     val schema: DataSourceApi.ReloadAllDatasourcesOneNode.type = API.ReloadAllDatasourcesOneNode
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -126,7 +121,6 @@ class DataSourceApiImpl(
 
   object ReloadOneDatasourceAllNodes extends LiftApiModule {
     val schema: DataSourceApi.ReloadOneDatasourceAllNodes.type = API.ReloadOneDatasourceAllNodes
-    val restExtractor = extractor
     def process(
         version:      ApiVersion,
         path:         ApiPath,
@@ -146,7 +140,6 @@ class DataSourceApiImpl(
 
   object ReloadOneDatasourceOneNode extends LiftApiModule {
     val schema: DataSourceApi.ReloadOneDatasourceOneNode.type = API.ReloadOneDatasourceOneNode
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -167,7 +160,6 @@ class DataSourceApiImpl(
 
   object ClearValueOneDatasourceAllNodes extends LiftApiModule {
     val schema: DataSourceApi.ClearValueOneDatasourceAllNodes.type = API.ClearValueOneDatasourceAllNodes
-    val restExtractor = extractor
     def process(
         version:      ApiVersion,
         path:         ApiPath,
@@ -193,7 +185,6 @@ class DataSourceApiImpl(
 
   object ClearValueOneDatasourceOneNode extends LiftApiModule {
     val schema: DataSourceApi.ClearValueOneDatasourceOneNode.type = API.ClearValueOneDatasourceOneNode
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -207,7 +198,7 @@ class DataSourceApiImpl(
         ModificationId(uuidGen.newUuid),
         authzToken.qc.actor,
         Some(s"API request to clear '${datasourceId}' on node '${nodeId}'"),
-        false
+        triggeredByGeneration = false
       )
 
       (for {
@@ -222,9 +213,8 @@ class DataSourceApiImpl(
   }
 
   object ReloadAllDatasourcesAllNodes extends LiftApiModule0 {
-    val schema: DataSourceApi.ReloadAllDatasourcesAllNodes.type = API.ReloadAllDatasourcesAllNodes
-    val restExtractor = extractor
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                DataSourceApi.ReloadAllDatasourcesAllNodes.type = API.ReloadAllDatasourcesAllNodes
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                                    = {
       // reloadData All Nodes All Datasources
       dataSourceRepo
         .onUserAskUpdateAllNodes(authzToken.qc.actor)
@@ -235,9 +225,8 @@ class DataSourceApiImpl(
   }
 
   object GetAllDataSources extends LiftApiModule0 {
-    val schema: DataSourceApi.GetAllDataSources.type = API.GetAllDataSources
-    val restExtractor = extractor
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                DataSourceApi.GetAllDataSources.type = API.GetAllDataSources
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                         = {
       (for {
         sources <- dataSourceRepo.getAll
       } yield {
@@ -250,7 +239,6 @@ class DataSourceApiImpl(
 
   object GetDataSource extends LiftApiModule {
     val schema: DataSourceApi.GetDataSource.type = API.GetDataSource
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -270,7 +258,6 @@ class DataSourceApiImpl(
 
   object DeleteDataSource extends LiftApiModule {
     val schema: DataSourceApi.DeleteDataSource.type = API.DeleteDataSource
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -296,9 +283,8 @@ class DataSourceApiImpl(
   }
 
   object CreateDataSource extends LiftApiModule0 {
-    val schema: DataSourceApi.CreateDataSource.type = API.CreateDataSource
-    val restExtractor = extractor
-    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+    val schema:                                                                                                DataSourceApi.CreateDataSource.type = API.CreateDataSource
+    def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                        = {
       (for {
         source <- extractNewDataSource(req).toIO
         _      <- dataSourceRepo.save(source)
@@ -311,7 +297,6 @@ class DataSourceApiImpl(
 
   object UpdateDataSource extends LiftApiModule {
     val schema: DataSourceApi.UpdateDataSource.type = API.UpdateDataSource
-    val restExtractor = extractor
     def process(
         version:    ApiVersion,
         path:       ApiPath,

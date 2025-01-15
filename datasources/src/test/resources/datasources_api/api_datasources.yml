@@ -10,8 +10,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "",
             "id" : "datasource1",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -54,8 +54,8 @@ headers:
   - "Content-Type: application/json"
 body: >-
   {
-    "name" : "",
     "id" : "datasource2",
+    "name" : "",
     "description" : "",
     "type" : {
       "name" : "HTTP",
@@ -110,8 +110,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "",
             "id" : "datasource2",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -207,8 +207,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "",
             "id" : "datasource3",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -256,8 +256,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "",
             "id" : "datasource1",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -290,8 +290,8 @@ response:
             "enabled" : false
           },
           {
-            "name" : "",
             "id" : "datasource2",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -338,8 +338,8 @@ response:
             "enabled" : false
           },
           {
-            "name" : "",
             "id" : "datasource3",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -382,8 +382,8 @@ headers:
   - "Content-Type: application/json"
 body: >-
   {
-    "name" : "d2",
     "id" : "fakedatasource2",
+    "name" : "d2",
     "updateTimeout" : 299,
     "enabled" : true,
     "type" : {
@@ -441,8 +441,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "d2",
             "id" : "datasource2",
+            "name" : "d2",
             "description" : "new description",
             "type" : {
               "name" : "HTTP",
@@ -507,8 +507,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "",
             "id" : "datasource1",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -541,8 +541,8 @@ response:
             "enabled" : false
           },
           {
-            "name" : "d2",
             "id" : "datasource2",
+            "name" : "d2",
             "description" : "new description",
             "type" : {
               "name" : "HTTP",
@@ -592,8 +592,8 @@ response:
             "enabled" : true
           },
           {
-            "name" : "",
             "id" : "datasource3",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -660,8 +660,8 @@ response:
       "data" : {
         "datasources" : [
           {
-            "name" : "",
             "id" : "datasource1",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",
@@ -694,8 +694,8 @@ response:
             "enabled" : false
           },
           {
-            "name" : "",
             "id" : "datasource3",
+            "name" : "",
             "description" : "",
             "type" : {
               "name" : "HTTP",

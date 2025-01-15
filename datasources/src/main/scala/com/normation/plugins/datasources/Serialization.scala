@@ -142,8 +142,8 @@ object NewDataSource {
  * WARNING: this is used to write the datasource representation in the database as json, so its format and the database read format must be kept retrocompatible
  */
 final case class FullDataSource(
-    name:                                      DataSourceName,
     id:                                        DataSourceId,
+    name:                                      DataSourceName,
     description:                               String,
     @jsonField("type") sourceType:             FullDataSourceType,
     @jsonField("runParameters") runParam:      FullDataSourceRunParameters,
