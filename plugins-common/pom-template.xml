@@ -174,18 +174,6 @@
             <goals>
               <goal>shade</goal>
             </goals>
-	    <configuration>
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -334,6 +322,7 @@
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcutil-${bouncycastle-compat}</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
+    <dependency><groupId>org.codehaus.janino</groupId><artifactId>janino</artifactId><scope>provided</scope><version>${janino-version}</version></dependency>
     <dependency><groupId>org.checkerframework</groupId><artifactId>checker-qual</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><scope>provided</scope><version>${jgit-version}</version></dependency>
     <dependency><groupId>org.graalvm.js</groupId><artifactId>js-language</artifactId><scope>provided</scope><version>${graalvm-version}</version></dependency>
