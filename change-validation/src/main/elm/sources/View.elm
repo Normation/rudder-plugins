@@ -5,11 +5,8 @@ import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserLi
 import Html exposing (..)
 import Html.Attributes exposing (attribute, checked, class, disabled, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick)
-import Init exposing (defaultConfig)
 import List exposing (isEmpty, length, member)
 import String exposing (fromInt)
-import Toasty
-import Toasty.Defaults
 
 createInfoTootlip : String -> String -> Html msg
 createInfoTootlip content placement =
@@ -309,5 +306,4 @@ view model =
         [
           displayLeftCol model
         ]
-    , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
   ]

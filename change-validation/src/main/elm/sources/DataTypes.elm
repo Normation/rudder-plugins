@@ -3,8 +3,6 @@ module DataTypes exposing (..)
 import Http exposing (Error)
 import List exposing (map)
 import Result exposing (Result)
-import Toasty
-import Toasty.Defaults
 
 type alias UserList = List User
 type alias Username = String
@@ -31,7 +29,6 @@ type alias User =
 type alias Model =
   { contextPath      : String
   , users            : UserList
-  , toasties         : Toasty.Stack Toasty.Defaults.Toast
   , validatedUsers   : UserList
   , unvalidatedUsers : UserList
   , rightChecked     : List User
@@ -59,7 +56,4 @@ type Msg
   {-- MOD MANAGEMENT --}
   | SwitchMode
   | ExitEditMod
-  {-- NOTIFICATIONS --}
-  | Notification (Toasty.Msg Toasty.Defaults.Toast)
-  | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
 

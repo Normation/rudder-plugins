@@ -388,16 +388,6 @@ ui-dropdown-panel{
   display: flex;
 }
 
-/* Notifications */
-.toasties > ol {
-  top: 80px !important;
-  z-index: 100;
-}
-
-.toasties > ol > li{
-  margin-bottom: 45px !important;
-}
-
 /* CSS EFFECTS */
 #headerBar > .background{
   transition-duration:.6s;
