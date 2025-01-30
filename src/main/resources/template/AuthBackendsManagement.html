@@ -10,7 +10,6 @@
       <title>Rudder - Authentication Backends</title>
       <link rel="stylesheet" type="text/css" href="/toserve/authbackends/auth-backends.css" media="screen" data-lift="with-cached-resource">
       <script src="/toserve/authbackends/rudder-authbackends.js" data-lift="with-cached-resource"></script>
-      <link rel="stylesheet" type="text/css" href="/toserve/authbackends/toasty.css" media="screen" data-lift="with-cached-resource">
     </head_merge>
 
 
@@ -36,6 +35,9 @@
           <script>
             var node = document.getElementById("auth-backends-app");
             var app  = Elm.AuthBackends.init( { node : node, flags : { contextPath: contextPath}});
+            app.ports.errorNotification.subscribe(function (str) {
+              createErrorNotification(str)
+            });
           </script>
 
         </div>
