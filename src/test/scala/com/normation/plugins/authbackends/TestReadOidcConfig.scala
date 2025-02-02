@@ -176,4 +176,33 @@ class TestReadOidcConfig extends Specification {
       )
     }
   }
+
+  "reading an opaque configuration" should {
+    val reg          = RudderOpaqueTokenRegistration(
+      "someidp",
+      "xxxClientIdxxx",
+      "xxxClientPassxxx",
+      "https://someidp/oauth2/v1/introspect",
+      "email"
+    )
+    val registration = RudderPropertyBasedOpaqueTokenRegistrationDefinition.make().runNow
+
+    "read the correct configuration" in {
+
+      val config = ConfigFactory.parseResources("opaque/opaque.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      regs.keySet === Set("someidp") and regs("someidp") === reg
+    }
+
+    "read the correct configuration with default" in {
+
+      val config = ConfigFactory.parseResources("opaque/opaque_default.properties")
+      val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+      regs.keySet === Set("someidp") and regs("someidp") === reg.copy(pivotAttributeName = "client_id")
+    }
+
+  }
+
 }

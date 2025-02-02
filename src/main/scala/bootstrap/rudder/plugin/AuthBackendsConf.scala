@@ -44,29 +44,12 @@ import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
 import com.normation.errors.IOResult
 import com.normation.plugins.RudderPluginModule
-import com.normation.plugins.authbackends.AuthBackendsLogger
-import com.normation.plugins.authbackends.AuthBackendsLoggerPure
-import com.normation.plugins.authbackends.AuthBackendsPluginDef
-import com.normation.plugins.authbackends.AuthBackendsRepositoryImpl
-import com.normation.plugins.authbackends.CheckRudderPluginEnableImpl
-import com.normation.plugins.authbackends.LoginFormRendering
-import com.normation.plugins.authbackends.ProvidedList
-import com.normation.plugins.authbackends.RudderClientRegistration
-import com.normation.plugins.authbackends.RudderJwtRegistration
-import com.normation.plugins.authbackends.RudderOAuth2Registration
-import com.normation.plugins.authbackends.RudderPropertyBasedJwtRegistrationDefinition
-import com.normation.plugins.authbackends.RudderPropertyBasedOAuth2RegistrationDefinition
+import com.normation.plugins.authbackends.*
 import com.normation.plugins.authbackends.api.AuthBackendsApiImpl
 import com.normation.plugins.authbackends.snippet.Oauth2LoginBanner
 import com.normation.rudder.Role
 import com.normation.rudder.RudderRoles
-import com.normation.rudder.api.AclPath
-import com.normation.rudder.api.ApiAccount
-import com.normation.rudder.api.ApiAccountId
-import com.normation.rudder.api.ApiAccountKind
-import com.normation.rudder.api.ApiAccountName
-import com.normation.rudder.api.ApiAuthorization
-import com.normation.rudder.api.ApiToken
+import com.normation.rudder.api.*
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.domain.logger.PluginLogger
@@ -125,12 +108,16 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtException
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication
+import org.springframework.security.oauth2.server.resource.authentication.DefaultOpaqueTokenAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
+import org.springframework.security.oauth2.server.resource.authentication.OpaqueTokenAuthenticationProvider
+import org.springframework.security.oauth2.server.resource.introspection.NimbusOpaqueTokenIntrospector
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter
 import org.springframework.security.web.DefaultSecurityFilterChain
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
@@ -167,8 +154,11 @@ object AuthBackendsConf extends RudderPluginModule {
     }
   }
 
-  private val oauthBackendNames = Set(RudderOAuth2UserService.PROTOCOL_ID, RudderOidcUserService.PROTOCOL_ID)
-  val jwtBackendNames           = Set(RudderJwtAuthenticationProvider.PROTOCOL_ID)
+  private val oauthBackendNames       = Set(RudderOAuth2UserService.PROTOCOL_ID, RudderOidcUserService.PROTOCOL_ID)
+  // Javascript web token
+  private val jwtBackendNames         = Set(RudderJwtAuthenticationProvider.PROTOCOL_ID)
+  // opaque bearer token
+  private val opaqueTokenBackendNames = Set(RudderOpaqueTokenAuthenticationProvider.PROTOCOL_ID)
 
   RudderConfig.authenticationProviders.addProvider(authBackendsProvider)
   RudderConfig.authenticationProviders.addProvider(new AuthBackendsProvider() {
@@ -180,11 +170,17 @@ object AuthBackendsConf extends RudderPluginModule {
   RudderConfig.authenticationProviders.addProvider(new AuthBackendsProvider() {
     override def authenticationBackends: Set[String] = jwtBackendNames
     override def name:                   String      =
-      s"Oauth2 and OpenID Connect authentication backends provider for Bearer token in REST API: '${authenticationBackends.mkString("','")}"
+      s"Oauth2 and OpenID Connect authentication backends provider for JWT Bearer token in REST API: '${authenticationBackends.mkString("','")}"
+    override def allowedToUseBackend(name: String): Boolean = pluginStatusService.isEnabled()
+  })
+  RudderConfig.authenticationProviders.addProvider(new AuthBackendsProvider() {
+    override def authenticationBackends: Set[String] = opaqueTokenBackendNames
+    override def name:                   String      =
+      s"Oauth2 and OpenID Connect authentication backends provider for Opaque Bearer token in REST API: '${authenticationBackends.mkString("','")}"
     override def allowedToUseBackend(name: String): Boolean = pluginStatusService.isEnabled()
   })
 
-  lazy val (isOauthConfiguredByUser: Boolean, isJwtConfiguredByUser: Boolean) = {
+  lazy val (isOauthConfiguredByUser: Boolean, isJwtConfiguredByUser: Boolean, isOpaqueTokenConfiguredByUser: Boolean) = {
     // We need to know if we have to initialize oauth/oidc specific code and snippet.
     // For that, we need to look in config file directly, because initialisation is complicated and we have no way to
     // know what part of auth is initialized before what other. It duplicates parsing, but it seems to be the price
@@ -192,12 +188,14 @@ object AuthBackendsConf extends RudderPluginModule {
     val configuredAuthProviders = AuthenticationMethods.getForConfig(RudderProperties.config).map(_.name)
     (
       configuredAuthProviders.exists(a => oauthBackendNames.contains(a)),
-      configuredAuthProviders.exists(a => jwtBackendNames.contains(a))
+      configuredAuthProviders.exists(a => jwtBackendNames.contains(a)),
+      configuredAuthProviders.exists(a => opaqueTokenBackendNames.contains(a))
     )
   }
 
-  lazy val oauth2registrations = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
-  lazy val jwtRegistration     = RudderPropertyBasedJwtRegistrationDefinition.make().runNow
+  lazy val oauth2registrations      = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
+  lazy val jwtRegistrations         = RudderPropertyBasedJwtRegistrationDefinition.make().runNow
+  lazy val opaqueTokenRegistrations = RudderPropertyBasedOpaqueTokenRegistrationDefinition.make().runNow
 
   override lazy val pluginDef: AuthBackendsPluginDef = new AuthBackendsPluginDef(AuthBackendsConf.pluginStatusService)
 
@@ -313,22 +311,62 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
 
     // Adding API authentication protected with OAuth2 thanks to a JWT "bearer token"
     if (AuthBackendsConf.isJwtConfiguredByUser) {
-      val config = applicationContext.getBean("jwtRegistrationRepository", classOf[Option[RudderJwtRegistration]])
-      RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
-        RudderJwtAuthenticationProvider.PROTOCOL_ID,
-        // here, we can't use applicationContext.getBean without circular reference. It will be put in Spring cache.
-        oauth2ApiAuthenticationProvider(config)
-      )
+      // only add filter if we have one registration
+      val optConfig = applicationContext.getBean("jwtRegistrationRepository", classOf[Option[RudderJwtRegistration]])
+      optConfig match {
 
-      val http    = applicationContext.getBean("publicApiSecurityFilter", classOf[DefaultSecurityFilterChain])
-      val filters = http.getFilters
-      val manager =
-        applicationContext.getBean("org.springframework.security.authenticationManager", classOf[AuthenticationManager])
-      filters.add(3, new BearerTokenAuthenticationFilter(manager))
+        case Some(config) =>
+          RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
+            RudderJwtAuthenticationProvider.PROTOCOL_ID,
+            // here, we can't use applicationContext.getBean without circular reference. It will be put in Spring cache.
+            oauth2ApiJwtAuthenticationProvider(optConfig)
+          )
 
-      val newSecurityChain = new DefaultSecurityFilterChain(http.getRequestMatcher, filters)
+          val http    = applicationContext.getBean("publicApiSecurityFilter", classOf[DefaultSecurityFilterChain])
+          val filters = http.getFilters
+          val manager =
+            applicationContext.getBean("org.springframework.security.authenticationManager", classOf[AuthenticationManager])
+          filters.add(3, new BearerTokenAuthenticationFilter(manager))
 
-      applicationContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "publicApiSecurityFilter")
+          val newSecurityChain = new DefaultSecurityFilterChain(http.getRequestMatcher, filters)
+
+          applicationContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "publicApiSecurityFilter")
+
+        case None =>
+          AuthBackendsLogger.info(
+            s"${RudderJwtAuthenticationProvider.PROTOCOL_ID} is configured as an authentication provider but there is no valid registration for it: it will be ignored"
+          )
+      }
+    }
+
+    // Adding API authentication protected with OAuth2 thanks to an "opaque access bearer token"
+    if (AuthBackendsConf.isOpaqueTokenConfiguredByUser) {
+      // only add filter if we have one registration
+      val optConfig =
+        applicationContext.getBean("opaqueTokenRegistrationRepository", classOf[Option[RudderOpaqueTokenRegistration]])
+      optConfig match {
+        case Some(config) =>
+          RudderConfig.authenticationProviders.addSpringAuthenticationProvider(
+            RudderJwtAuthenticationProvider.PROTOCOL_ID,
+            // here, we can't use applicationContext.getBean without circular reference. It will be put in Spring cache.
+            oauth2ApiOpaqueTokenAuthenticationProvider(optConfig)
+          )
+
+          val http    = applicationContext.getBean("publicApiSecurityFilter", classOf[DefaultSecurityFilterChain])
+          val filters = http.getFilters
+          val manager =
+            applicationContext.getBean("org.springframework.security.authenticationManager", classOf[AuthenticationManager])
+          filters.add(3, new BearerTokenAuthenticationFilter(manager))
+
+          val newSecurityChain = new DefaultSecurityFilterChain(http.getRequestMatcher, filters)
+
+          applicationContext.getAutowireCapableBeanFactory.configureBean(newSecurityChain, "publicApiSecurityFilter")
+
+        case None =>
+          AuthBackendsLogger.warn(
+            s"Warning! ${RudderOpaqueTokenAuthenticationProvider.PROTOCOL_ID} is configured as an authentication provider but there is no valid registration for it: it will be ignored"
+          )
+      }
     }
   }
 
@@ -372,8 +410,8 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def jwtRegistrationRepository: Option[RudderJwtRegistration] = {
     (
       for {
-        _ <- AuthBackendsConf.jwtRegistration.updateRegistration(RudderProperties.config)
-        r <- AuthBackendsConf.jwtRegistration.registrations.get
+        _ <- AuthBackendsConf.jwtRegistrations.updateRegistration(RudderProperties.config)
+        r <- AuthBackendsConf.jwtRegistrations.registrations.get
         _ <- r match {
                case Nil | _ :: Nil => ZIO.unit
                case h :: tail      =>
@@ -384,15 +422,40 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       } yield {
         r.headOption.map(_._2)
       }
-    ).foldZIO(
-      err =>
-        (if (AuthBackendsConf.isJwtConfiguredByUser) {
-           AuthBackendsLoggerPure.error(err.fullMsg)
-         } else {
-           AuthBackendsLoggerPure.debug(err.fullMsg)
-         }) *> None.succeed,
-      ok => ok.succeed
-    ).runNow
+    ).catchAll(err => {
+      (if (AuthBackendsConf.isJwtConfiguredByUser) {
+         AuthBackendsLoggerPure.error(err.fullMsg)
+       } else {
+         AuthBackendsLoggerPure.debug(err.fullMsg)
+       }) *> None.succeed
+    }).runNow
+  }
+
+  /*
+   * The same then JWT, for opaque token registration
+   */
+  @Bean def opaqueTokenRegistrationRepository: Option[RudderOpaqueTokenRegistration] = {
+    (
+      for {
+        _ <- AuthBackendsConf.opaqueTokenRegistrations.updateRegistration(RudderProperties.config)
+        r <- AuthBackendsConf.opaqueTokenRegistrations.registrations.get
+        _ <- r match {
+               case Nil | _ :: Nil => ZIO.unit
+               case h :: tail      =>
+                 AuthBackendsLoggerPure.warn(
+                   s"Warning! Rudder opaque access bearer tokens only support one provider at a time. Only '${h._1}' will be use, '${tail.map(_._1).mkString("','")}' will be ignored."
+                 )
+             }
+      } yield {
+        r.headOption.map(_._2)
+      }
+    ).catchAll { err =>
+      (if (AuthBackendsConf.isOpaqueTokenConfiguredByUser) {
+         AuthBackendsLoggerPure.error(err.fullMsg)
+       } else {
+         AuthBackendsLoggerPure.debug(err.fullMsg)
+       }) *> None.succeed
+    }.runNow
   }
 
   /**
@@ -486,27 +549,36 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
     x
   }
 
-  // OAuth2 for API with JWT Bearer token
-  @Bean def rudderJwtTokenConverter: RudderJwtAuthenticationConverter = new RudderJwtAuthenticationConverter(
-    jwtRegistrationRepository,
-    RudderConfig.roleApiMapping
-  )
-
-  @Bean def oauth2ApiAuthenticationProvider(
+  @Bean def oauth2ApiJwtAuthenticationProvider(
       jwtRegistrationRepository: Option[RudderJwtRegistration]
-  ): RudderJwtAuthenticationProvider = {
-    val decoder = jwtRegistrationRepository match {
-      case Some(reg) => NimbusJwtDecoder.withJwkSetUri(reg.jwkSetUri).build
-      // build a noop decoder
-      case None      =>
-        new JwtDecoder {
-          override def decode(token: String): Jwt = {
-            throw new JwtException("Error: no valid JWT registration is configured in rudder")
-          }
-        }
-    }
+  ): AuthenticationProvider = {
+    jwtRegistrationRepository match {
+      case Some(config) =>
+        val decoder   = NimbusJwtDecoder.withJwkSetUri(config.jwkSetUri).build
+        val converter = new RudderJwtAuthenticationConverter(
+          jwtRegistrationRepository,
+          RudderConfig.roleApiMapping,
+          config.pivotAttributeName
+        )
+        new RudderJwtAuthenticationProvider(decoder, converter)
 
-    new RudderJwtAuthenticationProvider(decoder, rudderJwtTokenConverter)
+      case None => MissingConfigurationAuthenticationProvider
+    }
+  }
+
+  @Bean def oauth2ApiOpaqueTokenAuthenticationProvider(
+      opaqueTokenRegistrationRepository: Option[RudderOpaqueTokenRegistration]
+  ): AuthenticationProvider = {
+    opaqueTokenRegistrationRepository match {
+      case Some(config) =>
+        val introspector = new NimbusOpaqueTokenIntrospector(config.introspectUri, config.clientId, config.clientSecret)
+        new RudderOpaqueTokenAuthenticationProvider(
+          introspector,
+          new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config.pivotAttributeName)
+        )
+
+      case None => MissingConfigurationAuthenticationProvider
+    }
   }
 
 }
@@ -520,7 +592,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
  * a service, asked the IdP for a `Bearer` token and then used that token to access Rudder APIs)
  * We can't directly inherit `JwtAuthenticationToken` and `RudderUserDetail` because none is a trait, only classes.
  */
-case class RudderOAuth2Token(jwt: JwtAuthenticationToken, rudderUserDetail: RudderUserDetail)
+case class RudderOAuth2Jwt(jwt: JwtAuthenticationToken, rudderUserDetail: RudderUserDetail)
     extends JwtAuthenticationToken(jwt.getToken, rudderUserDetail.getAuthorities) with UserDetails {
 
   this.setDetails(jwt.getDetails)
@@ -536,6 +608,30 @@ case class RudderOAuth2Token(jwt: JwtAuthenticationToken, rudderUserDetail: Rudd
   override def isAccountNonLocked:      Boolean = rudderUserDetail.isAccountNonLocked
   override def isCredentialsNonExpired: Boolean = rudderUserDetail.isCredentialsNonExpired
   override def isEnabled:               Boolean = rudderUserDetail.isEnabled
+}
+
+case class RudderOAuth2OpaqueToken(obt: BearerTokenAuthentication, rudderUserDetail: RudderUserDetail)
+    extends BearerTokenAuthentication(
+      obt.getPrincipal.asInstanceOf[OAuth2AuthenticatedPrincipal],
+      obt.getCredentials.asInstanceOf[OAuth2AccessToken],
+      rudderUserDetail.getAuthorities
+    ) with UserDetails {
+
+  this.setDetails(obt.getDetails)
+  this.setAuthenticated(obt.isAuthenticated)
+
+  // this is important, it's the way to identify a RudderUser
+  override def getPrincipal: AnyRef = rudderUserDetail
+
+  override def getPassword: String = rudderUserDetail.getPassword
+  override def getUsername: String = rudderUserDetail.getUsername
+
+  override def isAccountNonExpired:     Boolean = rudderUserDetail.isAccountNonExpired
+  override def isAccountNonLocked:      Boolean = rudderUserDetail.isAccountNonLocked
+  override def isCredentialsNonExpired: Boolean = rudderUserDetail.isCredentialsNonExpired
+  override def isEnabled:               Boolean = rudderUserDetail.isEnabled
+
+  override def getTokenAttributes: util.Map[String, AnyRef] = obt.getTokenAttributes
 }
 
 /*
@@ -638,7 +734,7 @@ object RudderTokenMapping {
    *   roles names (and chaos ensues if those internal name change)
    */
   def getRoles(
-      reg:           RudderOAuth2Registration,
+      reg:           RudderOAuth2Registration with RegistrationWithRoles,
       principal:     String, // user name or token id
       protocolName:  String, // oauth2Api, oauth2, oidc
       default:       Set[Role]
@@ -711,7 +807,7 @@ object RudderTokenMapping {
    *   tenants names (and chaos ensues if those internal name change - even if tenants should be public names)
    */
   def getTenants(
-      reg:             RudderOAuth2Registration,
+      reg:             RudderOAuth2Registration with RegistrationWithRoles,
       principal:       String, // user name or token id
       protocolName:    String, // oauth2Api, oauth2, oidc
       default:         NodeSecurityContext
@@ -892,7 +988,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
   }
 
   def buildUser(
-      optReg:         Option[RudderOAuth2Registration],
+      optReg:         Option[RudderOAuth2Registration with RegistrationWithRoles],
       userRequest:    R,
       user:           U,
       roleApiMapping: RoleApiMapping,
@@ -1136,14 +1232,50 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
 
 //////////////// REST API OAuth2 authentication - `client_credentials` workflows ////////////////
 
-object RudderJwtAuthenticationConverter {
-  // normalized in JWT standard
-  val CLIENT_ID_CLAIM: String = "cid"
+/////////////// OAuth2/OIDC - JWT bearer token ///////////////
+
+/*
+ * A placeholder AuthenticationProvider to use when we don't have any registration.
+ * Spring undecidable initialisation patterns force us to do strange things.
+ */
+object MissingConfigurationAuthenticationProvider extends AuthenticationProvider {
+  override def authenticate(authentication: Authentication): Authentication = {
+    throw new OAuth2AuthenticationException(
+      s"This authentication provider is missing configuration and can't be called for authentication"
+    )
+  }
+  override def supports(authentication: Class[?]): Boolean = false
+}
+
+/*
+ * Authentication provider for OAuth2/OIDC for protecting APIs with JWT tokens
+ */
+object RudderJwtAuthenticationProvider {
+
+  val PROTOCOL_ID: String = "oauth2ApiJwt"
+}
+
+/*
+ * JWT bearer token for oauth2 protected API - authentication provider.
+ * This class is here only to allow to hook our mapping class in place of Spring default one.
+ */
+class RudderJwtAuthenticationProvider(jwtDecoder: JwtDecoder, converter: RudderJwtAuthenticationConverter)
+    extends AuthenticationProvider {
+  private val jwtAuthenticationProvider = new JwtAuthenticationProvider(jwtDecoder)
+  jwtAuthenticationProvider.setJwtAuthenticationConverter(converter)
+
+  override def authenticate(authentication: Authentication): Authentication = {
+    val a = jwtAuthenticationProvider.authenticate(authentication)
+    a
+  }
+
+  override def supports(authentication: Class[?]): Boolean = jwtAuthenticationProvider.supports(authentication)
 }
 
 class RudderJwtAuthenticationConverter(
     clientRegistrationRepository: Option[RudderJwtRegistration],
-    roleApiMapping:               RoleApiMapping
+    roleApiMapping:               RoleApiMapping,
+    pivotAttribute:               String
 ) extends Converter[Jwt, AbstractAuthenticationToken] {
 
   import bootstrap.rudder.plugin.RudderJwtAuthenticationProvider.PROTOCOL_ID
@@ -1154,7 +1286,7 @@ class RudderJwtAuthenticationConverter(
 
     // Find the registration for that token. It's done by looking at the client ID it must contain.
     // We only have the clientId, so we need to check them all
-    val clientId = t.getToken.getClaimAsString(RudderJwtAuthenticationConverter.CLIENT_ID_CLAIM)
+    val clientId = t.getToken.getClaimAsString(pivotAttribute)
 
     if (clientId == null) { // we're in Java-land, these things can happen
       throw new InvalidBearerTokenException(
@@ -1199,7 +1331,7 @@ class RudderJwtAuthenticationConverter(
                   ApiAccountId(jwt.getId),
                   ApiAccountKind.PublicApi(apiAuthz, exp),
                   ApiAccountName(jwt.getId),
-                  ApiToken(jwt.getTokenValue),
+                  Some(ApiToken(jwt.getTokenValue)),
                   "",
                   isEnabled = true, // always enabled at that point, since the token is valid
                   created,
@@ -1218,26 +1350,113 @@ class RudderJwtAuthenticationConverter(
             s"Principal from JWT '${details.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${apiAuthz.debugString}, and tenants: ${nsc.value}"
           )
 
-          RudderOAuth2Token(t, details)
+          RudderOAuth2Jwt(t, details)
       }
     }
   }
 }
 
-object RudderJwtAuthenticationProvider {
+/////////////// OAuth2/OIDC - Opaque bearer access token ///////////////
 
-  val PROTOCOL_ID: String = "oauth2Api"
+/*
+ * Authentication provider for OAuth2/OIDC for protecting APIs with JWT tokens
+ */
+object RudderOpaqueTokenAuthenticationProvider {
+  val PROTOCOL_ID: String = "oauth2ApiOpaqueToken"
 }
 
-class RudderJwtAuthenticationProvider(jwtDecoder: JwtDecoder, converter: RudderJwtAuthenticationConverter)
-    extends AuthenticationProvider {
-  val jwtAuthenticationProvider = new JwtAuthenticationProvider(jwtDecoder)
-  jwtAuthenticationProvider.setJwtAuthenticationConverter(converter)
+// this class is only here to allow to use our convert in place of default spring configuration
+class RudderOpaqueTokenAuthenticationProvider(
+    introspector: NimbusOpaqueTokenIntrospector,
+    converter:    RudderOpaqueTokenAuthenticationConverter
+) extends AuthenticationProvider {
+  private val opaqueTokenAuthenticationProvider = new OpaqueTokenAuthenticationProvider(introspector)
+  opaqueTokenAuthenticationProvider.setAuthenticationConverter(converter)
 
   override def authenticate(authentication: Authentication): Authentication = {
-    val a = jwtAuthenticationProvider.authenticate(authentication)
+    val a = opaqueTokenAuthenticationProvider.authenticate(authentication)
     a
   }
 
-  override def supports(authentication: Class[?]): Boolean = jwtAuthenticationProvider.supports(authentication)
+  override def supports(authentication: Class[?]): Boolean = opaqueTokenAuthenticationProvider.supports(authentication)
+}
+
+/*
+ * Logic for mapping a validated opaque bearer access token to Rudder logic.
+ * All the authentication security is done by spring-security, here we manage mapping
+ * logic to rudder "user details".
+ */
+class RudderOpaqueTokenAuthenticationConverter(
+    roApiAccountRepository: RoApiAccountRepository,
+    pivotAttribute:         String
+) extends OpaqueTokenAuthenticationConverter {
+
+  override def convert(introspectedToken: String, authenticatedPrincipal: OAuth2AuthenticatedPrincipal): Authentication = {
+    val t = DefaultOpaqueTokenAuthenticationConverter
+      .convert(introspectedToken, authenticatedPrincipal)
+
+    // retrieve token id
+    val tokenId = t.getTokenAttributes.asScala.get(pivotAttribute) match {
+      case Some(v) =>
+        // we only understand string for that value
+        v match {
+          case null | "" =>
+            throw new InvalidBearerTokenException(
+              s"An opaque Bearer token was received but value for '${pivotAttribute}' claim isn't a non-empty string so the token is invalid"
+            )
+          case id: String => ApiAccountId(id)
+          case _ =>
+            throw new InvalidBearerTokenException(
+              s"An opaque Bearer token was received but value for '${pivotAttribute}' claim isn't a string so the token is invalid"
+            )
+        }
+
+      case None =>
+        throw new InvalidBearerTokenException(
+          s"An opaque Bearer token was received but it doesn't have a '${pivotAttribute}' claim, so we don't have a token ID and the token is invalid"
+        )
+    }
+
+    // try to lookup token id
+    roApiAccountRepository.getById(tokenId).runNow match {
+      case None             =>
+        throw new InvalidBearerTokenException(
+          s"An opaque Bearer token was received but No token with ID ${tokenId.value} is configured in Rudder"
+        )
+      case Some(apiAccount) =>
+        if (!apiAccount.isEnabled) {
+          throw new InvalidBearerTokenException(
+            s"An opaque Bearer token was received but token with ID ${tokenId.value} is disabled in Rudder"
+          )
+        } else {
+
+          // we only accept public API token for that kind of authentication
+          apiAccount.kind match {
+            case ApiAccountKind.PublicApi(authz, expirationDate) =>
+              expirationDate match {
+                case Some(date) if (DateTime.now().isAfter(date)) =>
+                  throw new InvalidBearerTokenException(
+                    s"An opaque Bearer token was received but API token with ID ${tokenId.value} is expired in Rudder"
+                  )
+
+                case _ => // no expiration date or expiration date not reached
+                  val user = RudderUserDetail(
+                    RudderAccount.Api(apiAccount),
+                    UserStatus.Active,
+                    RudderAuthType.Api.apiRudderRole,
+                    authz,
+                    apiAccount.tenants
+                  )
+                  RudderOAuth2OpaqueToken(t, user)
+              }
+
+            // all other API account type leads to an error
+            case _                                               =>
+              throw new InvalidBearerTokenException(
+                s"An opaque Bearer token was received but No valid public API token with ID ${tokenId.value} is configured in Rudder"
+              )
+          }
+        }
+    }
+  }
 }
