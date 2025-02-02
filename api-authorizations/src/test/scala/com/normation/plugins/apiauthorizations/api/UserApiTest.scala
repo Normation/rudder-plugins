@@ -43,7 +43,7 @@ class UserApiTest extends ZIOSpecDefault {
       ApiAccountId("user1"),
       ApiAccountKind.System, // so that we have access to the plugin endpoints
       ApiAccountName("user1"),
-      ApiToken("v2:some-hashed-token"),
+      Some(ApiToken("v2:some-hashed-token")),
       "number one user",
       isEnabled = true,
       creationDate = accountCreationDate,
