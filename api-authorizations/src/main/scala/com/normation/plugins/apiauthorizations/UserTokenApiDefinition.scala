@@ -51,6 +51,7 @@ import com.normation.rudder.users.UserRepository
 import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.Transformer
+import io.scalaland.chimney.syntax.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import org.joda.time.DateTime
@@ -212,7 +213,6 @@ object UserApiImpl {
   object RestApiAccount extends UserJsonCodec {
     implicit class ApiAccountOps(val account: ApiAccount) extends AnyVal {
       import ApiAccountKind.*
-      import io.scalaland.chimney.syntax.*
       def expirationDate: Option[String] = {
         account.kind match {
           case PublicApi(_, expirationDate) => expirationDate.map(DateFormaterService.getDisplayDateTimePicker)
@@ -254,7 +254,7 @@ object UserApiImpl {
 
     implicit val transformer: Transformer[ApiAccount, RestApiAccount] = Transformer
       .define[ApiAccount, RestApiAccount]
-      .withFieldComputed(_.token, a => ClearTextToken(a.token.map(_.value).getOrElse("")))
+      .withFieldComputedFrom(_.token)(_.token, _.fold(ClearTextToken(""))(_.transformInto[ClearTextToken]))
       .withFieldComputed(_.kind, _.kind.kind)
       .withFieldComputed(_.acl, _.acl)
       .withFieldComputed(_.expirationDate, _.expirationDate)
