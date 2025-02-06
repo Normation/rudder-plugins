@@ -200,7 +200,7 @@ class TestReadOidcConfig extends Specification {
       val config = ConfigFactory.parseResources("opaque/opaque_default.properties")
       val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
-      regs.keySet === Set("someidp") and regs("someidp") === reg.copy(pivotAttributeName = "client_id")
+      regs.keySet === Set("someidp") and regs("someidp") === reg.copy(pivotAttributeName = "sub")
     }
 
   }
