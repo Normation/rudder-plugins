@@ -236,7 +236,7 @@ getUserTokenFeatureStatus model =
         req =
             request
                 { method = "GET"
-                , headers = []
+                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson GetUserTokenFeatureStatus decodeTokenFeatureStatus
