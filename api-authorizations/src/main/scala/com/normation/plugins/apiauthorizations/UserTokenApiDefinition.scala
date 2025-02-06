@@ -134,7 +134,7 @@ class UserApiImpl(
         ApiAccountId(authzToken.qc.actor.name),
         ApiAccountKind.User,
         ApiAccountName(authzToken.qc.actor.name),
-        ApiToken(hash),
+        Some(ApiToken(hash)),
         s"API token for user '${authzToken.qc.actor.name}'",
         isEnabled = true,
         now,
@@ -254,6 +254,7 @@ object UserApiImpl {
 
     implicit val transformer: Transformer[ApiAccount, RestApiAccount] = Transformer
       .define[ApiAccount, RestApiAccount]
+      .withFieldComputed(_.token, a => ClearTextToken(a.token.map(_.value).getOrElse("")))
       .withFieldComputed(_.kind, _.kind.kind)
       .withFieldComputed(_.acl, _.acl)
       .withFieldComputed(_.expirationDate, _.expirationDate)

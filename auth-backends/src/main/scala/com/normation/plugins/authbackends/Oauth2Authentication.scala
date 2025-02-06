@@ -119,20 +119,55 @@ final case class JwtAudience(
 // properties common to both JWT and OAuth2/OIDC registration
 sealed trait RudderOAuth2Registration {
   def registrationId: String
-  def roles:          ProvidedRoles
-  def tenants:        ProvidedTenants
+}
+
+trait RegistrationWithPivotAttribute {
+  def pivotAttributeName: String
+}
+
+trait RegistrationWithRoles {
+  def roles:   ProvidedRoles
+  def tenants: ProvidedTenants
 }
 
 /*
  * API access with JWT (bearer token) - client_credentials workflow
  */
 final case class RudderJwtRegistration(
-    registrationId: String,
-    jwkSetUri:      String,
-    audience:       JwtAudience,
-    roles:          ProvidedRoles,
-    tenants:        ProvidedTenants
-) extends RudderOAuth2Registration // there is nothing secret here, no need to override `toString()`.
+    registrationId:     String,
+    jwkSetUri:          String,
+    pivotAttributeName: String,
+    audience:           JwtAudience,
+    roles:              ProvidedRoles,
+    tenants:            ProvidedTenants
+) extends RudderOAuth2Registration with RegistrationWithRoles
+    with RegistrationWithPivotAttribute // there is nothing secret here, no need to override `toString()`.
+
+object RudderJwtRegistration {
+  val defaultPivotAttribute: String = "cid"
+}
+
+/*
+ * API access with JWT (bearer token) - client_credentials workflow
+ */
+final case class RudderOpaqueTokenRegistration(
+    registrationId:     String,
+    clientId:           String,
+    clientSecret:       String,
+    introspectUri:      String,
+    pivotAttributeName: String
+) extends RudderOAuth2Registration with RegistrationWithPivotAttribute {
+  // be careful to not leak secret in "toString"
+  override def toString: String = {
+    s"""{${registrationId}}, clientId:'${clientId}' introspect URL: '${introspectUri}', token mapping attribute: ${pivotAttributeName}"""
+  }
+}
+
+object RudderOpaqueTokenRegistration {
+  // by default, the user/service ID that gained authentication with that token is store in "sub", but it can
+  // be implementation specific.
+  val defaultPivotAttribute: String = "sub"
+}
 
 /*
  * User login - authorization_code workflow.
@@ -147,15 +182,18 @@ final case class RudderClientRegistration(
     roles:             ProvidedRoles,
     provisioning:      Boolean,
     tenants:           ProvidedTenants
-) extends RudderOAuth2Registration {
+) extends RudderOAuth2Registration with RegistrationWithRoles with RegistrationWithPivotAttribute {
   override def registrationId: String = registration.getRegistrationId
 
+  override def pivotAttributeName: String = registration.getProviderDetails.getUserInfoEndpoint.getUserNameAttributeName
+
+  // we don't have access to "registration.toString", and it leaks "clientSecret", so we need to hide it
   override def toString: String = {
-    toDebugStringWithSecret.replaceFirst("""clientSecret='([^']+?)'""", "clientSecret='*****'")
+    toDebugStringWithSecret.replaceAll("""clientSecret='([^']+?)'""", "clientSecret='*****'")
   }
 
   // avoid that in logs etc, use only for interactive debugging sessions
-  def toDebugStringWithSecret =
+  def toDebugStringWithSecret: String =
     s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}, user provisioning enabled: ${provisioning}"""
 }
 
@@ -185,6 +223,7 @@ object RudderRegistrationPropertyCommon {
   val A_URI_JWK_SET             = "uri.jwkSet"
   val A_URI_LOGOUT              = "uri.logout"
   val A_URI_LOGOUT_REDIRECT     = "uri.logoutRedirect"
+  val A_URI_INTROSPECT          = "uri.introspect"
   val A_PIVOT_ATTRIBUTE         = "userNameAttributeName"
   val A_ROLES_ENABLED           = "roles.enabled"
   val A_ROLES_ATTRIBUTE         = "roles.attribute"
@@ -227,7 +266,8 @@ object RudderRegistrationPropertyCommon {
     A_URI_JWK_SET             -> "provider URL to check signature of JWT token (see provider documentation)",
     A_URI_LOGOUT              -> "(optional) provider URL to logout and end session (see provider documentation).",
     A_URI_LOGOUT_REDIRECT     -> "(optional) the redirect URL to provide to the IdP after logout",
-    A_PIVOT_ATTRIBUTE         -> "the attribute used to find local app user",
+    A_URI_INTROSPECT          -> "in case of opaque access bearer token, the introspect URL on which the token must be validated",
+    A_PIVOT_ATTRIBUTE         -> "the attribute used to find local app user (OIDC user authentication) or the local API token (opaque bearer token)",
     A_ROLES_ENABLED           -> "(default false) enable custom role extension by OIDC",
     A_ROLES_ATTRIBUTE         -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
     A_ROLES_OVERRIDE          -> "(default false) keep user configured roles in rudder-user.xml or override them with the one provided in the token",
@@ -450,7 +490,7 @@ trait RudderPropertyBasedRegistration[A <: RudderOAuth2Registration] {
 
 object RudderPropertyBasedJwtRegistrationDefinition {
 
-  private val baseProperty        = "rudder.auth.jwt.provider"
+  private val baseProperty        = "rudder.auth.oauth2.jwt.provider"
   private val registrationLogName = "OAuth2 JWT"
 
   def make(): IOResult[RudderPropertyBasedJwtRegistrationDefinition] = {
@@ -483,18 +523,74 @@ class RudderPropertyBasedJwtRegistrationDefinition(val registrations: Ref[List[(
     implicit val c    = config
 
     for {
-      jwkSetUri     <- read(A_URI_JWK_SET)
-      checkAudience <- read(A_AUDIENCE_CHECK).catchAll(_ => "true".succeed)
-      audienceValue <- read(A_AUDIENCE_VALUE).catchAll(_ => "io.rudder.api".succeed)
-      roles         <- readRoles()
-      tenants       <- readTenants()
+      jwkSetUri      <- read(A_URI_JWK_SET)
+      checkAudience  <- read(A_AUDIENCE_CHECK).catchAll(_ => "true".succeed)
+      audienceValue  <- read(A_AUDIENCE_VALUE).catchAll(_ => "io.rudder.api".succeed)
+      pivotAttribute <- read(A_PIVOT_ATTRIBUTE).catchAll(_ => RudderJwtRegistration.defaultPivotAttribute.succeed)
+      roles          <- readRoles()
+      tenants        <- readTenants()
     } yield {
       RudderJwtRegistration(
         id,
         jwkSetUri,
+        pivotAttribute,
         JwtAudience(toBool(checkAudience), audienceValue),
         roles,
         tenants
+      )
+    }
+  }
+}
+
+/*
+ * Registration for opaque access tokens
+ */
+object RudderPropertyBasedOpaqueTokenRegistrationDefinition {
+
+  private val baseProperty        = "rudder.auth.oauth2.opaque.provider"
+  private val registrationLogName = "OAuth2 Opaque Access Token"
+
+  def make(): IOResult[RudderPropertyBasedOpaqueTokenRegistrationDefinition] = {
+    for {
+      ref <- Ref.make(List.empty[(String, RudderOpaqueTokenRegistration)])
+    } yield {
+      new RudderPropertyBasedOpaqueTokenRegistrationDefinition(ref)
+    }
+  }
+
+}
+
+class RudderPropertyBasedOpaqueTokenRegistrationDefinition(val registrations: Ref[List[(String, RudderOpaqueTokenRegistration)]])
+    extends RudderPropertyBasedRegistration[RudderOpaqueTokenRegistration] {
+
+  import com.normation.plugins.authbackends.RudderRegistrationPropertyCommon.*
+
+  override def baseProperty:        String = RudderPropertyBasedOpaqueTokenRegistrationDefinition.baseProperty
+  override def registrationLogName: String = RudderPropertyBasedOpaqueTokenRegistrationDefinition.registrationLogName
+
+  def updateRegistration(config: Config): IOResult[Unit] = {
+    for {
+      newOnes <- readAllRegistrations(config, readOneRegistration)
+      _       <- registrations.set(newOnes)
+    } yield ()
+  }
+
+  def readOneRegistration(id: String, config: Config): IOResult[RudderOpaqueTokenRegistration] = {
+    implicit val base = BasePath(baseProperty, id)
+    implicit val c    = config
+
+    for {
+      clientId       <- read(A_CLIENT_ID)
+      clientSecret   <- read(A_CLIENT_SECRET)
+      introspectUri  <- read(A_URI_INTROSPECT)
+      pivotAttribute <- read(A_PIVOT_ATTRIBUTE).catchAll(_ => RudderOpaqueTokenRegistration.defaultPivotAttribute.succeed)
+    } yield {
+      RudderOpaqueTokenRegistration(
+        id,
+        clientId,
+        clientSecret,
+        introspectUri,
+        pivotAttribute
       )
     }
   }
