@@ -436,7 +436,7 @@ It was an AD error that seems to have been triggered by some unexpected request 
 If you want to connect with a secure connection to an LDAP or AD, you need to add the
 directory certificate to Rudder's JVM `keystore`.
 
-Without that, you will see errors in `/var/log/rudder/webapp/XXXXXXX_stderrout.log` files like:
+Without that, you will see errors in `/var/log/rudder/webapp/webapp.log` files like:
 
 ```
 WARN  application - Login authentication failed for user 'xxx' from IP '127.0.0.1|X-Forwarded-For:xxx.xxx.xxx.xxx': simple bind failed: xxx.xxx:636; nested exception is javax.naming.CommunicationException: simple bind failed:
@@ -699,7 +699,7 @@ Here are some guidelines to help address possible configuration problems.
 
 Check that you correctly updated parameter `rudder.auth.provider` to include `oidc` or `oauth2` in
 the list, that you have at least one key defined in `rudder.auth.oauth2.provider.registrations`, and
-that you have Rudder webapp logs (`/var/log/rudder/webapp/YYYY_mm_dd.stderrout.log`) lines like:
+that you have Rudder webapp logs (`/var/log/rudder/webapp/webapp.log`) lines like:
 
 ----
 [timestamp] INFO  application - Configured authentication provider(s): [rootAdmin, oidc, file]
