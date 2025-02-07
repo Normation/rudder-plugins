@@ -610,6 +610,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   // must be sequential!
   sequential
 
+  isolated
+
   // wait for server to be started
   CmdbServerStarted.isStarted.await.runNow
 
