@@ -6,7 +6,6 @@
    <head_merge>
 
    <meta charset="utf8" />
-   <link rel="stylesheet" type="text/css" href="/toserve/branding/toasty.css" media="screen" data-lift="with-cached-resource">
    <link rel="stylesheet" type="text/css" href="/toserve/branding/media.css"  media="screen" data-lift="with-cached-resource">
    <script src="/toserve/branding/rudder-branding.js" data-lift="with-cached-resource"></script>
 
@@ -19,6 +18,12 @@
      app.ports.applyCss.subscribe(function(settings) {
        $('#headerBar > .background').css('background-color', settings.bgColor).css('color', settings.txtColor);
        $('#headerBar > .background > span').text(settings.labelTxt);
+     });
+     app.ports.successNotification.subscribe(function (str) {
+       createSuccessNotification(str)
+     });
+     app.ports.errorNotification.subscribe(function (str) {
+       createErrorNotification(str)
      });
    </script>
   </lift:authz>

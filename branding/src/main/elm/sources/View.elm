@@ -1,23 +1,11 @@
-module View exposing (addTempToast, addToast, barStyle, checkbox, createDecodeErrorNotification, createErrorNotification, createPanel, createSuccessNotification, customBar, customBarPreview, defaultConfig, fileField, getErrorMessage, loginPagePreview, tempConfig, textField, view)
+module View exposing (barStyle, checkbox, createPanel, customBar, customBarPreview, fileField, loginPagePreview, textField, view)
 
-import ApiCall exposing (saveSettings)
 import Color exposing (Color)
 import DataTypes exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http exposing (Error)
-import Toasty
-import Toasty.Defaults
 import ColorPicker
-
-import Browser
-import File exposing (File)
-import File.Select as Select
-
-import Json.Decode as D
-import Task
---- VIEW ---
 
 
 view : Model -> Html Msg
@@ -111,22 +99,17 @@ view model =
         ]
       , div [ class "panel-col col-md-6 bg-pattern" ] [ loginPagePreview model.settings ]
       ]
-    in
+  in
     Html.form []
-        [ createPanel "Custom logos" "custom-logos" customLogos
-        , createPanel "Custom bar" "custom-bar" bar
-        , createPanel "Login page" "login-page" loginPage
-        , div [ class "toolbar" ]
-            [ button [ type_ "button", class "btn btn-success", onClick SendSave ] [ text "Save" ]
-            ]
-        , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
+      [ createPanel "Custom logos" "custom-logos" customLogos
+      , createPanel "Custom bar" "custom-bar" bar
+      , createPanel "Login page" "login-page" loginPage
+      , div [ class "toolbar" ]
+        [ button [ type_ "button", class "btn btn-success", onClick SendSave ] [ text "Save" ]
         ]
-
-
+      ]
 
 -- HTML HELPERS
-
-
 checkbox : Bool -> msg -> String -> String -> Html msg
 checkbox chckd actionMsg inputId txt =
     div [ class "form-group" ]
@@ -286,64 +269,3 @@ logoUrl settings isLoginPage =
       False -> defaultLogo
   in
     "url('" ++ url ++ "')"
-
--- NOTIFICATIONS --
-
-
-getErrorMessage : Http.Error -> String
-getErrorMessage e =
-    let
-        errMessage =
-            case e of
-                Http.BadStatus status ->
-                    "Code " ++ String.fromInt status
-
-                Http.BadUrl str ->
-                    "Invalid API url"
-
-                Http.Timeout ->
-                    "It took too long to get a response"
-
-                Http.NetworkError ->
-                    "Network error"
-
-                Http.BadBody str ->
-                    str
-    in
-    errMessage
-
-tempConfig : Toasty.Config Msg
-tempConfig =
-    Toasty.Defaults.config
-        |> Toasty.delay 3000
-
-
-defaultConfig : Toasty.Config Msg
-defaultConfig =
-    Toasty.Defaults.config
-        |> Toasty.delay 999999999
-
-
-addTempToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-addTempToast toast ( model, cmd ) =
-    Toasty.addToast tempConfig ToastyMsg toast ( model, cmd )
-
-
-addToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-addToast toast ( model, cmd ) =
-    Toasty.addToast defaultConfig ToastyMsg toast ( model, cmd )
-
-
-createSuccessNotification : String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createSuccessNotification message =
-    addTempToast (Toasty.Defaults.Success "Success!" message)
-
-
-createErrorNotification : String -> Http.Error -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createErrorNotification message e =
-    addToast (Toasty.Defaults.Error "Error..." (message ++ " (" ++ getErrorMessage e ++ ")"))
-
-
-createDecodeErrorNotification : String -> String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createDecodeErrorNotification message e =
-    addToast (Toasty.Defaults.Error "Error..." (message ++ " (" ++ e ++ ")"))

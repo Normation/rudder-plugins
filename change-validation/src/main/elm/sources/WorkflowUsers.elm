@@ -3,10 +3,9 @@ module WorkflowUsers exposing (..)
 import ApiCalls exposing (getUsers)
 import Browser
 import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList)
-import Init exposing (createSuccessNotification, defaultConfig, httpErrorNotification, initModel, subscriptions)
+import Init exposing (initModel, subscriptions, errorNotification, successNotification, getErrorMessage)
 import List exposing (filter, member)
 import String
-import Toasty
 import View exposing (view)
 
 filterValidatedUsers : UserList -> UserList
@@ -51,14 +50,14 @@ update msg model =
             , Cmd.none
           )
         Err error ->
-          httpErrorNotification "An error occurred while trying to get users." error ( model, Cmd.none )
+          ( model, errorNotification ("An error occurred while trying to get users:" ++ getErrorMessage error))
 
     RemoveUser result ->
       case result of
         Ok removeUser ->
           ( { model | users = filter  (\m -> m.username /= removeUser) model.users  }, Cmd.none )
         Err error     ->
-          httpErrorNotification "An error occurred while trying to delete a validated users." error ( model, Cmd.none )
+          ( model, errorNotification ("An error occurred while trying to delete a validated users:" ++ getErrorMessage error))
 
     SaveWorkflow result ->
       case result of
@@ -72,11 +71,10 @@ update msg model =
             , rightChecked     = []
             , hasMoved         = []
             }
-            , Cmd.none
+            , successNotification ""
           )
-          |> createSuccessNotification "Your changes have been saved."
         Err error       ->
-          httpErrorNotification "An error occurred while trying to save validated users." error ( model, Cmd.none )
+          ( model, errorNotification ("An error occurred while trying to save validated users:" ++ getErrorMessage error))
 
     CallApi call ->
       (model, call model)
@@ -150,9 +148,3 @@ update msg model =
 
     ExitEditMod ->
       ({model | editMod = Off, leftChecked = [], rightChecked = []}, Cmd.none)
-
-    ToastyMsg subMsg ->
-       Toasty.update defaultConfig ToastyMsg subMsg model
-
-    Notification subMsg ->
-       Toasty.update defaultConfig Notification subMsg model

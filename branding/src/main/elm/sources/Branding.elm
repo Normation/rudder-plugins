@@ -5,11 +5,8 @@ import Color exposing (rgb255)
 import DataTypes exposing (..)
 import Html exposing (..)
 import Html.Events exposing (keyCode, on)
+import Http exposing (Error)
 import Json.Decode as Decode
-import JsonDecoder exposing (..)
-import JsonEncoder exposing (..)
-import Toasty
-import Toasty.Defaults
 import ColorPicker
 import View exposing (..)
 import Browser
@@ -19,7 +16,8 @@ import Task
 
 --- PORTS ---
 port applyCss : ( CssObj ) -> Cmd msg
-
+port successNotification : String -> Cmd msg
+port errorNotification : String -> Cmd msg
 
 --- MODEL ---
 defaultSettings : Settings
@@ -35,8 +33,7 @@ defaultSettings =
 initSettings : { contextPath : String } -> ( Model, Cmd Msg )
 initSettings initValues =
   let
-    toasties = Toasty.initialState
-    model    = Model initValues.contextPath ColorPicker.empty ColorPicker.empty defaultSettings toasties False
+    model    = Model initValues.contextPath ColorPicker.empty ColorPicker.empty defaultSettings False
   in
     ( model, ApiCall.getSettings model)
 
@@ -183,8 +180,7 @@ update msg model =
                     ( newModel, Cmd.none )
 
                 Err err ->
-                    ( model, Cmd.none )
-                        |> createErrorNotification "Error while trying to fetch settings." err
+                    ( model, errorNotification ("Error while trying to fetch settings: " ++ (getErrorMessage err) ++ "") )
 
         SaveSettings result ->
             case result of
@@ -205,18 +201,13 @@ update msg model =
                         cssObj = CssObj bgColor txtColor labelTxt --wideLogoEnable wideLogoData smallLogoEnable smallLogoData
 
                     in
-                    ( model, applyCss ( cssObj ) )
-                        |> createSuccessNotification "Your changes have been saved."
+                    ( model, Cmd.batch[applyCss ( cssObj ), successNotification ""] )
 
                 Err err ->
-                    ( model, Cmd.none )
-                        |> createErrorNotification "Error while trying to save changes." err
+                    ( model, errorNotification ("Error while trying to save changes: " ++ (getErrorMessage err) ++ ""))
 
         SendSave ->
             ( model, ApiCall.saveSettings model )
-
-        ToastyMsg subMsg ->
-            Toasty.update defaultConfig ToastyMsg subMsg model
 
         {-- LOGO UPLOAD & PREVIEW --}
         ToggleLogo logoType->
@@ -285,10 +276,33 @@ update msg model =
             newModel    = { model    | settings = newSettings   }
           in
             (newModel, Cmd.none)
+
 onKeyDown : (Int -> msg) -> Html.Attribute msg
 onKeyDown tagger =
   on "keydown" (Decode.map tagger keyCode)
 
+
+getErrorMessage : Http.Error -> String
+getErrorMessage e =
+    let
+        errMessage =
+            case e of
+                Http.BadStatus status ->
+                    "Code " ++ String.fromInt status
+
+                Http.BadUrl str ->
+                    "Invalid API url"
+
+                Http.Timeout ->
+                    "It took too long to get a response"
+
+                Http.NetworkError ->
+                    "Network error"
+
+                Http.BadBody str ->
+                    str
+    in
+    errMessage
 
 --- MAIN ---
 subscriptions : Model -> Sub Msg
