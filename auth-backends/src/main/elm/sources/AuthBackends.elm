@@ -1,14 +1,20 @@
-module AuthBackends exposing (AdminConfig, AuthConfig, ConfigOption, FileConfig, LdapConfig, Model, Msg(..), addTempToast, addToast, backendConfigOption, backendDescription, backendTitle, createDecodeErrorNotification, createErrorNotification, createSuccessNotification, decodeAdminConfig, decodeApiCurrentAuthConf, decodeConfigOption, decodeCurrentAuthConf, decodeFileConfig, decodeLdapConfig, defaultConfig, displayAdminConfig, displayAuthConfig, displayBackendId, displayFileConfig, displayLdapConfig, displayProvidConfig, getErrorMessage, getTargets, init, main, subscriptions, tempConfig, update, view)
+port module AuthBackends exposing (AdminConfig, AuthConfig, ConfigOption, FileConfig, LdapConfig, Model, Msg(..), backendConfigOption, backendDescription, backendTitle, decodeAdminConfig, decodeApiCurrentAuthConf, decodeConfigOption, decodeCurrentAuthConf, decodeFileConfig, decodeLdapConfig, displayAdminConfig, displayAuthConfig, displayBackendId, displayFileConfig, displayLdapConfig, displayProvidConfig, getErrorMessage, getTargets, init, main, subscriptions, update, view)
 
 import Html exposing (..)
 import Browser
-import Html.Attributes exposing (checked, class, style, type_)
+import Html.Attributes exposing (class)
 import Http exposing (..)
 import Json.Decode as D exposing (Decoder, succeed)
 import Json.Decode.Pipeline exposing (..)
 import String
-import Toasty
-import Toasty.Defaults
+
+
+------------------------------
+-- PORTS
+------------------------------
+
+
+port errorNotification : String -> Cmd msg
 
 
 
@@ -32,7 +38,7 @@ init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
         initModel =
-            Model flags.contextPath Nothing Toasty.initialState
+            Model flags.contextPath Nothing
     in
     ( initModel
     , getTargets initModel
@@ -99,14 +105,11 @@ type alias LdapConfig =
 type alias Model =
     { contextPath : String
     , currentConfig : Maybe AuthConfig -- from API
-    , toasties : Toasty.Stack Toasty.Defaults.Toast
     }
 
 
 type Msg
     = GetCurrentAuthConfig (Result Error AuthConfig)
-      -- NOTIFICATIONS
-    | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
 
 
 
@@ -218,10 +221,7 @@ update msg model =
                         newModel =
                             { model | currentConfig = Nothing }
                     in
-                    ( newModel, Cmd.none ) |> createErrorNotification "Error while trying to fetch settings." err
-
-        ToastyMsg subMsg ->
-            Toasty.update defaultConfig ToastyMsg subMsg model
+                    ( newModel, errorNotification ("Error while trying to fetch settings: " ++ getErrorMessage err) )
 
 
 
@@ -243,7 +243,6 @@ view model =
     in
     div [ class "row" ]
         [ content
-        , div [ class "toasties" ] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
         ]
 
 
@@ -398,49 +397,3 @@ getErrorMessage e =
                     str
     in
     errMessage
-
-
-defaultConfig : Toasty.Config Msg
-defaultConfig =
-    Toasty.Defaults.config
-        |> Toasty.delay 999999999
-        |> Toasty.containerAttrs
-            [ style "position" "fixed"
-            , style "top" "50px"
-            , style "right" "30px"
-            , style "width" "100%"
-            , style "max-width" "500px"
-            , style "list-style-type" "none"
-            , style "padding" "0"
-            , style "margin" "0"
-            ]
-
-
-tempConfig : Toasty.Config Msg
-tempConfig =
-    defaultConfig |> Toasty.delay 3000
-
-
-addTempToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-addTempToast toast ( model, cmd ) =
-    Toasty.addToast tempConfig ToastyMsg toast ( model, cmd )
-
-
-addToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-addToast toast ( model, cmd ) =
-    Toasty.addToast defaultConfig ToastyMsg toast ( model, cmd )
-
-
-createSuccessNotification : String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createSuccessNotification message =
-    addTempToast (Toasty.Defaults.Success "Success!" message)
-
-
-createErrorNotification : String -> Http.Error -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createErrorNotification message e =
-    addToast (Toasty.Defaults.Error "Error..." (message ++ "  (" ++ getErrorMessage e ++ ")"))
-
-
-createDecodeErrorNotification : String -> String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createDecodeErrorNotification message e =
-    addToast (Toasty.Defaults.Error "Error..." (message ++ "  (" ++ e ++ ")"))

@@ -1,18 +1,16 @@
-module SupervisedTargets exposing (Category, Model, Msg(..), Subcategories(..), Target, addTempToast, addToast, alphanumericRegex, createDecodeErrorNotification, createErrorNotification, createSuccessNotification, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, defaultConfig, displayCategory, displaySubcategories, displayTarget, encodeTargets, getErrorMessage, getSupervisedIds, getTargets, init, isAlphanumeric, main, saveTargets, subscriptions, tempConfig, update, updateTarget, view)
+module SupervisedTargets exposing (Category, Model, Msg(..), Subcategories(..), Target, alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, init, isAlphanumeric, main, saveTargets, subscriptions, update, updateTarget, view)
 
 import Html exposing (..)
 import Browser
-import Html.Attributes exposing (checked, class, style, type_)
+import Html.Attributes exposing (checked, class, type_)
 import Html.Events exposing (..)
 import Http exposing (..)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (..)
 import Json.Encode as E
-import List.Extra exposing (uniqueBy)
 import Regex
 import String
-import Toasty
-import Toasty.Defaults
+import Init exposing (errorNotification, successNotification, getErrorMessage)
 
 
 
@@ -36,7 +34,7 @@ init : { contextPath : String } -> ( Model, Cmd Msg )
 init flags =
     let
         initModel =
-            Model flags.contextPath (Category "waiting for server data..." (Subcategories []) []) Toasty.initialState
+            Model flags.contextPath (Category "waiting for server data..." (Subcategories []) [])
     in
     ( initModel
     , getTargets initModel
@@ -80,7 +78,6 @@ type Subcategories
 type alias Model =
     { contextPath : String
     , allTargets : Category -- from API
-    , toasties : Toasty.Stack Toasty.Defaults.Toast
     }
 
 
@@ -90,7 +87,6 @@ type Msg
     | SendSave
     | UpdateTarget Target
       -- NOTIFICATIONS
-    | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
 
 
 
@@ -237,17 +233,15 @@ update msg model =
                     ( newModel, Cmd.none )
 
                 Err err ->
-                    ( model, Cmd.none )
-                        |> createErrorNotification "Error while trying to fetch settings." err
+                    ( model, errorNotification ("Error while trying to fetch settings: " ++ getErrorMessage err) )
 
         SaveTargets result ->
             case result of
                 Ok m ->
-                    ( model, Cmd.none ) |> createSuccessNotification "Your changes have been saved."
+                    ( model, successNotification "" )
 
                 Err err ->
-                    ( model, Cmd.none )
-                        |> createErrorNotification "Error while trying to save changes." err
+                    ( model, errorNotification ("Error while trying to save changes: " ++ getErrorMessage err) )
 
         SendSave ->
             ( model, saveTargets model )
@@ -258,9 +252,6 @@ update msg model =
                     { model | allTargets = updateTarget target model.allTargets }
             in
             ( newModel, Cmd.none )
-
-        ToastyMsg subMsg ->
-            Toasty.update defaultConfig ToastyMsg subMsg model
 
 
 
@@ -305,7 +296,6 @@ view model =
                 , div [ class "card-footer" ] [ button [ onClick SendSave, class "btn btn-success right" ] [ text "Save" ] ]
                 ]
             ]
-        , div [ class "toasties"] [ Toasty.view defaultConfig Toasty.Defaults.view ToastyMsg model.toasties ]
         ]
 
 
@@ -376,83 +366,6 @@ displayTarget target =
                 ]
             ]
         ]
-
-
-
-------------------------------
--- NOTIFICATIONS --
-------------------------------
-
-
-getErrorMessage : Http.Error -> String
-getErrorMessage e =
-    let
-        errMessage =
-            case e of
-                Http.BadStatus status ->
-                    "Code " ++ String.fromInt status
-
-                Http.BadUrl str ->
-                    "Invalid API url"
-
-                Http.Timeout ->
-                    "It took too long to get a response"
-
-                Http.NetworkError ->
-                    "Network error"
-                Http.BadBody c->
-                  "Wrong content in request body" ++ c
-
-    in
-    errMessage
-
-
-defaultConfig : Toasty.Config Msg
-defaultConfig =
-    Toasty.Defaults.config
-        |> Toasty.delay 999999999
-        |> Toasty.containerAttrs
-            [ style "position" "fixed"
-            , style "top" "50px"
-            , style "right" "30px"
-            , style "width" "100%"
-            , style "max-width" "500px"
-            , style "list-style-type" "none"
-            , style "padding" "0"
-            , style "margin" "0"
-            , style "z-index" "9999"
-            ]
-
-
-tempConfig : Toasty.Config Msg
-tempConfig =
-    defaultConfig |> Toasty.delay 300000
-
-
-addTempToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-addTempToast toast ( model, cmd ) =
-    Toasty.addToast tempConfig ToastyMsg toast ( model, cmd )
-
-
-addToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-addToast toast ( model, cmd ) =
-    Toasty.addToast defaultConfig ToastyMsg toast ( model, cmd )
-
-
-createSuccessNotification : String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createSuccessNotification message =
-    addTempToast (Toasty.Defaults.Success "Success!" message)
-
-
-createErrorNotification : String -> Http.Error -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createErrorNotification message e =
-    addToast (Toasty.Defaults.Error "Error..." (message ++ " (" ++ getErrorMessage e ++ ")"))
-
-
-createDecodeErrorNotification : String -> String -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-createDecodeErrorNotification message e =
-    addToast (Toasty.Defaults.Error "Error..." (message ++ " (" ++ e ++ ")"))
-
 
 
 ------------------------------

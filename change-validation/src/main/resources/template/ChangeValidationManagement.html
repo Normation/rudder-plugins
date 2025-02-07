@@ -4,8 +4,6 @@
 <head_merge>
   <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen"
   data-lift="with-cached-resource">
-  <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/toasty.css" media="screen"
-  data-lift="with-cached-resource">
   <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
   <script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
   <script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
@@ -262,6 +260,18 @@
                           };
                           var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
                           var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
+                          app.ports.successNotification.subscribe(function (str) {
+                            createSuccessNotification(str)
+                          });
+                          app.ports.errorNotification.subscribe(function (str) {
+                            createErrorNotification(str)
+                          });
+                          app2.ports.successNotification.subscribe(function (str) {
+                            createSuccessNotification(str)
+                          });
+                          app2.ports.errorNotification.subscribe(function (str) {
+                            createErrorNotification(str)
+                          });
                         </script>
                       </div>
                       <div class="section-right">

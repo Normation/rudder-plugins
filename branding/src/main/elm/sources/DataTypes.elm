@@ -2,11 +2,8 @@ module DataTypes exposing (..)
 
 import Color exposing (Color)
 import Http exposing (Error)
-import Toasty
-import Toasty.Defaults
 import ColorPicker
 import File exposing (File)
-import File.Select as Select
 
 type alias Rgba =
   { red   : Float
@@ -20,7 +17,6 @@ type alias Model =
   , bgColorPicker    : ColorPicker.State
   , labelColorPicker : ColorPicker.State
   , settings         : Settings
-  , toasties         : Toasty.Stack Toasty.Defaults.Toast
   , hover            : Bool
   }
 
@@ -31,30 +27,27 @@ type alias Logo =
   }
 
 type alias Settings =
-    --GENERAL
-    { displayBar      : Bool
-    , displayLabel    : Bool
-    , labelTxt        : String
-    , bgColorValue    : Color
-    , labelColorValue : Color
+  --GENERAL
+  { displayBar      : Bool
+  , displayLabel    : Bool
+  , labelTxt        : String
+  , bgColorValue    : Color
+  , labelColorValue : Color
 
-    --LOGOS
-    , wideLogo        : Logo
-    , smallLogo       : Logo
-    --LOGIN
-    , displayBarLogin : Bool
-    , displayMotd     : Bool
-    , motd            : String
-    }
+  --LOGOS
+  , wideLogo        : Logo
+  , smallLogo       : Logo
+
+  --LOGIN
+  , displayBarLogin : Bool
+  , displayMotd     : Bool
+  , motd            : String
+  }
 
 type alias CssObj =
   { bgColor           : String
   , txtColor          : String
   , labelTxt          : String
-  --, wideLogoEnable    : Bool
-  --, wideLogoData      : String
-  --, smallLogoEnable   : Bool
-  --, smallLogoData     : String
   }
 
 --- UPDATE ---
@@ -81,5 +74,3 @@ type Msg =
     | GetSettings (Result Error Settings)
     | SaveSettings (Result Error Settings)
     | SendSave
-      -- NOTIFICATIONS
-    | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
