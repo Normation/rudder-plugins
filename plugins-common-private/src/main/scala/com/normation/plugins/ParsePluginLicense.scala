@@ -40,6 +40,8 @@ package com.normation.plugins
 import com.normation.license.*
 import com.normation.license.MaybeLicenseError.Maybe
 import com.normation.rudder.domain.logger.PluginLogger
+import io.scalaland.chimney.Transformer
+import io.scalaland.chimney.syntax.*
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
@@ -52,6 +54,7 @@ import scala.util.control.NonFatal
  */
 
 trait LicensedPluginCheck extends PluginStatus {
+  import LicensedPluginCheck.*
 
   /*
    * implementation must define variable with the following maven properties
@@ -117,7 +120,7 @@ trait LicensedPluginCheck extends PluginStatus {
     infoCache
   }
 
-  def current: PluginStatusInfo = {
+  def current: RudderPluginLicenseStatus = {
     (for {
       info              <- maybeLicense
       (license, version) = info
@@ -125,21 +128,35 @@ trait LicensedPluginCheck extends PluginStatus {
     } yield {
       check
     }) match {
-      case Right(x) => PluginStatusInfo.EnabledWithLicense(licenseInformation(x))
-      case Left(y)  => PluginStatusInfo.Disabled(y.msg, maybeLicense.toOption.map { case (l, v) => licenseInformation(l) })
+      case Right(x) => RudderPluginLicenseStatus.EnabledWithLicense(x.content.transformInto[PluginLicense])
+      case Left(y)  =>
+        RudderPluginLicenseStatus.Disabled(
+          y.msg,
+          maybeLicense.toOption.map { case (l, _) => l.content.transformInto[PluginLicense] }
+        )
     }
   }
+}
 
-  private[this] def licenseInformation(l: License): PluginLicenseInfo = {
-    PluginLicenseInfo(
-      licensee = l.content.licensee.value,
-      softwareId = l.content.softwareId.value,
-      minVersion = l.content.minVersion.value.toString,
-      maxVersion = l.content.maxVersion.value.toString,
-      startDate = l.content.startDate.value,
-      endDate = l.content.endDate.value,
-      maxNodes = l.content.maxNodes.value,
-      others = l.content.others.map(_.raw).toMap
-    )
+// LicenseInformation has exactly the fields in license with different wrapper types : define transformers
+private object LicensedPluginCheck {
+  import com.normation.utils.DateFormaterService.JodaTimeToJava
+
+  // Required for min-max version which is a parsed version
+  // The license defines a version with a .toString method
+  implicit val transformerVersion: Transformer[Version, String] = _.toString
+
+  implicit val transformerLicensee:   Transformer[LicenseField.Licensee, Licensee]     = Transformer.derive
+  implicit val transformerSoftwareId: Transformer[LicenseField.SoftwareId, SoftwareId] = Transformer.derive
+  implicit val transformerMinVersion: Transformer[LicenseField.MinVersion, MinVersion] = Transformer.derive
+  implicit val transformerMaxVersion: Transformer[LicenseField.MaxVersion, MaxVersion] = Transformer.derive
+  implicit val transformerMaxNodes:   Transformer[LicenseField.MaxNodes, MaxNodes]     = Transformer.derive
+
+  implicit val transformerPluginLicense: Transformer[LicenseInformation, PluginLicense] = {
+    Transformer
+      .define[LicenseInformation, PluginLicense]
+      .withFieldComputed(_.startDate, _.startDate.value.toJava)
+      .withFieldComputed(_.endDate, _.endDate.value.toJava)
+      .buildTransformer
   }
 }
