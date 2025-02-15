@@ -38,6 +38,7 @@
 package com.normation.plugins.apiauthorizations
 
 import bootstrap.liftweb.AuthBackendProvidersManager
+
 import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api.*
@@ -45,16 +46,19 @@ import com.normation.rudder.apidata.JsonApiAcl
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.UserApi
+import com.normation.rudder.rest.data.ApiAccountCodec
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.*
 import com.normation.rudder.users.UserRepository
 import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
+
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.syntax.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import org.joda.time.DateTime
+
 import zio.json.*
 
 class UserApiImpl(
@@ -210,7 +214,7 @@ object UserApiImpl {
       acl:                             Option[List[JsonApiAcl]]
   )
 
-  object RestApiAccount extends UserJsonCodec {
+  object RestApiAccount extends ApiAccountCodec {
     implicit class ApiAccountOps(val account: ApiAccount) extends AnyVal {
       import ApiAccountKind.*
       def expirationDate: Option[String] = {
@@ -313,7 +317,7 @@ object UserApiImpl {
       accounts: RestAccountId
   )
 
-  object RestAccountIdResponse extends UserJsonCodec {
+  object RestAccountIdResponse extends ApiAccountCodec {
     implicit val accountIdResponseEncoder: JsonEncoder[RestAccountId]         = DeriveJsonEncoder.gen[RestAccountId]
     implicit val encoder:                  JsonEncoder[RestAccountIdResponse] = DeriveJsonEncoder.gen[RestAccountIdResponse]
 
