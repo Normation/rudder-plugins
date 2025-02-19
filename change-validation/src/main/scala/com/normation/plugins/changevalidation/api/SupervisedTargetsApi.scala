@@ -88,7 +88,8 @@ object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiMod
     val description    = "Save the updated list of groups"
     val (action, path) = POST / "changevalidation" / "supervised" / "targets"
 
-    override def dataContainer: Option[String] = None
+    override def dataContainer: Option[String]          = None
+    val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
   def endpoints = values.toList.sortBy(_.z)

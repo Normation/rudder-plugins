@@ -63,14 +63,16 @@ object BrandingApiEndpoints extends Enum[BrandingApiSchema] with ApiModuleProvid
     val z              = implicitly[Line].value
     val description    = "Update branding plugin configuration"
     val (action, path) = POST / "branding"
-    val dataContainer: Option[String] = None
+    val dataContainer: Option[String]          = None
+    val authz:         List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
   final case object ReloadBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
     val z              = implicitly[Line].value
     val description    = "Reload branding plugin configuration from config file"
     val (action, path) = POST / "branding" / "reload"
-    val dataContainer: Option[String] = None
+    val dataContainer: Option[String]          = None
+    val authz:         List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
   def endpoints = values.toList.sortBy(_.z)
