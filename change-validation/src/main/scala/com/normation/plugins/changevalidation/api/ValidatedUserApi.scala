@@ -77,7 +77,8 @@ object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvi
     val (action, path) = DELETE / "validatedUsers" / "{username}"
 
     override val name = "removeValidatedUser"
-    override def dataContainer: Option[String] = None
+    override def dataContainer: Option[String]          = None
+    val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
   final case object SaveWorkflowUsers           extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z              = implicitly[Line].value
@@ -86,6 +87,7 @@ object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvi
 
     override def dataContainer: Option[String] = None
     override val name = "saveWorkflowUser"
+    val authz: List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
   def endpoints = values.toList.sortBy(_.z)

@@ -40,7 +40,7 @@ package com.normation.plugins.authbackends.snippet
 import bootstrap.rudder.plugin.AuthBackendsConf
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
-import com.normation.plugins.RudderPluginVersion
+import com.normation.plugins.PluginVersion
 import com.normation.plugins.authbackends.LoginFormRendering
 import com.normation.plugins.authbackends.RudderPropertyBasedOAuth2RegistrationDefinition
 import com.normation.rudder.web.snippet.Login
@@ -53,7 +53,7 @@ import scala.xml.NodeSeq
 
 class Oauth2LoginBanner(
     val status:    PluginStatus,
-    version:       RudderPluginVersion,
+    version:       PluginVersion,
     registrations: RudderPropertyBasedOAuth2RegistrationDefinition
 )(implicit val ttag: ClassTag[Login])
     extends PluginExtensionPoint[Login] {

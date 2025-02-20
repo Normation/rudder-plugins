@@ -5,7 +5,7 @@ import better.files.Resource
 import cats.syntax.apply.*
 import com.normation.eventlog.EventActor
 import com.normation.rudder.db.DBCommon
-import com.normation.rudder.rest.AuthorizationApiMapping
+import com.normation.rudder.rest.ExtensibleAuthorizationApiMapping
 import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.users.FileUserDetailListProvider
 import com.normation.rudder.users.PasswordEncoderDispatcher
@@ -71,7 +71,7 @@ class ValidatedUserJdbcRepositoryTest extends Specification with DBCommon with I
     val usersFile      = {
       UserFile("test-users.xml", getUsersInputStream)
     }
-    val roleApiMapping = new RoleApiMapping(AuthorizationApiMapping.Core)
+    val roleApiMapping = new RoleApiMapping(new ExtensibleAuthorizationApiMapping(Nil))
 
     val res = new FileUserDetailListProvider(roleApiMapping, usersFile, new PasswordEncoderDispatcher(12))
     res.reload()
