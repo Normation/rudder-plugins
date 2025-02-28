@@ -221,7 +221,7 @@ object AuthBackendsConf extends RudderPluginModule {
   if (isOauthConfiguredByUser) {
     PluginLogger.info(s"Oauthv2 or OIDC authentication backend is enabled, updating login form")
     RudderConfig.snippetExtensionRegister.register(
-      new Oauth2LoginBanner(pluginStatusService, pluginDef.version, oauth2registrations)
+      new Oauth2LoginBanner(pluginStatusService, oauth2registrations)
     )
   }
 }
@@ -1331,7 +1331,7 @@ class RudderJwtAuthenticationConverter(
                   ApiAccountId(jwt.getId),
                   ApiAccountKind.PublicApi(apiAuthz, exp),
                   ApiAccountName(jwt.getId),
-                  Some(ApiToken(jwt.getTokenValue)),
+                  Some(ApiTokenHash.fromHashValue(jwt.getTokenValue)),
                   "",
                   isEnabled = true, // always enabled at that point, since the token is valid
                   created,
