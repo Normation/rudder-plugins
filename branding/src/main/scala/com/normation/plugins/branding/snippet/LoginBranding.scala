@@ -40,7 +40,7 @@ package com.normation.plugins.branding.snippet
 import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
-import com.normation.plugins.RudderPluginVersion
+import com.normation.plugins.PluginVersion
 import com.normation.rudder.web.snippet.Login
 import com.normation.zio.UnsafeRun
 import net.liftweb.common.Loggable
@@ -48,7 +48,7 @@ import net.liftweb.util.Helpers.*
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
-class LoginBranding(val status: PluginStatus, version: RudderPluginVersion)(implicit val ttag: ClassTag[Login])
+class LoginBranding(val status: PluginStatus, version: PluginVersion)(implicit val ttag: ClassTag[Login])
     extends PluginExtensionPoint[Login] with Loggable {
 
   def pluginCompose(snippet: Login): Map[String, NodeSeq => NodeSeq] = Map(
