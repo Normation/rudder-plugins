@@ -3,6 +3,7 @@ package com.normation.plugins.scaleoutrelay.api
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
+import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.facts.nodes.ChangeContext
@@ -29,12 +30,14 @@ object ScaleOutRelayApi extends Enum[ScaleOutRelayApi] with ApiModuleProvider[Sc
     val z              = implicitly[Line].value
     val description    = "Promote a node to relay"
     val (action, path) = POST / "scaleoutrelay" / "promote" / "{nodeId}"
+    val authz: List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
   final case object DemoteToNode extends ScaleOutRelayApi with OneParam with StartsAtVersion14 {
     val z              = implicitly[Line].value
     val description    = "Demote a relay to a simple node"
     val (action, path) = POST / "scaleoutrelay" / "demote" / "{nodeId}"
+    val authz: List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
   override def endpoints: List[ScaleOutRelayApi] = values.toList.sortBy(_.z)
