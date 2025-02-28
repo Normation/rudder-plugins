@@ -4,19 +4,11 @@ import better.files.*
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.api.ApiAccount
-import com.normation.rudder.api.ApiAccountId
-import com.normation.rudder.api.ApiAccountKind
-import com.normation.rudder.api.ApiAccountName
-import com.normation.rudder.api.ApiAuthorization
-import com.normation.rudder.api.ApiToken
-import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.api.*
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
-import com.normation.rudder.users.AuthenticatedUser
-import com.normation.rudder.users.RudderAccount
-import com.normation.rudder.users.UserService
+import com.normation.rudder.users.*
 import java.nio.file.Files
 import org.joda.time.DateTime
 import org.joda.time.DateTimeUtils
@@ -43,7 +35,7 @@ class UserApiTest extends ZIOSpecDefault {
       ApiAccountId("user1"),
       ApiAccountKind.System, // so that we have access to the plugin endpoints
       ApiAccountName("user1"),
-      Some(ApiToken("v2:some-hashed-token")),
+      Some(ApiTokenHash.fromHashValue("v2:some-hashed-token")),
       "number one user",
       isEnabled = true,
       creationDate = accountCreationDate,

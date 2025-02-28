@@ -38,27 +38,23 @@
 package com.normation.plugins.apiauthorizations
 
 import bootstrap.liftweb.AuthBackendProvidersManager
-
 import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api.*
-import com.normation.rudder.apidata.JsonApiAcl
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.UserApi
-import com.normation.rudder.rest.data.ApiAccountCodec
+import com.normation.rudder.rest.data.*
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.*
 import com.normation.rudder.users.UserRepository
 import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
-
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.syntax.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import org.joda.time.DateTime
-
 import zio.json.*
 
 class UserApiImpl(
@@ -76,17 +72,13 @@ class UserApiImpl(
   def schemas: ApiModuleProvider[UserApi] = UserApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    UserApi.endpoints
-      .map(e => {
-        e match {
-          case UserApi.GetTokenFeatureStatus => GetTokenFeatureStatus
-          case UserApi.GetApiToken           => GetApiToken
-          case UserApi.CreateApiToken        => CreateApiToken
-          case UserApi.DeleteApiToken        => DeleteApiToken
-          case UserApi.UpdateApiToken        => UpdateApiToken
-        }
-      })
-      .toList
+    UserApi.endpoints.map {
+      case UserApi.GetTokenFeatureStatus => GetTokenFeatureStatus
+      case UserApi.GetApiToken           => GetApiToken
+      case UserApi.CreateApiToken        => CreateApiToken
+      case UserApi.DeleteApiToken        => DeleteApiToken
+      case UserApi.UpdateApiToken        => UpdateApiToken
+    }
   }
 
   /*
@@ -133,13 +125,13 @@ class UserApiImpl(
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       val now     = DateTime.now
-      val secret  = ApiToken.generate_secret(tokenGenerator)
-      val hash    = ApiToken.hash(secret)
+      val secret  = ApiTokenSecret.generate(tokenGenerator)
+      val hash    = ApiTokenHash.fromSecret(secret)
       val account = ApiAccount(
         ApiAccountId(authzToken.qc.actor.name),
         ApiAccountKind.User,
         ApiAccountName(authzToken.qc.actor.name),
-        Some(ApiToken(hash)),
+        Some(hash),
         s"API token for user '${authzToken.qc.actor.name}'",
         isEnabled = true,
         now,
@@ -150,7 +142,7 @@ class UserApiImpl(
 
       writeApi
         .save(account, ModificationId(uuidGen.newUuid), authzToken.qc.actor)
-        .map(RestAccountsResponse.fromUnredacted(_, secret))
+        .map(RestAccountsResponse.fromUnredacted(_, secret.exposeSecret()))
         .chainError(s"Error when trying to save user '${authzToken.qc.actor.name}' API token")
         .toLiftResponseOne(params, schema, None)
     }
@@ -185,16 +177,11 @@ class UserApiImpl(
 object UserApiImpl {
 
   /**
-    * The value that will be displayed in the API response for the token.
-    */
+   * The value that will be displayed in the API response for the token.
+   */
   final case class ClearTextToken(value: String) extends AnyVal
 
   object ClearTextToken {
-
-    implicit val transformer: Transformer[ApiToken, ClearTextToken] = Transformer
-      .define[ApiToken, ClearTextToken]
-      .withFieldComputed(_.value, token => if (token.isHashed) "" else token.value)
-      .buildTransformer
 
     implicit val encoder: JsonEncoder[ClearTextToken] = JsonEncoder[String].contramap(_.value)
   }
@@ -211,10 +198,10 @@ object UserApiImpl {
       expirationDate:                  Option[String],
       expirationDateDefined:           Boolean,
       authorizationType:               Option[ApiAuthorizationKind],
-      acl:                             Option[List[JsonApiAcl]]
+      acl:                             Option[List[JsonApiPerm]]
   )
 
-  object RestApiAccount extends ApiAccountCodec {
+  object RestApiAccount extends ApiAccountCodecs {
     implicit class ApiAccountOps(val account: ApiAccount) extends AnyVal {
       import ApiAccountKind.*
       def expirationDate: Option[String] = {
@@ -233,13 +220,13 @@ object UserApiImpl {
         }
       }
 
-      def acl: Option[List[JsonApiAcl]] = {
+      def acl: Option[List[JsonApiPerm]] = {
         import ApiAuthorization.*
         account.kind match {
           case PublicApi(authz, expirationDate) =>
             authz match {
               case None | RO | RW => Option.empty
-              case ACL(acls)      => Some(acls.flatMap(x => x.actions.map(a => JsonApiAcl(x.path.value, a.name))))
+              case ACL(acls)      => Some(acls.flatMap(x => x.actions.map(a => JsonApiPerm(x.path.value, a.name))))
             }
           case User | System                    => Option.empty
         }
@@ -258,7 +245,7 @@ object UserApiImpl {
 
     implicit val transformer: Transformer[ApiAccount, RestApiAccount] = Transformer
       .define[ApiAccount, RestApiAccount]
-      .withFieldComputedFrom(_.token)(_.token, _.fold(ClearTextToken(""))(_.transformInto[ClearTextToken]))
+      .withFieldConst(_.token, ClearTextToken("")) // if the hash need to be exposed, it's done post transformation
       .withFieldComputed(_.kind, _.kind.kind)
       .withFieldComputed(_.acl, _.acl)
       .withFieldComputed(_.expirationDate, _.expirationDate)
@@ -268,9 +255,6 @@ object UserApiImpl {
         _.authzType
       )
       .buildTransformer
-
-    implicit val publicTokenEncoder: JsonEncoder[ApiToken] =
-      JsonEncoder[String].contramap(_.value)
 
     implicit val encoder: JsonEncoder[RestApiAccount] = DeriveJsonEncoder.gen[RestApiAccount]
   }
@@ -317,7 +301,7 @@ object UserApiImpl {
       accounts: RestAccountId
   )
 
-  object RestAccountIdResponse extends ApiAccountCodec {
+  object RestAccountIdResponse extends ApiAccountCodecs {
     implicit val accountIdResponseEncoder: JsonEncoder[RestAccountId]         = DeriveJsonEncoder.gen[RestAccountId]
     implicit val encoder:                  JsonEncoder[RestAccountIdResponse] = DeriveJsonEncoder.gen[RestAccountIdResponse]
 

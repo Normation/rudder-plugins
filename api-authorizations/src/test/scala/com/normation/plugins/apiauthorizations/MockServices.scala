@@ -5,7 +5,7 @@ import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api.ApiAccount
 import com.normation.rudder.api.ApiAccountId
-import com.normation.rudder.api.ApiToken
+import com.normation.rudder.api.ApiTokenHash
 import com.normation.rudder.api.RoApiAccountRepository
 import com.normation.rudder.api.TokenGenerator
 import com.normation.rudder.api.WoApiAccountRepository
@@ -27,7 +27,7 @@ class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = M
     }
 
     override def getAllStandardAccounts: IOResult[Seq[ApiAccount]] = ???
-    override def getByToken(token: ApiToken): IOResult[Option[ApiAccount]] = ???
+    override def getByToken(token: ApiTokenHash): IOResult[Option[ApiAccount]] = ???
     override def getSystemAccount: ApiAccount = ???
   }
 

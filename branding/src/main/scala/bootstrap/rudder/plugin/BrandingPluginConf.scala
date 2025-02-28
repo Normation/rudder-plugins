@@ -65,5 +65,5 @@ object BrandingPluginConf extends RudderPluginModule {
   RudderConfig.rudderApi.addModules(brandingApi.getLiftEndpoints())
   RudderConfig.snippetExtensionRegister.register(new BrandingResources(pluginDef.status))
   RudderConfig.snippetExtensionRegister.register(new CommonBranding(pluginStatusService))
-  RudderConfig.snippetExtensionRegister.register(new LoginBranding(pluginStatusService, pluginDef.version))
+  RudderConfig.snippetExtensionRegister.register(new LoginBranding(pluginStatusService))
 }
