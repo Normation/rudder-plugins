@@ -113,9 +113,9 @@ class ScaleOutRelayService(
       val msg = s"Promote node ${nodeInfo.id.value} have failed. Change were reverted. Cause was: ${err.fullMsg}"
       (for {
         _ <- ScaleOutRelayLoggerPure.debug(s"[promote ${nodeInfo.id.value}] error, start reverting")
-        _ <- demoteRelay(nodeInfo, objects).catchAll(err =>
-               ScaleOutRelayLoggerPure.debug(s"Error when reverting node promotion: ${err.fullMsg}")
-             )
+        _ <- demoteRelay(nodeInfo, objects)
+               .tapError(err => ScaleOutRelayLoggerPure.debug(s"Error when reverting node promotion: ${err.fullMsg}"))
+               .ignore
         _ <- ScaleOutRelayLoggerPure.error(msg)
       } yield {}) *> Unexpected(msg).fail
     }
@@ -174,10 +174,10 @@ class ScaleOutRelayService(
     val rules      = objects.rules.map(r => {
       woRuleRepository
         .deleteSystemRule(r.id, cc.modId, cc.actor, cc.message)
-        .catchAll { err =>
+        .tapError { err =>
           ScaleOutRelayLoggerPure.info(s"Trying to remove residual object rule ${r.id.serialize}: ${err.fullMsg}")
         }
-        .unit
+        .ignore
     })
 
     (nPromoted :: nBeforePromoted :: targets ::: groups ::: directives ::: rules).accumulate(identity)

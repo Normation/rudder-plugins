@@ -50,7 +50,6 @@ import com.normation.rudder.repository.FullNodeGroupCategory
 import io.scalaland.chimney.Transformer
 import net.liftweb.common.Logger
 import org.slf4j.LoggerFactory
-import scala.annotation.nowarn
 import scala.collection.immutable.SortedSet
 import zio.NonEmptyChunk
 import zio.json.*
@@ -167,7 +166,7 @@ trait TargetJsonCodec {
 
   implicit val unsupervisedTargetIdsEncoder: JsonEncoder[UnsupervisedTargetIds] = DeriveJsonEncoder.gen[UnsupervisedTargetIds]
   implicit val unsupervisedTargetIdsDecoder: JsonDecoder[UnsupervisedTargetIds] = {
-    @nowarn implicit val simpleTargetDecoder: JsonDecoder[SimpleTarget] = JsonDecoder[String].mapOrFail(s => {
+    implicit val simpleTargetDecoder: JsonDecoder[SimpleTarget] = JsonDecoder[String].mapOrFail(s => {
       RuleTarget
         .unser(s)
         .collect { case t: SimpleTarget => t }
@@ -177,7 +176,7 @@ trait TargetJsonCodec {
   }
 
   implicit val supervisedSimpleTargetsDecoder: JsonDecoder[SupervisedSimpleTargets] = {
-    @nowarn implicit val loggedSimpleTargetDecoder: JsonDecoder[SimpleTarget] = {
+    implicit val loggedSimpleTargetDecoder: JsonDecoder[SimpleTarget] = {
       JsonDecoder[String].mapOrFail(s => {
         RuleTarget
           .unser(s)
