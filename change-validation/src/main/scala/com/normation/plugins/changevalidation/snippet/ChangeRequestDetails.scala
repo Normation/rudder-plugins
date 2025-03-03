@@ -341,7 +341,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         case Mandatory => Some(buildReasonField(true, "subContainerReasonField"))
         case Optional  => Some(buildReasonField(false, "subContainerReasonField"))
         // for non-exhaustiveness God - yes, enum were not very well designed before scala 3
-        case x         => throw new IllegalArgumentException(s"This case should not happen, please report to developers")
+        case _         => throw new IllegalArgumentException(s"This case should not happen, please report to developers")
       }
     }
 

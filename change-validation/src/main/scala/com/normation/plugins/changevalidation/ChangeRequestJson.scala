@@ -355,7 +355,7 @@ object DirectiveChangeJson {
       technique:   Technique,
       diffService: DiffService
   ): PartialTransformer[ModifyToDirectiveDiff, DirectiveModifyChangeJson] = {
-    case (ModifyToDirectiveDiff(techniqueName, directive, rootSection), _) =>
+    case (ModifyToDirectiveDiff(_, directive, rootSection), _) =>
       val result = change.initialState match {
         case Some((techniqueName, initialState, section @ Some(initialRootSection))) =>
           val diff = diffService.diffDirective(initialState, section, directive, rootSection, techniqueName)

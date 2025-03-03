@@ -106,7 +106,8 @@ class TestEmailService extends Specification with BeforeAfterAll {
 
       val config = notification.getSMTPConf(conf.pathAsString).forceGet
 
-      (config.smtpHostServer === "localhost") and (config.port === 2525)
+      config.smtpHostServer === "localhost"
+      config.port === 2525
       // todo more tests
     }
 
@@ -114,8 +115,8 @@ class TestEmailService extends Specification with BeforeAfterAll {
 
       val template = notification.getStepMailConf(TwoValidationStepsWorkflowServiceImpl.Validation, conf.pathAsString).forceGet
 
-      (template.to === Set(Email("validator1@change.req"), Email("validator2@change.req")) and
-      (template.template === (testDir / "validation-mail.template").pathAsString))
+      template.to === Set(Email("validator1@change.req"), Email("validator2@change.req"))
+      template.template === (testDir / "validation-mail.template").pathAsString
     }
 
     "be able to send a notification email" in {
@@ -166,9 +167,9 @@ class TestEmailService extends Specification with BeforeAfterAll {
         s.split("\n").take(2).drop(3).take(2).drop(1).take(20).mkString("\n")
       }
 
-      (isEmpty must beTrue) and
-      (messages.isEmpty must beFalse) and
-      (deleteDate(msg) === deleteDate(expectedMessage))
+      isEmpty must beTrue
+      messages.isEmpty must beFalse
+      deleteDate(msg) === deleteDate(expectedMessage)
     }
   }
 }

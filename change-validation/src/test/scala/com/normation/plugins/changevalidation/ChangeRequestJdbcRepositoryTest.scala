@@ -309,7 +309,8 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
 
     "get change request by filter" in {
       val res = roChangeRequestJdbcRepository.getByFilter(ChangeRequestFilter(None, None)).runNow
-      (res.size must beEqualTo(1)) and (res.head must beEqualTo((expectedChangeRequest, WorkflowNodeId("Pending validation"))))
+      res.size must beEqualTo(1)
+      res.head must beEqualTo((expectedChangeRequest, WorkflowNodeId("Pending validation")))
     }
 
     "create change request" in {
