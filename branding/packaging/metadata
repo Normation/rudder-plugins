@@ -8,5 +8,6 @@
   "jar-files": [ "/opt/rudder/share/plugins/${plugin-name}/${plugin-name}.jar" ],
   "content": {
     "files.txz": "/opt/rudder/share/plugins"
-  }
+  },
+  "requires-license": true
 }
