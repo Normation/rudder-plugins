@@ -55,6 +55,7 @@ import com.normation.rudder.domain.nodes.NodeGroupUid
 import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.GlobalParameter
+import com.normation.rudder.domain.properties.Visibility
 import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rule.category.RuleCategoryId
@@ -207,7 +208,15 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
         DateTime.parse("2023-01-01T00:00:00.000Z"),
         Some("globalParam_001 change reason"),
         AddGlobalParameterDiff(
-          GlobalParameter(globalParamId, GitVersion.DEFAULT_REV, ConfigValueFactory.fromAnyRef(""), None, "", None)
+          GlobalParameter(
+            globalParamId,
+            GitVersion.DEFAULT_REV,
+            ConfigValueFactory.fromAnyRef(""),
+            None,
+            "",
+            None,
+            Visibility.default
+          )
         )
       ),
       List.empty
