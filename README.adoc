@@ -13,7 +13,6 @@ other general information.
 = Authentication backends
 
 This plugin allows using alternative authentication backends for Rudder: *OAuth 2.0*, *OpenID Connect*, and *LDAP or Active Directory (AD)*.
-The old *radius module is deprecated* and will be totally removed in a future version.
 
 Each authentication method is detailed below. Users are expected to know how an authentication system works independently of Rudder to configure it in Rudder: you will likely need authentication token, URLs, and other properties provided by your company.
 
