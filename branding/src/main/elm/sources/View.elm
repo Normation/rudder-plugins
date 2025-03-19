@@ -2,9 +2,9 @@ module View exposing (barStyle, checkbox, createPanel, customBar, customBarPrevi
 
 import Color exposing (Color)
 import DataTypes exposing (..)
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (..)
+import Html exposing (Html, Attribute, a, div, label, input, span, i, form, button, h4, text)
+import Html.Attributes exposing (id, class, style, type_, checked, for, href, attribute, value)
+import Html.Events exposing (onClick, onInput)
 import ColorPicker
 
 
@@ -29,7 +29,7 @@ view model =
       Nothing ->   ( "(No file chosen)"  , (UploadFile "small"), "upload-btn"  )
 
     customLogos =
-      [ div [ class "panel-col col-md-6" ]
+      [ div [ class "card-col col-md-6" ]
         [ div [ class "form-group" ]
           [ div [ class "input-group" ]
             [ label [ for "enable-wide-logo", class "input-group-text" ]
@@ -47,7 +47,7 @@ view model =
             ]
           ]
         ]
-      , div [ class "panel-col col-md-6 bg-pattern" ][ viewPreview settings.smallLogo settings.wideLogo]
+      , div [ class "card-col col-md-6 bg-pattern " ][ viewPreview settings.smallLogo settings.wideLogo]
       ]
 
     viewPreview : Logo -> Logo -> Html msg
@@ -69,7 +69,7 @@ view model =
         ]
 
     bar =
-      [ div [ class "panel-col col-md-6" ]
+      [ div [ class "card-col col-md-6" ]
         [ checkbox settings.displayBar ToggleCustomBar "enable-bar" "Display custom bar"
         , div [ class "form-group" ]
           [ label [] [ text "Background color" ]
@@ -89,18 +89,18 @@ view model =
             ]
           , textField ToggleLabel EditLabelText settings.displayLabel settings.labelTxt "text-label" "Label text"
         ]
-      , div [ class "panel-col col-md-6 bg-pattern" ] [ customBarPreview model.settings ]
+      , div [ class "card-col col-md-6 bg-pattern" ] [ customBarPreview model.settings ]
       ]
 
     loginPage =
-      [ div [ class "panel-col col-md-6" ]
+      [ div [ class "card-col col-md-6" ]
         [ checkbox settings.displayBarLogin ToggleCustomBarLogin "display-bar" "Display custom bar"
         , textField ToggleMotd EditMotd settings.displayMotd settings.motd "text-motd" "MOTD"
         ]
-      , div [ class "panel-col col-md-6 bg-pattern" ] [ loginPagePreview model.settings ]
+      , div [ class "card-col col-md-6 bg-pattern" ] [ loginPagePreview model.settings ]
       ]
   in
-    Html.form []
+    div [class "d-flex flex-column p-3 pb-5"]
       [ createPanel "Custom logos" "custom-logos" customLogos
       , createPanel "Custom bar" "custom-bar" bar
       , createPanel "Login page" "login-page" loginPage
@@ -156,17 +156,14 @@ fileField msg inputId txt =
 
 createPanel : String -> String -> List (Html msg) -> Html msg
 createPanel panelTitle panelId bodyContent =
-    let
-        hrefId = "#" ++ panelId
-    in
-    div [ class "panel panel-default" ]
-        [ div [ class "panel-heading" ]
-            [ h4 [ class "panel-title" ]
-                [ a [ attribute "data-bs-toggle" "collapse", attribute "data-bs-target" hrefId, href hrefId ] [ text panelTitle ]
+    div [ class "card rounded-3 mb-3" ]
+        [ div [ class "card-header p-0" ]
+            [ h4 [class "m-0"]
+                [ a [ attribute "data-bs-toggle" "collapse", href ("#" ++ panelId) ] [ text panelTitle ]
                 ]
             ]
-        , div [ id panelId, class "panel-collapse collapse show" ]
-            [ div [ class "panel-body" ] bodyContent ]
+        , div [ id panelId, class "collapse show" ]
+            [ div [ class "card-body p-0 d-flex" ] bodyContent ]
         ]
 
 
