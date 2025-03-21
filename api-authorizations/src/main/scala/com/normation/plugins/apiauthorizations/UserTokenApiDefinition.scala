@@ -42,6 +42,7 @@ import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api.*
 import com.normation.rudder.facts.nodes.NodeSecurityContext
+import com.normation.rudder.repository.ldap.JsonApiAuthz
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.UserApi
 import com.normation.rudder.rest.data.*
@@ -198,7 +199,7 @@ object UserApiImpl {
       expirationDate:                  Option[String],
       expirationDateDefined:           Boolean,
       authorizationType:               Option[ApiAuthorizationKind],
-      acl:                             Option[List[JsonApiPerm]]
+      acl:                             Option[List[JsonApiAuthz]]
   )
 
   object RestApiAccount extends ApiAccountCodecs {
@@ -220,13 +221,13 @@ object UserApiImpl {
         }
       }
 
-      def acl: Option[List[JsonApiPerm]] = {
+      def acl: Option[List[JsonApiAuthz]] = {
         import ApiAuthorization.*
         account.kind match {
           case PublicApi(authz, expirationDate) =>
             authz match {
               case None | RO | RW => Option.empty
-              case ACL(acls)      => Some(acls.flatMap(x => x.actions.map(a => JsonApiPerm(x.path.value, a.name))))
+              case ACL(acls)      => Some(acls.map(x => JsonApiAuthz(x.path.value, x.actions.toList.map(_.name))))
             }
           case User | System                    => Option.empty
         }
