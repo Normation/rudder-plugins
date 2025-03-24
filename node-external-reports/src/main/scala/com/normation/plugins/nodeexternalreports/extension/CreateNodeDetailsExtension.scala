@@ -40,6 +40,7 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
 import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import net.liftweb.common.*
@@ -52,6 +53,8 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
     val ttag: ClassTag[ShowNodeDetailsFromNode]
 ) extends PluginExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
 
+  implicit private val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
+
   def pluginCompose(snippet: ShowNodeDetailsFromNode): Map[String, NodeSeq => NodeSeq] = Map(
     "popupDetails" -> addExternalReportTab(snippet) _,
     "mainDetails"  -> addExternalReportTab(snippet) _
@@ -62,9 +65,9 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
    * - add an li in ul with id=ruleDetailsTabMenu
    * - add the actual tab after the div with id=ruleDetailsEditTab
    */
-  def addExternalReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq) = {
+  def addExternalReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq)(implicit qc: QueryContext) = {
 
-    val (tabTitle, content) = externalReport.getExternalReports(snippet.nodeId)(CurrentUser.queryContext) match {
+    val (tabTitle, content) = externalReport.getExternalReports(snippet.nodeId) match {
       case eb: EmptyBox =>
         val e = eb ?~! "Can not display external reports for that node"
         ("External reports", <div class="error">{e.messageChain}</div>)
