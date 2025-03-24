@@ -114,13 +114,15 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   }
   private[this] def step = changeRequest.flatMap(cr => workflowService.findStep(cr.id))
 
+implicit private val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
+
   def dispatch = {
     // Display Change request Header
     case "header"  =>
       (xml => {
         changeRequest match {
           case eb: EmptyBox => NodeSeq.Empty
-          case Full(cr) => displayHeader(cr)(CurrentUser.queryContext)
+          case Full(cr) => displayHeader(cr)
         }
       })
 
@@ -145,7 +147,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
               cr.owner,
               step,
               cr.id,
-              changeDetailsCallback(cr)(_)(CurrentUser.queryContext)
+              changeDetailsCallback(cr)(_)
             ).display
         }
       })
@@ -165,7 +167,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       _ => {
         changeRequest match {
           case eb: EmptyBox => NodeSeq.Empty
-          case Full(cr) => displayWarnUnmergeable(cr)(CurrentUser.queryContext)
+          case Full(cr) => displayWarnUnmergeable(cr)
         }
       }
     )
