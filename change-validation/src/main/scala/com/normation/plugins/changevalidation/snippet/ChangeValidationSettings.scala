@@ -45,7 +45,6 @@ import net.liftweb.common.*
 import net.liftweb.http.*
 import net.liftweb.http.js.JsCmds.Run
 import net.liftweb.http.js.JsCmds.Script
-import net.liftweb.util.Helpers
 import net.liftweb.util.Helpers.*
 import scala.xml.NodeSeq
 
@@ -163,13 +162,8 @@ class ChangeValidationSettings extends DispatchSnippet {
 
       initSelfVal match {
         case Full(_) =>
-          val tooltipid = Helpers.nextFuncName
-          <span class="tooltipable" tooltipid={tooltipid} title="">
-              <span class="fa fa-info-circle info"></span>
-            </span>
-            <div class="tooltipContent" id={tooltipid}>
-              Allow users to validate Change Requests they created themselves? Validating is moving a Change Request to the "<b>Pending deployment</b>" status
-            </div>
+          val tooltipMsg = """Allow users to validate Change Requests they created themselves? Validating is moving a Change Request to the "<b>Pending deployment</b>" status"""
+          <span class="fa fa-info-circle icon-info" data-bs-toggle="tooltip" data-bs-placement="bottom" title={tooltipMsg}></span>
         case _       => NodeSeq.Empty
       }
     } &
@@ -177,13 +171,8 @@ class ChangeValidationSettings extends DispatchSnippet {
     "#selfDepTooltip *" #> {
       initSelfDep match {
         case Full(_) =>
-          val tooltipid = Helpers.nextFuncName
-          <span class="tooltipable" tooltipid={tooltipid} title="">
-              <span class="fa fa-info-circle info"></span>
-            </span>
-            <div class="tooltipContent" id={tooltipid}>
-              Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the "<b>Pending deployment</b>" status.
-            </div>
+          val tooltipMsg = """Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the "<b>Pending deployment</b>" status."""
+          <span class="fa fa-info-circle icon-info" data-bs-toggle="tooltip" data-bs-placement="bottom" title={tooltipMsg}></span>
         case _       => NodeSeq.Empty
       }
     } &
