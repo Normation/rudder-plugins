@@ -57,7 +57,7 @@ function createChangeRequestTable(gridId, data, contextPath, refresh) {
         $(nTd).empty();
         $(nTd).addClass("link");
         var editLink = $("<a/>");
-        editLink.attr("href",contextPath +'/secure/plugins/changes/changeRequest/'+sData);
+        editLink.attr("href",contextPath +'/secure/configurationManager/changes/changeRequest/'+sData);
         editLink.text(sData);
         $(nTd).append(editLink);
       }
@@ -73,7 +73,7 @@ function createChangeRequestTable(gridId, data, contextPath, refresh) {
         $(nTd).empty();
         $(nTd).addClass("link");
         var editLink = $("<a/>");
-        editLink.attr("href",contextPath +'/secure/plugins/changes/changeRequest/'+oData.id);
+        editLink.attr("href",contextPath +'/secure/configurationManager/changes/changeRequest/'+oData.id);
         editLink.text(sData);
         $(nTd).append(editLink);
       }
