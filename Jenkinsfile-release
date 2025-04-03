@@ -49,7 +49,7 @@ pipeline {
                       ) {
                           sh script: "export PATH=$MVN_CMD_DIR:$PATH && make ${makeTarget}"
                           archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
-                          sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${branch} -d /home/publisher/tmp/${plugin_name}-${branch}", remoteDirectory: "${plugin_name}-${branch}", sourceFiles: '**/*.rpkg')], verbose:true)])
+                          sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${branch} -d /home/publisher/tmp/${plugin_name}-${branch}", remoteDirectory: "${plugin_name}-${branch}", sourceFiles: '**/*.rpkg')], verbose:true, failOnError:true)])
                       }
                   }
                   running.remove("Build")
