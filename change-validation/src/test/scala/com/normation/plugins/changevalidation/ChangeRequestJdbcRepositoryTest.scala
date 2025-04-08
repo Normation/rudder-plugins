@@ -44,6 +44,7 @@ import com.normation.BoxSpecMatcher
 import com.normation.GitVersion
 import com.normation.cfclerk.domain.TechniqueName
 import com.normation.cfclerk.domain.TechniqueVersionHelper
+import com.normation.errors.Inconsistency
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.DBCommon
@@ -66,8 +67,6 @@ import com.typesafe.config.ConfigValueFactory
 import doobie.Transactor
 import doobie.specs2.analysisspec.IOChecker
 import doobie.syntax.all.*
-import net.liftweb.common.Box
-import net.liftweb.common.Failure
 import net.liftweb.common.Full
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
@@ -288,13 +287,14 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
     }
 
     "get all change requests" in {
-      val res = roChangeRequestJdbcRepository.getAll()
-      (res.map(_.size) must beEqualTo(Full(1))) and (res.flatMap(_.headOption) mustFullEq expectedChangeRequest)
+      val res = roChangeRequestJdbcRepository.getAll().runNow
+      res.size must beEqualTo(1)
+      res.headOption must beSome(expectedChangeRequest)
     }
 
     "get a change request by id" in {
-      val res = roChangeRequestJdbcRepository.get(changeRequestId)
-      res.flatMap(Box(_)) mustFullEq expectedChangeRequest
+      val res = roChangeRequestJdbcRepository.get(changeRequestId).runNow
+      res must beSome(expectedChangeRequest)
     }
 
     // This does not seem to return any result at all, but the xpath and query look okay... :(
@@ -304,16 +304,18 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
     // }
 
     "get change requests by xpath content" in {
-      val resDirective = roChangeRequestJdbcRepository.getByDirective(DirectiveUid("foo"), false)
-      val resNodeGroup = roChangeRequestJdbcRepository.getByNodeGroup(NodeGroupId(NodeGroupUid("bar")), false)
-      val resRule      = roChangeRequestJdbcRepository.getByRule(RuleUid("baz"), false)
-      ((resDirective
-        .map(_.size) must beEqualTo(Full(1))) and (resDirective.flatMap(_.headOption) mustFullEq expectedChangeRequest) and
-      (resNodeGroup.map(_.size) must beEqualTo(Full(1))) and (resNodeGroup.flatMap(
-        _.headOption
-      ) mustFullEq expectedChangeRequest) and
-      (resRule.map(_.size) must beEqualTo(Full(1))) and (resRule.flatMap(_.headOption) mustFullEq expectedChangeRequest))
+      val resDirective = roChangeRequestJdbcRepository.getByDirective(DirectiveUid("foo"), false).runNow
+      val resNodeGroup = roChangeRequestJdbcRepository.getByNodeGroup(NodeGroupId(NodeGroupUid("bar")), false).runNow
+      val resRule      = roChangeRequestJdbcRepository.getByRule(RuleUid("baz"), false).runNow
 
+      resDirective.size must beEqualTo(1)
+      resDirective.headOption must beSome(expectedChangeRequest)
+
+      resNodeGroup.size must beEqualTo(1)
+      resNodeGroup.headOption must beSome(expectedChangeRequest)
+
+      resRule.size must beEqualTo(1)
+      resRule.headOption must beSome(expectedChangeRequest)
     }
 
     "get change request by filter" in {
@@ -328,7 +330,7 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
         actor,
         Some("reason")
       )
-      res mustFullEq newChangeRequest
+      res.runNow must beEqualTo(newChangeRequest)
     }
 
     "delete change request (unimplemented)" in {
@@ -345,15 +347,18 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
         actor,
         Some("reason")
       )
-      res mustFullEq updatedChangeRequest
+      res.runNow must beEqualTo(updatedChangeRequest)
     }
 
     "update a non-existing change request" in {
-      woChangeRequestJdbcRepository.updateChangeRequest(
-        expectedChangeRequest.copy(id = ChangeRequestId(999)),
-        actor,
-        Some("reason")
-      ) must beEqualTo(Failure(s"Cannot update non-existent Change Request with id 999"))
+      woChangeRequestJdbcRepository
+        .updateChangeRequest(
+          expectedChangeRequest.copy(id = ChangeRequestId(999)),
+          actor,
+          Some("reason")
+        )
+        .either
+        .runNow must beLeft(Inconsistency(s"Cannot update non-existent Change Request with id 999"))
     }
 
   }

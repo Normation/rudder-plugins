@@ -96,10 +96,10 @@ import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import com.normation.rudder.services.modification.DiffServiceImpl
 import java.nio.file.Files
-import net.liftweb.common.Full
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import zio.*
+import zio.syntax.*
 import zio.test.*
 import zio.test.junit.ZTestJUnitRunner
 
@@ -624,9 +624,9 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
     mockServices.changeRequestRepository,
     mockServices.notificationService,
     mockServices.userService,
-    () => Full(true),
-    () => Full(true),
-    () => Full(true)
+    () => true.succeed,
+    () => true.succeed,
+    () => true.succeed
   )
 
   restTestSetUp.workflowLevelService.overrideLevel(
@@ -635,8 +635,8 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
       restTestSetUp.workflowLevelService.defaultWorkflowService,
       validationWorkflowService,
       List.empty,
-      () => Full(true),
-      () => Full(false),
+      () => true.succeed,
+      () => false.succeed,
       null
     )
   )
