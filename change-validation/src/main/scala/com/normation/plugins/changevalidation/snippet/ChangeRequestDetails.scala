@@ -39,6 +39,7 @@ package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.ChangeValidationConf
+import com.normation.box.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
 import com.normation.plugins.changevalidation.ChangeValidationLogger
@@ -97,7 +98,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   private[this] var changeRequest: Box[ChangeRequest] = {
     CrId match {
       case Full(id) =>
-        roChangeRequestRepo.get(ChangeRequestId(id)) match {
+        roChangeRequestRepo.get(ChangeRequestId(id)).toBox match {
           case Full(Some(cr)) =>
             if (checkAccess(cr))
               Full(cr)
@@ -114,7 +115,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   }
   private[this] def step = changeRequest.flatMap(cr => workflowService.findStep(cr.id))
 
-implicit private val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
+  implicit private val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
 
   def dispatch = {
     // Display Change request Header

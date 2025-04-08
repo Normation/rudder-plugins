@@ -100,6 +100,7 @@ import net.liftweb.common.Full
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import zio.*
+import zio.syntax.*
 import zio.test.*
 import zio.test.junit.ZTestJUnitRunner
 
@@ -635,8 +636,8 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
       restTestSetUp.workflowLevelService.defaultWorkflowService,
       validationWorkflowService,
       List.empty,
-      () => Full(true),
-      () => Full(false),
+      () => true.succeed,
+      () => false.succeed,
       null
     )
   )

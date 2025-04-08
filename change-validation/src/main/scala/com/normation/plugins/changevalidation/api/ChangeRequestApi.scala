@@ -403,7 +403,7 @@ class ChangeRequestApiImpl(
         } else {
           val newCR = ChangeRequest.updateInfo(changeRequest, newInfo)
           for {
-            updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None).toIO
+            updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None)
             serialized <- serialize(updated, status).toIO
           } yield {
             serialized
@@ -434,7 +434,7 @@ class ChangeRequestApiImpl(
       case true =>
         (for {
           crId          <- id
-          optCr         <- readChangeRequest.get(crId) ?~! (s"Could not find ChangeRequest ${sid}")
+          optCr         <- readChangeRequest.get(crId).toBox ?~! (s"Could not find ChangeRequest ${sid}")
           changeRequest <-
             Box(optCr) ?~ (s"Could not get ChangeRequest ${sid} details cause is: change request with id ${sid} does not exist.")
           status        <- readWorkflow.getStateOfChangeRequest(crId) ?~! (s"Could not find ChangeRequest ${sid} status")

@@ -60,9 +60,11 @@ import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.*
 import org.joda.time.DateTime
 import zio.*
+import zio.syntax.ToZio
 
 /**
  * A proxy workflow service based on a runtime choice
@@ -166,14 +168,14 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
 
     for {
-      saved          <- save ?~! s"could not save change request ${changeRequest.info.name}"
+      saved          <- save.chainError(s"could not save change request ${changeRequest.info.name}")
       modId           = ModificationId(uuidGen.newUuid)
-      workflowEnable <- workflowEnable()
+      workflowEnable <- workflowEnable().toIO
       _              <- if (workflowEnable) {
-                          changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
-                          s"could not save event log for change request ${saved.changeRequest.id} creation"
+                          (changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
+                          s"could not save event log for change request ${saved.changeRequest.id} creation").toIO
                         } else {
-                          Full("OK, no workflow")
+                          "OK, no workflow".succeed
                         }
     } yield { saved.changeRequest }
   }
@@ -185,7 +187,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       reason:           Option[String]
   ): Box[ChangeRequest] = {
     val newCr = ChangeRequest.updateInfo(oldChangeRequest, newInfo)
-    saveAndLogChangeRequest(ModifyToChangeRequestDiff(newCr, oldChangeRequest), actor, reason)
+    saveAndLogChangeRequest(ModifyToChangeRequestDiff(newCr, oldChangeRequest), actor, reason).toBox
   }
 
   /*
@@ -291,13 +293,13 @@ class TwoValidationStepsWorkflowServiceImpl(
     ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
     for {
       saved <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), cc.actor, cc.message)
-      _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
+      _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id).toIO
       _      = notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
     } yield {
       workflowComet ! WorkflowUpdate
       saved.id
     }
-  }
+  }.toBox
 
   private[this] def changeStep(
       from:            WorkflowNode,
@@ -347,7 +349,6 @@ class TwoValidationStepsWorkflowServiceImpl(
     for {
       cr <- roChangeRequestRepository
               .get(changeRequestId)
-              .toIO
               .notOptional(
                 s"Change request with ID '${changeRequestId.value}' was not found in database"
               )
@@ -372,13 +373,10 @@ class TwoValidationStepsWorkflowServiceImpl(
    */
   implicit class CatchEmailError(result: IOResult[Unit]) {
     def catchEmailError(from: String, to: String): Unit = {
-      result.toBox match {
-        case eb: EmptyBox =>
-          val msg =
-            (eb ?~! s"Error when trying to send email for change request status update from '${from}' to '${to}'").messageChain
-          ChangeValidationLogger.error(msg)
-        case Full(_) => // nothing
-      }
+      result
+        .chainError(s"Error when trying to send email for change request status update from '${from}' to '${to}'")
+        .catchAll(err => ChangeValidationLoggerPure.error(err.fullMsg))
+        .runNow
     }
   }
 
@@ -393,15 +391,15 @@ class TwoValidationStepsWorkflowServiceImpl(
     ChangeValidationLogger.debug(s"${name}: deploy change for change request '${changeRequestId.value}'")
     for {
       optcr <- roChangeRequestRepository.get(changeRequestId)
-      cr    <- Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database"
+      cr    <- (Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database").toIO
       saved <-
-        commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, new DateTime(), reason, None, qc.nodePerms))
+        commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, new DateTime(), reason, None, qc.nodePerms)).toIO
       _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
-      state <- changeStep(from, Deployed, changeRequestId, actor, reason)
+      state <- changeStep(from, Deployed, changeRequestId, actor, reason).toIO
     } yield {
       state
     }
-  }
+  }.toBox
 
   private[this] def toFailure(
       from:            WorkflowNode,

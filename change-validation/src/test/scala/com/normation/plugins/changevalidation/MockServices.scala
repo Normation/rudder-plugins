@@ -178,10 +178,10 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         .succeed
     }
 
-    override def get(changeRequestId: ChangeRequestId): Box[Option[ChangeRequest]] = {
+    override def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = {
       changeRequestsByStatus.values.flatten.find(_.id == changeRequestId) match {
-        case Some(cr) => Full(Some(cr))
-        case None     => Full(None)
+        case Some(cr) => Some(cr).succeed
+        case None     => None.succeed
       }
     }
 
@@ -189,31 +189,31 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         changeRequest: ChangeRequest,
         actor:         EventActor,
         reason:        Option[String]
-    ): Box[ChangeRequest] = {
-      Full(changeRequest)
+    ): IOResult[ChangeRequest] = {
+      changeRequest.succeed
     }
 
-    override def getAll(): Box[Vector[ChangeRequest]] = ???
+    override def getAll(): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByDirective(id: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = ???
+    override def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = ???
+    override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = ???
+    override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]] = ???
+    override def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = ???
 
     override def createChangeRequest(
         changeRequest: ChangeRequest,
         actor:         EventActor,
         reason:        Option[String]
-    ): Box[ChangeRequest] = ???
+    ): IOResult[ChangeRequest] = ???
 
     override def deleteChangeRequest(
         changeRequestId: ChangeRequestId,
         actor:           EventActor,
         reason:          Option[String]
-    ): Box[ChangeRequest] = ???
+    ): IOResult[ChangeRequest] = ???
 
   }
 

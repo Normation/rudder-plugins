@@ -39,6 +39,7 @@ package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.ChangeValidationConf
+import com.normation.box.*
 import com.normation.eventlog.EventLog
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.workflows.*
@@ -115,7 +116,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
 
   def getLines()    = {
     val changeRequests = if (currentUser) roCrRepo.getAll() else roCrRepo.getByContributor(CurrentUser.actor)
-    JsTableData(changeRequests match {
+    JsTableData(changeRequests.toBox match {
       case Full(changeRequests) =>
         val eventMap = getLastEventsMap
 
