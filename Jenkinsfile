@@ -29,7 +29,9 @@ pipeline {
                 stage('shell') {
                     agent {
                         dockerfile {
+                            label 'generic-docker'
                             filename 'ci/shellcheck.Dockerfile'
+                            args '-u 0:0'
                         }
                     }
                     steps {
@@ -63,7 +65,9 @@ pipeline {
                 stage('python') {
                     agent {
                         dockerfile {
+                            label 'generic-docker'
                             filename 'ci/pylint.Dockerfile'
+                            args '-u 0:0'
                         }
                     }
                     steps {
@@ -90,8 +94,10 @@ pipeline {
                 stage('typos') {
                     agent {
                         dockerfile {
+                            label 'generic-docker'
                             filename 'ci/typos.Dockerfile'
                             additionalBuildArgs  '--build-arg VERSION=1.24.5'
+                            args '-u 0:0'
                         }
                     }
                     steps {
@@ -125,11 +131,12 @@ pipeline {
 
             agent {
                 dockerfile {
+                    label 'generic-docker'
                     filename 'ci/plugins.Dockerfile'
                     additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
                     // set same timezone as some tests rely on it
                     // and share maven cache
-                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
+                    args '-u 0:0 -v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/root/.elm -v /srv/cache/maven:/root/.m2'
                 }
             }
             steps {
@@ -185,11 +192,12 @@ pipeline {
 
             agent {
                 dockerfile {
+                    label 'generic-docker'
                     filename 'ci/plugins.Dockerfile'
                     additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
                     // set same timezone as some tests rely on it
                     // and share maven cache
-                    args '-v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/home/jenkins/.elm -v /srv/cache/maven:/home/jenkins/.m2'
+                    args '-u 0:0 -v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/root/.elm -v /srv/cache/maven:/root/.m2'
                 }
             }
             steps {
