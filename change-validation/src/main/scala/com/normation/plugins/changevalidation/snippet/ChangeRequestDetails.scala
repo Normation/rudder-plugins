@@ -40,6 +40,7 @@ package com.normation.plugins.changevalidation.snippet
 import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.box.*
+import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
 import com.normation.plugins.changevalidation.ChangeValidationLogger
@@ -56,6 +57,7 @@ import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.*
 import net.liftweb.http.*
 import net.liftweb.http.js.*
@@ -113,7 +115,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         Failure(s"Error in the cr id asked: ${fail.msg}")
     }
   }
-  private[this] def step = changeRequest.flatMap(cr => workflowService.findStep(cr.id))
+  private[this] def step = changeRequest.flatMap(cr => workflowService.findStep(cr.id).toBox)
 
   implicit private val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
 
@@ -224,7 +226,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   private[this] def changeDetailsCallback(cr: ChangeRequest)(statusUpdate: ChangeRequestInfo)(implicit qc: QueryContext) = {
     workflowService match {
       case ws: TwoValidationStepsWorkflowServiceImpl =>
-        val newCR = ws.updateChangeRequestInfo(cr, statusUpdate, CurrentUser.actor, None)
+        val newCR = ws.updateChangeRequestInfo(cr, statusUpdate, CurrentUser.actor, None).toBox
         changeRequest = newCR
         SetHtml("changeRequestHeader", displayHeader(newCR.openOr(cr))) &
         SetHtml("changeRequestChanges", new ChangeRequestChangesForm(newCR.openOr(cr)).dispatch("changes")(NodeSeq.Empty))
@@ -237,7 +239,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
   def displayHeader(cr: ChangeRequest)(implicit qc: QueryContext) = {
     // last action on the change Request (name/description changed):
-    val (action, date) = changeRequestEventLogService.getLastLog(cr.id) match {
+    val (action, date) = changeRequestEventLogService.getLastLog(cr.id).toBox match {
       case eb: EmptyBox => ("Error when retrieving the last action", None)
       case Full(None)              => ("Error, no action were recorded for that change request", None) // should not happen here !
       case Full(Some(e: EventLog)) =>
@@ -250,7 +252,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
     }
 
     // Last workflow change on that change Request
-    val (step, stepDate) = workFlowEventLogService.getLastLog(cr.id) match {
+    val (step, stepDate) = workFlowEventLogService.getLastLog(cr.id).toBox match {
       case eb: EmptyBox => ("Error when retrieving the last action", None)
       case Full(None)        => ("Error when retrieving the last action", None) // should not happen here !
       case Full(Some(event)) =>
@@ -272,15 +274,21 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       case (None, Some(_))              => step
       case (Some(date), Some(stepDate)) => if (date.isAfter(stepDate)) action else step
     }
-    ("#backButton [href]" #> "/secure/configurationManager/changes/changeRequests" &
-    "#nameTitle *" #> s"CR #${cr.id}: ${cr.info.name}" &
-    "#CRStatus *" #> workflowService
-      .findStep(cr.id)
-      .map(x => Text(x.value))
-      .openOr(<div class="error">Cannot find the status of this change request</div>) &
-    "#CRLastAction *" #> s"${last}" &
-    "#actionBtns *" #> workflowService.findStep(cr.id).map(x => displayActionButton(cr, x)).openOr(NodeSeq.Empty))(header)
-
+    (
+      "#backButton [href]" #> "/secure/configurationManager/changes/changeRequests" &
+      "#nameTitle *" #> s"CR #${cr.id}: ${cr.info.name}" &
+      "#CRStatus *" #> workflowService
+        .findStep(cr.id)
+        .map(x => Text(x.value))
+        .orElseSucceed(<div class="error">Cannot find the status of this change request</div>)
+        .runNow &
+      "#CRLastAction *" #> s"${last}" &
+      "#actionBtns *" #> workflowService
+        .findStep(cr.id)
+        .map(x => displayActionButton(cr, x))
+        .orElseSucceed(NodeSeq.Empty)
+        .runNow
+    )(header)
   }
 
   def displayWarnUnmergeable(cr: ChangeRequest)(implicit qc: QueryContext): NodeSeq = {
@@ -295,10 +303,10 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
 
   def ChangeStepPopup(
       action:    String,
-      nextSteps: Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId])],
+      nextSteps: Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId])],
       cr:        ChangeRequest
   )(implicit qc: QueryContext) = {
-    type stepChangeFunction = (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]
+    type stepChangeFunction = (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId]
 
     def closePopup: JsCmd = {
       SetHtml("changeRequestHeader", displayHeader(cr)) &
@@ -307,7 +315,8 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         workflowService
           .findStep(cr.id)
           .map(x => Text(x.value))
-          .openOr(<div class="error">Cannot find the status of this change request</div>)
+          .orElseSucceed(<div class="error">Cannot find the status of this change request</div>)
+          .runNow
       ) &
       SetHtml("changeRequestChanges", new ChangeRequestChangesForm(cr).dispatch("changes")(NodeSeq.Empty)) &
       JsRaw("""hideBsModal('popupContent');""") // JsRaw ok, const
@@ -413,17 +422,23 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
         formTracker.addFormError(error("There was problem with your request"))
         updateForm(nextChosen)
       } else {
-        nextChosen._2(cr.id, CurrentUser.actor, changeMessage.map(_.get)) match {
-          case Full(next) =>
-            SetHtml("workflowActionButtons", displayActionButton(cr, next)) &
-            SetHtml("newStatus", Text(next.value)) &
-            closePopup & JsRaw(""" initBsModal("successWorkflow"); """) // JsRaw ok, const
-          case eb: EmptyBox =>
-            val fail = eb ?~! "could not change Change request step"
-            formTracker.addFormError(error(fail.msg))
-            logger.error(s"Error when saving change request '${cr.id.value}': ${fail.messageChain}")
-            updateForm(nextChosen)
-        }
+
+        val (_, evalNextStep) = nextChosen
+        evalNextStep(cr.id, CurrentUser.actor, changeMessage.map(_.get))
+          .chainError("could not change Change request step")
+          .fold(
+            err => {
+              formTracker.addFormError(error(err.fullMsg))
+              logger.error(s"Error when saving change request '${cr.id.value}': ${err.fullMsg}")
+              updateForm(nextChosen)
+            },
+            next => {
+              SetHtml("workflowActionButtons", displayActionButton(cr, next)) &
+              SetHtml("newStatus", Text(next.value)) &
+              closePopup & JsRaw(""" initBsModal("successWorkflow"); """) // JsRaw ok, const
+            }
+          )
+          .runNow
 
       }
     }

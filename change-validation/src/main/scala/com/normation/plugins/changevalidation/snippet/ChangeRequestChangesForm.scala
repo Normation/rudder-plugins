@@ -67,6 +67,7 @@ import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.*
 import net.liftweb.http.*
 import net.liftweb.http.js.JE.*
@@ -267,8 +268,8 @@ class ChangeRequestChangesForm(
       rules:            List[RuleChange] = Nil,
       globalParams:     List[GlobalParameterChange] = Nil
   )(implicit qc: QueryContext) = {
-    val crLogs = changeRequestEventLogService.getChangeRequestHistory(changeRequest.id).getOrElse(Seq())
-    val wfLogs = workFlowEventLogService.getChangeRequestHistory(changeRequest.id).getOrElse(Seq())
+    val crLogs = changeRequestEventLogService.getChangeRequestHistory(changeRequest.id).orElseSucceed(Seq()).runNow
+    val wfLogs = workFlowEventLogService.getChangeRequestHistory(changeRequest.id).orElseSucceed(Seq()).runNow
 
     val lines = {
       wfLogs.flatMap(displayWorkflowEvent(_)) ++

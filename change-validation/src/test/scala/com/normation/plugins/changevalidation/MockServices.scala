@@ -218,24 +218,24 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
   }
 
   object workflowRepository extends RoWorkflowRepository with WoWorkflowRepository {
-    override def getStateOfChangeRequest(crId: ChangeRequestId): Box[WorkflowNodeId] = {
+    override def getStateOfChangeRequest(crId: ChangeRequestId): IOResult[WorkflowNodeId] = {
       changeRequestsByStatus.find(_._2.exists(_.id == crId)).map(_._1) match {
-        case Some(state) => Full(state)
-        case None        => Full(WorkflowNodeId("unknown"))
+        case Some(state) => state.succeed
+        case None        => WorkflowNodeId("unknown").succeed
       }
     }
 
-    override def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
-      Full(state)
+    override def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {
+      state.succeed
     }
 
-    override def getAllByState(state: WorkflowNodeId): Box[Seq[ChangeRequestId]] = {
+    override def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]] = {
       ???
     }
 
-    override def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): Box[WorkflowNodeId] = ???
+    override def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = ???
 
-    override def getAllChangeRequestsState(): Box[Map[ChangeRequestId, WorkflowNodeId]] = ???
+    override def getAllChangeRequestsState(): IOResult[Map[ChangeRequestId, WorkflowNodeId]] = ???
 
   }
 
@@ -253,13 +253,14 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
   }
 
   object workflowEventLogService extends WorkflowEventLogService {
-    override def saveEventLog(stepChange: WorkflowStepChange, actor: EventActor, reason: Option[String]): Box[EventLog] = Full(
-      null
-    )
+    override def saveEventLog(stepChange: WorkflowStepChange, actor: EventActor, reason: Option[String]): IOResult[EventLog] = {
+      val res: EventLog = null
+      res.succeed
+    }
 
-    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[WorkflowStepChanged]]    = ???
-    override def getLastLog(id:              ChangeRequestId): Box[Option[WorkflowStepChanged]] = ???
-    override def getLastWorkflowEvents(): Box[Map[ChangeRequestId, EventLog]] = ???
+    override def getChangeRequestHistory(id: ChangeRequestId): IOResult[Seq[WorkflowStepChanged]]    = ???
+    override def getLastLog(id:              ChangeRequestId): IOResult[Option[WorkflowStepChanged]] = ???
+    override def getLastWorkflowEvents(): IOResult[Map[ChangeRequestId, EventLog]] = ???
 
   }
 
@@ -270,12 +271,15 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         principal: EventActor,
         diff:      ChangeRequestDiff,
         reason:    Option[String]
-    ): Box[EventLog] = Full(null)
+    ): IOResult[EventLog] = {
+      val res: EventLog = null
+      res.succeed
+    }
 
-    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[ChangeRequestEventLog]]    = ???
-    override def getFirstLog(id:             ChangeRequestId): Box[Option[ChangeRequestEventLog]] = ???
-    override def getLastLog(id:              ChangeRequestId): Box[Option[ChangeRequestEventLog]] = ???
-    override def getLastCREvents: Box[Map[ChangeRequestId, EventLog]] = ???
+    override def getChangeRequestHistory(id: ChangeRequestId): IOResult[Seq[ChangeRequestEventLog]]    = ???
+    override def getFirstLog(id:             ChangeRequestId): IOResult[Option[ChangeRequestEventLog]] = ???
+    override def getLastLog(id:              ChangeRequestId): IOResult[Option[ChangeRequestEventLog]] = ???
+    override def getLastCREvents: IOResult[Map[ChangeRequestId, EventLog]] = ???
   }
 
   object notificationService extends NotificationService {

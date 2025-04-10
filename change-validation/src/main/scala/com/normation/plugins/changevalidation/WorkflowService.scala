@@ -37,7 +37,6 @@
 
 package com.normation.plugins.changevalidation
 
-import com.normation.box.*
 import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
@@ -61,7 +60,6 @@ import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.*
 import org.joda.time.DateTime
 import zio.*
 import zio.syntax.ToZio
@@ -69,22 +67,22 @@ import zio.syntax.ToZio
 /**
  * A proxy workflow service based on a runtime choice
  */
-class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService, whenFalse: WorkflowService)
+class EitherWorkflowService(cond: () => IOResult[Boolean], whenTrue: WorkflowService, whenFalse: WorkflowService)
     extends WorkflowService {
 
   // TODO: handle ERRORS for config!
 
   val name = "choose-active-validation-workflow"
 
-  def current: WorkflowService = if (cond().getOrElse(false)) whenTrue else whenFalse
+  def current: WorkflowService = if (cond().orElseSucceed(false).runNow) whenTrue else whenFalse
 
-  override def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext):                     Box[ChangeRequestId]                      =
+  override def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext):                     IOResult[ChangeRequestId]                      =
     current.startWorkflow(changeRequest)
-  override def openSteps:                                                                                   List[WorkflowNodeId]                      =
+  override def openSteps:                                                                                   List[WorkflowNodeId]                           =
     current.openSteps
-  override def closedSteps:                                                                                 List[WorkflowNodeId]                      =
+  override def closedSteps:                                                                                 List[WorkflowNodeId]                           =
     current.closedSteps
-  override def stepsValue:                                                                                  List[WorkflowNodeId]                      =
+  override def stepsValue:                                                                                  List[WorkflowNodeId]                           =
     current.stepsValue
   override def findNextSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean)(implicit
       qc: QueryContext
@@ -94,17 +92,17 @@ class EitherWorkflowService(cond: () => Box[Boolean], whenTrue: WorkflowService,
       currentUserRights: Seq[String],
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
-  ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId])] =
+  ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId])] =
     current.findBackSteps(currentUserRights, currentStep, isCreator)
-  override def findStep(changeRequestId: ChangeRequestId):                                                  Box[WorkflowNodeId]                       =
+  override def findStep(changeRequestId: ChangeRequestId):                                                  IOResult[WorkflowNodeId]                       =
     current.findStep(changeRequestId)
-  override def getAllChangeRequestsStep():                                                                  Box[Map[ChangeRequestId, WorkflowNodeId]] =
+  override def getAllChangeRequestsStep():                                                                  IOResult[Map[ChangeRequestId, WorkflowNodeId]] =
     current.getAllChangeRequestsStep()
-  override def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean                                   =
+  override def isEditable(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean): Boolean                                        =
     current.isEditable(currentUserRights, currentStep, isCreator)
-  override def isPending(currentStep: WorkflowNodeId):                                                      Boolean                                   =
+  override def isPending(currentStep: WorkflowNodeId):                                                      Boolean                                        =
     current.isPending(currentStep)
-  override def needExternalValidation():                                                                    Boolean                                   = current.needExternalValidation()
+  override def needExternalValidation():                                                                    Boolean                                        = current.needExternalValidation()
 }
 
 object TwoValidationStepsWorkflowServiceImpl {
@@ -139,15 +137,15 @@ class TwoValidationStepsWorkflowServiceImpl(
     woChangeRequestRepository:     WoChangeRequestRepository,
     notificationService:           NotificationService,
     userService:                   UserService,
-    workflowEnable:                () => Box[Boolean],
-    selfValidation:                () => Box[Boolean],
-    selfDeployment:                () => Box[Boolean]
+    workflowEnable:                () => IOResult[Boolean],
+    selfValidation:                () => IOResult[Boolean],
+    selfDeployment:                () => IOResult[Boolean]
 ) extends WorkflowService {
   import TwoValidationStepsWorkflowServiceImpl.*
 
   val name = "two-steps-validation-workflow"
 
-  def getItemsInStep(stepId: WorkflowNodeId): Box[Seq[ChangeRequestId]] = roWorkflowRepo.getAllByState(stepId)
+  def getItemsInStep(stepId: WorkflowNodeId): IOResult[Seq[ChangeRequestId]] = roWorkflowRepo.getAllByState(stepId)
 
   val closedSteps: List[WorkflowNodeId] = List(Cancelled.id, Deployed.id)
   val openSteps:   List[WorkflowNodeId] = List(Validation.id, Deployment.id)
@@ -170,10 +168,11 @@ class TwoValidationStepsWorkflowServiceImpl(
     for {
       saved          <- save.chainError(s"could not save change request ${changeRequest.info.name}")
       modId           = ModificationId(uuidGen.newUuid)
-      workflowEnable <- workflowEnable().toIO
+      workflowEnable <- workflowEnable()
       _              <- if (workflowEnable) {
-                          (changeRequestEventLogService.saveChangeRequestLog(modId, actor, saved, reason) ?~!
-                          s"could not save event log for change request ${saved.changeRequest.id} creation").toIO
+                          changeRequestEventLogService
+                            .saveChangeRequestLog(modId, actor, saved, reason)
+                            .chainError(s"could not save event log for change request ${saved.changeRequest.id} creation")
                         } else {
                           "OK, no workflow".succeed
                         }
@@ -185,9 +184,9 @@ class TwoValidationStepsWorkflowServiceImpl(
       newInfo:          ChangeRequestInfo,
       actor:            EventActor,
       reason:           Option[String]
-  ): Box[ChangeRequest] = {
+  ): IOResult[ChangeRequest] = {
     val newCr = ChangeRequest.updateInfo(oldChangeRequest, newInfo)
-    saveAndLogChangeRequest(ModifyToChangeRequestDiff(newCr, oldChangeRequest), actor, reason).toBox
+    saveAndLogChangeRequest(ModifyToChangeRequestDiff(newCr, oldChangeRequest), actor, reason)
   }
 
   /*
@@ -200,7 +199,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       isCreator:         Boolean
   )(implicit qc: QueryContext): WorkflowAction = {
 
-    def deployAction(action: (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId]) = {
+    def deployAction(action: (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId]) = {
       if (canDeploy(isCreator, selfDeployment))
         Seq((Deployed.id, action))
       else Seq()
@@ -232,7 +231,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       currentUserRights: Seq[String],
       currentStep:       WorkflowNodeId,
       isCreator:         Boolean
-  ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => Box[WorkflowNodeId])] = {
+  ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId])] = {
     currentStep match {
       case Validation.id     =>
         if (canValidate(isCreator, selfValidation))
@@ -268,7 +267,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
   }
 
-  def isPending(currentStep: WorkflowNodeId):     Boolean             = {
+  def isPending(currentStep: WorkflowNodeId):     Boolean                  = {
     currentStep match {
       case Validation.id     => true
       case Deployment.id     => true
@@ -281,25 +280,25 @@ class TwoValidationStepsWorkflowServiceImpl(
         false
     }
   }
-  def findStep(changeRequestId: ChangeRequestId): Box[WorkflowNodeId] = {
+  def findStep(changeRequestId: ChangeRequestId): IOResult[WorkflowNodeId] = {
     roWorkflowRepo.getStateOfChangeRequest(changeRequestId)
   }
 
-  def getAllChangeRequestsStep(): Box[Map[ChangeRequestId, WorkflowNodeId]] = {
+  def getAllChangeRequestsStep(): IOResult[Map[ChangeRequestId, WorkflowNodeId]] = {
     roWorkflowRepo.getAllChangeRequestsState()
   }
 
-  def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext): Box[ChangeRequestId] = {
+  def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext): IOResult[ChangeRequestId] = {
     ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
     for {
       saved <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), cc.actor, cc.message)
-      _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id).toIO
+      _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
       _      = notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
     } yield {
       workflowComet ! WorkflowUpdate
       saved.id
     }
-  }.toBox
+  }
 
   private[this] def changeStep(
       from:            WorkflowNode,
@@ -307,7 +306,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  ): IOResult[WorkflowNodeId] = {
     (for {
       state       <- woWorkflowRepo.updateState(changeRequestId, from.id, to.id)
       workflowStep = WorkflowStepChange(changeRequestId, from.id, to.id)
@@ -316,13 +315,10 @@ class TwoValidationStepsWorkflowServiceImpl(
     } yield {
       workflowComet ! WorkflowUpdate
       state
-    }) match {
-      case Full(state) => Full(state)
-      case eb: EmptyBox =>
-        val e = eb ?~! s"Error when changing step in workflow for Change Request ${changeRequestId.value}"
-        ChangeValidationLogger.error(e.messageChain)
-        e
-    }
+    })
+      .chainError(s"Error when changing step in workflow for Change Request ${changeRequestId.value}")
+      .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
+
   }
 
   /*
@@ -331,13 +327,13 @@ class TwoValidationStepsWorkflowServiceImpl(
    * - check for current user rights.
    *   WARNING: WE ARE SIDE STEPPING authz check until https://issues.rudder.io/issues/22595 is solved
    */
-  private def canValidate(isCreator: Boolean, selfValidation: () => Box[Boolean]): Boolean = {
-    val correctActor = selfValidation().getOrElse(false) || !isCreator
+  private def canValidate(isCreator: Boolean, selfValidation: () => IOResult[Boolean]): Boolean = {
+    val correctActor = selfValidation().orElseSucceed(false).runNow || !isCreator
     correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Validator.Edit)
   }
 
-  private def canDeploy(isCreator: Boolean, selfDeployment: () => Box[Boolean]): Boolean = {
-    val correctActor = selfDeployment().getOrElse(false) || !isCreator
+  private def canDeploy(isCreator: Boolean, selfDeployment: () => IOResult[Boolean]): Boolean = {
+    val correctActor = selfDeployment().orElseSucceed(false).runNow || !isCreator
     correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Edit)
   }
 
@@ -387,26 +383,27 @@ class TwoValidationStepsWorkflowServiceImpl(
       reason:          Option[String]
   )(implicit
       qc:              QueryContext
-  ): Box[WorkflowNodeId] = {
+  ): IOResult[WorkflowNodeId] = {
     ChangeValidationLogger.debug(s"${name}: deploy change for change request '${changeRequestId.value}'")
     for {
-      optcr <- roChangeRequestRepository.get(changeRequestId)
-      cr    <- (Box(optcr) ?~! s"Change request with ID '${changeRequestId.value}' was not found in database").toIO
+      cr    <- roChangeRequestRepository
+                 .get(changeRequestId)
+                 .notOptional(s"Change request with ID '${changeRequestId.value}' was not found in database")
       saved <-
         commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, new DateTime(), reason, None, qc.nodePerms)).toIO
       _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
-      state <- changeStep(from, Deployed, changeRequestId, actor, reason).toIO
+      state <- changeStep(from, Deployed, changeRequestId, actor, reason)
     } yield {
       state
     }
-  }.toBox
+  }
 
   private[this] def toFailure(
       from:            WorkflowNode,
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  ): IOResult[WorkflowNodeId] = {
     changeStep(from, Cancelled, changeRequestId, actor, reason)
   }
 
@@ -416,7 +413,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  ): IOResult[WorkflowNodeId] = {
     changeStep(Validation, Deployment, changeRequestId, actor, reason)
   }
 
@@ -424,7 +421,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  )(implicit qc: QueryContext): Box[WorkflowNodeId] = {
+  )(implicit qc: QueryContext): IOResult[WorkflowNodeId] = {
     onSuccessWorkflow(Validation, changeRequestId, actor, reason)
   }
 
@@ -432,7 +429,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  ): IOResult[WorkflowNodeId] = {
     toFailure(Validation, changeRequestId, actor, reason)
   }
 
@@ -440,7 +437,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  ): Box[WorkflowNodeId] = {
+  ): IOResult[WorkflowNodeId] = {
     toFailure(Deployment, changeRequestId, actor, reason)
   }
 
@@ -448,7 +445,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
-  )(implicit qc: QueryContext): Box[WorkflowNodeId] = {
+  )(implicit qc: QueryContext): IOResult[WorkflowNodeId] = {
     onSuccessWorkflow(Deployment, changeRequestId, actor, reason)
   }
 

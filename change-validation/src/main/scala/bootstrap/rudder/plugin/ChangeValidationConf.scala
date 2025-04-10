@@ -41,7 +41,6 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderConfig.commitAndDeployChangeRequest
 import bootstrap.liftweb.RudderConfig.doobie
 import bootstrap.liftweb.RudderConfig.workflowLevelService
-import com.normation.box.*
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
@@ -89,8 +88,6 @@ import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.zio.UnsafeRun
 import java.nio.file.Paths
-import net.liftweb.common.Box
-import net.liftweb.common.Full
 import zio.syntax.ToZio
 
 /*
@@ -170,40 +167,40 @@ class ChangeValidationWorkflowLevelService(
       }
   }
 
-  override def getForRule(actor: EventActor, change: RuleChangeRequest):               Box[WorkflowService] = {
-    combine[RuleChangeRequest]((v, a, c) => v.forRule(a, c), validationNeeded, actor, change).toBox
+  override def getForRule(actor: EventActor, change: RuleChangeRequest):               IOResult[WorkflowService] = {
+    combine[RuleChangeRequest]((v, a, c) => v.forRule(a, c), validationNeeded, actor, change)
   }
-  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest):     Box[WorkflowService] = {
-    combine[DirectiveChangeRequest]((v, a, c) => v.forDirective(a, c), validationNeeded, actor, change).toBox
+  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest):     IOResult[WorkflowService] = {
+    combine[DirectiveChangeRequest]((v, a, c) => v.forDirective(a, c), validationNeeded, actor, change)
   }
-  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest):     Box[WorkflowService] = {
-    combine[NodeGroupChangeRequest]((v, a, c) => v.forNodeGroup(a, c), validationNeeded, actor, change).toBox
+  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest):     IOResult[WorkflowService] = {
+    combine[NodeGroupChangeRequest]((v, a, c) => v.forNodeGroup(a, c), validationNeeded, actor, change)
   }
-  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
-    combine[GlobalParamChangeRequest]((v, a, c) => v.forGlobalParam(a, c), validationNeeded, actor, change).toBox
+  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): IOResult[WorkflowService] = {
+    combine[GlobalParamChangeRequest]((v, a, c) => v.forGlobalParam(a, c), validationNeeded, actor, change)
   }
 
-  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
-      validationWorkflowService.roChangeRequestRepository.getByDirective(uid, onlyPending).toBox
+      validationWorkflowService.roChangeRequestRepository.getByDirective(uid, onlyPending)
     } else {
-      Vector().succeed.toBox
+      Vector().succeed
     }
   }
 
-  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
-      validationWorkflowService.roChangeRequestRepository.getByNodeGroup(id, onlyPending).toBox
+      validationWorkflowService.roChangeRequestRepository.getByNodeGroup(id, onlyPending)
     } else {
-      Vector().succeed.toBox
+      Vector().succeed
     }
   }
 
-  override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
-      validationWorkflowService.roChangeRequestRepository.getByRule(id, onlyPending).toBox
+      validationWorkflowService.roChangeRequestRepository.getByRule(id, onlyPending)
     } else {
-      Vector().succeed.toBox
+      Vector().succeed
     }
   }
 }
@@ -245,9 +242,9 @@ object ChangeValidationConf extends RudderPluginModule {
     woChangeRequestRepository,
     notificationService,
     RudderConfig.userService,
-    () => Full(RudderConfig.workflowLevelService.workflowEnabled),
-    () => RudderConfig.configService.rudder_workflow_self_validation().toBox,
-    () => RudderConfig.configService.rudder_workflow_self_deployment().toBox
+    () => RudderConfig.workflowLevelService.workflowEnabled.succeed,
+    () => RudderConfig.configService.rudder_workflow_self_validation(),
+    () => RudderConfig.configService.rudder_workflow_self_deployment()
   )
 
   lazy val unsupervisedTargetRepo = new UnsupervisedTargetsRepository(
