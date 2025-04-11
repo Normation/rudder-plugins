@@ -37,7 +37,6 @@
 
 package com.normation.plugins.changevalidation.api
 
-import com.normation.box.*
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.services.TechniqueRepository
@@ -86,7 +85,6 @@ import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestServi
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.users.UserService
 import enumeratum.*
-import net.liftweb.common.Box
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
@@ -306,7 +304,7 @@ class ChangeRequestApiImpl(
             )
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
-          result     <- func(changeRequest.id, authzToken.qc.actor, reason).toIO
+          result     <- func(changeRequest.id, authzToken.qc.actor, reason)
           serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
@@ -343,7 +341,7 @@ class ChangeRequestApiImpl(
             )
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
-          result     <- func(changeRequest.id, authzToken.qc.actor, reason).toIO
+          result     <- func(changeRequest.id, authzToken.qc.actor, reason)
           serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
@@ -403,7 +401,7 @@ class ChangeRequestApiImpl(
         } else {
           val newCR = ChangeRequest.updateInfo(changeRequest, newInfo)
           for {
-            updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None).toIO
+            updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None)
             serialized <- serialize(updated, status).toIO
           } yield {
             serialized
@@ -425,27 +423,27 @@ class ChangeRequestApiImpl(
   )(
       block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
   ): IOResult[T] = {
-    val id = {
-      // PureResult.attempt(s"'${sid}' is not a valid change request id (need to be an integer)")(ChangeRequestId(sid.toInt))
-      Box(sid.toIntOption.map(ChangeRequestId(_))) ?~ (s"'${sid}' is not a valid change request id (need to be an integer)")
-    }
 
-    checkWorkflow match {
-      case true =>
-        (for {
-          crId          <- id
-          optCr         <- readChangeRequest.get(crId) ?~! (s"Could not find ChangeRequest ${sid}")
-          changeRequest <-
-            Box(optCr) ?~ (s"Could not get ChangeRequest ${sid} details cause is: change request with id ${sid} does not exist.")
-          status        <- readWorkflow.getStateOfChangeRequest(crId) ?~! (s"Could not find ChangeRequest ${sid} status")
-          result        <- getDirectiveTechniques(changeRequest).flatMap(block(changeRequest, status, _)).toBox
-        } yield {
-          result
-        }).toIO
-          .chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
-
-      case false =>
-        disabledWorkflowAnswer
+    if (checkWorkflow) {
+      (for {
+        crId          <- sid.toIntOption
+                           .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
+                           .map(ChangeRequestId(_))
+        changeRequest <- readChangeRequest
+                           .get(crId)
+                           .chainError(s"Could not find ChangeRequest ${sid}")
+                           .notOptional(s"Change request with id ${sid} does not exist.")
+        status        <- readWorkflow
+                           .getStateOfChangeRequest(crId)
+                           .chainError(s"Could not find ChangeRequest ${sid} status")
+        result        <- getDirectiveTechniques(changeRequest)
+                           .flatMap(block(changeRequest, status, _))
+      } yield {
+        result
+      })
+        .chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
+    } else {
+      disabledWorkflowAnswer
     }
   }
 
