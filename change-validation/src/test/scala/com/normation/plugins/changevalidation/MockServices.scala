@@ -74,8 +74,6 @@ import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserService
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.Box
-import net.liftweb.common.Full
 import scala.collection.immutable.SortedMap
 import zio.Chunk
 import zio.Ref
@@ -241,9 +239,7 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
 
   object commitAndDeployChangeRequest extends CommitAndDeployChangeRequestService {
 
-    def save(changeRequest: ChangeRequest)(implicit cc: ChangeContext): Box[ChangeRequest] = Full(
-      changeRequest
-    )
+    def save(changeRequest: ChangeRequest)(implicit cc: ChangeContext): IOResult[ChangeRequest] = changeRequest.succeed
 
     def isMergeable(changeRequest: ChangeRequest)(implicit qc: QueryContext): Boolean = {
       // can depend on "mergeable" changeRequest by their id to vary test cases

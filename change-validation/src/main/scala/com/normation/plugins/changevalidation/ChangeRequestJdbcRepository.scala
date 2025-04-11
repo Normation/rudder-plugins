@@ -269,7 +269,7 @@ class WoChangeRequestJdbcRepository(
     val (name, desc, xml, modId) = getAtom(changeRequest)
 
     for {
-      id <- transactIOResult(s"Could not create change request with id ${changeRequest.id}")(xa =>
+      id <- transactIOResult(s"Could not create change request with id ${changeRequest.id} in database")(xa =>
               createChangeRequestSQL(name, desc, xml, modId).withUniqueGeneratedKeys[Int]("id").transact(xa)
             )
       cr <- roRepo

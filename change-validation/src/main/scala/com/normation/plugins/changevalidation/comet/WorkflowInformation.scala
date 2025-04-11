@@ -38,7 +38,6 @@
 package com.normation.plugins.changevalidation.comet
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.box.*
 import com.normation.plugins.changevalidation.EitherWorkflowService
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
@@ -79,32 +78,34 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   }
 
   def render = {
-    val xml = RudderConfig.configService.rudder_workflow_enabled().toBox match {
-      case eb: EmptyBox =>
-        val e = eb ?~! "Error when trying to read Rudder configuration for workflow activation"
-        logger.error(e.messageChain)
-        e.rootExceptionCause.foreach(ex => logger.error("Exception was:", e))
 
-        (".dropdown-menu *" #> <li class="dropdown-header">{e.msg}</li>).apply(layout)
-
-      case Full(workflowEnabled) =>
-        val cssSelect = {
-          if (workflowEnabled && (isValidator || isDeployer)) {
-            {
-              if (isValidator) pendingModifications
-              else ".dropdown-menu *+" #> NodeSeq.Empty
-            } & {
-              if (isDeployer) pendingDeployment
-              else ".dropdown-menu *+" #> NodeSeq.Empty
-            } &
-            "#number *" #> requestCount(workflowService)
-          } else {
-            ".dropdown *" #> NodeSeq.Empty
+    val xml = RudderConfig.configService
+      .rudder_workflow_enabled()
+      .chainError("Error when trying to read Rudder configuration for workflow activation")
+      .fold(
+        err => {
+          logger.error(err.fullMsg)
+          (".dropdown-menu *" #> <li class="dropdown-header">{err.fullMsg}</li>).apply(layout)
+        },
+        workflowEnabled => {
+          val cssSelect = {
+            if (workflowEnabled && (isValidator || isDeployer)) {
+              {
+                if (isValidator) pendingModifications
+                else ".dropdown-menu *+" #> NodeSeq.Empty
+              } & {
+                if (isDeployer) pendingDeployment
+                else ".dropdown-menu *+" #> NodeSeq.Empty
+              } &
+              "#number *" #> requestCount(workflowService)
+            } else {
+              ".dropdown *" #> NodeSeq.Empty
+            }
           }
+          cssSelect(layout)
         }
-
-        cssSelect(layout)
-    }
+      )
+      .runNow
 
     new RenderOut(xml)
   }

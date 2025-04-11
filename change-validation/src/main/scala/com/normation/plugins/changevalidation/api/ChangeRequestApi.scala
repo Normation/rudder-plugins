@@ -423,31 +423,27 @@ class ChangeRequestApiImpl(
   )(
       block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
   ): IOResult[T] = {
-    val id = {
-      PureResult.attempt(s"'${sid}' is not a valid change request id (need to be an integer)")(ChangeRequestId(sid.toInt))
-    }
 
-    checkWorkflow match {
-      case true =>
-        (for {
-          crId          <- id.toIO
-          changeRequest <-
-            readChangeRequest
-              .get(crId)
-              .chainError(s"Could not find ChangeRequest ${sid}")
-              .notOptional(s"Change request with id ${sid} does not exist.")
-          status        <- readWorkflow
-                             .getStateOfChangeRequest(crId)
-                             .chainError(s"Could not find ChangeRequest ${sid} status")
-          result        <- getDirectiveTechniques(changeRequest)
-                             .flatMap(block(changeRequest, status, _))
-        } yield {
-          result
-        })
-          .chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
-
-      case false =>
-        disabledWorkflowAnswer
+    if (checkWorkflow) {
+      (for {
+        crId          <- sid.toIntOption
+                           .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
+                           .map(ChangeRequestId(_))
+        changeRequest <- readChangeRequest
+                           .get(crId)
+                           .chainError(s"Could not find ChangeRequest ${sid}")
+                           .notOptional(s"Change request with id ${sid} does not exist.")
+        status        <- readWorkflow
+                           .getStateOfChangeRequest(crId)
+                           .chainError(s"Could not find ChangeRequest ${sid} status")
+        result        <- getDirectiveTechniques(changeRequest)
+                           .flatMap(block(changeRequest, status, _))
+      } yield {
+        result
+      })
+        .chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
+    } else {
+      disabledWorkflowAnswer
     }
   }
 

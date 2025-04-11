@@ -390,7 +390,7 @@ class TwoValidationStepsWorkflowServiceImpl(
                  .get(changeRequestId)
                  .notOptional(s"Change request with ID '${changeRequestId.value}' was not found in database")
       saved <-
-        commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, new DateTime(), reason, None, qc.nodePerms)).toIO
+        commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, new DateTime(), reason, None, qc.nodePerms))
       _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
       state <- changeStep(from, Deployed, changeRequestId, actor, reason)
     } yield {

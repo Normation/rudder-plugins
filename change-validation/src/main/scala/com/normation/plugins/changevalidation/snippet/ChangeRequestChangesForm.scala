@@ -109,30 +109,34 @@ class ChangeRequestChangesForm(
         implicit val qc: QueryContext = CurrentUser.queryContext
         changeRequest match {
           case cr: ConfigurationChangeRequest =>
-            ruleCategoryRepository.getRootCategory().toBox match {
-              case Full(rootRuleCategory) =>
-                ("#changeTree ul *" #> new ChangesTreeNode(cr, rootRuleCategory).toXml &
-                "#history *" #> displayHistory(
-                  rootRuleCategory,
-                  cr.directives.values.map(_.changes).toList,
-                  cr.nodeGroups.values.map(_.changes).toList,
-                  cr.rules.values.map(_.changes).toList,
-                  cr.globalParams.values.map(_.changes).toList
-                ) &
-                "#diff *" #> diff(
-                  rootRuleCategory,
-                  cr.directives.values.map(_.changes).toList,
-                  cr.nodeGroups.values.map(_.changes).toList,
-                  cr.rules.values.map(_.changes).toList,
-                  cr.globalParams.values.map(_.changes).toList
-                ))(form) ++
-                Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");""")) // JsRaw ok, const
-
-              case eb: EmptyBox =>
-                val e = eb ?~! "An error occurred when trying to get data from base. "
-                logger.error(e.messageChain)
-                Text(e.msg)
-            }
+            ruleCategoryRepository
+              .getRootCategory()
+              .chainError("An error occurred when trying to get data from base. ")
+              .fold(
+                err => {
+                  logger.error(err.fullMsg)
+                  Text(err.fullMsg)
+                },
+                rootRuleCategory => {
+                  ("#changeTree ul *" #> new ChangesTreeNode(cr, rootRuleCategory).toXml &
+                  "#history *" #> displayHistory(
+                    rootRuleCategory,
+                    cr.directives.values.map(_.changes).toList,
+                    cr.nodeGroups.values.map(_.changes).toList,
+                    cr.rules.values.map(_.changes).toList,
+                    cr.globalParams.values.map(_.changes).toList
+                  ) &
+                  "#diff *" #> diff(
+                    rootRuleCategory,
+                    cr.directives.values.map(_.changes).toList,
+                    cr.nodeGroups.values.map(_.changes).toList,
+                    cr.rules.values.map(_.changes).toList,
+                    cr.globalParams.values.map(_.changes).toList
+                  ))(form) ++
+                  Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");""")) // JsRaw ok, const
+                }
+              )
+              .runNow
 
           case _ => Text("not implemented")
         }
