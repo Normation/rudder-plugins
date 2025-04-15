@@ -17,10 +17,11 @@ pipeline {
             //when { not { changeRequest() } }
             agent {
                 dockerfile {
+                    label "generic-docker"
                     filename 'ci/dep-check.Dockerfile'
                     additionalBuildArgs "--build-arg USER_ID=${JENKINS_UID}"
                     // and share maven cache
-                    args '-v /srv/cache/maven:/home/jenkins/.m2'
+                    args '-u 0:0 -v /srv/cache/maven:/root/.m2'
                 }
             }
             steps {
