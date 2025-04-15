@@ -36,12 +36,15 @@ class UnsupervisedTargetsRepositoryTest extends Specification with JsonSpecMatch
     val file       = tmpDir / "unsupervised-targets.json"
 
     "do nothing if the directory is not writable" in {
+      // THIS IS SKIPPED, see at the end of block
       val unsupervisedRepo = new UnsupervisedTargetsRepository(tmpDirPath, "unsupervised-targets.json")
       tmpDir.setPermissions(PosixFilePermissions.fromString("r--r--r--").asScala.toSet)
 
       unsupervisedRepo.checkPathAndInitRepos().either.runNow must beLeft
       val file = tmpDir / "unsupervised-targets.json"
       file.exists must beFalse
+
+      skipped("Permissions testing could fail on CI in temporary folder, skipping this for now")
     }
 
     "do nothing if the file exists" in {
