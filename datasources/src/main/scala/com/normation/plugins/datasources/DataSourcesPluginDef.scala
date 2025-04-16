@@ -71,7 +71,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (
       (Menu("150-dataSourceManagement", <span>Data sources</span>) /
-      "secure" / "plugins" / "dataSourceManagement"
+      "secure" / "administration" / "dataSourceManagement"
       >> TestAccess(() => Boot.userIsAllowed("/secure/index", Administration.Read))
       >> Template(() =>
         ClasspathTemplates("template" :: "dataSourceManagement" :: Nil) openOr <div>Template not found</div>
