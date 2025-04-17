@@ -37,6 +37,7 @@
 package com.normation.plugins.changevalidation
 
 import better.files.File
+import cats.data.NonEmptyList
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
@@ -225,6 +226,13 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
 
     override def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {
       state.succeed
+    }
+
+    override def getCountByState(filter: NonEmptyList[WorkflowNodeId]): IOResult[Map[WorkflowNodeId, Long]] = {
+      changeRequestsByStatus.flatMap {
+        case (k, v) =>
+          filter.find(_ == k).map({ _ => (k, v.size.toLong) })
+      }.succeed
     }
 
     override def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]] = {

@@ -35,7 +35,7 @@
  *************************************************************************************
  */
 package com.normation.plugins.changevalidation
-
+import cats.data.NonEmptyList
 import cats.implicits.*
 import com.normation.errors.IOResult
 import com.normation.rudder.db.Doobie
@@ -43,6 +43,7 @@ import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import doobie.*
 import doobie.implicits.*
+import doobie.util.fragments
 import net.liftweb.common.Loggable
 import zio.interop.catz.*
 
@@ -51,6 +52,8 @@ import zio.interop.catz.*
  */
 trait RoWorkflowRepository {
   def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]]
+
+  def getCountByState(filter: NonEmptyList[WorkflowNodeId]): IOResult[Map[WorkflowNodeId, Long]]
 
   def getStateOfChangeRequest(crId: ChangeRequestId): IOResult[WorkflowNodeId]
 
@@ -66,6 +69,12 @@ trait WoWorkflowRepository {
 trait RoWorkflowJdbcRepositorySQL {
   def getAllByStateSQL(state: WorkflowNodeId): Query0[ChangeRequestId] = {
     sql"select id from workflow where state = $state".query[ChangeRequestId]
+  }
+
+  def getCountByStateSQL(filter: NonEmptyList[WorkflowNodeId]): Query0[(WorkflowNodeId, Long)] = {
+    val f = fragments.in(fr"state", filter)
+    sql"select state,count(distinct(id)) from workflow where ${f} group by state"
+      .query[(WorkflowNodeId, Long)]
   }
 
   def getStateOfChangeRequestSQL(crId: ChangeRequestId): Query0[WorkflowNodeId] = {
@@ -96,6 +105,24 @@ class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with
     transactIOResult(s"Could not get change request with state ${state.value}")(xa =>
       getAllByStateSQL(state).to[Vector].transact(xa)
     )
+  }
+
+  /**
+   * Returns the number of change requests for each state in the given filter.
+   * If there are no existing change requests for a given state in the filter, the count for this state will be 0.
+   * @param filter
+   * @return
+   */
+  override def getCountByState(filter: NonEmptyList[WorkflowNodeId]): IOResult[Map[WorkflowNodeId, Long]] = {
+    transactIOResult("Could not get total count of change requests in each state")(xa => {
+      for {
+        req    <- getCountByStateSQL(filter).to[Vector].transact(xa).map(_.toMap)
+        initMap = filter.map((_, 0L)).toList.toMap
+        res     = req.combine(initMap)
+      } yield {
+        res
+      }
+    })
   }
 
   def getStateOfChangeRequest(crId: ChangeRequestId): IOResult[WorkflowNodeId] = {

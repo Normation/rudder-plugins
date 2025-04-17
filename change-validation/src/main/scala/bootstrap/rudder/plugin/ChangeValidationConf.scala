@@ -71,6 +71,8 @@ import com.normation.plugins.changevalidation.api.SupervisedTargetsApi
 import com.normation.plugins.changevalidation.api.SupervisedTargetsApiImpl
 import com.normation.plugins.changevalidation.api.ValidatedUserApi
 import com.normation.plugins.changevalidation.api.ValidatedUserApiImpl
+import com.normation.plugins.changevalidation.api.WorkflowInternalApi
+import com.normation.plugins.changevalidation.api.WorkflowInternalApiImpl
 import com.normation.plugins.changevalidation.extension.ChangeValidationTab
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.DirectiveUid
@@ -319,14 +321,18 @@ object ChangeValidationConf extends RudderPluginModule {
       roValidatedUserRepository,
       woValidatedUserRepository
     )
+    val api4 = new WorkflowInternalApiImpl(
+      roWorkflowRepository,
+      RudderConfig.userService
+    )
     new LiftApiModuleProvider[EndpointSchema] {
       override def schemas: ApiModuleProvider[EndpointSchema] = new ApiModuleProvider[EndpointSchema] {
         override def endpoints: List[EndpointSchema] =
-          ValidatedUserApi.endpoints ::: SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints
+          ValidatedUserApi.endpoints ::: SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints ::: WorkflowInternalApi.endpoints
       }
 
       override def getLiftEndpoints(): List[LiftApiModule] =
-        api1.getLiftEndpoints() ::: api2.getLiftEndpoints() ::: api3.getLiftEndpoints()
+        api1.getLiftEndpoints() ::: api2.getLiftEndpoints() ::: api3.getLiftEndpoints() ::: api4.getLiftEndpoints()
     }
   }
 
