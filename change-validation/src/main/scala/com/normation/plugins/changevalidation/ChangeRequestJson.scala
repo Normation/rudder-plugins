@@ -198,6 +198,31 @@ object ChangeRequestJson {
   }
 }
 
+/**
+ * Class that represents the number of change requests that are currently in a "pending" status, i.e.
+ * "Pending validation" and "Pending deployment" respectively.
+ * Both fields are optional : either field will be present if and only if the user who made the request has
+ * the required authorization type, i.e. Validator.Read, and Deployer.Read authorizations respectively.
+ *
+ * @param pendingValidation the current number of change requests that have the "Pending validation" status
+ * @param pendingDeployment the current number of change requests that have the "Pending deployment" status
+ */
+final case class PendingCountJson(
+    pendingValidation: Option[Long],
+    pendingDeployment: Option[Long]
+)
+
+object PendingCountJson {
+  implicit val encoder: JsonEncoder[PendingCountJson] = DeriveJsonEncoder.gen[PendingCountJson]
+
+  def from(map: Map[WorkflowNodeId, Long]): PendingCountJson = {
+    PendingCountJson(
+      map.get(TwoValidationStepsWorkflowServiceImpl.Validation.id),
+      map.get(TwoValidationStepsWorkflowServiceImpl.Deployment.id)
+    )
+  }
+}
+
 @jsonDiscriminator("action") sealed trait ActionChangeJson {
   def name: String = this match {
     case ActionChangeJson.create => "create"
