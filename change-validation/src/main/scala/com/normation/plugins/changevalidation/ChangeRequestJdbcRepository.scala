@@ -154,8 +154,8 @@ class RoChangeRequestJdbcRepository(
   import doobie.*
 
   // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
-  private[this] def execQuery(q: Query0[Box[ChangeRequest]]): Box[Vector[ChangeRequest]] = {
-    transactRunBox(xa => {
+  private[this] def execQuery(errMsg: String, q: Query0[Box[ChangeRequest]]): IOResult[Vector[ChangeRequest]] = {
+    transactIOResult(errMsg)(xa => {
       q.to[Vector]
         .map(
           // we are just ignoring change request with unserialisation
@@ -166,47 +166,52 @@ class RoChangeRequestJdbcRepository(
     })
   }
 
-  override def getAll(): Box[Vector[ChangeRequest]] = {
-    execQuery(getAllSQL)
+  override def getAll(): IOResult[Vector[ChangeRequest]] = {
+    execQuery("Could not get all change requests in database", getAllSQL)
   }
 
-  override def get(changeRequestId: ChangeRequestId): Box[Option[ChangeRequest]] = {
-    transactRunBox(xa => getSQL(changeRequestId).option.map(_.flatMap(_.toOption)).transact(xa))
+  override def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = {
+    transactIOResult(s"Could not get change request with id ${changeRequestId} in database")(xa =>
+      getSQL(changeRequestId).option.map(_.flatMap(_.toOption)).transact(xa)
+    )
   }
 
   // Get every change request where a user add a change
-  override def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]] = {
-    execQuery(getByContributorSQL(actor))
+  override def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = {
+    execQuery(s"Could not get change requests that were modified by ${actor.name} in database", getByContributorSQL(actor))
   }
 
-  override def getByDirective(id: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     execQuery(
+      s"Could not get change requests for directive with id ${id.value} in database",
       getChangeRequestsByXpathContentSQL(
         directiveIdXPathFr,
         id.value,
         onlyPending
       )
-    ) ?~! s"could not fetch change request for directive with id ${id.value}"
+    )
   }
 
-  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     execQuery(
+      s"Could not get change requests for group with id ${id.serialize} in database",
       getChangeRequestsByXpathContentSQL(
         groupIdXPathFr,
         id.serialize,
         onlyPending
       )
-    ) ?~! s"could not fetch change request for group with id ${id.serialize}"
+    )
   }
 
-  override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     execQuery(
+      s"Could not get change requests for rule with id ${id.value} in database",
       getChangeRequestsByXpathContentSQL(
         ruleIdXPathFr,
         id.value,
         onlyPending
       )
-    ) ?~! s"could not fetch change request for rule with id ${id.value}"
+    )
   }
 
   override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
@@ -259,19 +264,18 @@ class WoChangeRequestJdbcRepository(
    * The id is ignored, and a new one will be attributed
    * to the change request.
    */
-  def createChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequest] = {
+  def createChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest] = {
 
     val (name, desc, xml, modId) = getAtom(changeRequest)
 
     for {
-      id <- transactRunBox(xa => createChangeRequestSQL(name, desc, xml, modId).withUniqueGeneratedKeys[Int]("id").transact(xa))
-      cr <- roRepo.get(ChangeRequestId(id)).flatMap {
-              case None    =>
-                val msg = s"The newly saved change request with ID ${id} was not found back in data base"
-                ChangeValidationLogger.error(msg)
-                Failure(msg)
-              case Some(x) => Full(x)
-            }
+      id <- transactIOResult(s"Could not create change request with id ${changeRequest.id} in database")(xa =>
+              createChangeRequestSQL(name, desc, xml, modId).withUniqueGeneratedKeys[Int]("id").transact(xa)
+            )
+      cr <- roRepo
+              .get(ChangeRequestId(id))
+              .notOptional(s"The newly saved change request with id ${id} was not found back in database")
+              .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
     } yield {
       cr
     }
@@ -281,7 +285,11 @@ class WoChangeRequestJdbcRepository(
    * Delete a change request.
    * (whatever the read/write mode is).
    */
-  def deleteChangeRequest(changeRequestId: ChangeRequestId, actor: EventActor, reason: Option[String]): Box[ChangeRequest] = {
+  def deleteChangeRequest(
+      changeRequestId: ChangeRequestId,
+      actor:           EventActor,
+      reason:          Option[String]
+  ): IOResult[ChangeRequest] = {
     // we should update it rather, shouldn't we ?
     throw new IllegalArgumentException(
       "This a developer error. Please contact rudder developer, saying that they call unemplemented deleteChangeRequest"
@@ -291,29 +299,24 @@ class WoChangeRequestJdbcRepository(
   /**
    * Update a change request. The change request must exists.
    */
-  def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequest] = {
+  def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest] = {
     // no transaction between steps, because we don't actually use anything in the existing change request
 
     for {
-      cr      <- roRepo.get(changeRequest.id)
-      ok      <- cr match {
-                   case None    =>
-                     val msg = s"Cannot update non-existent Change Request with id ${changeRequest.id.value}"
-                     ChangeValidationLogger.warn(msg)
-                     Failure(msg)
-                   case Some(x) => Full("ok")
-                 }
-      update  <- {
+      _       <- roRepo
+                   .get(changeRequest.id)
+                   .notOptional(s"Cannot update non-existent Change Request with id ${changeRequest.id.value}")
+                   .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
+      _       <- {
         val (name, desc, xml, modId) = getAtom(changeRequest)
-        transactRunBox(xa => updateChangeRequestSQL(name, desc, xml, modId, changeRequest.id).run.transact(xa))
+        transactIOResult(s"Could not update the change request with id ${changeRequest.id} in database")(xa =>
+          updateChangeRequestSQL(name, desc, xml, modId, changeRequest.id).run.transact(xa)
+        )
       }
-      updated <- roRepo.get(changeRequest.id).flatMap {
-                   case None    =>
-                     val msg = s"Couldn't find the updated entry when updating Change Request ${changeRequest.id.value}"
-                     ChangeValidationLogger.error(msg)
-                     Failure(msg)
-                   case Some(x) => Full(x)
-                 }
+      updated <- roRepo
+                   .get(changeRequest.id)
+                   .notOptional(s"Couldn't find the updated entry when updating Change Request ${changeRequest.id.value}")
+                   .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
     } yield {
       updated
     }

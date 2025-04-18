@@ -198,6 +198,22 @@ object ChangeRequestJson {
   }
 }
 
+final case class PendingCountJson(
+    pendingValidation: Option[Long],
+    pendingDeployment: Option[Long]
+)
+
+object PendingCountJson {
+  implicit val encoder: JsonEncoder[PendingCountJson] = DeriveJsonEncoder.gen[PendingCountJson]
+
+  def from(map: Map[WorkflowNodeId, Long]): PendingCountJson = {
+    PendingCountJson(
+      map.get(TwoValidationStepsWorkflowServiceImpl.Validation.id),
+      map.get(TwoValidationStepsWorkflowServiceImpl.Deployment.id)
+    )
+  }
+}
+
 @jsonDiscriminator("action") sealed trait ActionChangeJson {
   def name: String = this match {
     case ActionChangeJson.create => "create"

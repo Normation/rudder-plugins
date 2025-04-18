@@ -48,6 +48,7 @@ import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.services.JsTableData
 import com.normation.rudder.web.services.JsTableLine
 import com.normation.utils.DateFormaterService
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.*
 import net.liftweb.http.*
 import net.liftweb.http.DispatchSnippet
@@ -61,6 +62,8 @@ import org.apache.commons.text.StringEscapeUtils
 import scala.xml.Elem
 import scala.xml.NodeSeq
 import scala.xml.Text
+import zio.UIO
+import zio.syntax.*
 
 class ChangeRequestManagement extends DispatchSnippet with Loggable {
 
@@ -113,29 +116,32 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     }
   }
 
-  def getLines()    = {
+  def getLines(): UIO[JsTableData[ChangeRequestLine]] = {
     val changeRequests = if (currentUser) roCrRepo.getAll() else roCrRepo.getByContributor(CurrentUser.actor)
-    JsTableData(changeRequests match {
-      case Full(changeRequests) =>
-        val eventMap = getLastEventsMap
 
-        val workflowStateMap: Map[ChangeRequestId, WorkflowNodeId] = workflowService.getAllChangeRequestsStep() match {
-          case Full(stateMap) => stateMap
-          case eb: EmptyBox =>
-            val fail = eb ?~! "Could not find change requests state"
-            logger.error(fail.messageChain)
-            Map()
-        }
-        changeRequests.map(ChangeRequestLine(_, workflowStateMap, eventMap)).toList
-      case eb: EmptyBox =>
-        val fail = eb ?~! s"Could not get change requests because of : ${eb}"
-        logger.error(fail.msg)
-        Nil
-    })
+    for {
+      crs              <- changeRequests
+                            .chainError("Could not get change requests")
+                            .catchAll(err => {
+                              logger.error(err.fullMsg)
+                              Vector().succeed
+                            })
+      workflowStateMap <- workflowService
+                            .getAllChangeRequestsStep()
+                            .chainError("Could not find change requests state")
+                            .catchAll(err => {
+                              logger.error(err.fullMsg)
+                              Map.empty[ChangeRequestId, WorkflowNodeId].succeed
+                            })
+      lastEventsMap    <- getLastEventsMap
+    } yield {
+      JsTableData(crs.map(ChangeRequestLine(_, workflowStateMap, lastEventsMap)).toList)
+    }
   }
+
   def dataTableInit = {
     val refresh = AnonFunc(
-      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().toJson.toJsCmd})"))
+      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().runNow.toJson.toJsCmd})"))
     ) // JsRaw ok, from json
 
     val filter = initFilter match {
@@ -155,36 +161,38 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
   /**
    * Get all events, merge them via a mutMap (we only want to keep the most recent event)
    */
-  private[this] def getLastEventsMap = {
-    val CREventsMap:       Map[ChangeRequestId, EventLog] = changeRequestEventLogService.getLastCREvents match {
-      case Full(map) => map
-      case eb: EmptyBox =>
-        val fail = eb ?~! "Could not find last Change requests events requests state"
-        logger.error(fail.messageChain)
-        Map()
-    }
-    val workflowEventsMap: Map[ChangeRequestId, EventLog] = workflowLoggerService.getLastWorkflowEvents() match {
-      case Full(map) => map
-      case eb: EmptyBox =>
-        val fail = eb ?~! "Could not find last Change requests events requests state"
-        logger.error(fail.messageChain)
-        Map()
-    }
-
-    import scala.collection.mutable.Map as MutMap
-
-    val eventMap = MutMap() ++ CREventsMap
+  private[this] def getLastEventsMap: UIO[Map[ChangeRequestId, EventLog]] = {
 
     for {
-      (crId, event) <- workflowEventsMap
-    } {
-      eventMap.get(crId) match {
-        case Some(currentEvent) if (currentEvent.creationDate isAfter event.creationDate) =>
-        case _                                                                            => eventMap.update(crId, event)
-      }
-    }
+      crEventsMap       <- changeRequestEventLogService.getLastCREvents
+                             .chainError("Could not find last Change requests events requests state")
+                             .catchAll(err => {
+                               logger.error(err.fullMsg)
+                               Map.empty[ChangeRequestId, EventLog].succeed
+                             })
+      workflowEventsMap <- workflowLoggerService
+                             .getLastWorkflowEvents()
+                             .chainError("Could not find last Change requests events requests state")
+                             .catchAll(err => {
+                               logger.error(err.fullMsg)
+                               Map.empty[ChangeRequestId, EventLog].succeed
+                             })
+    } yield {
+      import scala.collection.mutable.Map as MutMap
 
-    eventMap.toMap
+      val eventMap = MutMap() ++ crEventsMap
+
+      for {
+        (crId, event) <- workflowEventsMap
+      } {
+        eventMap.get(crId) match {
+          case Some(currentEvent) if (currentEvent.creationDate isAfter event.creationDate) =>
+          case _                                                                            => eventMap.update(crId, event)
+        }
+      }
+
+      eventMap.toMap
+    }
   }
 
   def statusFilter = {
