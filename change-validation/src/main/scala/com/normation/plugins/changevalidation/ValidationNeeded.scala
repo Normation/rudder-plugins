@@ -37,7 +37,6 @@
 
 package com.normation.plugins.changevalidation
 
-import com.normation.box.*
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
@@ -52,9 +51,9 @@ import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
-import net.liftweb.common.Box
-import net.liftweb.common.Full
 import scala.collection.MapView
+import zio.ZIO
+import zio.syntax.ToZio
 
 object bddMock {
   val USER_AUTH_NEEDED = Map(
@@ -71,10 +70,10 @@ object bddMock {
  * (see https://issues.rudder.io/issues/22188#note-5)
  */
 trait ValidationNeeded {
-  def forRule(actor:        EventActor, change: RuleChangeRequest):        Box[Boolean]
-  def forDirective(actor:   EventActor, change: DirectiveChangeRequest):   Box[Boolean]
-  def forNodeGroup(actor:   EventActor, change: NodeGroupChangeRequest):   Box[Boolean]
-  def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean]
+  def forRule(actor:        EventActor, change: RuleChangeRequest):        IOResult[Boolean]
+  def forDirective(actor:   EventActor, change: DirectiveChangeRequest):   IOResult[Boolean]
+  def forNodeGroup(actor:   EventActor, change: NodeGroupChangeRequest):   IOResult[Boolean]
+  def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): IOResult[Boolean]
 }
 
 /*
@@ -109,22 +108,25 @@ class NodeGroupValidationNeeded(
    * - rule R is changed to add Group2 in its target (or opposite change: Group2 removed)
    * - the change must be validated.
    */
-  override def forRule(actor: EventActor, change: RuleChangeRequest): Box[Boolean] = {
-    val start = System.currentTimeMillis()
-    val res   = (for {
+  override def forRule(actor: EventActor, change: RuleChangeRequest): IOResult[Boolean] = {
+    for {
+      start           <- com.normation.zio.currentTimeMillis
       groups          <- groupLib.getFullGroupLibrary()
       // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
       arePolicyServer <- nodeFactRepo.getAll()(QueryContext.systemQC)
       supervised      <- supervisedTargets()
+      targets          = Set(change.newRule) ++ change.previousRule.toSet
+      res              = checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer), supervised, targets)
+      end             <- com.normation.zio.currentTimeMillis
+      _               <- {
+        ChangeValidationLoggerPure.Metrics.debug(
+          s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}]" +
+          s"change requestion need for validation in ${end - start}ms"
+        )
+      }
     } yield {
-      val targets = Set(change.newRule) ++ change.previousRule.toSet
-      checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer), supervised, targets)
-    }).toBox
-    ChangeValidationLogger.Metrics.debug(
-      s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System
-          .currentTimeMillis() - start}ms"
-    )
-    res
+      res
+    }
   }
 
   /**
@@ -161,7 +163,7 @@ class NodeGroupValidationNeeded(
    *   belong to an other group)
    * - now the rule is applied to supervised node, but no validation was done.
    */
-  override def forNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): Box[Boolean] = {
+  override def forNodeGroup(actor: EventActor, change: NodeGroupChangeRequest): IOResult[Boolean] = {
     // Here we need to test the future content of the group, and not the current one.
     // So we need to know:
     // - the list of supervised node in the group before the change,
@@ -169,61 +171,70 @@ class NodeGroupValidationNeeded(
     // - the list of supervised node in the group after change,
     // => non empty means validation needed
 
-    val start = System.currentTimeMillis()
-
-    val res = (for {
+    for {
+      start      <- com.normation.zio.currentTimeMillis
       groups     <- groupLib.getFullGroupLibrary()
       nodeFacts  <- nodeFactRepo.getAll()(QueryContext.systemQC)
       supervised <- supervisedTargets()
-    } yield {
-      val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
-      val exists      = groups
-        .getNodeIds(supervised.map(identity), nodeFacts.mapValues(_.rudderSettings.isPolicyServer))
-        .find(nodeId => targetNodes.contains(nodeId))
+      targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
+      exists      = groups
+                      .getNodeIds(supervised.map(identity), nodeFacts.mapValues(_.rudderSettings.isPolicyServer))
+                      .find(nodeId => targetNodes.contains(nodeId))
+      res        <-
+        // we want to let the log know why the change request needs validation
+        ZIO
+          .foreach(exists) { nodeId =>
+            ChangeValidationLoggerPure
+              .debug(
+                s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.serialize}]"
+              )
+          }
+          .map(_.nonEmpty)
 
-      // we want to let the log knows why the change request need validation
-      exists.foreach { nodeId =>
-        ChangeValidationLogger.debug(
-          s"Node '${nodeId.value}' belongs to both a supervised group and to group '${change.newGroup.name}' [${change.newGroup.id.serialize}]"
+      end <- com.normation.zio.currentTimeMillis
+      _   <- {
+        ChangeValidationLoggerPure.Metrics.debug(
+          s"Check group '${change.newGroup.name}' [${change.newGroup.id.serialize}] " +
+          s"change requestion need for validation in ${end - start}ms"
         )
       }
-      exists.nonEmpty
-    }).toBox
-    ChangeValidationLogger.Metrics.debug(
-      s"Check group '${change.newGroup.name}' [${change.newGroup.id.serialize}] change requestion need for validation in ${System
-          .currentTimeMillis() - start}ms"
-    )
-    res
+    } yield {
+      res
+    }
   }
 
   /*
    * A directive need a validation if any rule using it need a validation.
    */
-  override def forDirective(actor: EventActor, change: DirectiveChangeRequest): Box[Boolean] = {
-    // in a change, the old directive id and the new one is the same.
-    val directiveId = change.newDirective.id
-    val start       = System.currentTimeMillis()
-    val res         = (for {
+  override def forDirective(actor: EventActor, change: DirectiveChangeRequest): IOResult[Boolean] = {
+    for {
+      start      <- com.normation.zio.currentTimeMillis
+      // in a change, the old directive id and the new one is the same.
+      directiveId = change.newDirective.id
       rules      <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId)))
       // we need to add potentially new rules applied to that directive that the previous request does not cover
       newRules    = change.updatedRules
       supervised <- supervisedTargets()
       groups     <- groupLib.getFullGroupLibrary()
       nodeFacts  <- nodeFactRepo.getAll()(QueryContext.systemQC)
+      res         =
+        checkNodeTargetByRule(groups, nodeFacts.mapValues(_.rudderSettings.isPolicyServer), supervised, (rules ++ newRules).toSet)
+      end        <- com.normation.zio.currentTimeMillis
+      _          <- {
+        ChangeValidationLoggerPure.Metrics.debug(
+          s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.serialize}]" +
+          s"change requestion need for validation in ${end - start}ms"
+        )
+      }
     } yield {
-      checkNodeTargetByRule(groups, nodeFacts.mapValues(_.rudderSettings.isPolicyServer), supervised, (rules ++ newRules).toSet)
-    }).toBox
-    ChangeValidationLogger.Metrics.debug(
-      s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.serialize}] change requestion need for validation in ${System
-          .currentTimeMillis() - start}ms"
-    )
-    res
+      res
+    }
   }
 
   /*
    * For a global parameter, we just answer "yes"
    */
-  override def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[Boolean] = {
-    Full(true)
+  override def forGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): IOResult[Boolean] = {
+    true.succeed
   }
 }

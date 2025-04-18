@@ -45,24 +45,23 @@ import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
-import net.liftweb.common.Box
 
 /**
  * Read access to change request
  */
 trait RoChangeRequestRepository {
 
-  def getAll(): Box[Vector[ChangeRequest]]
+  def getAll(): IOResult[Vector[ChangeRequest]]
 
-  def get(changeRequestId: ChangeRequestId): Box[Option[ChangeRequest]]
+  def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]]
 
-  def getByDirective(id: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]]
+  def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]]
 
-  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]]
+  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]]
 
-  def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]]
+  def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]]
 
-  def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]]
+  def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]]
 
   def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]]
 
@@ -72,35 +71,30 @@ trait RoChangeRequestRepository {
  * A proxy implementation simply delegating to either A or B implementation
  */
 class EitherRoChangeRequestRepository(
-    cond:      () => Box[Boolean],
+    cond:      () => IOResult[Boolean],
     whenTrue:  RoChangeRequestRepository,
     whenFalse: RoChangeRequestRepository
 ) extends RoChangeRequestRepository {
 
-  // remove some boilerplate to make following proxy implementation more readable, just exposing the actual method to call
-  private[this] def condApply[T](method: RoChangeRequestRepository => Box[T]): Box[T] = {
+  private[this] def condApply[T](method: RoChangeRequestRepository => IOResult[T]): IOResult[T] = {
     cond().flatMap(if (_) method(whenTrue) else method(whenFalse))
   }
 
-  private[this] def condApply[T](method: RoChangeRequestRepository => IOResult[T]): IOResult[T] = {
-    cond().toIO.flatMap(if (_) method(whenTrue) else method(whenFalse))
-  }
+  def getAll(): IOResult[Vector[ChangeRequest]] = condApply(_.getAll())
 
-  def getAll(): Box[Vector[ChangeRequest]] = condApply(_.getAll())
+  def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = condApply(_.get(changeRequestId))
 
-  def get(changeRequestId: ChangeRequestId): Box[Option[ChangeRequest]] = condApply(_.get(changeRequestId))
-
-  def getByDirective(id: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = condApply(
+  def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = condApply(
     _.getByDirective(id, onlyPending)
   )
 
-  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = condApply(
+  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = condApply(
     _.getByNodeGroup(id, onlyPending)
   )
 
-  def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = condApply(_.getByRule(id, onlyPending))
+  def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = condApply(_.getByRule(id, onlyPending))
 
-  def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]] = condApply(_.getByContributor(actor))
+  def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = condApply(_.getByContributor(actor))
 
   def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = condApply(
     _.getByFilter(filter)
@@ -117,7 +111,7 @@ trait WoChangeRequestRepository {
    * The id is ignored, and a new one will be attributed
    * to the change request.
    */
-  def createChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequest]
+  def createChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest]
 
   /**
    * Update a change request. The change request must not
@@ -126,13 +120,13 @@ trait WoChangeRequestRepository {
    * will be ignore), an explicit call to setWriteOnly must be
    * done for that.
    */
-  def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): Box[ChangeRequest]
+  def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest]
 
   /**
    * Delete a change request.
    * (whatever the read/write mode is).
    */
-  def deleteChangeRequest(changeRequestId: ChangeRequestId, actor: EventActor, reason: Option[String]): Box[ChangeRequest]
+  def deleteChangeRequest(changeRequestId: ChangeRequestId, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest]
 
 }
 
@@ -140,23 +134,27 @@ trait WoChangeRequestRepository {
  * Again, a proxy forwarding to an implementation based on a runtime property
  */
 class EitherWoChangeRequestRepository(
-    cond:      () => Box[Boolean],
+    cond:      () => IOResult[Boolean],
     whenTrue:  WoChangeRequestRepository,
     whenFalse: WoChangeRequestRepository
 ) extends WoChangeRequestRepository {
-  def createChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]):     Box[ChangeRequest] = {
+  def createChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest] = {
     cond().flatMap(
       if (_) whenTrue.createChangeRequest(changeRequest, actor, reason)
       else whenFalse.createChangeRequest(changeRequest, actor, reason)
     )
   }
-  def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]):     Box[ChangeRequest] = {
+  def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest] = {
     cond().flatMap(
       if (_) whenTrue.updateChangeRequest(changeRequest, actor, reason)
       else whenFalse.updateChangeRequest(changeRequest, actor, reason)
     )
   }
-  def deleteChangeRequest(changeRequestId: ChangeRequestId, actor: EventActor, reason: Option[String]): Box[ChangeRequest] = {
+  def deleteChangeRequest(
+      changeRequestId: ChangeRequestId,
+      actor:           EventActor,
+      reason:          Option[String]
+  ): IOResult[ChangeRequest] = {
     cond().flatMap(
       if (_) whenTrue.deleteChangeRequest(changeRequestId, actor, reason)
       else whenFalse.deleteChangeRequest(changeRequestId, actor, reason)

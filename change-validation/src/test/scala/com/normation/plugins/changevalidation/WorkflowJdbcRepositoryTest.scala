@@ -41,10 +41,10 @@ import cats.effect.IO
 import com.normation.rudder.db.DBCommon
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.zio.UnsafeRun
 import doobie.Transactor
 import doobie.specs2.analysisspec.IOChecker
 import doobie.syntax.all.*
-import net.liftweb.common.Full
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
@@ -87,27 +87,27 @@ class WorkflowJdbcRepositoryTest extends Specification with DBCommon with IOChec
     val firstWorkflowNodeId  = WorkflowNodeId("first")
     val secondWorkflowNodeId = WorkflowNodeId("second")
     "create a workflow" in {
-      woWorkflowJdbcRepository.createWorkflow(changeRequestId, firstWorkflowNodeId) must beEqualTo(Full(firstWorkflowNodeId))
+      woWorkflowJdbcRepository.createWorkflow(changeRequestId, firstWorkflowNodeId).runNow must beEqualTo(firstWorkflowNodeId)
     }
 
     "update a workflow" in {
-      woWorkflowJdbcRepository.updateState(changeRequestId, firstWorkflowNodeId, secondWorkflowNodeId) must beEqualTo(
-        Full(secondWorkflowNodeId)
+      woWorkflowJdbcRepository.updateState(changeRequestId, firstWorkflowNodeId, secondWorkflowNodeId).runNow must beEqualTo(
+        secondWorkflowNodeId
       )
     }
 
     "get all change requests by state" in {
-      roWorkflowJdbcRepository.getAllByState(firstWorkflowNodeId) must beEqualTo(Full(Seq.empty))
-      roWorkflowJdbcRepository.getAllByState(secondWorkflowNodeId) must beEqualTo(Full(Vector(changeRequestId)))
+      roWorkflowJdbcRepository.getAllByState(firstWorkflowNodeId).runNow must beEqualTo(Seq.empty)
+      roWorkflowJdbcRepository.getAllByState(secondWorkflowNodeId).runNow must beEqualTo(Vector(changeRequestId))
 
     }
 
     "get state of change request" in {
-      roWorkflowJdbcRepository.getStateOfChangeRequest(changeRequestId) must beEqualTo(Full(secondWorkflowNodeId))
+      roWorkflowJdbcRepository.getStateOfChangeRequest(changeRequestId).runNow must beEqualTo(secondWorkflowNodeId)
     }
 
     "get all change requests state" in {
-      roWorkflowJdbcRepository.getAllChangeRequestsState() must beEqualTo(Full(Map(changeRequestId -> secondWorkflowNodeId)))
+      roWorkflowJdbcRepository.getAllChangeRequestsState().runNow must beEqualTo(Map(changeRequestId -> secondWorkflowNodeId))
     }
 
   }

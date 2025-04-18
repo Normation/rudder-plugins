@@ -74,8 +74,6 @@ import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserService
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.Box
-import net.liftweb.common.Full
 import scala.collection.immutable.SortedMap
 import zio.Chunk
 import zio.Ref
@@ -178,10 +176,10 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         .succeed
     }
 
-    override def get(changeRequestId: ChangeRequestId): Box[Option[ChangeRequest]] = {
+    override def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = {
       changeRequestsByStatus.values.flatten.find(_.id == changeRequestId) match {
-        case Some(cr) => Full(Some(cr))
-        case None     => Full(None)
+        case Some(cr) => Some(cr).succeed
+        case None     => None.succeed
       }
     }
 
@@ -189,61 +187,59 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         changeRequest: ChangeRequest,
         actor:         EventActor,
         reason:        Option[String]
-    ): Box[ChangeRequest] = {
-      Full(changeRequest)
+    ): IOResult[ChangeRequest] = {
+      changeRequest.succeed
     }
 
-    override def getAll(): Box[Vector[ChangeRequest]] = ???
+    override def getAll(): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByDirective(id: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = ???
+    override def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = ???
+    override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = ???
+    override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByContributor(actor: EventActor): Box[Vector[ChangeRequest]] = ???
+    override def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = ???
 
     override def createChangeRequest(
         changeRequest: ChangeRequest,
         actor:         EventActor,
         reason:        Option[String]
-    ): Box[ChangeRequest] = ???
+    ): IOResult[ChangeRequest] = ???
 
     override def deleteChangeRequest(
         changeRequestId: ChangeRequestId,
         actor:           EventActor,
         reason:          Option[String]
-    ): Box[ChangeRequest] = ???
+    ): IOResult[ChangeRequest] = ???
 
   }
 
   object workflowRepository extends RoWorkflowRepository with WoWorkflowRepository {
-    override def getStateOfChangeRequest(crId: ChangeRequestId): Box[WorkflowNodeId] = {
+    override def getStateOfChangeRequest(crId: ChangeRequestId): IOResult[WorkflowNodeId] = {
       changeRequestsByStatus.find(_._2.exists(_.id == crId)).map(_._1) match {
-        case Some(state) => Full(state)
-        case None        => Full(WorkflowNodeId("unknown"))
+        case Some(state) => state.succeed
+        case None        => WorkflowNodeId("unknown").succeed
       }
     }
 
-    override def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
-      Full(state)
+    override def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {
+      state.succeed
     }
 
-    override def getAllByState(state: WorkflowNodeId): Box[Seq[ChangeRequestId]] = {
+    override def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]] = {
       ???
     }
 
-    override def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): Box[WorkflowNodeId] = ???
+    override def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = ???
 
-    override def getAllChangeRequestsState(): Box[Map[ChangeRequestId, WorkflowNodeId]] = ???
+    override def getAllChangeRequestsState(): IOResult[Map[ChangeRequestId, WorkflowNodeId]] = ???
 
   }
 
   object commitAndDeployChangeRequest extends CommitAndDeployChangeRequestService {
 
-    def save(changeRequest: ChangeRequest)(implicit cc: ChangeContext): Box[ChangeRequest] = Full(
-      changeRequest
-    )
+    def save(changeRequest: ChangeRequest)(implicit cc: ChangeContext): IOResult[ChangeRequest] = changeRequest.succeed
 
     def isMergeable(changeRequest: ChangeRequest)(implicit qc: QueryContext): Boolean = {
       // can depend on "mergeable" changeRequest by their id to vary test cases
@@ -253,13 +249,14 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
   }
 
   object workflowEventLogService extends WorkflowEventLogService {
-    override def saveEventLog(stepChange: WorkflowStepChange, actor: EventActor, reason: Option[String]): Box[EventLog] = Full(
-      null
-    )
+    override def saveEventLog(stepChange: WorkflowStepChange, actor: EventActor, reason: Option[String]): IOResult[EventLog] = {
+      val res: EventLog = null
+      res.succeed
+    }
 
-    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[WorkflowStepChanged]]    = ???
-    override def getLastLog(id:              ChangeRequestId): Box[Option[WorkflowStepChanged]] = ???
-    override def getLastWorkflowEvents(): Box[Map[ChangeRequestId, EventLog]] = ???
+    override def getChangeRequestHistory(id: ChangeRequestId): IOResult[Seq[WorkflowStepChanged]]    = ???
+    override def getLastLog(id:              ChangeRequestId): IOResult[Option[WorkflowStepChanged]] = ???
+    override def getLastWorkflowEvents(): IOResult[Map[ChangeRequestId, EventLog]] = ???
 
   }
 
@@ -270,12 +267,15 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         principal: EventActor,
         diff:      ChangeRequestDiff,
         reason:    Option[String]
-    ): Box[EventLog] = Full(null)
+    ): IOResult[EventLog] = {
+      val res: EventLog = null
+      res.succeed
+    }
 
-    override def getChangeRequestHistory(id: ChangeRequestId): Box[Seq[ChangeRequestEventLog]]    = ???
-    override def getFirstLog(id:             ChangeRequestId): Box[Option[ChangeRequestEventLog]] = ???
-    override def getLastLog(id:              ChangeRequestId): Box[Option[ChangeRequestEventLog]] = ???
-    override def getLastCREvents: Box[Map[ChangeRequestId, EventLog]] = ???
+    override def getChangeRequestHistory(id: ChangeRequestId): IOResult[Seq[ChangeRequestEventLog]]    = ???
+    override def getFirstLog(id:             ChangeRequestId): IOResult[Option[ChangeRequestEventLog]] = ???
+    override def getLastLog(id:              ChangeRequestId): IOResult[Option[ChangeRequestEventLog]] = ???
+    override def getLastCREvents: IOResult[Map[ChangeRequestId, EventLog]] = ???
   }
 
   object notificationService extends NotificationService {

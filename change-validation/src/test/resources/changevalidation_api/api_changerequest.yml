@@ -3050,7 +3050,7 @@ response:
       "action": "changeRequestDetails",
       "id": "999",
       "result": "error",
-      "errorDetails": "Could not find ChangeRequest 999; cause was: Unexpected: Could not get ChangeRequest 999 details cause is: change request with id 999 does not exist."
+      "errorDetails": "Could not find ChangeRequest 999; cause was: Inconsistency: Change request with id 999 does not exist."
     }
 ---
 description: Get information about given change request when id is not a number
@@ -3063,7 +3063,7 @@ response:
       "action": "changeRequestDetails",
       "id": "aaa",
       "result": "error",
-      "errorDetails": "Could not find ChangeRequest aaa; cause was: Unexpected: 'aaa' is not a valid change request id (need to be an integer)"
+      "errorDetails": "Could not find ChangeRequest aaa; cause was: Inconsistency: 'aaa' is not a valid change request id (need to be an integer)"
     }
 ---
 description: Decline given change request
@@ -3301,7 +3301,7 @@ response:
       "action": "declineChangeRequest",
       "id": "12",
       "result": "error",
-      "errorDetails": "Could not decline ChangeRequest 12; cause was: Unexpected: Inconsistency: Could not decline ChangeRequest 12 details cause is: could not decline ChangeRequest 12, because status 'Cancelled' cannot be cancelled."
+      "errorDetails": "Could not decline ChangeRequest 12; cause was: Inconsistency: Could not decline ChangeRequest 12 details cause is: could not decline ChangeRequest 12, because status 'Cancelled' cannot be cancelled."
     }
 ---
 description: Decline given change request when id is unknown
@@ -3314,7 +3314,7 @@ response:
       "action": "declineChangeRequest",
       "id": "999",
       "result": "error",
-      "errorDetails": "Could not decline ChangeRequest 999; cause was: Unexpected: Could not get ChangeRequest 999 details cause is: change request with id 999 does not exist."
+      "errorDetails": "Could not decline ChangeRequest 999; cause was: Inconsistency: Change request with id 999 does not exist."
     }
 ---
 description: Decline given change request when id is not a number
@@ -3327,7 +3327,7 @@ response:
       "action": "declineChangeRequest",
       "id": "aaa",
       "result": "error",
-      "errorDetails": "Could not decline ChangeRequest aaa; cause was: Unexpected: 'aaa' is not a valid change request id (need to be an integer)"
+      "errorDetails": "Could not decline ChangeRequest aaa; cause was: Inconsistency: 'aaa' is not a valid change request id (need to be an integer)"
     }
 ---
 description: Accept given change request
@@ -3586,7 +3586,7 @@ response:
       "action": "acceptChangeRequest",
       "id": "999",
       "result": "error",
-      "errorDetails": "Could not accept ChangeRequest 999; cause was: Unexpected: Could not get ChangeRequest 999 details cause is: change request with id 999 does not exist."
+      "errorDetails": "Could not accept ChangeRequest 999; cause was: Inconsistency: Change request with id 999 does not exist."
     }
 ---
 description: Accept given change request when id is not a number
@@ -3603,7 +3603,7 @@ response:
       "action": "acceptChangeRequest",
       "id": "aaa",
       "result": "error",
-      "errorDetails": "Could not accept ChangeRequest aaa; cause was: Unexpected: 'aaa' is not a valid change request id (need to be an integer)"
+      "errorDetails": "Could not accept ChangeRequest aaa; cause was: Inconsistency: 'aaa' is not a valid change request id (need to be an integer)"
     }
 ---
 description: Update information about given change request
@@ -3704,7 +3704,7 @@ response:
       "action": "updateChangeRequest",
       "id": "999",
       "result": "error",
-      "errorDetails": "Could not update ChangeRequest 999; cause was: Unexpected: Could not get ChangeRequest 999 details cause is: change request with id 999 does not exist."
+      "errorDetails": "Could not update ChangeRequest 999; cause was: Inconsistency: Change request with id 999 does not exist."
     }
 ---
 description: Update information about given change request when id is not a number
@@ -3722,7 +3722,7 @@ response:
       "action": "updateChangeRequest",
       "id": "aaa",
       "result": "error",
-      "errorDetails": "Could not update ChangeRequest aaa; cause was: Unexpected: 'aaa' is not a valid change request id (need to be an integer)"
+      "errorDetails": "Could not update ChangeRequest aaa; cause was: Inconsistency: 'aaa' is not a valid change request id (need to be an integer)"
     }
 ---
 description: Update information about given change request when no parameter is sent
@@ -3735,7 +3735,7 @@ response:
       "action": "updateChangeRequest",
       "id": "4",
       "result": "error",
-      "errorDetails": "Could not update ChangeRequest 4; cause was: Unexpected: Inconsistency: Could not update ChangeRequest 4 details cause is: No changes to save."
+      "errorDetails": "Could not update ChangeRequest 4; cause was: Inconsistency: Could not update ChangeRequest 4 details cause is: No changes to save."
     }
 ---
 description: Update information about given change request without changing any info
@@ -3753,5 +3753,5 @@ response:
       "action" : "updateChangeRequest",
       "id" : "11",
       "result" : "error",
-      "errorDetails" : "Could not update ChangeRequest 11; cause was: Unexpected: Inconsistency: Could not update ChangeRequest 11 details cause is: No changes to save."
+      "errorDetails" : "Could not update ChangeRequest 11; cause was: Inconsistency: Could not update ChangeRequest 11 details cause is: No changes to save."
     }
