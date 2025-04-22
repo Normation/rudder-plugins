@@ -1,0 +1,19 @@
+description: Get number of pending deployment and pending validation change requests
+method: GET
+url: /secure/api/changevalidation/workflow/pendingCountByStatus
+headers:
+response:
+  code: 200
+  content: >-
+    {
+      "action": "pendingChangeRequestCount",
+      "result": "success",
+      "data": {
+        "workflow": [
+          {
+            "pendingValidation": 2,
+            "pendingDeployment": 1
+          }
+        ]
+      }
+    }
