@@ -57,7 +57,7 @@ import com.normation.rudder.services.workflows.GlobalParamModAction
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.RuleModAction
-import net.liftweb.common.Full
+import com.normation.zio.UnsafeRun
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
@@ -83,19 +83,19 @@ class ValidationNeededTest extends Specification {
 
     "always validate a modification in a GlobalParam" in {
       val globalParamChangeReq = GlobalParamChangeRequest(GlobalParamModAction.Create, None)
-      nodeGrpValNdd.forGlobalParam(actor, globalParamChangeReq) must beEqualTo(Full(true))
+      nodeGrpValNdd.forGlobalParam(actor, globalParamChangeReq).runNow must beTrue
     }
 
     "validate a modification in a node group if that group is supervised" in {
       val nodeGrp          = mockNodeGroups.g0
       val nodeGrpChangeReq = NodeGroupChangeRequest(DGModAction.CreateSolo, nodeGrp, None, None)
-      nodeGrpValNdd.forNodeGroup(actor, nodeGrpChangeReq) must beEqualTo(Full(true))
+      nodeGrpValNdd.forNodeGroup(actor, nodeGrpChangeReq).runNow must beTrue
     }
 
     "not validate a modification in a node group if that group is not supervised" in {
       val nodeGrp          = mockNodeGroups.g1
       val nodeGrpChangeReq = NodeGroupChangeRequest(DGModAction.CreateSolo, nodeGrp, None, None)
-      nodeGrpValNdd.forNodeGroup(actor, nodeGrpChangeReq) must beEqualTo(Full(false))
+      nodeGrpValNdd.forNodeGroup(actor, nodeGrpChangeReq).runNow must beFalse
     }
 
     "if a modification concerns a rule that" in {
@@ -109,7 +109,7 @@ class ValidationNeededTest extends Specification {
           rule,
           None
         )
-        nodeGrpValNdd.forRule(actor, ruleChangeReq) must beEqualTo(Full(true))
+        nodeGrpValNdd.forRule(actor, ruleChangeReq).runNow must beTrue
       }
 
       "doesn't target a supervised node, the modification mustn't be validated" in {
@@ -121,7 +121,7 @@ class ValidationNeededTest extends Specification {
           rule,
           None
         )
-        nodeGrpValNdd.forRule(actor, ruleChangeReq) must beEqualTo(Full(false))
+        nodeGrpValNdd.forRule(actor, ruleChangeReq).runNow must beFalse
       }
     }
 
@@ -144,7 +144,7 @@ class ValidationNeededTest extends Specification {
         List(mockRules.rules.defaultRule)       // targets all nodes, including node group g0
       )
 
-      nodeGrpValNdd.forDirective(actor, dirChangeReq) must beEqualTo(Full(true))
+      nodeGrpValNdd.forDirective(actor, dirChangeReq).runNow must beTrue
     }
 
     "not validate a modification in a directive if no rule that uses it requires validation" in {
@@ -161,7 +161,7 @@ class ValidationNeededTest extends Specification {
 
       )
 
-      nodeGrpValNdd.forDirective(actor, dirChangeReq) must beEqualTo(Full(false))
+      nodeGrpValNdd.forDirective(actor, dirChangeReq).runNow must beFalse
     }
 
   }

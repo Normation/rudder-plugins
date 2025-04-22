@@ -41,7 +41,7 @@ import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderConfig.commitAndDeployChangeRequest
 import bootstrap.liftweb.RudderConfig.doobie
 import bootstrap.liftweb.RudderConfig.workflowLevelService
-import com.normation.box.*
+import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
@@ -88,8 +88,7 @@ import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.zio.UnsafeRun
 import java.nio.file.Paths
-import net.liftweb.common.Box
-import net.liftweb.common.Full
+import zio.syntax.ToZio
 
 /*
  * The validation workflow level
@@ -99,15 +98,15 @@ class ChangeValidationWorkflowLevelService(
     defaultWorkflowService:    WorkflowService,
     validationWorkflowService: TwoValidationStepsWorkflowServiceImpl,
     validationNeeded:          Seq[ValidationNeeded],
-    workflowEnabledByUser:     () => Box[Boolean],
-    alwaysNeedValidation:      () => Box[Boolean],
+    workflowEnabledByUser:     () => IOResult[Boolean],
+    alwaysNeedValidation:      () => IOResult[Boolean],
     validatedUserRepo:         RoValidatedUserRepository
 ) extends WorkflowLevelService {
 
   override def workflowLevelAllowsEnable: Boolean = status.isEnabled()
 
   override def workflowEnabled: Boolean = {
-    workflowLevelAllowsEnable && workflowEnabledByUser().getOrElse(false)
+    workflowLevelAllowsEnable && workflowEnabledByUser().orElseSucceed(false).runNow
   }
   override def name:            String  = "Change Request Validation Workflows"
 
@@ -117,7 +116,7 @@ class ChangeValidationWorkflowLevelService(
    * return the correct workflow given the "needed" check. Also check
    * for the actual status of workflow to decide what workflow to use.
    */
-  private[this] def getWorkflow(shouldBeNeeded: Box[Boolean]): Box[WorkflowService] = {
+  private[this] def getWorkflow(shouldBeNeeded: IOResult[Boolean]): IOResult[WorkflowService] = {
     for {
       need <- shouldBeNeeded
     } yield {
@@ -133,19 +132,19 @@ class ChangeValidationWorkflowLevelService(
    * Method to use to combine several validationNeeded check.
    * Note that a validated user will prevent workflow to be performed, no other validationNeeded check will be executed
    */
-  def combine[T](
-      checkFn: (ValidationNeeded, EventActor, T) => Box[Boolean],
+  private def combine[T](
+      checkFn: (ValidationNeeded, EventActor, T) => IOResult[Boolean],
       checks:  Seq[ValidationNeeded],
       actor:   EventActor,
       change:  T
-  ): Box[WorkflowService] = {
+  ): IOResult[WorkflowService] = {
     def getWorkflowAux = {
       // When we "always need validation", we ignore all validationNeeded checks, otherwise we validate using these checks
       getWorkflow(validationNeeded.foldLeft(alwaysNeedValidation()) {
         case (shouldValidate, nextCheck) =>
           shouldValidate.flatMap {
             // logic is "or": if previous should validate is true, don't check following
-            case true  => Full(true)
+            case true  => true.succeed
             case false => checkFn(nextCheck, actor, change)
           }
       })
@@ -162,47 +161,46 @@ class ChangeValidationWorkflowLevelService(
     validatedUserRepo
       .get(actor)
       .chainError("Could get user from validated user list when checking validation workflow")
-      .toBox
       .flatMap {
-        case Some(e) => getWorkflow(Full(false))
+        case Some(e) => getWorkflow(false.succeed)
         case None    => getWorkflowAux
       }
   }
 
-  override def getForRule(actor: EventActor, change: RuleChangeRequest):               Box[WorkflowService] = {
+  override def getForRule(actor: EventActor, change: RuleChangeRequest):               IOResult[WorkflowService] = {
     combine[RuleChangeRequest]((v, a, c) => v.forRule(a, c), validationNeeded, actor, change)
   }
-  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest):     Box[WorkflowService] = {
+  override def getForDirective(actor: EventActor, change: DirectiveChangeRequest):     IOResult[WorkflowService] = {
     combine[DirectiveChangeRequest]((v, a, c) => v.forDirective(a, c), validationNeeded, actor, change)
   }
-  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest):     Box[WorkflowService] = {
+  override def getForNodeGroup(actor: EventActor, change: NodeGroupChangeRequest):     IOResult[WorkflowService] = {
     combine[NodeGroupChangeRequest]((v, a, c) => v.forNodeGroup(a, c), validationNeeded, actor, change)
   }
-  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): Box[WorkflowService] = {
+  override def getForGlobalParam(actor: EventActor, change: GlobalParamChangeRequest): IOResult[WorkflowService] = {
     combine[GlobalParamChangeRequest]((v, a, c) => v.forGlobalParam(a, c), validationNeeded, actor, change)
   }
 
-  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByDirective(uid, onlyPending)
     } else {
-      Full(Vector())
+      Vector().succeed
     }
   }
 
-  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByNodeGroup(id, onlyPending)
     } else {
-      Full(Vector())
+      Vector().succeed
     }
   }
 
-  override def getByRule(id: RuleUid, onlyPending: Boolean): Box[Vector[ChangeRequest]] = {
+  override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByRule(id, onlyPending)
     } else {
-      Full(Vector())
+      Vector().succeed
     }
   }
 }
@@ -244,9 +242,9 @@ object ChangeValidationConf extends RudderPluginModule {
     woChangeRequestRepository,
     notificationService,
     RudderConfig.userService,
-    () => Full(RudderConfig.workflowLevelService.workflowEnabled),
-    () => RudderConfig.configService.rudder_workflow_self_validation().toBox,
-    () => RudderConfig.configService.rudder_workflow_self_deployment().toBox
+    () => RudderConfig.workflowLevelService.workflowEnabled.succeed,
+    () => RudderConfig.configService.rudder_workflow_self_validation(),
+    () => RudderConfig.configService.rudder_workflow_self_deployment()
   )
 
   lazy val unsupervisedTargetRepo = new UnsupervisedTargetsRepository(
@@ -290,8 +288,8 @@ object ChangeValidationConf extends RudderPluginModule {
           RudderConfig.nodeFactRepository
         )
       ),
-      () => RudderConfig.configService.rudder_workflow_enabled().toBox,
-      () => RudderConfig.configService.rudder_workflow_validate_all().toBox,
+      () => RudderConfig.configService.rudder_workflow_enabled(),
+      () => RudderConfig.configService.rudder_workflow_validate_all(),
       roValidatedUserRepository
     )
   )

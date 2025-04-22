@@ -37,12 +37,12 @@
 package com.normation.plugins.changevalidation
 
 import cats.implicits.*
+import com.normation.errors.IOResult
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import doobie.*
 import doobie.implicits.*
-import net.liftweb.common.Box
 import net.liftweb.common.Loggable
 import zio.interop.catz.*
 
@@ -50,17 +50,17 @@ import zio.interop.catz.*
  * Repository to manage the Workflow part
  */
 trait RoWorkflowRepository {
-  def getAllByState(state: WorkflowNodeId): Box[Seq[ChangeRequestId]]
+  def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]]
 
-  def getStateOfChangeRequest(crId: ChangeRequestId): Box[WorkflowNodeId]
+  def getStateOfChangeRequest(crId: ChangeRequestId): IOResult[WorkflowNodeId]
 
-  def getAllChangeRequestsState(): Box[Map[ChangeRequestId, WorkflowNodeId]]
+  def getAllChangeRequestsState(): IOResult[Map[ChangeRequestId, WorkflowNodeId]]
 }
 
 trait WoWorkflowRepository {
-  def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): Box[WorkflowNodeId]
+  def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): IOResult[WorkflowNodeId]
 
-  def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Box[WorkflowNodeId]
+  def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): IOResult[WorkflowNodeId]
 }
 
 trait RoWorkflowJdbcRepositorySQL {
@@ -92,16 +92,20 @@ class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with
   import WorkflowJdbcRepositorySQL.*
   import doobie.*
 
-  def getAllByState(state: WorkflowNodeId): Box[Seq[ChangeRequestId]] = {
-    transactRunBox(xa => getAllByStateSQL(state).to[Vector].transact(xa))
+  def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]] = {
+    transactIOResult(s"Could not get change request with state ${state.value}")(xa =>
+      getAllByStateSQL(state).to[Vector].transact(xa)
+    )
   }
 
-  def getStateOfChangeRequest(crId: ChangeRequestId): Box[WorkflowNodeId] = {
-    transactRunBox(xa => getStateOfChangeRequestSQL(crId).unique.transact(xa))
+  def getStateOfChangeRequest(crId: ChangeRequestId): IOResult[WorkflowNodeId] = {
+    transactIOResult(s"Could not get state of change request with id ${crId.value}")(xa =>
+      getStateOfChangeRequestSQL(crId).unique.transact(xa)
+    )
   }
 
-  def getAllChangeRequestsState(): Box[Map[ChangeRequestId, WorkflowNodeId]] = {
-    transactRunBox(xa => getAllChangeRequestsStateSQL.to[Vector].transact(xa))
+  def getAllChangeRequestsState(): IOResult[Map[ChangeRequestId, WorkflowNodeId]] = {
+    transactIOResult("Could not get states of all change requests")(xa => getAllChangeRequestsStateSQL.to[Vector].transact(xa))
       .map(_.toMap)
   }
 }
@@ -110,53 +114,55 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
   import WorkflowJdbcRepositorySQL.*
   import doobie.*
 
-  def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
+  def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {
     val process = {
       for {
-        exists  <- getStateOfChangeRequestSQL(crId).option
-        created <- exists match {
-                     case None    => createWorkflowSQL(crId, state).run.attempt
-                     case Some(s) =>
-                       val msg =
-                         s"Cannot start a workflow for Change Request id ${crId.value}, as it is already part of a workflow in state '${s}'"
-                       ChangeValidationLogger.error(msg)
-                       (Left(msg)).pure[ConnectionIO]
-                   }
+        exists <- getStateOfChangeRequestSQL(crId).option
+        _      <- exists match {
+                    case None    => createWorkflowSQL(crId, state).run.attempt
+                    case Some(s) =>
+                      val msg =
+                        s"Cannot start a workflow for Change Request id ${crId.value}, as it is already part of a workflow in state '${s}'"
+                      ChangeValidationLogger.error(msg)
+                      (Left(msg)).pure[ConnectionIO]
+                  }
       } yield {
         state
       }
     }
-    transactRunBox(xa => process.transact(xa))
+    transactIOResult(s"Could not create workflow with id ${crId.value} and state ${state.value}")(xa => process.transact(xa))
   }
 
-  def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Box[WorkflowNodeId] = {
+  def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {
     val process = {
       for {
-        exists  <- getStateOfChangeRequestSQL(crId).option
-        created <- exists match {
-                     case Some(s) =>
-                       if (s == from) {
-                         updateStateSQL(
-                           crId,
-                           from,
-                           state
-                         ).run.attempt // swallows any "constraint violation" error if CrId is not in the ChangeRequest table
-                       } else {
-                         val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' " +
-                           s"but we were expecting '${from.value}'. Perhaps someone else changed it concurrently?"
-                         ChangeValidationLogger.error(msg)
-                         (Left(msg).pure[ConnectionIO])
-                       }
-                     case None    =>
-                       val msg =
-                         s"Cannot change a workflow for Change Request id ${crId.value}, as it is not part of any workflow yet"
-                       ChangeValidationLogger.error(msg)
-                       (Left(msg).pure[ConnectionIO])
-                   }
+        exists <- getStateOfChangeRequestSQL(crId).option
+        _      <- exists match {
+                    case Some(s) =>
+                      if (s == from) {
+                        updateStateSQL(
+                          crId,
+                          from,
+                          state
+                        ).run.attempt // swallows any "constraint violation" error if CrId is not in the ChangeRequest table
+                      } else {
+                        val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' " +
+                          s"but we were expecting '${from.value}'. Perhaps someone else changed it concurrently?"
+                        ChangeValidationLogger.error(msg)
+                        Left(msg).pure[ConnectionIO]
+                      }
+                    case None    =>
+                      val msg =
+                        s"Cannot change a workflow for Change Request id ${crId.value}, as it is not part of any workflow yet"
+                      ChangeValidationLogger.error(msg)
+                      Left(msg).pure[ConnectionIO]
+                  }
       } yield {
         state
       }
     }
-    transactRunBox(xa => process.transact(xa))
+    transactIOResult(
+      s"Could not update state of change request with id ${crId.value} from ${from.value} to ${state.value}"
+    )(xa => process.transact(xa))
   }
 }

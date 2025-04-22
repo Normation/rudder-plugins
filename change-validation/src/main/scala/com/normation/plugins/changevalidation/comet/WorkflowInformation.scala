@@ -38,7 +38,6 @@
 package com.normation.plugins.changevalidation.comet
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.box.*
 import com.normation.plugins.changevalidation.EitherWorkflowService
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
@@ -46,7 +45,8 @@ import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.users.CurrentUser
-import net.liftweb.common.*
+import com.normation.zio.UnsafeRun
+import net.liftweb.common.Loggable
 import net.liftweb.http.*
 import scala.xml.*
 
@@ -78,15 +78,16 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   }
 
   def render = {
-    val xml = RudderConfig.configService.rudder_workflow_enabled().toBox match {
-      case eb: EmptyBox =>
-        val e = eb ?~! "Error when trying to read Rudder configuration for workflow activation"
-        logger.error(e.messageChain)
-        e.rootExceptionCause.foreach(ex => logger.error("Exception was:", e))
 
-        (".dropdown-menu *" #> <li class="dropdown-header">{e.msg}</li>).apply(layout)
-
-      case Full(workflowEnabled) =>
+    val xml = RudderConfig.configService
+      .rudder_workflow_enabled()
+      .chainError("Error when trying to read Rudder configuration for workflow activation")
+      .either
+      .runNow match {
+      case Left(err)              =>
+        logger.error(err.fullMsg)
+        (".dropdown-menu *" #> <li class="dropdown-header">{err.fullMsg}</li>).apply(layout)
+      case Right(workflowEnabled) =>
         val cssSelect = {
           if (workflowEnabled && (isValidator || isDeployer)) {
             {
@@ -101,7 +102,6 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
             ".dropdown *" #> NodeSeq.Empty
           }
         }
-
         cssSelect(layout)
     }
 
@@ -112,10 +112,16 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
 
     workflowService match {
       case ws:     TwoValidationStepsWorkflowServiceImpl =>
-        val validation =
-          if (isValidator) ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id).map(_.size).getOrElse(0) else 0
-        val deployment =
-          if (isDeployer) ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id).map(_.size).getOrElse(0) else 0
+        val validation = {
+          if (isValidator)
+            ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id).map(_.size).orElseSucceed(0).runNow
+          else 0
+        }
+        val deployment = {
+          if (isDeployer)
+            ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id).map(_.size).orElseSucceed(0).runNow
+          else 0
+        }
         validation + deployment
       case either: EitherWorkflowService                 => requestCount(either.current)
       case _ => 0
@@ -130,22 +136,25 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
 
   private[this] def pendingModificationRec(workflowService: WorkflowService): NodeSeq = {
     workflowService match {
-      case ws:     TwoValidationStepsWorkflowServiceImpl =>
-        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id) match {
-          case Full(seq) =>
-            <li>
-              <a href="/secure/configurationManager/changes/changeRequests/Pending_validation" class="pe-auto">
-                <span>
-                  <i class="pe-2 fa fa-flag-o"></i>
-                  Pending review
-                </span>
-                <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
-              </a>
-            </li>
-          case e: EmptyBox =>
-            <li><p class="error">Error when trying to fetch pending change requests.</p></li>
-        }
-      case either: EitherWorkflowService                 => pendingModificationRec(either.current)
+      case ws: TwoValidationStepsWorkflowServiceImpl =>
+        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id)
+          .fold(
+            _ => <li><p class="error">Error when trying to fetch pending change requests.</p></li>,
+            seq => {
+              <li>
+                <a href="/secure/configurationManager/changes/changeRequests/Pending_validation" class="pe-auto">
+                  <span>
+                    <i class="pe-2 fa fa-flag-o"></i>
+                    Pending review
+                  </span>
+                  <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
+                </a>
+              </li>
+            }
+          )
+          .runNow
+
+      case either: EitherWorkflowService => pendingModificationRec(either.current)
       case _ => // For other kind of workflows, this has no meaning
         <li><p class="error">Error, the configured workflow does not have that step.</p></li>
     }
@@ -160,20 +169,22 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   private[this] def pendingDeploymentRec(workflowService: WorkflowService): NodeSeq = {
     workflowService match {
       case ws:     TwoValidationStepsWorkflowServiceImpl =>
-        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id) match {
-          case Full(seq) =>
-            <li>
-              <a href="/secure/configurationManager/changes/changeRequests/Pending_deployment" class="pe-auto">
-                <span>
-                  <i class="pe-2 fa fa-flag-checkered"></i>
-                  Pending deployment
-                </span>
-                <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
-              </a>
-            </li>
-          case e: EmptyBox =>
-            <li><p class="error">Error when trying to fetch pending change requests.</p></li>
-        }
+        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id)
+          .fold(
+            _ => <li><p class="error">Error when trying to fetch pending change requests.</p></li>,
+            seq => {
+              <li>
+                <a href="/secure/configurationManager/changes/changeRequests/Pending_deployment" class="pe-auto">
+                  <span>
+                    <i class="pe-2 fa fa-flag-checkered"></i>
+                    Pending deployment
+                  </span>
+                  <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
+                </a>
+              </li>
+            }
+          )
+          .runNow
       case either: EitherWorkflowService                 => pendingDeploymentRec(either.current)
       case _ => // For other kind of workflows, this has no meaning
         <li><p class="error">Error, the configured workflow does not have that step.</p></li>
