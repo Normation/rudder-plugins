@@ -40,13 +40,13 @@ package com.normation.plugins.changevalidation.snippet
 import bootstrap.liftweb.RudderConfig
 import com.normation.appconfig.ReadConfigService
 import com.normation.appconfig.UpdateConfigService
-import com.normation.box.*
-import net.liftweb.common.*
+import com.normation.zio.UnsafeRun
 import net.liftweb.http.*
 import net.liftweb.http.js.JsCmds.Run
 import net.liftweb.http.js.JsCmds.Script
 import net.liftweb.util.Helpers.*
 import scala.xml.NodeSeq
+import zio.syntax.*
 
 class ChangeValidationSettings extends DispatchSnippet {
 
@@ -60,26 +60,38 @@ class ChangeValidationSettings extends DispatchSnippet {
 
   def workflowConfiguration: NodeSeq => NodeSeq = { (xml: NodeSeq) =>
     //  initial values, updated on successful submit
-    var initEnabled = configService.rudder_workflow_enabled().toBox
-    var initSelfVal = configService.rudder_workflow_self_validation().toBox
-    var initSelfDep = configService.rudder_workflow_self_deployment().toBox
+    var initEnabled = configService.rudder_workflow_enabled()
+    var initSelfVal = configService.rudder_workflow_self_validation()
+    var initSelfDep = configService.rudder_workflow_self_deployment()
 
     // form values
-    var enabled = initEnabled.getOrElse(false)
-    var selfVal = initSelfVal.getOrElse(false)
-    var selfDep = initSelfDep.getOrElse(false)
+    var enabled = initEnabled.orElseSucceed(false).runNow
+    var selfVal = initSelfVal.orElseSucceed(false).runNow
+    var selfDep = initSelfDep.orElseSucceed(false).runNow
 
     def submit = {
-      configService.set_rudder_workflow_enabled(enabled).toBox.foreach(updateOk => initEnabled = Full(enabled))
-      configService.set_rudder_workflow_self_validation(selfVal).toBox.foreach(updateOk => initSelfVal = Full(selfVal))
-      configService.set_rudder_workflow_self_deployment(selfDep).toBox.foreach(updateOk => initSelfDep = Full(selfDep))
+      configService.set_rudder_workflow_enabled(enabled).either.runNow match {
+        case Right(_) => initEnabled = enabled.succeed
+        case _        => ()
+      }
+
+      configService.set_rudder_workflow_self_validation(selfVal).either.runNow match {
+        case Right(_) => initSelfVal = selfVal.succeed
+        case _        => ()
+      }
+
+      configService.set_rudder_workflow_self_deployment(selfDep).either.runNow match {
+        case Right(_) => initSelfDep = selfDep.succeed
+        case _        => ()
+      }
+
       S.notice("updateWorkflow", "Change Requests (validation workflow) configuration correctly updated")
       check()
     }
 
-    def noModif = (initEnabled.map(_ == enabled).getOrElse(false)
-      && initSelfVal.map(_ == selfVal).getOrElse(false)
-      && initSelfDep.map(_ == selfDep).getOrElse(false))
+    def noModif = (initEnabled.map(_ == enabled).orElseSucceed(false).runNow
+      && initSelfVal.map(_ == selfVal).orElseSucceed(false).runNow
+      && initSelfDep.map(_ == selfDep).orElseSucceed(false).runNow)
 
     def check()                    = {
       if (!noModif) {
@@ -113,67 +125,75 @@ class ChangeValidationSettings extends DispatchSnippet {
     }
 
     ("#workflowEnabled" #> {
-      initEnabled match {
-        case Full(value) =>
+      initEnabled
+        .chainError("there was an error while fetching value of property: 'Enable Change Requests' ")
+        .either
+        .runNow match {
+        case Right(value) =>
           SHtml.ajaxCheckbox(
             value,
             initJs _,
             ("id", "workflowEnabled"),
             ("class", "twoCol")
           )
-        case eb: EmptyBox =>
-          val fail = eb ?~ "there was an error, while fetching value of property: 'Enable Change Requests' "
-          <div class="error">{fail.msg}</div>
+        case Left(err)    =>
+          <div class="error">{err.msg}</div>
       }
     } &
 
     "#selfVal" #> {
-      initSelfVal match {
-        case Full(value) =>
+      initSelfVal
+        .chainError("there was an error while fetching value of property: 'Allow self validation' ")
+        .either
+        .runNow match {
+        case Right(value) =>
           SHtml.ajaxCheckbox(
             value,
             (b: Boolean) => { selfVal = b; check() },
             ("id", "selfVal"),
             ("class", "twoCol")
           )
-        case eb: EmptyBox =>
-          val fail = eb ?~ "there was an error, while fetching value of property: 'Allow self validation' "
-          <div class="error">{fail.msg}</div>
+        case Left(err)    =>
+          <div class="error">{err.msg}</div>
       }
-
     } &
 
     "#selfDep " #> {
-      initSelfDep match {
-        case Full(value) =>
+      initSelfDep
+        .chainError("there was an error while fetching value of property: 'Allow self deployment' ")
+        .either
+        .runNow match {
+        case Right(value) =>
           SHtml.ajaxCheckbox(
             value,
             (b: Boolean) => { selfDep = b; check() },
             ("id", "selfDep"),
             ("class", "twoCol")
           )
-        case eb: EmptyBox =>
-          val fail = eb ?~ "there was an error, while fetching value of property: 'Allow self deployment' "
-          <div class="error">{fail.msg}</div>
+        case Left(err)    =>
+          <div class="error">{err.msg}</div>
       }
     } &
 
     "#selfValTooltip *" #> {
 
-      initSelfVal match {
-        case Full(_) =>
-          val tooltipMsg = """Allow users to validate Change Requests they created themselves? Validating is moving a Change Request to the "<b>Pending deployment</b>" status"""
+      initSelfVal.either.runNow match {
+        case Right(_) =>
+          val tooltipMsg =
+            """Allow users to validate Change Requests they created themselves? Validating is moving a Change Request to the "<b>Pending deployment</b>" status"""
           <span class="fa fa-info-circle icon-info" data-bs-toggle="tooltip" data-bs-placement="bottom" title={tooltipMsg}></span>
-        case _       => NodeSeq.Empty
+        case Left(_)  => NodeSeq.Empty
       }
     } &
 
     "#selfDepTooltip *" #> {
-      initSelfDep match {
-        case Full(_) =>
-          val tooltipMsg = """Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the "<b>Pending deployment</b>" status."""
+
+      initSelfDep.either.runNow match {
+        case Right(_) =>
+          val tooltipMsg =
+            """Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the "<b>Pending deployment</b>" status."""
           <span class="fa fa-info-circle icon-info" data-bs-toggle="tooltip" data-bs-placement="bottom" title={tooltipMsg}></span>
-        case _       => NodeSeq.Empty
+        case Left(_)  => NodeSeq.Empty
       }
     } &
 
@@ -185,21 +205,24 @@ class ChangeValidationSettings extends DispatchSnippet {
   // same as workflowConfiguration but with 1 single checkbox, and val autoValidatedUsers = configService.rudder_workflow_validation_auto_validated_users().toBox
   def validationConfiguration: NodeSeq => NodeSeq = { (xml: NodeSeq) =>
     // initial value, updated on successful submit
-    var initAutoValidatedUsers = configService.rudder_workflow_validate_all().toBox
+    var initAutoValidatedUsers = configService.rudder_workflow_validate_all()
 
     // form value
-    var autoValidatedUsers = initAutoValidatedUsers.getOrElse(false)
+    var autoValidatedUsers = initAutoValidatedUsers.orElseSucceed(false).runNow
 
     def submit = {
       configService
         .set_rudder_workflow_validate_all(autoValidatedUsers)
-        .toBox
-        .foreach(updateOk => initAutoValidatedUsers = Full(autoValidatedUsers))
+        .either
+        .runNow match {
+        case Right(_) => initAutoValidatedUsers = autoValidatedUsers.succeed
+        case _        => ()
+      }
       S.notice("updateValidation", "Validation configuration correctly updated")
       check()
     }
 
-    def noModif = initAutoValidatedUsers.map(_ == autoValidatedUsers).getOrElse(false)
+    def noModif = initAutoValidatedUsers.map(_ == autoValidatedUsers).orElseSucceed(false).runNow
 
     def check() = {
       if (!noModif) {
@@ -209,17 +232,19 @@ class ChangeValidationSettings extends DispatchSnippet {
     }
 
     ("#validationAutoValidatedUser" #> {
-      initAutoValidatedUsers match {
-        case Full(value) =>
+      initAutoValidatedUsers
+        .chainError("there was an error while fetching value of property: 'Auto validated users' ")
+        .either
+        .runNow match {
+        case Right(value) =>
           SHtml.ajaxCheckbox(
             value,
             (b: Boolean) => { autoValidatedUsers = b; check() },
             ("id", "validationAutoValidatedUser"),
             ("class", "twoCol")
           )
-        case eb: EmptyBox =>
-          val fail = eb ?~ "there was an error, while fetching value of property: 'Auto validated users' "
-          <div class="error">{fail.msg}</div>
+        case Left(err)    =>
+          <div class="error">{err.msg}</div>
       }
     } &
     "#validationAutoSubmit " #> {
