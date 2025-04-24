@@ -35,6 +35,7 @@
  *************************************************************************************
  */
 package com.normation.plugins.changevalidation
+
 import cats.data.NonEmptyList
 import cats.implicits.*
 import com.normation.errors.IOResult
@@ -45,6 +46,7 @@ import doobie.*
 import doobie.implicits.*
 import doobie.util.fragments
 import net.liftweb.common.Loggable
+import zio.ZIO
 import zio.interop.catz.*
 
 /**
@@ -161,35 +163,44 @@ class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with
   }
 
   def updateState(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {
-    val process = {
+    val process: ConnectionIO[Either[String, Unit]] = {
       for {
         exists <- getStateOfChangeRequestSQL(crId).option
-        _      <- exists match {
+        update <- exists match {
                     case Some(s) =>
                       if (s == from) {
                         updateStateSQL(
                           crId,
                           from,
                           state
-                        ).run.attempt // swallows any "constraint violation" error if CrId is not in the ChangeRequest table
+                        ).run.attempt.map(
+                          _.bimap(
+                            err => err.getMessage,
+                            _ => ()
+                          )
+                        )
                       } else {
-                        val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has the status '${s.value}' " +
-                          s"but we were expecting '${from.value}'. Perhaps someone else changed it concurrently?"
-                        ChangeValidationLogger.error(msg)
+                        val msg = s"Cannot change status of ChangeRequest '${crId.value}': it has status '${s.value}' " +
+                          s"but the expected status was '${from.value}'. Perhaps someone else changed it concurrently?"
                         Left(msg).pure[ConnectionIO]
                       }
                     case None    =>
                       val msg =
                         s"Cannot change a workflow for Change Request id ${crId.value}, as it is not part of any workflow yet"
-                      ChangeValidationLogger.error(msg)
                       Left(msg).pure[ConnectionIO]
                   }
       } yield {
-        state
+        update
       }
     }
-    transactIOResult(
-      s"Could not update state of change request with id ${crId.value} from ${from.value} to ${state.value}"
-    )(xa => process.transact(xa))
+
+    for {
+      res <- transactIOResult(
+               s"Could not update state of change request with id ${crId.value} from ${from.value} to ${state.value}"
+             )(xa => process.transact(xa))
+      _   <- ZIO.whenCase(res) { case Left(err) => ChangeValidationLoggerPure.error(err) }
+    } yield {
+      state
+    }
   }
 }
