@@ -38,6 +38,9 @@
 package com.normation.plugins.changevalidation
 
 import cats.data.NonEmptyList
+import cats.syntax.applicative.*
+import cats.syntax.applicativeError.*
+import cats.syntax.functor.*
 import cats.syntax.reducible.*
 import com.normation.errors.*
 import com.normation.eventlog.EventActor
@@ -236,16 +239,16 @@ class RoChangeRequestJdbcRepository(
 }
 
 class WoChangeRequestJdbcRepository(
-    doobie: Doobie,
-    mapper: ChangeRequestMapper,
-    roRepo: RoChangeRequestRepository
-) extends WoChangeRequestRepository with Loggable with WoChangeRequestJdbcRepositorySQL {
+    doobie:                           Doobie,
+    override val changeRequestMapper: ChangeRequestMapper,
+    roRepo:                           RoChangeRequestRepository
+) extends WoChangeRequestRepository with Loggable with WoChangeRequestJdbcRepositorySQL with RoChangeRequestJdbcRepositorySQL {
 
   import doobie.*
 
   // get the different part from a change request: name, description, content, modId
   private[this] def getAtom(cr: ChangeRequest): (Option[String], Option[String], Elem, Option[String]) = {
-    val xml   = mapper.crcSerialiser.serialise(cr)
+    val xml   = changeRequestMapper.crcSerialiser.serialise(cr)
     val name  = cr.info.name match {
       case "" => None
       case x  => Some(x)
@@ -297,29 +300,31 @@ class WoChangeRequestJdbcRepository(
   }
 
   /**
-   * Update a change request. The change request must exists.
+   * Update a change request. The change request must exist.
    */
   def updateChangeRequest(changeRequest: ChangeRequest, actor: EventActor, reason: Option[String]): IOResult[ChangeRequest] = {
     // no transaction between steps, because we don't actually use anything in the existing change request
-
-    for {
-      _       <- roRepo
-                   .get(changeRequest.id)
-                   .notOptional(s"Cannot update non-existent Change Request with id ${changeRequest.id.value}")
-                   .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
-      _       <- {
-        val (name, desc, xml, modId) = getAtom(changeRequest)
-        transactIOResult(s"Could not update the change request with id ${changeRequest.id} in database")(xa =>
-          updateChangeRequestSQL(name, desc, xml, modId, changeRequest.id).run.transact(xa)
-        )
+    val process = {
+      for {
+        exists <- getSQL(changeRequest.id).option
+        _      <- exists match {
+                    case None    =>
+                      val msg =
+                        s"Change Request with id ${changeRequest.id.value} was not found in database"
+                      new IllegalArgumentException(msg).raiseError[ConnectionIO, Unit]
+                    case Some(_) =>
+                      val (name, desc, xml, modId) = getAtom(changeRequest)
+                      updateChangeRequestSQL(name, desc, xml, modId, changeRequest.id).run.void
+                  }
+      } yield {
+        changeRequest
       }
-      updated <- roRepo
-                   .get(changeRequest.id)
-                   .notOptional(s"Couldn't find the updated entry when updating Change Request ${changeRequest.id.value}")
-                   .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
-    } yield {
-      updated
     }
+
+    transactIOResult(
+      s"Could not update change request with id ${changeRequest.id.value} in database"
+    )(xa => process.transact(xa))
+      .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
   }
 }
 
