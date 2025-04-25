@@ -47,9 +47,7 @@
   flex-basis : initial !important;
   flex: initial !important;
 }
-.rudder-template .one-col .template-main .main-details {
-  padding-bottom: 0px;
-}
+
 /* ========= */
 ul.clipboard-list > li {
   padding: 6px 12px;
