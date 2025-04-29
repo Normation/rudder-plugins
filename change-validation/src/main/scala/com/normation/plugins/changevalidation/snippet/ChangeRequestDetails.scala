@@ -40,6 +40,7 @@ package com.normation.plugins.changevalidation.snippet
 import bootstrap.liftweb.RudderConfig
 import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.box.*
+import com.normation.errors.BoxToIO
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.plugins.changevalidation.ChangeValidationLogger
@@ -147,7 +148,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
             new ChangeRequestEditForm(
               cr.info,
               cr.owner,
-              step,
+              step.toIO,
               cr.id,
               changeDetailsCallback(cr)(_)
             ).display

@@ -38,11 +38,13 @@
 package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.RudderConfig
+import com.normation.errors.IOResult
 import com.normation.rudder.ActionType
 import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
+import com.normation.zio.UnsafeRun
 import net.liftweb.common.*
 import net.liftweb.http.*
 import net.liftweb.http.js.*
@@ -61,7 +63,7 @@ object ChangeRequestEditForm {
 class ChangeRequestEditForm(
     var info:        ChangeRequestInfo,
     creator:         String,
-    step:            Box[WorkflowNodeId],
+    step:            IOResult[WorkflowNodeId],
     crId:            ChangeRequestId,
     SuccessCallback: ChangeRequestInfo => JsCmd
 ) extends DispatchSnippet with Loggable {
@@ -100,7 +102,7 @@ class ChangeRequestEditForm(
     val authz   = CurrentUser.getRights.authorizationTypes.toSeq.collect { case right: ActionType.Edit => right.authzKind }
     val isOwner = creator == CurrentUser.actor.name
     step.map(workflowService.isEditable(authz, _, isOwner))
-  }.openOr(false)
+  }.orElseSucceed(false).runNow
 
   private[this] def actionButton = {
     if (isEditable)
@@ -134,7 +136,8 @@ class ChangeRequestEditForm(
     "#CRId *" #> crId.value &
     "#CRStatusDetails *" #> step
       .map(wfId => Text(wfId.toString))
-      .openOr(<div class="error">Cannot find the status of this change request</div>) &
+      .orElseSucceed(<div class="error">Cannot find the status of this change request</div>)
+      .runNow &
     "#CRDescription *" #> CRDescription &
     "#CRSave *" #> actionButton)(form)
   }
