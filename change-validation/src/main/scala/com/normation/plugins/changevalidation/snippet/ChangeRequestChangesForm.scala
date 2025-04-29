@@ -38,7 +38,6 @@
 package com.normation.plugins.changevalidation.snippet
 
 import bootstrap.liftweb.*
-import com.normation.box.*
 import com.normation.cfclerk.domain.SectionSpec
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.domain.TechniqueName
@@ -627,7 +626,7 @@ class ChangeRequestChangesForm(
         (ruleChange.change.map { change =>
           val rule = change.diff.rule
           (for {
-            groupLib <- getGroupLib().toBox
+            groupLib <- getGroupLib()
           } yield {
 
             change.diff match {
@@ -645,13 +644,11 @@ class ChangeRequestChangesForm(
                 displayRule(rule, rootRuleCategory, groupLib)
             }
 
-          }) match {
-            case Full(xml) =>
-              xml
-            case eb: EmptyBox =>
-              val fail = eb ?~! s"Could not display diff for ${rule.name} (${rule.id.serialize})"
-              logger.error(fail.messageChain)
-              <div>{fail.messageChain}</div>
+          }).chainError(s"Could not display diff for ${rule.name} (${rule.id.serialize})").either.runNow match {
+            case Right(xml) => xml
+            case Left(err)  =>
+              logger.error(err.fullMsg)
+              <div>{err.fullMsg}</div>
           }
         }) match {
           case Full(xml) =>
