@@ -44,7 +44,8 @@ import com.normation.BoxSpecMatcher
 import com.normation.GitVersion
 import com.normation.cfclerk.domain.TechniqueName
 import com.normation.cfclerk.domain.TechniqueVersionHelper
-import com.normation.errors.Inconsistency
+import com.normation.errors.RudderError
+import com.normation.errors.SystemError
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.DBCommon
@@ -358,7 +359,9 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
           Some("reason")
         )
         .either
-        .runNow must beLeft(Inconsistency(s"Cannot update non-existent Change Request with id 999"))
+        .runNow must beLeft(beLike[RudderError] {
+        case err: SystemError => err.msg must beEqualTo("Could not update change request with id 999 in database")
+      })
     }
 
   }
