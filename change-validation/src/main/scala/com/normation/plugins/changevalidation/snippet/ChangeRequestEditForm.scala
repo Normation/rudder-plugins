@@ -45,7 +45,7 @@ import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.*
+import net.liftweb.common.Loggable
 import net.liftweb.http.*
 import net.liftweb.http.js.*
 import net.liftweb.http.js.JsCmds.*
