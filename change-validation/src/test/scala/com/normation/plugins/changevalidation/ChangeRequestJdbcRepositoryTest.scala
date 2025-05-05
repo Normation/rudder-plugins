@@ -68,7 +68,6 @@ import com.typesafe.config.ConfigValueFactory
 import doobie.Transactor
 import doobie.specs2.analysisspec.IOChecker
 import doobie.syntax.all.*
-import net.liftweb.common.Full
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
@@ -133,7 +132,7 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
       // same change request to test different xpaths : /changeRequest/directives/directive/@id, "/changeRequest/groups/group/@id", "/changeRequest/rules/rule/@id"
       // We test change of a directive, nodeGroup and rule using the same change request
       (sql"insert into ChangeRequest (name, description, creationTime, content, modificationId) values ('a change request', 'a change request description', '2023-01-01T00:00:00', ${sampleChangeRequestContent}, '11111111-1111-1111-1111-111111111111')".update.run *>
-      sql"insert into Workflow (id, state) values (${changeRequestId}, 'Pending validation')".update.run)
+      sql"insert into Workflow (id, state) values (${changeRequestId.value}, 'Pending validation')".update.run)
         .transact(xa)
     }) match {
       case Right(_) => ()
@@ -241,9 +240,9 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
     sampleChangeRequestContent
   }
   lazy val changeRequestChangesUnserialisation: ChangeRequestChangesUnserialisation = _ => {
-    Full(
+    Right(
       (
-        Full(Map(directiveId -> directiveChanges)),
+        Map(directiveId   -> directiveChanges),
         Map(groupId       -> nodeGroupChanges),
         Map(ruleId        -> ruleChanges),
         Map(globalParamId -> globalParamChanges)
