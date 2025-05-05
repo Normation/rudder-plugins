@@ -68,7 +68,6 @@ import com.typesafe.config.ConfigValueFactory
 import doobie.Transactor
 import doobie.specs2.analysisspec.IOChecker
 import doobie.syntax.all.*
-import net.liftweb.common.Full
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification
@@ -241,9 +240,9 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
     sampleChangeRequestContent
   }
   lazy val changeRequestChangesUnserialisation: ChangeRequestChangesUnserialisation = _ => {
-    Full(
+    Right(
       (
-        Full(Map(directiveId -> directiveChanges)),
+        Map(directiveId   -> directiveChanges),
         Map(groupId       -> nodeGroupChanges),
         Map(ruleId        -> ruleChanges),
         Map(globalParamId -> globalParamChanges)
