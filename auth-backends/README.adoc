@@ -477,7 +477,7 @@ https://openid.net/connect/[OpenID Connect] (OIDC) is a very common SSO protocol
 
 These protocols delegate the actual authentication to an identity provider (IdP) that in turns send the relevant authentication information to the client, i.e. to Rudder in our case. These `IdP` can be public providers, like https://google.com[Google], deployed and managed internally in a company, like ForgeRock's open source https://forgerock.github.io/openam-community-edition/[OpenAM], or used as SaaS, like https://okta.com[Okta] - and often, providers do a mix of these things.
 
-Rudder support plain old `OAUTHv2` and `OpentID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
+Rudder support plain old `OAUTHv2` and `OpenID Connect`. They have several normalized scenario and Rudder supports the most common for a web application server side authentication: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth[Authentication using Authorization Code Flow].
 
 [NOTE]
 
@@ -811,4 +811,206 @@ It means that the role `node_all` is not recognized. It is because it is not a r
 
 In this case you should create a custom role (let's say `access_to_node`) with the permission `node_all`
 that you will map to your IdP role `role-oidc-a` and modifying the parameter `mapping.entitlements` in the OIDC config file like so:
-`rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.role-oidc-a=access_to_node`
+`rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.role-oidc-a=access_to_node`.
+
+
+=== OAuth2 tokens : JWT and opaque bearer tokens
+
+OAuth2 tokens are used to grant access to resources, using authentication tokens, serving the purpose of authenticating machines, automated systems, etc.
+There are two types of tokens implemented as authentication backends in Rudder: JWT (JSON Web Tokens) and opaque bearer tokens.
+
+JWT tokens contain user information and permissions in a JSON format. They can be verified using a signature, allowing for local validation without contacting the authorization server.
+
+Opaque bearer tokens do not contain user information. They serve as a reference to session or authorization data stored on the server. To validate these tokens, the resource server must contact the authorization server to obtain user details.
+
+Both are implemented with configuration that is similar to the provisioning of users with OIDC, except that tokens are involved :
+
+* for JWT, Rudder can locally validate the token's signature, ensuring that the token has not been tampered with and that it is issued by a trusted source. This local validation improves performance and reliability, since it reduces the need for frequent communication with the authorization server (signature keys are fetched from the server, are they are cached, but revoked at some point).
+* for opaque bearer tokens, Rudder relies on the authorization server to validate the token. This means that requests with an opaque token requires a call to the authorization server for introspection. While this can introduce some latency, it ensures that the most up-to-date user information is used when resolving token authentication.
+
+Tenants and roles mapping can be configured for both :
+
+* for JWT, the token has custom attributes
+* for opaque bearer token, the token is bound with an API account in Rudder, which can have ACLs and tenants
+
+WARNING: In Rudder, you should use only one of both tokens, provided that they are configured correctly (see below for example configurations)
+
+==== Obtaining and using JWT token in Rudder
+
+First you will need to obtain a valid JWT token from your IdP, for example from Okta :
+
+```
+curl --request POST 'https://xxxx.okta.com/oauth2/xxxxaudiencexxxx/v1/token' \
+--header 'Accept: application/json' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'Authorization: Basic xxx' \
+--data 'grant_type=client_credentials'
+```
+
+It will return an access token in the payload that should directly be usable with the Rudder REST API as a `Bearer` token i.e. with the header `Authorization: Bearer the_access_token`.
+
+Below is an example configuration for handling JWT tokens in Rudder from an external OAuth2 provider `okta`.
+You will need to put this configuration in the application properties by adding it to the properties folder, so `/opt/rudder/etc/rudder-web.properties.d/oauth2-api-jwt.properties` by default, and you will need to replace `okta` with your actual provider.
+
+```
+# Authentication provider id in rudder.auth.provider:
+# - OAUTHv2 with JWT: oauth2ApiJwt
+
+# Configure the list of Identity provider services. Here, you choose
+# an identifier for each service as a comma separated list.
+# Identifier should be lower case ascii, -, _. For example, if
+# your company uses both "Okta" and "Google", you can choose "okta" and
+# "google" (how original) identifiers:
+rudder.auth.oauth2.jwt.provider.registrations=okta
+
+# Now, configure Okta related properties. You will need to do
+# the same for each provider with an identifier.
+
+# The identity service provider name as it will be displayed in Rudder
+rudder.auth.oauth2.jwt.provider.okta.name=Okta
+
+# Space separated list of OAUTHv2 "scope" for claims that should be included in the identity
+# token once authentication is done. These values should be documented by your IdP documentation.
+# Rudder only need to have at least scope which provides the attribute that will be used for
+# `userId` (see next property)
+rudder.auth.oauth2.jwt.provider.okta.scope=openid email profile groups
+
+# The single most important property for a JWT token: where the
+# IdP public keys that will be used to check the JWT signature are located. 
+# The audience is part of the uri :
+rudder.auth.oauth2.jwt.provider.okta.uri.jwkSet=https://xxxx.okta.com/oauth2/xxx/v1/keys
+
+# role mapping: OIDC token will provide extended roles to user
+rudder.auth.oauth2.jwt.provider.okta.roles.enabled=true
+rudder.auth.oauth2.jwt.provider.okta.roles.attribute=customroles
+rudder.auth.oauth2.jwt.provider.okta.roles.override=true
+rudder.auth.oauth2.jwt.provider.okta.roles.mapping.enforced=true 
+rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
+rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
+rudder.auth.oauth2.jwt.provider.okta.enableProvisioning=true
+
+# tenants
+rudder.auth.oauth2.jwt.provider.okta.tenants.enabled=true
+rudder.auth.oauth2.jwt.provider.okta.tenants.attribute=customroles
+rudder.auth.oauth2.jwt.provider.okta.tenants.override=true
+rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.enforced=true 
+rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_ta=tenantA
+rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_tb=tenantB
+rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_admin=*
+```
+
+
+==== Configuration to use opaque bearer tokens
+
+First you will need to obtain a bearer token from your IdP, for example with Okta using the https://xxxx.okta.com/oauth2/v1/authorize?client_id=...&scope=openid&response_type=token&...
+
+Then you will need to create an API account in Rudder, without a token (because it is used to identify opaque bearer tokens and to declare authorizations, tenants, etc.).
+When creating the API account, The `Account ID` field should have the value of the `cid` (client id) attribute of the opaque bearer token that needs to be identified.
+
+Once the API account is created and as long as it is not expired, the access token that was obtained above should directly be usable with the Rudder REST API as a `Bearer` token i.e. with the header `Authorization: Bearer the_access_token`.
+
+Below is an example configuration for handling opaque bearer token tokens in Rudder from an external OAuth2 provider `okta`.
+You will need to put this configuration in the application properties by adding it to the properties folder, so `/opt/rudder/etc/rudder-web.properties.d/oauth2-api-opaque.properties` by default, and you will need to replace `okta` with your actual provider.
+
+```
+# Authentication provider id in rudder.auth.provider:
+# - OAUTHv2 with opaque bearer token: oauth2ApiOpaqueToken
+
+# Configure the list of Identity provider services. Here, you choose
+# an identifier for each service as a comma separated list.
+# Identifier should be lower case ascii, -, _. For example, if
+# your company uses both "Okta" and "Google", you can choose "okta" and
+# "google" (how original) identifiers:
+rudder.auth.oauth2.opaque.provider.registrations=okta
+
+# Now, configure Okta related properties. You will need to do
+# the same for each provider with an identifier.
+
+# The identity service provider name as it will be displayed in Rudder
+rudder.auth.oauth2.opaque.provider.okta.name=Okta
+
+# In Oauth2/OIDC, a client (ie, Rudder) is identifier by a pair of credentials:
+# - 1/ an id,
+# - 2/ a corresponding secret key.
+#
+# 1/ Identifier of the application you created in your IdP for Rudder.
+#    In Okta, it will be listed under https://xxxx-admin.okta.com/admin/apps/active
+#    once you created it with "Create App Integration". If you click on your application,
+#    it's located in "Client Credential > Client ID".
+#
+rudder.auth.oauth2.opaque.provider.okta.client.id=xxxx
+#
+# 2/ The corresponding "client secret", provided by your Identity Provider.
+#    For Okta, it's available when you click on your application in
+#    https://xxxx-admin.okta.com/admin/apps/active in "Client Credential > Client Secret"
+rudder.auth.oauth2.opaque.provider.okta.client.secret=xxxx
+
+#
+# Opaque bearer tokens must be validated by the IdP on an "introspect" URL.
+# This URL is dependant of your local identity provider configuration but
+# generally looks like: https://baseurl/v1/introspect, for example for OKTA:
+# https://instance-id.okta.com/oauth2/v1/introspect
+#
+rudder.auth.oauth2.opaque.provider.okta.uri.introspect=https://xxxx.okta.com/oauth2/v1/introspect
+
+#
+# An opaque access token is just used for validating the authentication. A corresponding
+# API token must exist in Rudder to define things like token authorization, tenants
+# access, etc. The mapping is done thanks to an attribute value of the token.
+# By default, and as advised in the OAuth2 standard, we use by default the value
+# for attribute `client_id` but some OIDC configuration use something else
+# (`sub`, `cid`... ) so this can be changed with that property.
+#
+# Optional, default "client_id".
+# The name of the attribute in the access token that should be used to map to
+# Rudder API token ID.
+#
+rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName=client_id
+```
+
+==== Common errors during token authentication
+
+Token authentication can result in errors, simply due to token validity, or due to misconfiguration in the IdP/in Rudder. Here are some common errors and guidelines to help troubleshoot these issues.
+
+*Token is invalid*
+
+Such cases may especially happen with JWT, there will be Webapp error logs (in `/var/log/rudder/webapp/webapp.log`) :
+
+----
+[timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiJwt': failure: An error occurred while attempting to decode the Jwt: Malformed token
+----
+Ensure that the token is correctly formatted and has not been altered. You can verify the structure of the Base64 encoded JSON locally or by using an https://jwt.io/[online debugger].
+
+
+*Invalid signature*
+
+Check that the token's signature matches the expected signature. This often involves verifying the signing key or algorithm used.
+Error logs will also be issued by the Webapp :
+----
+[timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiJwt': failure: An error occurred while attempting to decode the Jwt: Signed JWT rejected: Another algorithm expected, or no matching key(s) found
+----
+
+
+*Token is expired*
+
+The different types of token have an expiration policy, so a new token will need to be used instead. When authenticating with an expired token, here are some example error logs for JWT and opaque bearer token respectively :
+
+----
+[timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiJwt': failure: An error occurred while attempting to decode the Jwt: Jwt expired at 2025-XX-XXTXX:XX:XXZ
+[timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiOpaqueToken': failure: Provided token isn't active
+----
+
+*API account in Rudder does not exist or has expired*
+
+In the case of opaque bearer tokens, an API account with a specific account ID is needed (it should have the value of the client ID attribute of the generated opaque token). The API account also has an expiration date, that can be modified in Rudder if needed. The error log corresponding to an invalid API account is :
+----
+[timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiOpaqueToken': failure: An opaque Bearer token was received but No token with ID [accountID] is configured in Rudder
+----
+
+*Token ID is invalid because due to missing claim*
+
+In the configuration properties for opaque bearer tokens, there is a `rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName` property that should be an attribute that is defined in the token. Otherwise, an error will be logged and the property will need to be changed (https://jwt.io/[debugging the Base64 token] could help finding the right value) : 
+
+----
+[timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiOpaqueToken': failure: An opaque Bearer token was received but it doesn't have a '[userNameAttributeName_value]' claim, so we don't have a token ID and the token is invalid
+----
