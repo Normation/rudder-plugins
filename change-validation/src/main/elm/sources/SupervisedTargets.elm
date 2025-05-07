@@ -1,16 +1,17 @@
 module SupervisedTargets exposing (Category, Model, Msg(..), Subcategories(..), Target, alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, init, isAlphanumeric, main, saveTargets, subscriptions, update, updateTarget, view)
 
-import Html exposing (..)
 import Browser
+import ErrorMessages exposing (getErrorMessage)
+import Html exposing (..)
 import Html.Attributes exposing (checked, class, type_)
 import Html.Events exposing (..)
 import Http exposing (..)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (..)
 import Json.Encode as E
+import Notifications exposing (errorNotification, successNotification)
 import Regex
 import String
-import Init exposing (errorNotification, successNotification, getErrorMessage)
 
 
 
@@ -86,10 +87,10 @@ type Msg
     | SaveTargets (Result Error String) -- here the string is just the status message
     | SendSave
     | UpdateTarget Target
-      -- NOTIFICATIONS
 
 
 
+-- NOTIFICATIONS
 ------------------------------
 -- API --
 ------------------------------
@@ -108,7 +109,7 @@ getTargets model =
         req =
             request
                 { method = "GET"
-                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson GetTargets decodeApiCategory
@@ -116,7 +117,7 @@ getTargets model =
                 , tracker = Nothing
                 }
     in
-      req
+    req
 
 
 
@@ -129,7 +130,7 @@ saveTargets model =
         req =
             request
                 { method = "POST"
-                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
                 , body = jsonBody (encodeTargets (getSupervisedIds model.allTargets))
                 , expect = expectJson SaveTargets decodeApiSave
@@ -210,7 +211,7 @@ decodeTarget =
 
 encodeTargets : List String -> E.Value
 encodeTargets targets =
-    E.object [ ( "supervised", E.list  (\s -> E.string s) targets ) ]
+    E.object [ ( "supervised", E.list (\s -> E.string s) targets ) ]
 
 
 
@@ -366,6 +367,7 @@ displayTarget target =
                 ]
             ]
         ]
+
 
 
 ------------------------------
