@@ -45,7 +45,7 @@
 					  <label class="input-group-addon" for="selfVal">
 						<input id="selfVal" type="checkbox">
 						<label for="selfVal" class="label-radio">
-						  <span class="ion ion-checkmark-round"></span>
+                        <span class="ion ion-checkmark-round"></span>
 						</label>
 						<span class="ion ion-checkmark-round check-icon"></span>
 					  </label>
@@ -60,7 +60,7 @@
 					  <label class="input-group-addon" for="selfDep">
 						<input id="selfDep" type="checkbox">
 						<label for="selfDep" class="label-radio">
-						  <span class="ion ion-checkmark-round"></span>
+                        <span class="ion ion-checkmark-round"></span>
 						</label>
 						<span class="ion ion-checkmark-round check-icon"></span>
 					  </label>
@@ -206,18 +206,18 @@
 					<form class="lift:form.ajax">
 					  <ul>
 						<li class="rudder-form">
-						  <div class="input-group">
+                        <div class="input-group">
 							<label class="input-group-addon" for="validationAutoValidatedUser">
-							  <input type="checkbox" value="Reload" id="validationAutoValidatedUser"/>
-							  <label for="validationAutoValidatedUser" class="label-radio">
+	                        <input type="checkbox" value="Reload" id="validationAutoValidatedUser"/>
+	                        <label for="validationAutoValidatedUser" class="label-radio">
 								<span class="ion ion-checkmark-round"></span>
-							  </label>
-							  <span class="ion ion-checkmark-round check-icon"></span>
+	                        </label>
+	                        <span class="ion ion-checkmark-round check-icon"></span>
 							</label>
 							<label class="form-control" for="validationAutoValidatedUser">
-							  Validate all changes
+	                        Validate all changes
 							</label>
-						  </div>
+                        </div>
 						</li>
 					  </ul>
 					  <input type="submit" value="Save change" id="validationAutoSubmit"/>
@@ -249,24 +249,27 @@
 					  <div id="list-groups-change-validation"></div>
 					</div>
 					<script>
-					  var main = document.getElementById("list-groups-change-validation");
-					  var wu = document.getElementById("validated-users-management");
-					  var initValues = {
-						contextPath: contextPath
-					  };
-					  var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
-					  var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
-					  app.ports.successNotification.subscribe(function (str) {
-						createSuccessNotification(str)
-					  });
-					  app.ports.errorNotification.subscribe(function (str) {
-						createErrorNotification(str)
-					  });
-					  app2.ports.successNotification.subscribe(function (str) {
-						createSuccessNotification(str)
-					  });
-					  app2.ports.errorNotification.subscribe(function (str) {
-						createErrorNotification(str)
+					  $(document).ready(function () {
+                        var main = document.getElementById("list-groups-change-validation");
+                        var wu = document.getElementById("validated-users-management");
+                        var initValues = {
+						  contextPath: contextPath
+                        };
+                        var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
+                        var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
+                        app.ports.successNotification.subscribe(function (str) {
+						  createSuccessNotification(str)
+                        });
+                        app.ports.errorNotification.subscribe(function (str) {
+						  createErrorNotification(str)
+                        });
+                        app2.ports.successNotification.subscribe(function (str) {
+						  createSuccessNotification(str)
+                        });
+                        app2.ports.errorNotification.subscribe(function (str) {
+						  createErrorNotification(str)
+                        });
+                        buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
 					  });
 					</script>
 				  </div>
@@ -284,7 +287,7 @@
 						The supervised changes are:
 					  <ul>
 						<li>any change in a global parameter, as these changes can have side effects spreading
-						  technique code,</li>
+                        technique code,</li>
 						<li>any modification in one of the supervised groups,</li>
 						<li>any change in a rule which targets a node which belong to a group marked as supervised,
 						</li>
@@ -304,10 +307,5 @@
 		</div>
 	  </div>
 	</div>
-	<script>
-	  $(document).ready(function () {
-	    buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
-	  });
-	</script>
   </component-body>
 </xml:group>
