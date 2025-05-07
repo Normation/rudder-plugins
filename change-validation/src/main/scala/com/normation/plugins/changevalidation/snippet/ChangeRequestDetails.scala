@@ -58,7 +58,11 @@ import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.*
+import net.liftweb.common.Box
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Failure
+import net.liftweb.common.Full
+import net.liftweb.common.Loggable
 import net.liftweb.http.*
 import net.liftweb.http.js.*
 import net.liftweb.http.js.JE.*

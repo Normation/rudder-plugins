@@ -41,7 +41,6 @@ import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.services.TechniqueRepository
 import com.normation.errors.AccumulateErrors
-import com.normation.errors.BoxToIO
 import com.normation.errors.Inconsistency
 import com.normation.errors.IOResult
 import com.normation.errors.OptionToIoResult

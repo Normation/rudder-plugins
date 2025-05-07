@@ -101,9 +101,6 @@ import io.scalaland.chimney.PartialTransformer
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.partial.Result
 import io.scalaland.chimney.syntax.*
-import net.liftweb.common.Empty
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
 import scala.util.Try
 import zio.Chunk
 import zio.NonEmptyChunk
@@ -439,10 +436,11 @@ object DirectiveChangeActionJson {
           case d: DirectiveDeleteChangeJson => DirectiveChangeActionJson(ActionChangeJson.delete, d)
           case d: DirectiveModifyChangeJson => DirectiveChangeActionJson(ActionChangeJson.modify, d)
         }) match {
-        case Empty                          =>
-          Result.fromErrorString(s"Error while serializing directives from CR ${change.firstChange.diff.directive.id.serialize}")
-        case Failure(msg, exception, chain) => Result.fromErrorString(msg)
-        case Full(value)                    => value
+        case Left(err)    =>
+          Result.fromErrorString(
+            s"Error while serializing directives from CR ${change.firstChange.diff.directive.id.serialize}: ${err.msg}"
+          )
+        case Right(value) => value
       }
   }
 
@@ -570,10 +568,11 @@ object RuleChangeActionJson {
           case d: RuleDeleteChangeJson => RuleChangeActionJson(ActionChangeJson.delete, d)
           case d: RuleModifyChangeJson => RuleChangeActionJson(ActionChangeJson.modify, d)
         }) match {
-        case Empty                          =>
-          Result.fromErrorString(s"Error while serializing rules from CR ${change.firstChange.diff.rule.id.serialize}")
-        case Failure(msg, exception, chain) => Result.fromErrorString(msg)
-        case Full(value)                    => value
+        case Left(err)    =>
+          Result.fromErrorString(
+            s"Error while serializing rules from CR ${change.firstChange.diff.rule.id.serialize}: ${err.msg}"
+          )
+        case Right(value) => value
       }
   }
 
@@ -774,10 +773,11 @@ object GroupChangeActionJson {
           case d: GroupDeleteChangeJson => GroupChangeActionJson(ActionChangeJson.delete, d)
           case d: GroupModifyChangeJson => GroupChangeActionJson(ActionChangeJson.modify, d)
         }) match {
-        case Empty                          =>
-          Result.fromErrorString(s"Error while serializing group from CR ${change.firstChange.diff.group.id.serialize}")
-        case Failure(msg, exception, chain) => Result.fromErrorString(msg)
-        case Full(value)                    => value
+        case Left(err)    =>
+          Result.fromErrorString(
+            s"Error while serializing group from CR ${change.firstChange.diff.group.id.serialize}: ${err.msg}"
+          )
+        case Right(value) => value
       }
   }
 
@@ -888,10 +888,11 @@ object GlobalParameterChangeActionJson {
           case d: GlobalParameterDeleteChangeJson => GlobalParameterChangeActionJson(ActionChangeJson.delete, d)
           case d: GlobalParameterModifyChangeJson => GlobalParameterChangeActionJson(ActionChangeJson.modify, d)
         }) match {
-        case Empty                          =>
-          Result.fromErrorString(s"Error while serializing global parameter from CR ${change.firstChange.diff.parameter.name}")
-        case Failure(msg, exception, chain) => Result.fromErrorString(msg)
-        case Full(value)                    => value
+        case Left(err)    =>
+          Result.fromErrorString(
+            s"Error while serializing global parameter from CR ${change.firstChange.diff.parameter.name}: ${err.msg}"
+          )
+        case Right(value) => value
       }
   }
 
