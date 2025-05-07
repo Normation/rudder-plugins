@@ -266,24 +266,27 @@
                           <div id="list-groups-change-validation"></div>
                         </div>
                         <script>
-                          var main = document.getElementById("list-groups-change-validation");
-                          var wu = document.getElementById("validated-users-management");
-                          var initValues = {
-                            contextPath: contextPath
-                          };
-                          var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
-                          var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
-                          app.ports.successNotification.subscribe(function (str) {
-                            createSuccessNotification(str)
-                          });
-                          app.ports.errorNotification.subscribe(function (str) {
-                            createErrorNotification(str)
-                          });
-                          app2.ports.successNotification.subscribe(function (str) {
-                            createSuccessNotification(str)
-                          });
-                          app2.ports.errorNotification.subscribe(function (str) {
-                            createErrorNotification(str)
+                          $(document).ready(function () {
+                            var main = document.getElementById("list-groups-change-validation");
+                            var wu = document.getElementById("validated-users-management");
+                            var initValues = {
+                              contextPath: contextPath
+                            };
+                            var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
+                            var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
+                            app.ports.successNotification.subscribe(function (str) {
+                              createSuccessNotification(str)
+                            });
+                            app.ports.errorNotification.subscribe(function (str) {
+                              createErrorNotification(str)
+                            });
+                            app2.ports.successNotification.subscribe(function (str) {
+                              createSuccessNotification(str)
+                            });
+                            app2.ports.errorNotification.subscribe(function (str) {
+                              createErrorNotification(str)
+                            });
+                            buildScrollSpyNav();
                           });
                         </script>
                       </div>
@@ -324,11 +327,6 @@
       </div>
     </div>
   </div>
-  <script>
-    $(document).ready(function () {
-      buildScrollSpyNav();
-    });
-  </script>
 </body>
 
 </html>
