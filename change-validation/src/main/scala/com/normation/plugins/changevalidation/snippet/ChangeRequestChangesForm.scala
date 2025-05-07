@@ -67,7 +67,7 @@ import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
 import com.normation.utils.DateFormaterService
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.*
+import net.liftweb.common.Loggable
 import net.liftweb.http.*
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*
@@ -650,13 +650,11 @@ class ChangeRequestChangesForm(
               logger.error(err.fullMsg)
               <div>{err.fullMsg}</div>
           }
-        }) match {
-          case Full(xml) =>
-            xml
-          case eb: EmptyBox =>
-            val fail = eb ?~! s"Could not display Rule diffs"
-            logger.error(fail.messageChain)
-            <div>{fail.messageChain}</div>
+        }).chainError(s"Could not display Rule diffs") match {
+          case Right(xml) => xml
+          case Left(err)  =>
+            logger.error(err.fullMsg)
+            <div>{err.fullMsg}</div>
         }
       }</li>
     }) ++

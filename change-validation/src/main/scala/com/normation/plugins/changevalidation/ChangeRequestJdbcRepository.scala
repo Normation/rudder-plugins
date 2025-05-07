@@ -61,7 +61,9 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 import doobie.util.fragments
-import net.liftweb.common.*
+import net.liftweb.common.Box
+import net.liftweb.common.EmptyBox
+import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.xml.Elem
@@ -339,7 +341,7 @@ class ChangeRequestMapper(
 
   // unserialize the XML.
   // If it fails, produce a failure
-  // directives map is boxed because some Exception could be launched
+  // directives map is stored in a IOResult because an Exception could be launched
   def unserialize(
       id:          Int,
       name:        Option[String],
