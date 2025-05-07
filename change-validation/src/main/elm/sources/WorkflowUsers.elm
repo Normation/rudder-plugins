@@ -3,8 +3,10 @@ module WorkflowUsers exposing (..)
 import ApiCalls exposing (getUsers)
 import Browser
 import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList)
-import Init exposing (initModel, subscriptions, errorNotification, successNotification, getErrorMessage)
+import ErrorMessages exposing (getErrorMessage)
+import Init exposing (initModel, subscriptions)
 import List exposing (filter, member)
+import Notifications exposing (errorNotification, successNotification)
 import String
 import View exposing (view)
 

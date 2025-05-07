@@ -38,158 +38,107 @@
 package com.normation.plugins.changevalidation.comet
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.plugins.changevalidation.EitherWorkflowService
-import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.batch.AsyncWorkflowInfo
-import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.users.CurrentUser
 import com.normation.zio.UnsafeRun
+import net.liftweb.common.Empty
+import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import net.liftweb.http.*
 import scala.xml.*
 
 class WorkflowInformation extends CometActor with CometListener with Loggable {
-  private[this] def workflowService = {
-    RudderConfig.workflowLevelService.getWorkflowService()
-  }
-  private[this] val asyncWorkflow   = RudderConfig.asyncWorkflowInfo
 
-  private[this] val isValidator = CurrentUser.checkRights(AuthorizationType.Validator.Edit)
-  private[this] val isDeployer  = CurrentUser.checkRights(AuthorizationType.Deployer.Edit)
+  private[this] val asyncWorkflow = RudderConfig.asyncWorkflowInfo
+
+  private[this] val isValidator = CurrentUser.checkRights(AuthorizationType.Validator.Read)
+  private[this] val isDeployer  = CurrentUser.checkRights(AuthorizationType.Deployer.Read)
+
+  private[this] var workflowEnabledPrev = getWorkflowEnabled()
+  private[this] var shouldLoadScript    = workflowEnabledPrev
+
+  /** A user must have either or both of the Validator.Read and Deployer.Read authorizations
+   * in order to display the pending change requests menu. */
+  private[this] def hasRights()          = isValidator || isDeployer
+  private[this] def getWorkflowEnabled() = {
+    if (hasRights()) RudderConfig.configService.rudder_workflow_enabled().orElseSucceed(false).runNow else false
+  }
+
   override def registerWith: AsyncWorkflowInfo = asyncWorkflow
 
   override val defaultHtml = NodeSeq.Empty
 
-  val layout = {
-    <li class="nav-item dropdown notifications-menu">
+  def render: RenderOut = {
+
+    if (!hasRights()) new RenderOut(NodeSeq.Empty)
+
+    /* xml is a menu entry which looks like :
+
+    <li class="nav-item dropdown notifications-menu" id="workflow-app">
       <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
         <span>CR</span>
         <span id="number" class="badge rudder-badge"></span>
       </a>
       <ul class="dropdown-menu" role="menu">
-        <li id="workflow-app">
+        <li>
           <ul class="menu">
+            ... pending change requests by status here ...
           </ul>
         </li>
       </ul>
     </li>
-  }
 
-  def render = {
+    This menu is created by the WorkflowInformation Elm app.
+     */
 
-    val xml = RudderConfig.configService
-      .rudder_workflow_enabled()
-      .chainError("Error when trying to read Rudder configuration for workflow activation")
-      .either
-      .runNow match {
-      case Left(err)              =>
-        logger.error(err.fullMsg)
-        (".dropdown-menu *" #> <li class="dropdown-header">{err.fullMsg}</li>).apply(layout)
-      case Right(workflowEnabled) =>
-        val cssSelect = {
-          if (workflowEnabled && (isValidator || isDeployer)) {
-            {
-              if (isValidator) pendingModifications
-              else ".dropdown-menu *+" #> NodeSeq.Empty
-            } & {
-              if (isDeployer) pendingDeployment
-              else ".dropdown-menu *+" #> NodeSeq.Empty
-            } &
-            "#number *" #> requestCount(workflowService)
-          } else {
-            ".dropdown *" #> NodeSeq.Empty
-          }
-        }
-        cssSelect(layout)
+    val xml = {
+      if (shouldLoadScript) {
+        ("#workflow-app" #>
+        <li id="workflow-app" class="nav-item dropdown notifications-menu">
+          <script>
+            //<![CDATA[
+              // init elm app
+              $(document).ready(function(){
+                var node = document.getElementById("workflow-app");
+                var initValues = {
+                  contextPath : contextPath
+                };
+                var app  = Elm.WorkflowInformation.init({node: node, flags: initValues});
+
+                app.ports.errorNotification.subscribe((errMsg) => {
+                  createErrorNotification(errMsg)
+                })
+              });
+              // ]]>
+          </script>
+        </li>).apply(<li class="nav-item dropdown notifications-menu" id="workflow-app"/>)
+      } else NodeSeq.Empty
     }
 
-    new RenderOut(xml)
-  }
-
-  def requestCount(workflowService: WorkflowService): Int = {
-
-    workflowService match {
-      case ws:     TwoValidationStepsWorkflowServiceImpl =>
-        val validation = {
-          if (isValidator)
-            ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id).map(_.size).orElseSucceed(0).runNow
-          else 0
-        }
-        val deployment = {
-          if (isDeployer)
-            ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id).map(_.size).orElseSucceed(0).runNow
-          else 0
-        }
-        validation + deployment
-      case either: EitherWorkflowService                 => requestCount(either.current)
-      case _ => 0
+    val fixedLayout = {
+      <head_merge>
+        <script type="text/javascript" data-lift="with-cached-resource" src="/toserve/changevalidation/rudder-workflowinformation.js"></script>
+        <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource" />
+      </head_merge>
     }
+
+    RenderOut(Full(xml), Full(fixedLayout), Empty, Empty, ignoreHtmlOnJs = false)
   }
 
-  def pendingModifications = {
-    val xml = pendingModificationRec(workflowService)
+  override def lowPriority = {
+    case WorkflowUpdate =>
+      if (!hasRights()) ()
 
-    "#workflow-app ul *+" #> xml
+      val workflowEnabled = getWorkflowEnabled()
+
+      // The script should be loaded if the workflow_enabled setting has been enabled since the last render
+      if ((!workflowEnabledPrev) && workflowEnabled) shouldLoadScript = true
+      if (workflowEnabledPrev && (!workflowEnabled)) shouldLoadScript = false
+
+      workflowEnabledPrev = workflowEnabled
+
+      reRender()
   }
-
-  private[this] def pendingModificationRec(workflowService: WorkflowService): NodeSeq = {
-    workflowService match {
-      case ws: TwoValidationStepsWorkflowServiceImpl =>
-        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Validation.id)
-          .fold(
-            _ => <li><p class="error">Error when trying to fetch pending change requests.</p></li>,
-            seq => {
-              <li>
-                <a href="/secure/configurationManager/changes/changeRequests/Pending_validation" class="pe-auto">
-                  <span>
-                    <i class="pe-2 fa fa-flag-o"></i>
-                    Pending review
-                  </span>
-                  <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
-                </a>
-              </li>
-            }
-          )
-          .runNow
-
-      case either: EitherWorkflowService => pendingModificationRec(either.current)
-      case _ => // For other kind of workflows, this has no meaning
-        <li><p class="error">Error, the configured workflow does not have that step.</p></li>
-    }
-  }
-
-  def pendingDeployment = {
-    val xml = pendingDeploymentRec(workflowService)
-
-    "#workflow-app ul *+" #> xml
-  }
-
-  private[this] def pendingDeploymentRec(workflowService: WorkflowService): NodeSeq = {
-    workflowService match {
-      case ws:     TwoValidationStepsWorkflowServiceImpl =>
-        ws.getItemsInStep(TwoValidationStepsWorkflowServiceImpl.Deployment.id)
-          .fold(
-            _ => <li><p class="error">Error when trying to fetch pending change requests.</p></li>,
-            seq => {
-              <li>
-                <a href="/secure/configurationManager/changes/changeRequests/Pending_deployment" class="pe-auto">
-                  <span>
-                    <i class="pe-2 fa fa-flag-checkered"></i>
-                    Pending deployment
-                  </span>
-                  <span class="float-end badge bg-light text-dark px-2">{seq.size}</span>
-                </a>
-              </li>
-            }
-          )
-          .runNow
-      case either: EitherWorkflowService                 => pendingDeploymentRec(either.current)
-      case _ => // For other kind of workflows, this has no meaning
-        <li><p class="error">Error, the configured workflow does not have that step.</p></li>
-    }
-  }
-
-  override def lowPriority = { case WorkflowUpdate => reRender() }
 }
