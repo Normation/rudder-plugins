@@ -1,12 +1,15 @@
-#!/usr/bin/env python
-
-"""
-Usage:
-    zabbix-plugin.py update
-    zabbix-plugin.py hook addHost <id>
-    zabbix-plugin.py hook rmHost <host>
-    zabbix-plugin.py apply-configuration
-"""
+#!/bin/sh
+# vim: syntax=python
+''':'
+# First try to run this script with python3, else run with python
+if command -v python3 >/dev/null 2>/dev/null; then
+  exec python3 "$0" "$@"
+elif command -v python >/dev/null 2>/dev/null; then
+  exec python  "$0" "$@"
+else
+  exec python2 "$0" "$@"
+fi
+'''
 
 # -*- coding: utf-8 -*-
 import traceback
