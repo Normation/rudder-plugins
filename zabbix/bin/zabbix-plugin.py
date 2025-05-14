@@ -11,6 +11,14 @@ else
 fi
 '''
 
+"""
+Usage:
+    zabbix-plugin.py update
+    zabbix-plugin.py hook addHost <id>
+    zabbix-plugin.py hook rmHost <host>
+    zabbix-plugin.py apply-configuration
+"""
+
 # -*- coding: utf-8 -*-
 import traceback
 import os
