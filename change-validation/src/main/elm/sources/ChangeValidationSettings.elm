@@ -1,20 +1,51 @@
 module ChangeValidationSettings exposing (..)
 
-import Html exposing (Html)
+import Browser
+import Html exposing (Html, form, h3, p, text, ul)
+import Html.Attributes as Attr
 import Http exposing (Error, emptyBody, expectJson, header, jsonBody, request)
-import Json.Decode exposing (Decoder, at, bool, field)
+import Json.Decode exposing (Decoder, at, bool, field, index, list, map, map2, string)
 import Json.Encode as E
 
 
 
 ------------------------------
--- MODEL --
+-- Init and main --
 ------------------------------
 
 
 getApiUrl : Model -> String -> String
 getApiUrl m url =
     m.contextPath ++ "/secure/api/" ++ url
+
+
+changeValidationPluginId : String
+changeValidationPluginId =
+    "com.normation.plugins.changevalidation.ChangeValidationPluginDef"
+
+
+init : { contextPath : String } -> ( Model, Cmd Msg )
+init flags =
+    let
+        initModel =
+            Model flags.contextPath Enabled Disabled Disabled Disabled
+    in
+    ( initModel, getWorkflowEnabledSetting initModel )
+
+
+main =
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
+
+
+
+------------------------------
+-- MODEL --
+------------------------------
 
 
 type ConfigType
@@ -24,10 +55,10 @@ type ConfigType
 
 type alias Model =
     { contextPath : String
-    , config : ConfigType
-    , enabled : Bool
-    , selfVal : Bool
-    , selfDep : Bool
+    , pluginStatus : WorkflowInfoStatus
+    , enabled : WorkflowInfoStatus
+    , selfVal : WorkflowInfoStatus
+    , selfDep : WorkflowInfoStatus
     }
 
 
@@ -38,24 +69,47 @@ type WorkflowInfoStatus
 
 type
     Msg
-    -- GET
-    = GetWorkflowEnabledSetting (Result Error WorkflowInfoStatus)
+    -- GET plugin status
+    = GetChangeValidationStatus (Result Error WorkflowInfoStatus)
+      -- GET setting
+    | GetWorkflowEnabledSetting (Result Error WorkflowInfoStatus)
     | GetWorkflowSelfValidationSetting (Result Error WorkflowInfoStatus)
     | GetWorkflowSelfDeploymentSetting (Result Error WorkflowInfoStatus)
     | GetWorkflowValidateAllSetting (Result Error WorkflowInfoStatus)
-      -- SET
+      -- SET setting
     | SetWorkflowEnabledSetting (Result Error WorkflowInfoStatus)
     | SetWorkflowSelfValidationSetting (Result Error WorkflowInfoStatus)
     | SetWorkflowSelfDeploymentSetting (Result Error WorkflowInfoStatus)
     | SetWorkflowValidateAllSetting (Result Error WorkflowInfoStatus)
-      -- TODO : workflowLevelService.workflowLevelAllowsEnable
-    | WorkflowLevelAllowsEnable
+
+
+type alias PluginInfo =
+    { pluginId : String
+    , pluginStatus : WorkflowInfoStatus
+    }
 
 
 
 ------------------------------
 -- API --
 ------------------------------
+
+
+getChangeValidationStatus : Model -> Cmd Msg
+getChangeValidationStatus model =
+    let
+        req =
+            request
+                { method = "GET"
+                , headers = [ header "X-Requested-With" "X-API-Token" ]
+                , url = getApiUrl model "api/latest/plugins/info"
+                , body = emptyBody
+                , expect = expectJson GetChangeValidationStatus decodePluginStatus
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
 
 
 getSetting : Model -> String -> (Result Error a -> Msg) -> Decoder a -> Cmd Msg
@@ -170,17 +224,45 @@ setWorkflowValidateAllSetting model newValue =
 ------------------------------
 
 
+decodePluginInfo : Decoder PluginInfo
+decodePluginInfo =
+    map2
+        PluginInfo
+        (field "id" string)
+        (field "status" (Json.Decode.map boolToStatus bool))
+
+
+findChangeValidationStatus : List PluginInfo -> WorkflowInfoStatus
+findChangeValidationStatus ls =
+    case List.head (List.filter (\elt -> elt.pluginId == changeValidationPluginId) ls) of
+        Just elt ->
+            elt.pluginStatus
+
+        Nothing ->
+            Disabled
+
+
+decodePluginStatus : Decoder WorkflowInfoStatus
+decodePluginStatus =
+    at [ "data" ]
+        (field "plugins"
+            (index 0
+                (map findChangeValidationStatus (field "details" (list decodePluginInfo)))
+            )
+        )
+
+
+boolToStatus b =
+    case b of
+        True ->
+            Enabled
+
+        False ->
+            Disabled
+
+
 decodeEnabledSetting : String -> Decoder WorkflowInfoStatus
 decodeEnabledSetting fieldName =
-    let
-        boolToStatus b =
-            case b of
-                True ->
-                    Enabled
-
-                False ->
-                    Disabled
-    in
     let
         decSetting =
             field "settings" (field fieldName (Json.Decode.map boolToStatus bool))
@@ -201,7 +283,8 @@ encodeSetting value =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    Debug.todo "UPDATE"
+    -- TODO
+    ( model, Cmd.none )
 
 
 
@@ -212,7 +295,17 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Debug.todo "VIEW"
+    case model.pluginStatus of
+        Disabled ->
+            text ""
+
+        Enabled ->
+            form
+                [ Attr.id "change-validation-settings"
+                ]
+                [ p []
+                    [ text "TODO Change validation settings" ]
+                ]
 
 
 

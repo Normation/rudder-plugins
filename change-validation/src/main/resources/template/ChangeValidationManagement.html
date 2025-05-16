@@ -7,6 +7,7 @@
 	  <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
 	  <script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
 	  <script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
+	  <script src="/toserve/changevalidation/rudder-changevalidationsettings.js" data-lift="with-cached-resource"></script>
 	</head_merge>
 
 	<div class="d-flex h-100">
@@ -20,10 +21,17 @@
 	  <div class="template-main h-100">
 		<div class="main-container">
 		  <div class="main-details" data-bs-spy="scroll" data-bs-target="#navbar-changevalidation" data-bs-smooth-scroll="true">
+			<div id="workflowForm">
+			<!--
 			<div class="lift:ChangeValidationSettings.activation" id="workflowForm">
+			-->
 			  <h3 class="page-title" style="margin-top: 0;">Change validation status</h3>
 			  <div class="section-with-doc">
 				<div class="section-left">
+				  <form id="change-validation-settings">
+				  </form>
+
+					<!--
 				  <form class="lift:form.ajax">
 				<ul>
 				  <li class="rudder-form">
@@ -70,12 +78,15 @@
 					  </label>
 					</div>
 				  </li>
+
 				</ul>
 				<lift:authz role="administration_write">
 				  <input type="submit" value="Reload" id="workflowSubmit" />
 				  <span class="lift:Msg?id=updateWorkflow">[messages]</span>
 				</lift:authz>
 				  </form>
+
+				  -->
 				</div>
 				<div class="section-right">
 				  <div class="doc doc-info">
@@ -252,11 +263,13 @@
 					  $(document).ready(function () {
                         var main = document.getElementById("list-groups-change-validation");
                         var wu = document.getElementById("validated-users-management");
+                        var cvs = document.getElementById("change-validation-settings");
                         var initValues = {
 						  contextPath: contextPath
                         };
                         var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
                         var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
+                        var app3 = Elm.ChangeValidationSettings.init({node: cvs, flags: initValues})
                         app.ports.successNotification.subscribe(function (str) {
 						  createSuccessNotification(str)
                         });
@@ -267,6 +280,12 @@
 						  createSuccessNotification(str)
                         });
                         app2.ports.errorNotification.subscribe(function (str) {
+						  createErrorNotification(str)
+                        });
+                        app3.ports.successNotification.subscribe(function (str) {
+						  createSuccessNotification(str)
+                        });
+                        app3.ports.errorNotification.subscribe(function (str) {
 						  createErrorNotification(str)
                         });
                         buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
