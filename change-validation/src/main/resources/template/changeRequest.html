@@ -4,6 +4,7 @@
 	<title>Rudder - Change Validation</title>
 	<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
 	<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
+    <script src="/toserve/changevalidation/rudder-changerequesteditform.js" data-lift="with-cached-resource"></script>
 </head_merge>
 
 <div class="rudder-template">
@@ -16,9 +17,30 @@
         <div class="main-container">
           <div class="main-details">
 
+            <div id="change-request-edit-form"></div>
+
+            <script>
+            $(document).ready(function () {
+              var main = document.getElementById("change-request-edit-form");
+              var initValues = {
+                contextPath: contextPath,
+                changeRequestId: 0 //Number(location.href.substring(location.href.lastIndexOf('/') + 1))
+              };
+              var app = Elm.ChangeRequestEditForm.init({node: main, flags: initValues});
+              app.ports.successNotification.subscribe(function (str) {
+                createSuccessNotification(str)
+              });
+              app.ports.errorNotification.subscribe(function (str) {
+                createErrorNotification(str)
+              });
+            });
+            </script>
+
+            <!--
             <div id="changeRequestDetails">
               <div class="lift:ChangeRequestDetails.details"></div>
             </div>
+            -->
 
             <div id="warnOnUnmergeable">
               <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
