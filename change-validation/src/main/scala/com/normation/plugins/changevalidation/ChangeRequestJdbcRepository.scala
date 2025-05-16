@@ -42,6 +42,7 @@ import cats.syntax.applicative.*
 import cats.syntax.applicativeError.*
 import cats.syntax.functor.*
 import cats.syntax.reducible.*
+import com.normation.box.IOToBox
 import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
@@ -62,12 +63,12 @@ import doobie.implicits.*
 import doobie.postgres.implicits.*
 import doobie.util.fragments
 import net.liftweb.common.Box
-import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.xml.Elem
 import zio.interop.catz.*
+import zio.syntax.ToZio
 
 trait RoChangeRequestJdbcRepositorySQL {
 
@@ -348,36 +349,27 @@ class ChangeRequestMapper(
       description: Option[String],
       content:     Elem,
       modId:       Option[String]
-  ): Box[ChangeRequest] = {
-    crcUnserialiser.unserialise(content) match {
-      case Full((directivesMaps, nodesMaps, ruleMaps, paramMaps)) =>
-        directivesMaps match {
-          case Full(map) =>
-            Full(
-              ConfigurationChangeRequest(
-                ChangeRequestId(id),
-                modId.map(ModificationId.apply),
-                ChangeRequestInfo(
-                  name.getOrElse(""),
-                  description.getOrElse("")
-                ),
-                map,
-                nodesMaps,
-                ruleMaps,
-                paramMaps
-              )
-            )
+  ): IOResult[ChangeRequest] = {
+    crcUnserialiser
+      .unserialise(content)
+      .chainError(s"Error when trying to get the content of the change request ${id}") match {
+      case Right((directivesMaps, nodesMaps, ruleMaps, paramMaps)) =>
+        ConfigurationChangeRequest(
+          ChangeRequestId(id),
+          modId.map(ModificationId.apply),
+          ChangeRequestInfo(
+            name.getOrElse(""),
+            description.getOrElse("")
+          ),
+          directivesMaps,
+          nodesMaps,
+          ruleMaps,
+          paramMaps
+        ).succeed
 
-          case eb: EmptyBox =>
-            val fail = eb ?~! s"could not deserialize directive change of change request #${id} cause is: ${eb}"
-            ChangeValidationLogger.error(fail)
-            fail
-        }
-
-      case eb: EmptyBox =>
-        val fail = eb ?~! s"Error when trying to get the content of the change request ${id} : ${eb}"
-        ChangeValidationLogger.error(fail.msg)
-        fail
+      case Left(err) =>
+        ChangeValidationLogger.error(err.fullMsg)
+        err.fail
     }
   }
 
@@ -402,6 +394,6 @@ class ChangeRequestMapper(
   }
 
   implicit val ChangeRequestRead: Read[Box[ChangeRequest]] = {
-    Read[CR].map((t: CR) => unserialize(t._1, t._2, t._3, t._4, t._5))
+    Read[CR].map((t: CR) => unserialize(t._1, t._2, t._3, t._4, t._5).toBox)
   }
 }
