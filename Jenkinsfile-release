@@ -40,7 +40,7 @@ pipeline {
                   running.add("Build")
                   updateSlack(errors, running, slackResponse, message, changeUrl)
                   makeTarget = "licensed"
-                  if (plugin_name == "cis"  || plugin_name == "openscap") {
+                  if (plugin_name == "cis"  || plugin_name == "openscap" || plugin_name == "node-external-reports") {
                     makeTarget = ""
                   }
                   dir("${plugin_name}") {
