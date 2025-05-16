@@ -6,7 +6,7 @@ import Html exposing (Html, a, i, li, span, text, ul)
 import Html.Attributes as Attr
 import Http exposing (Error, emptyBody, expectJson, header, request)
 import Json.Decode exposing (Decoder, at, bool, field, index, int, list, map2, maybe)
-import Notifications exposing (errorNotification)
+import Ports exposing (errorNotification)
 
 
 
