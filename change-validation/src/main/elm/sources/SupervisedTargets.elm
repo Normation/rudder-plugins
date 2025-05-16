@@ -9,7 +9,7 @@ import Http exposing (..)
 import Json.Decode as D exposing (Decoder)
 import Json.Decode.Pipeline exposing (..)
 import Json.Encode as E
-import Notifications exposing (errorNotification, successNotification)
+import Ports exposing (errorNotification, successNotification)
 import Regex
 import String
 
