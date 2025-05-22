@@ -206,7 +206,7 @@ rudder.auth.provider=ldap
 # given some base and filter parameters, and then, a bind (rebind) is tried on
 # that entry with the credential provided by the user.
 # That allows to separate the user DN (especially RDN) from the search criteria while
-# in the same time supporting users located in several different organisational units.
+# in the same time supporting users located in several different organizational units.
 #
 # Be careful, authorizations are still done based on the content of rudder-user.xml,
 # meaning that each user should have access to Rudder MUST have a line in that file.
@@ -297,7 +297,7 @@ rudder.auth.ldap.filter=(&(uid={0})(objectclass=person))
 ```
 === Debugging LDAP authentication
 
-LDAP authentication problem are often a pain to analyse and debug. In the following paragraph, we will see several
+LDAP authentication problem are often a pain to analyze and debug. In the following paragraph, we will see several
 tips that can help you find why that damn configuration doesn't work when everything is right.
 
 ==== Check everything, step by step
@@ -309,7 +309,7 @@ standard LDAP tools, so that you can be sure that the problem is on the Rudder s
   `rudder.auth.ldap.connection.bind.password` on `rudder.auth.ldap.connection.url`
 - 2/ check that Rudder service users can find one user (let's call her ALICE) you know is in the LDAP directory for sure
   with a search request on branch `rudder.auth.ldap.searchbase` (relative to the base DN in the connection URL) with
-  the filter defined in `rudder.auth.ldap.filter`. If you don't see your user and if you use referer links (like often
+  the filter defined in `rudder.auth.ldap.filter`. If you don't see your user and if you use referrer links (like often
   in AD), check that `rudder.auth.ldap.connection.derefLink` is true (it's not always mandatory but can be, depending
   on your directory configuration)
 - 4/ check that you can authenticate (bind) with ALICE
@@ -507,11 +507,12 @@ Each provider needs to then have a bunch of properties defined for it. They are 
 
 We advise to configure each provider in its own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
 so that it is easier to change or disable some of them.
+Make sure that the parameter `rudder.auth.oauth2.provider.registrations` is set only once in `/opt/rudder/etc/rudder-web.properties` and not in the configurations file for each provider under `/opt/rudder/etc/rudder-web.properties.d`
 
-=== IdP-provided authorisations for Rudder users
+=== IdP-provided authorizations for Rudder users
 
 You can configure an `OAuth2` or `OIDC` provider so that it informs Rudder of the roles the user need to have. This allows to centrally
-manage both user and authorisation in the same place.
+manage both user and authorization in the same place.
 
 This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
 
@@ -519,7 +520,7 @@ This feature works with the `custom roles` feature provided by the xref:plugins:
 
 ====
 
-xref:plugins:user-management.adoc#_unitary_permission_a_right[Unitary rights] like `node_all`, `technique_read`, `rule_write` etc are not supported to describe a user's authorisations through OIDC. It must be a xref:plugins:user-management.adoc#_pre_defined_roles[pre-defined role] or a xref:plugins:user-management.adoc#_custom_roles[custom role]
+xref:plugins:user-management.adoc#_unitary_permission_a_right[Unitary rights] like `node_all`, `technique_read`, `rule_write` etc are not supported to describe a user's authorizations through OIDC. It must be a xref:plugins:user-management.adoc#_pre_defined_roles[pre-defined role] or a xref:plugins:user-management.adoc#_custom_roles[custom role]
 
 ====
 
@@ -624,7 +625,7 @@ rudder.auth.oauth2.provider.okta.client.redirect=https://my-external-rudder-host
 #
 # The following properties are necessary for each provider configuration but should not be modified.
 #
-# The protocol scheme used for authentication - Rudder only supports with authorisation code.
+# The protocol scheme used for authentication - Rudder only supports with authorization code.
 rudder.auth.oauth2.provider.okta.grantType=authorization_code
 # Authentication type - Rudder only supports client_secret_basic and client_secret_post.
 rudder.auth.oauth2.provider.okta.authMethod=client_secret_basic
@@ -664,7 +665,7 @@ rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=read
 rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
 # In some case, you OIDC provided roles will contains illegal character that can't be use in the
 # left part of the `entitlement` key - typically an equal. You can reverse the order of mapping with
-# the `reverseEntitlements`, in whicn the Rudder role name is on the left and the OIDC IdP role
+# the `reverseEntitlements`, in which the Rudder role name is on the left and the OIDC IdP role
 # name is on the right. If the same key is defined in both `entitlements` and `reverseEntitlements`,
 # then the value defined in `reverseEntitlements` is used.
 # In the following example, OIDC role `rudder_readonly` will be mapped to local `readonly2` role,
@@ -694,6 +695,14 @@ You can use the log level for `auth-backends` in `/opt/rudder/etc/logback.xml`:
 It can be a bit challenging to understand what is not correct in an Oauth2 or OIDC configuration.
 Here are some guidelines to help address possible configuration problems.
 
+*OAUTH2 backend is enabled, but no providers are correctly configured*
+
+It's likely a problem with the parameter `rudder.auth.oauth2.provider.registrations`, verify that:
+- The parameter exist without typo with your providers
+- It appear only *once*, for instance if you have more that one configuration file for each provider, make sure that the parameter is set
+in `/opt/rudder/etc/rudder-web.properties`` and *not* in each file under `/opt/rudder/etc/rudder-web.properties.d/``
+
+
 *I don't see the list of Identity Provider in login form*
 
 Check that you correctly updated parameter `rudder.auth.provider` to include `oidc` or `oauth2` in
@@ -719,7 +728,7 @@ set for property `rudder.auth.oauth2.provider.${registrationKey}.client.id`
 
 *After login on Identity Provider, I get a "login error" message in Rudder login page*
 
-This can have several cause, and we will need to analyse Rudder log to understand what happened.
+This can have several cause, and we will need to analyze Rudder log to understand what happened.
 
 **Bad token URL**
 
