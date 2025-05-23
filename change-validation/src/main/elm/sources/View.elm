@@ -379,7 +379,9 @@ view model =
                         ]
                     ]
                 , createRightInfoSection
-                    [ " Any change done by a validated user will be automatically deployed without validation needed by another user. " ]
+                    [ " Any modification made by a validated user will be automatically deployed, "
+                        ++ "without needing to be validated by another user first. "
+                    ]
                 ]
     in
     div
@@ -433,9 +435,9 @@ displayValidateAllForm model =
                         ]
                     ]
                 , createRightInfoSection
-                    [ " Any change done by a Validated User will be automatically approved no matter the nature of the change. "
-                    , " Configuring groups below will hence have no effect on validated users (in the list above), but will apply"
-                        ++ " to non-validated users, who will still need a change request to modify a node from a supervised group. "
+                    [ " Any modification made by a validated user will be automatically approved no matter the nature of the change. "
+                    , " Hence, configuring the groups below will have no effect on validated users (in the list above), but will apply"
+                        ++ " to non-validated users, who will still need to create a change request in order to modify a node from a supervised group. "
                     ]
                 ]
 
