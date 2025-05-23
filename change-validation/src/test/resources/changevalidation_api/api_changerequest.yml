@@ -2986,7 +2986,7 @@ response:
     {
       "action": "listChangeRequests",
       "result": "error",
-      "errorDetails": "Unexpected: 'unknown' is not a possible state for change requests"
+      "errorDetails": "'unknown' is not a possible state for change requests"
     }
 ---
 description: Get information about given change request
@@ -3569,7 +3569,7 @@ response:
       "action": "acceptChangeRequest",
       "id": "1",
       "result": "error",
-      "errorDetails": "Inconsistency: workflow status should not be empty"
+      "errorDetails": "workflow status should not be empty"
     }
 ---
 description: Accept given change request when id is unknown
