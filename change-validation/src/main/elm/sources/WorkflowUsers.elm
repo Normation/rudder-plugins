@@ -18,11 +18,11 @@ filterUnvalidatedUsers : UserList -> UserList
 filterUnvalidatedUsers users =
     filter (\u -> not u.isValidated) users
 
-mainInit : {contextPath : String} -> ( Model, Cmd Msg )
+mainInit : {contextPath : String, adminWrite: Bool} -> ( Model, Cmd Msg )
 mainInit initValues =
   let
     m =
-      initModel initValues.contextPath
+      initModel initValues.contextPath initValues.adminWrite
   in
     ( m, getUsers m )
 

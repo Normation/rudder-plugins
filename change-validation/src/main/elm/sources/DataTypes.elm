@@ -35,6 +35,7 @@ type alias Model =
   , leftChecked      : List User
   , hasMoved         : List User -- Too track updates
   , editMod          : EditMod
+  , adminWrite       : Bool
   }
 
 getUsernames : UserList -> List Username

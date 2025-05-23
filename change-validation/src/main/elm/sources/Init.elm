@@ -14,6 +14,6 @@ subscriptions _ =
     Sub.none
 
 
-initModel : String -> Model
-initModel contextPath =
-    Model contextPath [] [] [] [] [] [] Off
+initModel : String -> Bool -> Model
+initModel contextPath adminWrite =
+    Model contextPath [] [] [] [] [] [] Off adminWrite
