@@ -1,8 +1,8 @@
 module WorkflowUsers exposing (..)
 
-import ApiCalls exposing (getUsers)
+import ApiCalls exposing (getUsers, getValidateAllSetting)
 import Browser
-import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList)
+import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList, ViewState(..))
 import ErrorMessages exposing (getErrorMessage)
 import Init exposing (initModel, subscriptions)
 import List exposing (filter, member)
@@ -27,7 +27,7 @@ mainInit initValues =
         m =
             initModel initValues.contextPath initValues.adminWrite
     in
-    ( m, getUsers m )
+    ( m, Cmd.batch [ getUsers m, getValidateAllSetting m ] )
 
 
 main =
@@ -163,3 +163,49 @@ update msg model =
 
         ExitEditMod ->
             ( { model | editMod = Off, leftChecked = [], rightChecked = [] }, Cmd.none )
+
+        SaveValidateAllSetting result ->
+            case result of
+                Ok newSetting ->
+                    ( { model | validateAll = newSetting, viewState = setValidateAllInView model.viewState newSetting }
+                    , successNotification "Successfully saved setting"
+                    )
+
+                Err error ->
+                    ( model, errorNotification ("An error occurred while trying to save validate_all_enabled setting :" ++ getErrorMessage error) )
+
+        GetValidateAllSetting result ->
+            case result of
+                Ok setting ->
+                    ( { model | validateAll = setting, viewState = setValidateAllInView model.viewState setting }, Cmd.none )
+
+                Err error ->
+                    ( model, errorNotification ("An error occurred while trying to get validate_all_enabled setting :" ++ getErrorMessage error) )
+
+        ChangeValidateAllSetting enable_validate_all ->
+            ( { model | viewState = updateValidateAllInView model.viewState enable_validate_all }, Cmd.none )
+
+
+setValidateAllInView : ViewState -> Bool -> ViewState
+setValidateAllInView viewState value =
+    case viewState of
+        _ ->
+            let
+                formState =
+                    { validateAll = value }
+            in
+            Form { initValues = formState, formValues = formState }
+
+
+updateValidateAllInView : ViewState -> Bool -> ViewState
+updateValidateAllInView viewState newValue =
+    case viewState of
+        Form formState ->
+            let
+                newFormState =
+                    { validateAll = newValue }
+            in
+            Form { formState | formValues = newFormState }
+
+        _ ->
+            viewState

@@ -1,6 +1,6 @@
 module Init exposing (..)
 
-import DataTypes exposing (EditMod(..), Model, Msg(..))
+import DataTypes exposing (EditMod(..), Model, Msg(..), ViewState(..))
 
 
 
@@ -16,4 +16,4 @@ subscriptions _ =
 
 initModel : String -> Bool -> Model
 initModel contextPath adminWrite =
-    Model contextPath [] [] [] [] [] [] Off adminWrite
+    Model contextPath [] [] [] [] [] [] Off adminWrite False NoView

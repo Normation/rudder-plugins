@@ -48,9 +48,21 @@ type alias Model =
     , unvalidatedUsers : UserList
     , rightChecked : List User
     , leftChecked : List User
-    , hasMoved : List User -- Too track updates
+    , hasMoved : List User -- To track updates
     , editMod : EditMod
     , adminWrite : Bool
+    , validateAll : Bool
+    , viewState : ViewState
+    }
+
+
+type ViewState
+    = NoView
+    | Form { initValues : FormState, formValues : FormState }
+
+
+type alias FormState =
+    { validateAll : Bool -- "enable_validate_all" setting
     }
 
 
@@ -60,7 +72,8 @@ getUsernames users =
 
 
 type Msg
-    = {--API CALLS --}
+    = {--Messages for the "Workflow Users" table --}
+      {--API CALLS --}
       GetUsers (Result Error UserList)
     | RemoveUser (Result Error Username)
     | SaveWorkflow (Result Error UserList)
@@ -74,3 +87,9 @@ type Msg
       {--MOD MANAGEMENT --}
     | SwitchMode
     | ExitEditMod
+      {--Messages for the "Validate all changes" checkbox and button --}
+      {--API CALLS--}
+    | GetValidateAllSetting (Result Error Bool)
+    | SaveValidateAllSetting (Result Error Bool)
+      {--VIEW UPDATE--}
+    | ChangeValidateAllSetting Bool

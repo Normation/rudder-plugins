@@ -2,8 +2,9 @@ module ApiCalls exposing (..)
 
 import DataTypes exposing (..)
 import Http exposing (emptyBody, expectJson, header, jsonBody, request)
-import JsonDecoders exposing (decodeApiDeleteUsername, decodeUserList)
-import JsonEncoders exposing (encodeUsernames)
+import Json.Decode exposing (Decoder)
+import JsonDecoders exposing (decodeApiDeleteUsername, decodeSetting, decodeUserList)
+import JsonEncoders exposing (encodeSetting, encodeUsernames)
 
 
 getUrl : DataTypes.Model -> String -> String
@@ -60,3 +61,47 @@ saveWorkflow usernames model =
                 }
     in
     req
+
+
+getSetting : Model -> String -> (Result Http.Error Bool -> Msg) -> Cmd Msg
+getSetting model settingId msg =
+    let
+        req =
+            request
+                { method = "GET"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model ("settings/" ++ settingId)
+                , body = emptyBody
+                , expect = expectJson msg (decodeSetting settingId)
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+getValidateAllSetting : Model -> Cmd Msg
+getValidateAllSetting model =
+    getSetting model "enable_validate_all" GetValidateAllSetting
+
+
+setSetting : Model -> String -> (Result Http.Error Bool -> Msg) -> Bool -> Cmd Msg
+setSetting model settingId msg newValue =
+    let
+        req =
+            request
+                { method = "POST"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model ("settings/" ++ settingId)
+                , body = jsonBody (encodeSetting newValue)
+                , expect = expectJson msg (decodeSetting settingId)
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+saveValidateAllSetting : Bool -> Model -> Cmd Msg
+saveValidateAllSetting newValue model =
+    setSetting model "enable_validate_all" SaveValidateAllSetting newValue

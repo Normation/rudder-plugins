@@ -34,3 +34,8 @@ encodeUsernames usernames =
         [ ( "action", string "addValidatedUsersList" )
         , ( "validatedUsers", list (\s -> string s) usernames )
         ]
+
+
+encodeSetting : Bool -> Value
+encodeSetting value =
+    object [ ( "value", bool value ) ]
