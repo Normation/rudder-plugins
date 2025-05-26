@@ -37,24 +37,31 @@
 
 package com.normation.plugins.changevalidation
 
+import cats.Show
 import cats.data.NonEmptyList
+import cats.implicits.toBifunctorOps
 import cats.syntax.applicative.*
 import cats.syntax.applicativeError.*
 import cats.syntax.functor.*
 import cats.syntax.reducible.*
-import com.normation.box.IOToBox
 import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.db.Doobie.*
 import com.normation.rudder.domain.nodes.NodeGroupId
+import com.normation.rudder.domain.policies.DirectiveId
 import com.normation.rudder.domain.policies.DirectiveUid
+import com.normation.rudder.domain.policies.RuleId
 import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ChangeRequestInfo
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
+import com.normation.rudder.domain.workflows.DirectiveChanges
+import com.normation.rudder.domain.workflows.GlobalParameterChanges
+import com.normation.rudder.domain.workflows.NodeGroupChanges
+import com.normation.rudder.domain.workflows.RuleChanges
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
 import com.normation.rudder.services.marshalling.ChangeRequestChangesUnserialisation
@@ -68,7 +75,18 @@ import net.liftweb.common.Loggable
 import org.joda.time.DateTime
 import scala.xml.Elem
 import zio.interop.catz.*
-import zio.syntax.ToZio
+import zio.syntax.*
+
+/**
+ * Change request from the database does not have a trivial mapping to the `ChangeRequest` structure :
+ * there is the XML content that needs to be validated, and in some cases (some APIs) we decide to 
+ * return the valid ones and ignore invalid ones.
+ * 
+ * So, the type here is used to create a Read that does not fail but contains the failure.
+ */
+sealed trait DbChangeRequest
+case class ChangeRequestWithSuccessXml(cr: ChangeRequest)  extends DbChangeRequest
+case class ChangeRequestWithInvalidXml(error: RudderError) extends DbChangeRequest
 
 trait RoChangeRequestJdbcRepositorySQL {
 
@@ -83,43 +101,72 @@ trait RoChangeRequestJdbcRepositorySQL {
 
   import changeRequestMapper.*
 
-  implicit val readCRWithState: Read[Box[(ChangeRequest, WorkflowNodeId)]] = {
-    Read[(Box[ChangeRequest], WorkflowNodeId)].map { case (cr, state) => cr.map((_, state)) }
+  implicit val ChangeRequestReadOpt: Read[DbChangeRequest] = {
+    Read[CR].map {
+      case (id, name, description, content, modId) =>
+        crcUnserialiser
+          .unserialise(content)
+          .chainError(s"Error when trying to get the content of the change request ${id}") match {
+          case Right((directivesMaps, nodesMaps, ruleMaps, paramMaps)) =>
+            ChangeRequestWithSuccessXml(
+              ConfigurationChangeRequest(
+                ChangeRequestId(id),
+                modId.map(ModificationId.apply),
+                ChangeRequestInfo(
+                  name.getOrElse(""),
+                  description.getOrElse("")
+                ),
+                directivesMaps,
+                nodesMaps,
+                ruleMaps,
+                paramMaps
+              )
+            )
+
+          case Left(err) =>
+            ChangeRequestWithInvalidXml(err)
+        }
+    }
   }
 
-  def getAllSQL: Query0[Box[ChangeRequest]] =
-    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest".query[Box[ChangeRequest]]
+  def getAllSQL: Query0[DbChangeRequest] =
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest".query[DbChangeRequest]
 
-  def getSQL(changeRequestId: ChangeRequestId): Query0[Box[ChangeRequest]] = {
+  def getSQL(changeRequestId: ChangeRequestId): Query0[ChangeRequest] = {
     sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId}"
-      .query[Box[ChangeRequest]]
+      .query[ChangeRequest]
   }
 
-  def getByContributorSQL(actor: EventActor): Query0[Box[ChangeRequest]] = {
+  def getRawCRSQL(changeRequestId: ChangeRequestId): Query0[DbChangeRequest] = {
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId}"
+      .query[DbChangeRequest]
+  }
+
+  def getByContributorSQL(actor: EventActor): Query0[ChangeRequest] = {
     val actorName = Array(actor.name)
     sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where cast( xpath('//firstChange/change/actor/text()',content) as character varying[]) = ${actorName}"
-      .query[Box[ChangeRequest]]
+      .query[ChangeRequest]
   }
 
   def getChangeRequestsByXpathContentSQL(
       xpath:        Fragment,
       shouldEquals: String,
       onlyPending:  Boolean
-  ): Query0[Box[ChangeRequest]] = {
+  ): Query0[ChangeRequest] = {
     val param = Array(shouldEquals)
     if (onlyPending) {
       sql"""SELECT CR.id, name, description, content, modificationId FROM changeRequest CR LEFT JOIN workflow W on CR.id = W.id where cast( xpath(${xpath}, content) as character varying[]) = ${param} and state like 'Pending%'"""
-        .query[Box[ChangeRequest]]
+        .query[ChangeRequest]
     } else {
       sql"""SELECT id, name, description, content, modificationId FROM ChangeRequest where cast( xpath(${xpath}, content) as character varying[]) = ${param}"""
-        .query[Box[ChangeRequest]]
+        .query[ChangeRequest]
     }
   }
 
   def getByFiltersSQL(
       statuses:       Option[NonEmptyList[WorkflowNodeId]],
       xpathWithValue: Option[(Fragment, String)] // (xpath, value)
-  ): Query0[Box[(ChangeRequest, WorkflowNodeId)]] = {
+  ): Query0[(ChangeRequest, WorkflowNodeId)] = {
     (fr"SELECT CR.id, CR.name, CR.description, CR.content, CR.modificationId, W.state FROM ChangeRequest CR LEFT JOIN workflow W on CR.id = W.id" ++
     fragments.whereAndOpt(
       statuses.map(fragments.in(fr"state", _)),
@@ -128,7 +175,7 @@ trait RoChangeRequestJdbcRepositorySQL {
           val param = Array(value)
           fr"cast( xpath(${xpath}, content) as character varying[]) = ${param}"
       }
-    )).query[Box[(ChangeRequest, WorkflowNodeId)]]
+    )).query[(ChangeRequest, WorkflowNodeId)]
   }
 
 }
@@ -160,25 +207,39 @@ class RoChangeRequestJdbcRepository(
   import doobie.*
 
   // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
-  private[this] def execQuery(errMsg: String, q: Query0[Box[ChangeRequest]]): IOResult[Vector[ChangeRequest]] = {
-    transactIOResult(errMsg)(xa => {
-      q.to[Vector]
-        .map(
-          // we are just ignoring change request with unserialisation
-          // error. Does not seem the best.
-          _.flatten.toVector
-        )
-        .transact(xa)
-    })
+  private[this] def execQuery(errMsg: String, q: Query0[ChangeRequest]): IOResult[Vector[ChangeRequest]] = {
+    transactIOResult(errMsg)(xa => { q.to[Vector].transact(xa) })
   }
 
   override def getAll(): IOResult[Vector[ChangeRequest]] = {
-    execQuery("Could not get all change requests in database", getAllSQL)
+    transactIOResult("errMsg")(xa => {
+      getAllSQL
+        .to[List]
+        .transact(xa)
+        .flatMap(vector => {
+          val (errors, success) = vector.partitionMap {
+            case ChangeRequestWithInvalidXml(err) => Left(err)
+            case ChangeRequestWithSuccessXml(suc) => Right(suc)
+          }
+
+          NonEmptyList
+            .fromList(errors)
+            .succeed
+            .tapSome {
+              case Some(errs) =>
+                ChangeValidationLoggerPure
+                  .warn(
+                    Chained("There are some errors getting all change requests", Accumulated(errs)).fullMsg
+                  )
+            }
+            .as(success.toVector)
+        })
+    })
   }
 
   override def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = {
     transactIOResult(s"Could not get change request with id ${changeRequestId} in database")(xa =>
-      getSQL(changeRequestId).option.map(_.flatMap(_.toOption)).transact(xa)
+      getSQL(changeRequestId).option.transact(xa)
     )
   }
 
@@ -236,7 +297,7 @@ class RoChangeRequestJdbcRepository(
         getByFiltersSQL(statuses.map(_.toNonEmptyList), by.map(getXPathWithValue))
     }
 
-    transactIOResult(errorMsg)(filteredQuery.to[Vector].map(_.flatten).transact(_))
+    transactIOResult(errorMsg)(filteredQuery.to[Vector].transact(_))
   }
 
 }
@@ -274,17 +335,16 @@ class WoChangeRequestJdbcRepository(
 
     val (name, desc, xml, modId) = getAtom(changeRequest)
 
-    for {
-      id <- transactIOResult(s"Could not create change request with id ${changeRequest.id} in database")(xa =>
-              createChangeRequestSQL(name, desc, xml, modId).withUniqueGeneratedKeys[Int]("id").transact(xa)
-            )
-      cr <- roRepo
-              .get(ChangeRequestId(id))
-              .notOptional(s"The newly saved change request with id ${id} was not found back in database")
-              .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
-    } yield {
-      cr
-    }
+    transactIOResult[Option[ChangeRequest]](s"Could not create change request with id ${changeRequest.id} in database")(xa => {
+      (for {
+        id <- createChangeRequestSQL(name, desc, xml, modId).withUniqueGeneratedKeys[Int]("id")
+        cr <- getSQL(ChangeRequestId(id)).option
+      } yield {
+        cr
+      }).transact(xa)
+    })
+      .notOptional(s"The new change request cannot be saved in database")
+      .tapError(err => ChangeValidationLoggerPure.error(err.fullMsg))
   }
 
   /**
@@ -309,7 +369,7 @@ class WoChangeRequestJdbcRepository(
     // no transaction between steps, because we don't actually use anything in the existing change request
     val process = {
       for {
-        exists <- getSQL(changeRequest.id).option
+        exists <- getRawCRSQL(changeRequest.id).option
         _      <- exists match {
                     case None    =>
                       val msg =
@@ -340,39 +400,6 @@ class ChangeRequestMapper(
   // id, name, description, content, modificationId
   type CR = (Int, Option[String], Option[String], Elem, Option[String])
 
-  // unserialize the XML.
-  // If it fails, produce a failure
-  // directives map is stored in a IOResult because an Exception could be launched
-  def unserialize(
-      id:          Int,
-      name:        Option[String],
-      description: Option[String],
-      content:     Elem,
-      modId:       Option[String]
-  ): IOResult[ChangeRequest] = {
-    crcUnserialiser
-      .unserialise(content)
-      .chainError(s"Error when trying to get the content of the change request ${id}") match {
-      case Right((directivesMaps, nodesMaps, ruleMaps, paramMaps)) =>
-        ConfigurationChangeRequest(
-          ChangeRequestId(id),
-          modId.map(ModificationId.apply),
-          ChangeRequestInfo(
-            name.getOrElse(""),
-            description.getOrElse("")
-          ),
-          directivesMaps,
-          nodesMaps,
-          ruleMaps,
-          paramMaps
-        ).succeed
-
-      case Left(err) =>
-        ChangeValidationLogger.error(err.fullMsg)
-        err.fail
-    }
-  }
-
   def serialize(optCR: Box[ChangeRequest]): CR = {
     optCR match {
       case Full(cr) =>
@@ -393,7 +420,44 @@ class ChangeRequestMapper(
     }
   }
 
-  implicit val ChangeRequestRead: Read[Box[ChangeRequest]] = {
-    Read[CR].map((t: CR) => unserialize(t._1, t._2, t._3, t._4, t._5).toBox)
+  type ElemXml = (
+      Map[DirectiveId, DirectiveChanges],
+      Map[NodeGroupId, NodeGroupChanges],
+      Map[RuleId, RuleChanges],
+      Map[String, GlobalParameterChanges]
+  )
+
+  implicit val ElemShow: Show[Elem] = {
+    Show.show(e => e.toString())
+  }
+
+  implicit val ElemXmlGet: Get[ElemXml] = XmlMeta.get.temap(content => {
+    crcUnserialiser
+      .unserialise(content)
+      .leftMap(err => Chained("Could not get content column from change request ", err).fullMsg)
+  })
+
+  implicit val ChangeRequestShow: Show[CR] = {
+    Show.show(cr => s"( id : ${cr._1}, name : ${cr._2}, description : ${cr._3}, content : ${cr._4}, modificationId : ${cr._5} ")
+  }
+
+  implicit val ChangeRequestRead: Read[ChangeRequest] = {
+
+    Read[(Int, Option[String], Option[String], ElemXml, Option[String])].map {
+
+      case (id, name, description, (directivesMaps, nodesMaps, ruleMaps, paramMaps), modId) =>
+        ConfigurationChangeRequest(
+          ChangeRequestId(id),
+          modId.map(ModificationId.apply),
+          ChangeRequestInfo(
+            name.getOrElse(""),
+            description.getOrElse("")
+          ),
+          directivesMaps,
+          nodesMaps,
+          ruleMaps,
+          paramMaps
+        )
+    }
   }
 }
