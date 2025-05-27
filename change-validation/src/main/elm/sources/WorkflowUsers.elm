@@ -21,11 +21,11 @@ filterUnvalidatedUsers users =
     filter (\u -> not u.isValidated) users
 
 
-mainInit : { contextPath : String, adminWrite : Bool } -> ( Model, Cmd Msg )
+mainInit : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
 mainInit initValues =
     let
         m =
-            initModel initValues.contextPath initValues.adminWrite
+            initModel initValues.contextPath initValues.hasWriteRights
     in
     ( m, Cmd.batch [ getUsers m, getValidateAllSetting m ] )
 
@@ -167,7 +167,7 @@ update msg model =
         SaveValidateAllSetting result ->
             case result of
                 Ok newSetting ->
-                    ( { model | validateAll = newSetting, viewState = setValidateAllInView model.viewState newSetting }
+                    ( { model | viewState = initForm newSetting }
                     , successNotification "Successfully saved setting"
                     )
 
@@ -177,28 +177,26 @@ update msg model =
         GetValidateAllSetting result ->
             case result of
                 Ok setting ->
-                    ( { model | validateAll = setting, viewState = setValidateAllInView model.viewState setting }, Cmd.none )
+                    ( { model | viewState = initForm setting }, Cmd.none )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to get validate_all_enabled setting :" ++ getErrorMessage error) )
 
         ChangeValidateAllSetting enable_validate_all ->
-            ( { model | viewState = updateValidateAllInView model.viewState enable_validate_all }, Cmd.none )
+            ( { model | viewState = setValidateAll enable_validate_all model.viewState }, Cmd.none )
 
 
-setValidateAllInView : ViewState -> Bool -> ViewState
-setValidateAllInView viewState value =
-    case viewState of
-        _ ->
-            let
-                formState =
-                    { validateAll = value }
-            in
-            Form { initValues = formState, formValues = formState }
+initForm : Bool -> ViewState
+initForm value =
+   let
+            formState =
+                { validateAll = value }
+   in
+       Form { initValues = formState, formValues = formState }
 
 
-updateValidateAllInView : ViewState -> Bool -> ViewState
-updateValidateAllInView viewState newValue =
+setValidateAll : Bool -> ViewState -> ViewState
+setValidateAll newValue viewState  =
     case viewState of
         Form formState ->
             let

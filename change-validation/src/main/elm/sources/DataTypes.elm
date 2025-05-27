@@ -50,8 +50,7 @@ type alias Model =
     , leftChecked : List User
     , hasMoved : List User -- To track updates
     , editMod : EditMod
-    , adminWrite : Bool
-    , validateAll : Bool
+    , hasWriteRights : Bool
     , viewState : ViewState
     }
 

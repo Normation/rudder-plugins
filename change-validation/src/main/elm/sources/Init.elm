@@ -15,5 +15,5 @@ subscriptions _ =
 
 
 initModel : String -> Bool -> Model
-initModel contextPath adminWrite =
-    Model contextPath [] [] [] [] [] [] Off adminWrite False NoView
+initModel contextPath hasWriteRights =
+    Model contextPath [] [] [] [] [] [] Off hasWriteRights NoView

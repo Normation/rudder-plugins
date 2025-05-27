@@ -3,7 +3,7 @@ module View exposing (..)
 import ApiCalls exposing (getUsers, saveValidateAllSetting, saveWorkflow)
 import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList, Username, ViewState(..), getUsernames)
 import Html exposing (..)
-import Html.Attributes as Attr exposing (attribute, checked, class, disabled, id, style, type_, value)
+import Html.Attributes exposing (attribute, checked, class, disabled, for, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick)
 import List exposing (isEmpty, length, member)
 import String exposing (fromInt)
@@ -26,9 +26,9 @@ createRightInfoSection paragraphs =
         paragraphElements =
             List.map (\paragraphContent -> p [] [ text paragraphContent ]) paragraphs
     in
-    div [ Attr.class "section-right" ]
-        [ div [ Attr.class "doc doc-info" ]
-            ([ div [ Attr.class "marker" ] [ span [ Attr.class "fa fa-info-circle" ] [] ] ] ++ paragraphElements)
+    div [ class "section-right" ]
+        [ div [ class "doc doc-info" ]
+            ([ div [ class "marker" ] [ span [ class "fa fa-info-circle" ] [] ] ] ++ paragraphElements)
         ]
 
 
@@ -352,16 +352,16 @@ view : Model -> Html Msg
 view model =
     let
         validateAllForm =
-            if model.adminWrite then
+            if model.hasWriteRights then
                 [ Html.br [] [], displayValidateAllForm model ]
 
             else
-                [ text "" ]
+                []
     in
     let
         workflowUsers =
-            div [ Attr.class "section-with-doc" ]
-                [ div [ Attr.class "section-left" ]
+            div [ class "section-with-doc" ]
+                [ div [ class "section-left" ]
                     [ div
                         []
                         [ case model.editMod of
@@ -385,8 +385,8 @@ view model =
                 ]
     in
     div
-        [ Attr.id "workflowUsers" ]
-        (List.append [ workflowUsers ] validateAllForm)
+        [ id "workflowUsers" ]
+        (workflowUsers :: validateAllForm)
 
 
 displayValidateAllForm : Model -> Html Msg
@@ -394,41 +394,41 @@ displayValidateAllForm model =
     case model.viewState of
         Form formState ->
             div
-                [ Attr.class "section-with-doc" ]
-                [ div [ Attr.class "section-left" ]
+                [ class "section-with-doc" ]
+                [ div [ class "section-left" ]
                     [ form []
                         [ ul []
                             [ li
-                                [ Attr.class "rudder-form" ]
-                                [ div [ Attr.class "input-group" ]
+                                [ class "rudder-form" ]
+                                [ div [ class "input-group" ]
                                     [ label
-                                        [ Attr.class "input-group-addon"
-                                        , Attr.for "validationAutoValidatedUser"
+                                        [ class "input-group-addon"
+                                        , for "validationAutoValidatedUser"
                                         ]
                                         [ input
-                                            [ Attr.type_ "checkbox"
-                                            , Attr.id "validationAutoValidatedUser"
-                                            , Attr.checked formState.formValues.validateAll
+                                            [ type_ "checkbox"
+                                            , id "validationAutoValidatedUser"
+                                            , checked formState.formValues.validateAll
                                             , onClick (ChangeValidateAllSetting (not formState.formValues.validateAll))
                                             ]
                                             []
                                         , label
-                                            [ Attr.for "validationAutoValidatedUser", Attr.class "label-radio" ]
-                                            [ span [ Attr.class "ion ion-checkmark-round" ] [] ]
-                                        , span [ Attr.class "ion ion-checkmark-round check-icon" ] []
+                                            [ for "validationAutoValidatedUser", class "label-radio" ]
+                                            [ span [ class "fa fa-check" ] [] ]
+                                        , span [ class "fa fa-check check-icon" ] []
                                         ]
                                     , label
-                                        [ Attr.class "form-control", Attr.for "validationAutoValidatedUser" ]
+                                        [ class "form-control", for "validationAutoValidatedUser" ]
                                         [ text " Validate all changes " ]
                                     ]
                                 ]
                             ]
                         , input
-                            [ Attr.type_ "submit"
-                            , Attr.value "Save change"
-                            , Attr.id "validationAutoSubmit"
-                            , Attr.class "btn btn-default"
-                            , Attr.disabled (formState.formValues.validateAll == formState.initValues.validateAll)
+                            [ type_ "submit"
+                            , value "Save change"
+                            , id "validationAutoSubmit"
+                            , class "btn btn-default"
+                            , disabled (formState.formValues.validateAll == formState.initValues.validateAll)
                             , onClick (CallApi (saveValidateAllSetting formState.formValues.validateAll))
                             ]
                             []
