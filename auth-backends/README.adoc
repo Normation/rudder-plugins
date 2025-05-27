@@ -698,9 +698,10 @@ Here are some guidelines to help address possible configuration problems.
 *OAUTH2 backend is enabled, but no providers are correctly configured*
 
 It's likely a problem with the parameter `rudder.auth.oauth2.provider.registrations`, verify that:
+
 - The parameter exist without typo with your providers
 - It appear only *once*, for instance if you have more that one configuration file for each provider, make sure that the parameter is set
-in `/opt/rudder/etc/rudder-web.properties`` and *not* in each file under `/opt/rudder/etc/rudder-web.properties.d/``
+in `/opt/rudder/etc/rudder-web.properties` and *not* in each file under `/opt/rudder/etc/rudder-web.properties.d/`
 
 
 *I don't see the list of Identity Provider in login form*
