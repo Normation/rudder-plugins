@@ -4,6 +4,7 @@
 	<head_merge>
 	  <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen"
 	  data-lift="with-cached-resource">
+	  <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.css">
 	  <script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
 	  <script src="/toserve/changevalidation/rudder-supervisedtargets.js" data-lift="with-cached-resource"></script>
 	  <script src="/toserve/changevalidation/rudder-workflowusers.js" data-lift="with-cached-resource"></script>
@@ -180,24 +181,26 @@
 				</p>
 			  </div>
 			  <h3 class="page-subtitle">Configure users with change validation</h3>
-			  <div class="section-with-doc">
-				<div class="section-left">
-				  <div id="WorkflowUsers-app">
-					<div id="validated-users-management"></div>
+			  <div id="workflowUsers">
+				  <!--
+			    <div class="section-with-doc">
+				  <div class="section-left"></div>
+	    	 		<div class="section-right">
+			    	  <div class="doc doc-info">
+		    			<div class="marker">
+				    	  <span class="fa fa-info-circle"></span>
+		    			</div>
+			    		<p>
+				    	  Any change done by a validated user will be automatically deployed without validation needed
+					      by another user.
+					    </p>
+				      </div>
 				  </div>
-				</div>
-				<div class="section-right">
-				  <div class="doc doc-info">
-					<div class="marker">
-					  <span class="fa fa-info-circle"></span>
-					</div>
-					<p>
-					  Any change done by a validated user will be automatically deployed without validation needed
-					  by another user.
-					</p>
-				  </div>
-				</div>
+		    	</div>
+		    	-->
 			  </div>
+
+				<!--
 			  <lift:authz role="administration_write">
 			  <br>
 			  <div data-lift="ChangeValidationSettings.validation">
@@ -241,6 +244,8 @@
 
 			  </div>
 			  </lift:authz>
+
+			  -->
 			  <div>
 				<h3 class="page-subtitle">Configure groups with change validations</h3>
 				<div class="section-with-doc">
@@ -248,12 +253,23 @@
 					<div id="supervised-targets-app">
 					  <div id="list-groups-change-validation"></div>
 					</div>
+
+					<script>
+					  var hasWriteRights = false;
+					</script>
+					<lift:authz role="administration_write">
+					  <script>
+						hasWriteRights = true;
+					  </script>
+					</lift:authz>
+
 					<script>
 					  $(document).ready(function () {
                         var main = document.getElementById("list-groups-change-validation");
-                        var wu = document.getElementById("validated-users-management");
+                        var wu = document.getElementById("workflowUsers");
                         var initValues = {
-						  contextPath: contextPath
+						  contextPath: contextPath,
+						  hasWriteRights: hasWriteRights
                         };
                         var app = Elm.SupervisedTargets.init({node: main, flags: initValues});
                         var app2 = Elm.WorkflowUsers.init({node: wu, flags: initValues})
