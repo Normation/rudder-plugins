@@ -380,7 +380,7 @@ ul.clipboard-list > li:last-child{
   border-radius: 3px;
 }
 
-#supervised-targets-app .node-check .ion{
+#supervised-targets-app .node-check .fa{
   font-size: 12px;
   top: -10px;
   position: relative;
@@ -395,7 +395,7 @@ ul.clipboard-list > li:last-child{
   display: none;
 }
 
-#supervised-targets-app .node-check input[type=checkbox]:checked + .ion {
+#supervised-targets-app .node-check input[type=checkbox]:checked + .fa {
   visibility: visible;
   animation: opacity-1 .1s linear forwards;
 }

@@ -1,14 +1,10 @@
 module WorkflowUsers exposing (..)
 
-import ApiCalls exposing (getUsers, getValidateAllSetting)
-import Browser
-import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList, ViewState(..))
+import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg, User, UserList, UserListField(..), ValidateAllView(..), WorkflowUsersForm, WorkflowUsersMsg(..), WorkflowUsersView(..))
 import ErrorMessages exposing (getErrorMessage)
-import Init exposing (initModel, subscriptions)
 import List exposing (filter, member)
 import Ports exposing (errorNotification, successNotification)
 import String
-import View exposing (view)
 
 
 filterValidatedUsers : UserList -> UserList
@@ -21,37 +17,27 @@ filterUnvalidatedUsers users =
     filter (\u -> not u.isValidated) users
 
 
-mainInit : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
-mainInit initValues =
-    let
-        m =
-            initModel initValues.contextPath initValues.hasWriteRights
-    in
-    ( m, Cmd.batch [ getUsers m, getValidateAllSetting m ] )
+initModel : String -> Bool -> Model
+initModel contextPath hasWriteRights =
+    Model contextPath Off WorkflowUsersInitView hasWriteRights ValidateAllInitView
 
 
-main =
-    Browser.element
-        { init = mainInit
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : WorkflowUsersMsg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetUsers result ->
             case result of
                 Ok users ->
                     ( { model
-                        | users = users
-                        , unvalidatedUsers = filterUnvalidatedUsers users
-                        , validatedUsers = filterValidatedUsers users
-                        , leftChecked = []
-                        , rightChecked = []
-                        , hasMoved = []
+                        | workflowUsersView =
+                            WorkflowUsers
+                                { users = users
+                                , unvalidatedUsers = filterUnvalidatedUsers users
+                                , validatedUsers = filterValidatedUsers users
+                                , leftChecked = []
+                                , rightChecked = []
+                                , hasMoved = []
+                                }
                       }
                     , Cmd.none
                     )
@@ -62,7 +48,7 @@ update msg model =
         RemoveUser result ->
             case result of
                 Ok removeUser ->
-                    ( { model | users = filter (\m -> m.username /= removeUser) model.users }, Cmd.none )
+                    ( { model | workflowUsersView = mapUserList Users (filter (\m -> m.username /= removeUser)) model.workflowUsersView }, Cmd.none )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to delete a validated users:" ++ getErrorMessage error) )
@@ -71,12 +57,13 @@ update msg model =
             case result of
                 Ok updatedUsers ->
                     ( { model
-                        | users = updatedUsers
-                        , unvalidatedUsers = filterUnvalidatedUsers updatedUsers
-                        , validatedUsers = filterValidatedUsers updatedUsers
-                        , leftChecked = []
-                        , rightChecked = []
-                        , hasMoved = []
+                        | workflowUsersView =
+                            model.workflowUsersView
+                                |> setUserListOn Users updatedUsers
+                                |> setUserListOn UnvalidatedUsers (filterUnvalidatedUsers updatedUsers)
+                                |> setUserListOn ValidatedUsers (filterValidatedUsers updatedUsers)
+                                |> setUserListOn HasMoved []
+                                |> setChecked [] []
                       }
                     , successNotification ""
                     )
@@ -88,70 +75,98 @@ update msg model =
             ( model, call model )
 
         RightToLeft ->
-            let
-                newUnvalidatedUsers =
-                    filter (\u -> not (member u model.rightChecked)) model.unvalidatedUsers
+            case model.workflowUsersView of
+                WorkflowUsers form ->
+                    ( { model
+                        | workflowUsersView =
+                            model.workflowUsersView
+                                |> mapUserList UnvalidatedUsers (filter (\u -> not (member u form.rightChecked)))
+                                |> setUserListOn HasMoved (form.hasMoved ++ form.rightChecked)
+                                |> setUserListOn ValidatedUsers (form.rightChecked ++ form.validatedUsers)
+                                |> setChecked [] []
+                      }
+                    , Cmd.none
+                    )
 
-                newValidatedUsers =
-                    model.rightChecked ++ model.validatedUsers
-            in
-            ( { model
-                | unvalidatedUsers = newUnvalidatedUsers
-                , hasMoved = model.hasMoved ++ model.rightChecked
-                , validatedUsers = newValidatedUsers
-                , leftChecked = []
-                , rightChecked = []
-              }
-            , Cmd.none
-            )
+                _ ->
+                    ( model, Cmd.none )
 
         LeftToRight ->
-            let
-                newValidatedUsers =
-                    filter (\u -> not (member u model.leftChecked)) model.validatedUsers
+            case model.workflowUsersView of
+                WorkflowUsers form ->
+                    ( { model
+                        | workflowUsersView =
+                            model.workflowUsersView
+                                |> setUserListOn UnvalidatedUsers (form.leftChecked ++ form.unvalidatedUsers)
+                                |> setUserListOn HasMoved (form.hasMoved ++ form.leftChecked)
+                                |> mapUserList ValidatedUsers (filter (\u -> not (member u form.leftChecked)))
+                                |> setChecked [] []
+                      }
+                    , Cmd.none
+                    )
 
-                newUnvalidatedUsers =
-                    model.leftChecked ++ model.unvalidatedUsers
-            in
-            ( { model
-                | unvalidatedUsers = newUnvalidatedUsers
-                , hasMoved = model.hasMoved ++ model.leftChecked
-                , validatedUsers = newValidatedUsers
-                , leftChecked = []
-                , rightChecked = []
-              }
-            , Cmd.none
-            )
+                _ ->
+                    ( model, Cmd.none )
 
         AddLeftChecked user isChecked ->
-            if not (member user model.leftChecked) && isChecked then
-                ( { model | leftChecked = user :: model.leftChecked, rightChecked = [] }, Cmd.none )
+            case model.workflowUsersView of
+                WorkflowUsers form ->
+                    if not (member user form.leftChecked) && isChecked then
+                        ( { model
+                            | workflowUsersView =
+                                model.workflowUsersView
+                                    |> setChecked (user :: form.leftChecked) []
+                          }
+                        , Cmd.none
+                        )
 
-            else
-                ( { model | leftChecked = filter (\u -> user /= u) model.leftChecked }, Cmd.none )
+                    else
+                        ( { model
+                            | workflowUsersView = model.workflowUsersView |> mapUserList LeftChecked (filter (\u -> user /= u))
+                          }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
 
         AddRightChecked user isChecked ->
-            if not (member user model.rightChecked) && isChecked then
-                ( { model | rightChecked = user :: model.rightChecked, leftChecked = [] }, Cmd.none )
+            case model.workflowUsersView of
+                WorkflowUsers form ->
+                    if not (member user form.rightChecked) && isChecked then
+                        ( { model
+                            | workflowUsersView =
+                                model.workflowUsersView
+                                    |> setChecked [] (user :: form.rightChecked)
+                          }
+                        , Cmd.none
+                        )
 
-            else
-                ( { model | rightChecked = filter (\u -> user /= u) model.rightChecked }, Cmd.none )
+                    else
+                        ( { model
+                            | workflowUsersView = model.workflowUsersView |> mapUserList RightChecked (filter (\u -> user /= u))
+                          }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
 
         CheckAll colPos isChecked ->
             case colPos of
                 Left ->
                     if isChecked then
-                        ( { model | leftChecked = model.validatedUsers, rightChecked = [] }, Cmd.none )
+                        ( { model | workflowUsersView = model.workflowUsersView |> checkAllView Left }, Cmd.none )
 
                     else
-                        ( { model | leftChecked = [] }, Cmd.none )
+                        ( { model | workflowUsersView = model.workflowUsersView |> setUserListOn LeftChecked [] }, Cmd.none )
 
                 Right ->
                     if isChecked then
-                        ( { model | rightChecked = model.unvalidatedUsers, leftChecked = [] }, Cmd.none )
+                        ( { model | workflowUsersView = model.workflowUsersView |> checkAllView Right }, Cmd.none )
 
                     else
-                        ( { model | rightChecked = [] }, Cmd.none )
+                        ( { model | workflowUsersView = model.workflowUsersView |> setUserListOn RightChecked [] }, Cmd.none )
 
         SwitchMode ->
             case model.editMod of
@@ -162,12 +177,19 @@ update msg model =
                     ( { model | editMod = On }, Cmd.none )
 
         ExitEditMod ->
-            ( { model | editMod = Off, leftChecked = [], rightChecked = [] }, Cmd.none )
+            ( { model
+                | editMod = Off
+                , workflowUsersView =
+                    model.workflowUsersView
+                        |> setChecked [] []
+              }
+            , Cmd.none
+            )
 
         SaveValidateAllSetting result ->
             case result of
                 Ok newSetting ->
-                    ( { model | viewState = initForm newSetting }
+                    ( { model | validateAllView = initValidateAllForm newSetting }
                     , successNotification "Successfully saved setting"
                     )
 
@@ -177,33 +199,107 @@ update msg model =
         GetValidateAllSetting result ->
             case result of
                 Ok setting ->
-                    ( { model | viewState = initForm setting }, Cmd.none )
+                    ( { model | validateAllView = initValidateAllForm setting }, Cmd.none )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to get validate_all_enabled setting :" ++ getErrorMessage error) )
 
         ChangeValidateAllSetting enable_validate_all ->
-            ( { model | viewState = setValidateAll enable_validate_all model.viewState }, Cmd.none )
+            ( { model | validateAllView = setValidateAll enable_validate_all model.validateAllView }, Cmd.none )
 
 
-initForm : Bool -> ViewState
-initForm value =
-   let
-            formState =
-                { validateAll = value }
-   in
-       Form { initValues = formState, formValues = formState }
-
-
-setValidateAll : Bool -> ViewState -> ViewState
-setValidateAll newValue viewState  =
+setUserListOn : UserListField -> UserList -> WorkflowUsersView -> WorkflowUsersView
+setUserListOn field newList viewState =
     case viewState of
-        Form formState ->
+        WorkflowUsers formState ->
+            case field of
+                Users ->
+                    WorkflowUsers { formState | users = newList }
+
+                ValidatedUsers ->
+                    WorkflowUsers { formState | validatedUsers = newList }
+
+                UnvalidatedUsers ->
+                    WorkflowUsers { formState | unvalidatedUsers = newList }
+
+                RightChecked ->
+                    WorkflowUsers { formState | rightChecked = newList }
+
+                LeftChecked ->
+                    WorkflowUsers { formState | leftChecked = newList }
+
+                HasMoved ->
+                    WorkflowUsers { formState | hasMoved = newList }
+
+        _ ->
+            viewState
+
+
+setChecked : UserList -> UserList -> WorkflowUsersView -> WorkflowUsersView
+setChecked left right =
+    setUserListOn LeftChecked left >> setUserListOn RightChecked right
+
+
+checkAllView : ColPos -> WorkflowUsersView -> WorkflowUsersView
+checkAllView colPos viewState =
+    case viewState of
+        WorkflowUsers formState ->
+            case colPos of
+                Left ->
+                    viewState |> setChecked formState.validatedUsers []
+
+                Right ->
+                    viewState |> setChecked [] formState.unvalidatedUsers
+
+        _ ->
+            viewState
+
+
+mapUserList : UserListField -> (UserList -> UserList) -> WorkflowUsersView -> WorkflowUsersView
+mapUserList field f viewState =
+    case viewState of
+        WorkflowUsers formState ->
+            case field of
+                Users ->
+                    WorkflowUsers { formState | users = f formState.users }
+
+                ValidatedUsers ->
+                    WorkflowUsers { formState | validatedUsers = f formState.validatedUsers }
+
+                UnvalidatedUsers ->
+                    WorkflowUsers { formState | unvalidatedUsers = f formState.unvalidatedUsers }
+
+                RightChecked ->
+                    WorkflowUsers { formState | rightChecked = f formState.rightChecked }
+
+                LeftChecked ->
+                    WorkflowUsers { formState | leftChecked = f formState.leftChecked }
+
+                HasMoved ->
+                    WorkflowUsers { formState | hasMoved = f formState.hasMoved }
+
+        _ ->
+            viewState
+
+
+initValidateAllForm : Bool -> ValidateAllView
+initValidateAllForm value =
+    let
+        formState =
+            { validateAll = value }
+    in
+    ValidateAll { initValues = formState, formValues = formState }
+
+
+setValidateAll : Bool -> ValidateAllView -> ValidateAllView
+setValidateAll newValue viewState =
+    case viewState of
+        ValidateAll formState ->
             let
                 newFormState =
                     { validateAll = newValue }
             in
-            Form { formState | formValues = newFormState }
+            ValidateAll { formState | formValues = newFormState }
 
         _ ->
             viewState
