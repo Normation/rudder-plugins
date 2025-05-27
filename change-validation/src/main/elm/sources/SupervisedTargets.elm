@@ -31,7 +31,7 @@ subscriptions model =
 ------------------------------
 
 
-init : { contextPath : String } -> ( Model, Cmd Msg )
+init : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
 init flags =
     let
         initModel =
