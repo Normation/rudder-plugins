@@ -85,6 +85,7 @@ import com.normation.rudder.domain.properties.PropertyProvider
 import com.normation.rudder.domain.queries.Query
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
+import com.normation.rudder.domain.workflows.ChangeRequestInfo
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.DirectiveChange
 import com.normation.rudder.domain.workflows.DirectiveChanges
@@ -193,6 +194,23 @@ object ChangeRequestJson {
       )
     )
   }
+}
+
+final case class ChangeRequestInfoJson(
+    name:        Option[String],
+    description: Option[String]
+) {
+
+  def updateCrInfo(crInfo: ChangeRequestInfo): ChangeRequestInfo = {
+    crInfo.copy(
+      name = name.getOrElse(crInfo.name),
+      description = description.getOrElse(crInfo.description)
+    )
+  }
+}
+
+object ChangeRequestInfoJson {
+  implicit val decoder: JsonDecoder[ChangeRequestInfoJson] = DeriveJsonDecoder.gen[ChangeRequestInfoJson]
 }
 
 /**
