@@ -6,7 +6,7 @@ import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserLi
 import ErrorMessages exposing (getErrorMessage)
 import Init exposing (initModel, subscriptions)
 import List exposing (filter, member)
-import Notifications exposing (errorNotification, successNotification)
+import Ports exposing (errorNotification, successNotification)
 import String
 import View exposing (view)
 

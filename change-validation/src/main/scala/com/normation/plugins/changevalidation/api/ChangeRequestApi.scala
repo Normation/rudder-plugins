@@ -49,6 +49,7 @@ import com.normation.errors.PureResult
 import com.normation.errors.PureToIoResult
 import com.normation.errors.Unexpected
 import com.normation.plugins.changevalidation.ChangeRequestFilter
+import com.normation.plugins.changevalidation.ChangeRequestInfoJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
@@ -81,7 +82,6 @@ import com.normation.rudder.rest.RudderJsonRequest.*
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion3
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.data.APIChangeRequestInfo
 import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
@@ -398,11 +398,15 @@ class ChangeRequestApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       implicit val qc: QueryContext = authzToken.qc
-      def updateInfo(changeRequest: ChangeRequest, status: WorkflowNodeId, apiInfo: APIChangeRequestInfo)(implicit
+      def updateInfo(changeRequest: ChangeRequest, status: WorkflowNodeId, apiInfo: ChangeRequestInfoJson)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         val newInfo = apiInfo.updateCrInfo(changeRequest.info)
-        if (changeRequest.info == newInfo) {
+
+        if (newInfo.name == "") {
+          val message = s"Could not update ChangeRequest ${id} details cause is: Change request name cannot be empty."
+          Inconsistency(message).fail
+        } else if (changeRequest.info == newInfo) {
           val message = s"Could not update ChangeRequest ${id} details cause is: No changes to save."
           Inconsistency(message).fail
         } else {
@@ -416,9 +420,14 @@ class ChangeRequestApiImpl(
         }
       }
 
-      withChangeRequestContext(id, params, schema, "update")((changeRequest, status, techniqueByDirective) =>
-        updateInfo(changeRequest, status, extractChangeRequestInfo(req.params))(techniqueByDirective.toMap)
-      ).toLiftResponseOne(params, schema, Some(id))
+      withChangeRequestContext(id, params, schema, "update")((changeRequest, status, techniqueByDirective) => {
+        for {
+          json   <- req.fromJson[ChangeRequestInfoJson].toIO
+          update <- updateInfo(changeRequest, status, json)(techniqueByDirective.toMap)
+        } yield {
+          update
+        }
+      }).toLiftResponseOne(params, schema, Some(id))
     }
   }
 
@@ -512,13 +521,6 @@ class ChangeRequestApiImpl(
             )
         }
       })
-  }
-
-  private def extractChangeRequestInfo(params: Map[String, List[String]]): APIChangeRequestInfo = {
-    APIChangeRequestInfo(
-      params.get("name").flatMap(_.headOption),
-      params.get("description").flatMap(_.headOption)
-    )
   }
 
   private[this] def extractFilters(params: Map[String, List[String]]): PureResult[ChangeRequestFilter] = {
