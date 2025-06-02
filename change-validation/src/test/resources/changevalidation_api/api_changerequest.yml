@@ -3610,10 +3610,12 @@ description: Update information about given change request
 method: POST
 url: /api/latest/changeRequests/4
 headers:
-  - "Content-Type: application/x-www-form-urlencoded"
-params:
-  name: "my group new name"
-  description: "My group new description"
+  - "Content-Type: application/json"
+body: >-
+  {
+    "name": "my group new name",
+    "description": "My group new description"
+  }
 response:
   code: 200
   content: >-
@@ -3728,6 +3730,10 @@ response:
 description: Update information about given change request when no parameter is sent
 method: POST
 url: /api/latest/changeRequests/4
+headers:
+  - "Content-Type: application/json"
+body: >-
+  {}
 response:
   code: 500
   content: >-
@@ -3742,10 +3748,12 @@ description: Update information about given change request without changing any 
 method: POST
 url: /api/latest/changeRequests/11
 headers:
-  - "Content-Type: application/x-www-form-urlencoded"
-params:
-  name: "second cr global param"
-  description: "My global param second change"
+  - "Content-Type: application/json"
+body: >-
+  {
+    "name": "second cr global param",
+    "description": "My global param second change"
+  }
 response:
   code: 500
   content: >-
