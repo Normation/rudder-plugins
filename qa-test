@@ -5,7 +5,7 @@ set -xe
 test_shell()
 {
   mkdir -p .shellcheck
-  find . \( -path ./.git -prune -o -path ./cis/src/pdfs -prune \) -o -type f -exec grep -Eq '^#!(.*/|.*env +)(sh|bash|ksh)' {} \; -print |
+  find . \( -path ./.git -prune -o -path ./cis/src/pdfs -prune -o -name zabbix-plugin.py -prune \) -o -type f -exec grep -Eq '^#!(.*/|.*env +)(sh|bash|ksh)' {} \; -print |
     while IFS="" read -r file
     do
       # collect all warnings
@@ -19,7 +19,7 @@ test_shell()
 test_shell_error()
 {
   # Shellcheck
-  find . \( -path ./.git -prune -o -path ./cis/src/pdfs -prune \) -o -type f -exec grep -Eq '^#!(.*/|.*env +)(sh|bash|ksh)' {} \; -print |
+  find . \( -path ./.git -prune -o -path ./cis/src/pdfs -prune -o -name zabbix-plugin.py -prune \) -o -type f -exec grep -Eq '^#!(.*/|.*env +)(sh|bash|ksh)' {} \; -print |
     while IFS="" read -r file
     do
       # with recent shellcheck, "-S error" replaces this hack
