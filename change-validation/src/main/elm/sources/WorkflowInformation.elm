@@ -222,32 +222,27 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    case model.pendingCount of
-        PendingCountWithTotal pc ->
-            li
-                [ Attr.class "nav-item dropdown notifications-menu"
-                , Attr.id "workflow-app"
-                ]
-                [ a
-                    [ Attr.href "#"
-                    , Attr.class "dropdown-toggle"
-                    , Attr.attribute "data-bs-toggle" "dropdown"
-                    , Attr.attribute "role" "button"
-                    , Attr.attribute "aria-expanded" "false"
-                    ]
-                    [ span []
-                        [ text "CR" ]
-                    , viewDropdownToggle pc.totalCount
-                    ]
-                , ul
-                    [ Attr.class "dropdown-menu"
-                    , Attr.attribute "role" "menu"
-                    ]
-                    [ li [] [ viewDropDownMenu model ] ]
-                ]
+    let
+        viewDropdown =
+            case model.pendingCount of
+                NotSet ->
+                    viewDropdownToggle True "-"
 
-        NotSet ->
-            text ""
+                PendingCountWithTotal pc ->
+                    viewDropdownToggle False ( String.fromInt pc.totalCount )
+    in
+    li
+        [ Attr.class "nav-item dropdown notifications-menu"
+        , Attr.id "workflow-app"
+        ]
+        [ viewDropdown
+        , ul
+            [ Attr.class "dropdown-menu"
+            , Attr.attribute "role" "menu"
+            ]
+            [ li [] [ viewDropDownMenu model ] ]
+        ]
+
 
 
 viewDropDownMenu : Model -> Html Msg
@@ -263,13 +258,22 @@ viewDropDownMenu model =
                 ]
 
 
-viewDropdownToggle : Int -> Html Msg
-viewDropdownToggle totalCount =
-    span
-        [ Attr.id "number"
-        , Attr.class "badge rudder-badge"
+viewDropdownToggle : Bool -> String -> Html Msg
+viewDropdownToggle isLoading displayedCount =
+    a
+        [ Attr.href "#"
+        , Attr.class ( "dropdown-toggle " ++ if isLoading then "placeholder-glow" else "" )
+        , Attr.attribute "data-bs-toggle" "dropdown"
+        , Attr.attribute "role" "button"
+        , Attr.attribute "aria-expanded" "false"
         ]
-        [ Html.text (String.fromInt totalCount) ]
+        [ span [] [ text "CR" ]
+        , span
+            [ Attr.id "number"
+            , Attr.class ( "badge rudder-badge " ++ if isLoading then "placeholder" else "" )
+            ]
+            [ Html.text displayedCount ]
+        ]
 
 
 displayPendingCount : Maybe Int -> String -> String -> String -> Html Msg

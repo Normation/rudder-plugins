@@ -38,32 +38,29 @@
 package com.normation.plugins.changevalidation.comet
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.rudder.AuthorizationType
 import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.services.workflows.WorkflowUpdate
-import com.normation.rudder.users.CurrentUser
 import com.normation.zio.UnsafeRun
-import net.liftweb.common.Empty
-import net.liftweb.common.Full
-import net.liftweb.common.Loggable
+import net.liftweb.common.*
 import net.liftweb.http.*
+import net.liftweb.http.js.JsCmds.Run
 import scala.xml.*
 
+/** 
+ * Actor to dynamically update the count of change requests once workflows are updated.
+ * 
+ * It loads the corresponding WorkflowInformation Elm app, which can also be
+ * dynamically loaded depending on feature toggle.
+ */
 class WorkflowInformation extends CometActor with CometListener with Loggable {
 
   private[this] val asyncWorkflow = RudderConfig.asyncWorkflowInfo
 
-  private[this] val isValidator = CurrentUser.checkRights(AuthorizationType.Validator.Read)
-  private[this] val isDeployer  = CurrentUser.checkRights(AuthorizationType.Deployer.Read)
-
   private[this] var workflowEnabledPrev = getWorkflowEnabled()
   private[this] var shouldLoadScript    = workflowEnabledPrev
 
-  /** A user must have either or both of the Validator.Read and Deployer.Read authorizations
-   * in order to display the pending change requests menu. */
-  private[this] def hasRights()          = isValidator || isDeployer
   private[this] def getWorkflowEnabled() = {
-    if (hasRights()) RudderConfig.configService.rudder_workflow_enabled().orElseSucceed(false).runNow else false
+    RudderConfig.configService.rudder_workflow_enabled().orElseSucceed(false).runNow
   }
 
   override def registerWith: AsyncWorkflowInfo = asyncWorkflow
@@ -71,10 +68,8 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
   override val defaultHtml = NodeSeq.Empty
 
   def render: RenderOut = {
-
-    if (!hasRights()) new RenderOut(NodeSeq.Empty)
-
-    /* xml is a menu entry which looks like :
+    /*
+    A menu entry created by the WorkflowInformation Elm app, when mounted on #workflow-app, it looks like :
 
     <li class="nav-item dropdown notifications-menu" id="workflow-app">
       <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">
@@ -89,48 +84,22 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
         </li>
       </ul>
     </li>
-
-    This menu is created by the WorkflowInformation Elm app.
      */
 
     val xml = {
-      if (shouldLoadScript) {
-        ("#workflow-app" #>
-        <li id="workflow-app" class="nav-item dropdown notifications-menu">
-          <script>
-            //<![CDATA[
-              // init elm app
-              $(document).ready(function(){
-                var node = document.getElementById("workflow-app");
-                var initValues = {
-                  contextPath : contextPath
-                };
-                var app  = Elm.WorkflowInformation.init({node: node, flags: initValues});
-
-                app.ports.errorNotification.subscribe((errMsg) => {
-                  createErrorNotification(errMsg)
-                })
-              });
-              // ]]>
-          </script>
-        </li>).apply(<li class="nav-item dropdown notifications-menu" id="workflow-app"/>)
-      } else NodeSeq.Empty
+      <li id="workflow-app" class="nav-item dropdown notifications-menu">
+        <a href="#" class="dropdown-toggle placeholder-glow" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+          <span>CR</span>
+          <span id="number" class="badge rudder-badge placeholder">-</span>
+        </a>
+      </li>
     }
-
-    val fixedLayout = {
-      <head_merge>
-        <script type="text/javascript" data-lift="with-cached-resource" src="/toserve/changevalidation/rudder-workflowinformation.js"></script>
-        <link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource" />
-      </head_merge>
-    }
-
-    RenderOut(Full(xml), Full(fixedLayout), Empty, Empty, ignoreHtmlOnJs = false)
+    loadScript()
+    new RenderOut(xml)
   }
 
   override def lowPriority = {
     case WorkflowUpdate =>
-      if (!hasRights()) ()
-
       val workflowEnabled = getWorkflowEnabled()
 
       // The script should be loaded if the workflow_enabled setting has been enabled since the last render
@@ -139,6 +108,26 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
 
       workflowEnabledPrev = workflowEnabled
 
-      reRender()
+      loadScript()
   }
+
+  private def loadScript(): Unit = {
+    if (shouldLoadScript) {
+      partialUpdate(Run("""
+        $(document).ready(function(){
+          const node = document.getElementById("workflow-app");
+          if (!node) return;
+          const initValues = {
+            contextPath : contextPath
+          };
+          const app  = Elm.WorkflowInformation.init({node: node, flags: initValues});
+
+          app.ports.errorNotification.subscribe((errMsg) => {
+            createErrorNotification(errMsg)
+          })
+        });
+      """))
+    }
+  }
+
 }
