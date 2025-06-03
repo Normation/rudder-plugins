@@ -2,7 +2,6 @@ module ApiCalls exposing (..)
 
 import DataTypes exposing (..)
 import Http exposing (emptyBody, expectJson, header, jsonBody, request)
-import Json.Decode exposing (Decoder)
 import JsonDecoders exposing (decodeApiDeleteUsername, decodeSetting, decodeUserList)
 import JsonEncoders exposing (encodeSetting, encodeUsernames)
 
@@ -21,24 +20,7 @@ getUsers model =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getUrl model "users"
                 , body = emptyBody
-                , expect = expectJson GetUsers decodeUserList
-                , timeout = Nothing
-                , tracker = Nothing
-                }
-    in
-    req
-
-
-removeValidatedUser : Username -> Model -> Cmd Msg
-removeValidatedUser username model =
-    let
-        req =
-            request
-                { method = "DELETE"
-                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getUrl model ("validatedUsers/" ++ username)
-                , body = emptyBody
-                , expect = expectJson RemoveUser decodeApiDeleteUsername
+                , expect = expectJson (WorkflowUsersMsg << GetUsers) decodeUserList
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -55,7 +37,7 @@ saveWorkflow usernames model =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getUrl model "validatedUsers"
                 , body = jsonBody (encodeUsernames usernames)
-                , expect = expectJson SaveWorkflow decodeUserList
+                , expect = expectJson (WorkflowUsersMsg << SaveWorkflow) decodeUserList
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -63,7 +45,7 @@ saveWorkflow usernames model =
     req
 
 
-getSetting : Model -> String -> (Result Http.Error Bool -> Msg) -> Cmd Msg
+getSetting : Model -> String -> (Result Http.Error Bool -> WorkflowUsersMsg) -> Cmd Msg
 getSetting model settingId msg =
     let
         req =
@@ -72,7 +54,7 @@ getSetting model settingId msg =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getUrl model ("settings/" ++ settingId)
                 , body = emptyBody
-                , expect = expectJson msg (decodeSetting settingId)
+                , expect = expectJson (WorkflowUsersMsg << msg) (decodeSetting settingId)
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -85,7 +67,7 @@ getValidateAllSetting model =
     getSetting model "enable_validate_all" GetValidateAllSetting
 
 
-setSetting : Model -> String -> (Result Http.Error Bool -> Msg) -> Bool -> Cmd Msg
+setSetting : Model -> String -> (Result Http.Error Bool -> WorkflowUsersMsg) -> Bool -> Cmd Msg
 setSetting model settingId msg newValue =
     let
         req =
@@ -94,7 +76,7 @@ setSetting model settingId msg newValue =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getUrl model ("settings/" ++ settingId)
                 , body = jsonBody (encodeSetting newValue)
-                , expect = expectJson msg (decodeSetting settingId)
+                , expect = expectJson (WorkflowUsersMsg << msg) (decodeSetting settingId)
                 , timeout = Nothing
                 , tracker = Nothing
                 }

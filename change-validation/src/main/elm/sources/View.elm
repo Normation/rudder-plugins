@@ -1,7 +1,7 @@
 module View exposing (..)
 
 import ApiCalls exposing (getUsers, saveValidateAllSetting, saveWorkflow)
-import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList, Username, ViewState(..), getUsernames)
+import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg(..), User, UserList, Username, ValidateAllView(..), WorkflowUsersForm, WorkflowUsersMsg(..), WorkflowUsersView(..), getUsernames)
 import Html exposing (..)
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick)
@@ -9,7 +9,11 @@ import List exposing (isEmpty, length, member)
 import String exposing (fromInt)
 
 
-createInfoTootlip : String -> String -> Html msg
+type alias WorkflowUsersMsg =
+    DataTypes.WorkflowUsersMsg
+
+
+createInfoTootlip : String -> String -> Html Msg
 createInfoTootlip content placement =
     span
         [ class "fa fa-exclamation-triangle center-box-element input-icon bstool"
@@ -20,8 +24,8 @@ createInfoTootlip content placement =
         []
 
 
-createRightInfoSection : List String -> Html msg
-createRightInfoSection paragraphs =
+createRightInfoSectionParagraphs : List String -> Html Msg
+createRightInfoSectionParagraphs paragraphs =
     let
         paragraphElements =
             List.map (\paragraphContent -> p [] [ text paragraphContent ]) paragraphs
@@ -36,39 +40,39 @@ createRightInfoSection paragraphs =
 -- Displayed nb items and nb selected items when edition mod is On
 
 
-displayFooter : Model -> ColPos -> Html Msg
-displayFooter model pos =
+displayFooter : WorkflowUsersForm -> ColPos -> Html Msg
+displayFooter workflowUsersForm pos =
     let
         isChecked =
             case pos of
                 Left ->
-                    (length model.leftChecked == length model.validatedUsers) && not (isEmpty model.leftChecked)
+                    (length workflowUsersForm.leftChecked == length workflowUsersForm.validatedUsers) && not (isEmpty workflowUsersForm.leftChecked)
 
                 Right ->
-                    (length model.rightChecked == length model.unvalidatedUsers) && not (isEmpty model.rightChecked)
+                    (length workflowUsersForm.rightChecked == length workflowUsersForm.unvalidatedUsers) && not (isEmpty workflowUsersForm.rightChecked)
     in
     div [ class "box-footer" ]
         [ label [ class "all-items" ]
             [ input
                 [ class ""
-                , onCheck (\checkStatus -> CheckAll pos checkStatus)
+                , onCheck (\checkStatus -> WorkflowUsersMsg (CheckAll pos checkStatus))
                 , type_ "checkbox"
                 , value
                     (case pos of
                         Left ->
-                            fromInt (length model.validatedUsers)
+                            fromInt (length workflowUsersForm.validatedUsers)
 
                         Right ->
-                            fromInt (length model.unvalidatedUsers)
+                            fromInt (length workflowUsersForm.unvalidatedUsers)
                     )
                 , checked isChecked
                 , disabled
                     (case pos of
                         Left ->
-                            isEmpty model.validatedUsers
+                            isEmpty workflowUsersForm.validatedUsers
 
                         Right ->
-                            isEmpty model.unvalidatedUsers
+                            isEmpty workflowUsersForm.unvalidatedUsers
                     )
                 ]
                 []
@@ -76,26 +80,26 @@ displayFooter model pos =
         , div [ id "nb-items", class "footer-infos nb-items" ]
             [ case pos of
                 Left ->
-                    text (fromInt (length model.validatedUsers) ++ " Items")
+                    text (fromInt (length workflowUsersForm.validatedUsers) ++ " Items")
 
                 Right ->
-                    text (fromInt (length model.unvalidatedUsers) ++ " Items")
+                    text (fromInt (length workflowUsersForm.unvalidatedUsers) ++ " Items")
             ]
         , div [ id "nb-selected", class "footer-infos" ]
             [ case pos of
                 Left ->
-                    if (length model.leftChecked == length model.validatedUsers) && not (isEmpty model.leftChecked) then
+                    if (length workflowUsersForm.leftChecked == length workflowUsersForm.validatedUsers) && not (isEmpty workflowUsersForm.leftChecked) then
                         text "All Selected"
 
                     else
-                        text (fromInt (length model.leftChecked) ++ " Selected")
+                        text (fromInt (length workflowUsersForm.leftChecked) ++ " Selected")
 
                 Right ->
-                    if (length model.rightChecked == length model.unvalidatedUsers) && not (isEmpty model.rightChecked) then
+                    if (length workflowUsersForm.rightChecked == length workflowUsersForm.unvalidatedUsers) && not (isEmpty workflowUsersForm.rightChecked) then
                         text "All Selected"
 
                     else
-                        text (fromInt (length model.rightChecked) ++ " Selected")
+                        text (fromInt (length workflowUsersForm.rightChecked) ++ " Selected")
             ]
         ]
 
@@ -107,14 +111,14 @@ displayFooter model pos =
 --}
 
 
-displayRightCol : Model -> Html Msg
-displayRightCol model =
+displayRightCol : WorkflowUsersForm -> EditMod -> Html Msg
+displayRightCol workflowUsersForm editMod =
     div [ class "box-users-container" ]
         [ h5 [ class "box-header" ] [ b [] [ text "Users" ] ]
         , div [ class "box-users-content" ]
-            [ renderUsers model.unvalidatedUsers Right model
+            [ renderUsers workflowUsersForm.unvalidatedUsers Right editMod workflowUsersForm
             ]
-        , displayFooter model Right
+        , displayFooter workflowUsersForm Right
         ]
 
 
@@ -131,11 +135,11 @@ displayRightCol model =
 --}
 
 
-renderUserHelper : User -> ColPos -> Model -> Html Msg
-renderUserHelper user pos model =
+renderUserHelper : User -> ColPos -> EditMod -> WorkflowUsersForm -> Html Msg
+renderUserHelper user pos editMod workflowUsersForm =
     let
         isEditActivate =
-            if model.editMod == On then
+            if editMod == On then
                 True
 
             else
@@ -144,18 +148,18 @@ renderUserHelper user pos model =
         sideChecked =
             case pos of
                 Left ->
-                    AddLeftChecked user (not (member user model.leftChecked))
+                    WorkflowUsersMsg (AddLeftChecked user (not (member user workflowUsersForm.leftChecked)))
 
                 Right ->
-                    AddRightChecked user (not (member user model.rightChecked))
+                    WorkflowUsersMsg (AddRightChecked user (not (member user workflowUsersForm.rightChecked)))
 
         isChecked =
             case pos of
                 Left ->
-                    member user model.leftChecked
+                    member user workflowUsersForm.leftChecked
 
                 Right ->
-                    member user model.rightChecked
+                    member user workflowUsersForm.rightChecked
 
         content =
             li [ class "li-box-content-user" ]
@@ -185,7 +189,7 @@ renderUserHelper user pos model =
                 ]
     in
     if isEditActivate then
-        if member user model.hasMoved then
+        if member user workflowUsersForm.hasMoved then
             if isChecked then
                 div [ class "users moved-checked", onClick sideChecked ] [ content ]
 
@@ -221,35 +225,35 @@ renderUserHelper user pos model =
 --}
 
 
-renderUsers : UserList -> ColPos -> Model -> Html Msg
-renderUsers users pos model =
-    ul [] (List.map (\u -> renderUserHelper u pos model) users)
+renderUsers : UserList -> ColPos -> EditMod -> WorkflowUsersForm -> Html Msg
+renderUsers users pos editMod workflowUsersForm =
+    ul [] (List.map (\u -> renderUserHelper u pos editMod workflowUsersForm) users)
 
 
-displayArrows : Model -> Html Msg
-displayArrows model =
+displayArrows : WorkflowUsersForm -> Html Msg
+displayArrows workflowUsersForm =
     let
         leftArrowBtnType =
-            if isEmpty model.rightChecked then
+            if isEmpty workflowUsersForm.rightChecked then
                 "btn btn-sm move-left btn-default"
 
             else
                 "btn btn-sm move-left btn-primary"
 
         rightArrowBtnType =
-            if isEmpty model.leftChecked then
+            if isEmpty workflowUsersForm.leftChecked then
                 "btn btn-sm move-right btn-default"
 
             else
                 "btn btn-sm move-right btn-primary"
     in
     div [ class "list-arrows arrows-validation" ]
-        [ button [ onClick LeftToRight, class rightArrowBtnType, disabled (isEmpty model.leftChecked) ]
+        [ button [ onClick (LeftToRight |> WorkflowUsersMsg), class rightArrowBtnType, disabled (isEmpty workflowUsersForm.leftChecked) ]
             [ span [ class "fa fa-chevron-right" ] []
             ]
         , br [] []
         , br [] []
-        , button [ onClick RightToLeft, class leftArrowBtnType, disabled (isEmpty model.rightChecked) ]
+        , button [ onClick (RightToLeft |> WorkflowUsersMsg), class leftArrowBtnType, disabled (isEmpty workflowUsersForm.rightChecked) ]
             [ span [ class "fa fa-chevron-left" ] []
             ]
         ]
@@ -266,18 +270,18 @@ displayArrows model =
 --}
 
 
-displayLeftCol : Model -> Html Msg
-displayLeftCol model =
+displayLeftCol : WorkflowUsersForm -> EditMod -> Html Msg
+displayLeftCol workflowUsersForm editMod =
     let
         cancelType =
-            if model.editMod == On && isEmpty model.hasMoved then
-                ExitEditMod
+            if editMod == On && isEmpty workflowUsersForm.hasMoved then
+                ExitEditMod |> WorkflowUsersMsg
 
             else
-                CallApi getUsers
+                CallApi getUsers |> WorkflowUsersMsg
 
         actnBtnIfModif =
-            if model.editMod == Off then
+            if editMod == Off then
                 div [] []
 
             else
@@ -289,17 +293,17 @@ displayLeftCol model =
                         , type_ "button"
                         ]
                         [ text <|
-                            if cancelType == ExitEditMod then
+                            if cancelType == (ExitEditMod |> WorkflowUsersMsg) then
                                 "Exit"
 
                             else
                                 "Cancel"
                         ]
-                    , if not (isEmpty model.hasMoved) then
+                    , if not (isEmpty workflowUsersForm.hasMoved) then
                         button
                             [ id "save-workflow "
                             , class "btn btn-success btn-action-workflow"
-                            , onClick (CallApi (saveWorkflow (getUsernames model.validatedUsers)))
+                            , onClick (CallApi (saveWorkflow (getUsernames workflowUsersForm.validatedUsers)) |> WorkflowUsersMsg)
                             , type_ "button"
                             ]
                             [ text <| "Save" ]
@@ -312,9 +316,9 @@ displayLeftCol model =
         [ div [ class "box-users-container " ]
             [ h5 [ class "box-header" ] [ b [] [ text "Validated users" ] ]
             , div [ class "box-users-content" ]
-                [ if isEmpty model.validatedUsers then
+                [ if isEmpty workflowUsersForm.validatedUsers then
                     div [ style "text-align" "center" ]
-                        [ if model.editMod == Off then
+                        [ if editMod == Off then
                             i [ class "fa fa-user-times empty-validated-user", style "margin-bottom" "10px" ]
                                 [ br [] []
                                 , p [ class "empty-box-msg" ] [ text "No validated users found" ]
@@ -325,20 +329,20 @@ displayLeftCol model =
                         ]
 
                   else
-                    renderUsers model.validatedUsers Left model
+                    renderUsers workflowUsersForm.validatedUsers Left editMod workflowUsersForm
                 ]
-            , case model.editMod of
+            , case editMod of
                 On ->
                     div [] []
 
                 Off ->
-                    div [ class "circle-edit", onClick SwitchMode ]
+                    div [ class "circle-edit", onClick (SwitchMode |> WorkflowUsersMsg) ]
                         [ i [ class "edit-icon-validated-user fa fa-pencil", style "margin" "0" ] []
                         ]
             ]
-        , case model.editMod of
+        , case editMod of
             On ->
-                displayFooter model Left
+                displayFooter workflowUsersForm Left
 
             Off ->
                 div [] []
@@ -360,29 +364,34 @@ view model =
     in
     let
         workflowUsers =
-            div [ class "section-with-doc" ]
-                [ div [ class "section-left" ]
-                    [ div
-                        []
-                        [ case model.editMod of
-                            On ->
-                                div [ class "inner-portlet", style "display" "flex", style "justify-content" "center", id "workflowUsers" ]
-                                    [ displayLeftCol model
-                                    , displayArrows model
-                                    , displayRightCol model
-                                    ]
+            case model.workflowUsersView of
+                WorkflowUsersInitView ->
+                    text ""
 
-                            Off ->
-                                div [ class "inner-portlet", style "display" "flex", style "justify-content" "center" ]
-                                    [ displayLeftCol model
-                                    ]
+                WorkflowUsers workflowUsersForm ->
+                    div [ class "section-with-doc" ]
+                        [ div [ class "section-left" ]
+                            [ div
+                                []
+                                [ case model.editMod of
+                                    On ->
+                                        div [ class "inner-portlet", style "display" "flex", style "justify-content" "center", id "workflowUsers" ]
+                                            [ displayLeftCol workflowUsersForm On
+                                            , displayArrows workflowUsersForm
+                                            , displayRightCol workflowUsersForm On
+                                            ]
+
+                                    Off ->
+                                        div [ class "inner-portlet", style "display" "flex", style "justify-content" "center" ]
+                                            [ displayLeftCol workflowUsersForm Off
+                                            ]
+                                ]
+                            ]
+                        , createRightInfoSectionParagraphs
+                            [ " Any modification made by a validated user will be automatically deployed, "
+                                ++ "without needing to be validated by another user first. "
+                            ]
                         ]
-                    ]
-                , createRightInfoSection
-                    [ " Any modification made by a validated user will be automatically deployed, "
-                        ++ "without needing to be validated by another user first. "
-                    ]
-                ]
     in
     div
         [ id "workflowUsers" ]
@@ -391,8 +400,8 @@ view model =
 
 displayValidateAllForm : Model -> Html Msg
 displayValidateAllForm model =
-    case model.viewState of
-        Form formState ->
+    case model.validateAllView of
+        ValidateAll formState ->
             div
                 [ class "section-with-doc" ]
                 [ div [ class "section-left" ]
@@ -409,7 +418,7 @@ displayValidateAllForm model =
                                             [ type_ "checkbox"
                                             , id "validationAutoValidatedUser"
                                             , checked formState.formValues.validateAll
-                                            , onClick (ChangeValidateAllSetting (not formState.formValues.validateAll))
+                                            , onClick (WorkflowUsersMsg (ChangeValidateAllSetting (not formState.formValues.validateAll)))
                                             ]
                                             []
                                         , label
@@ -424,17 +433,17 @@ displayValidateAllForm model =
                                 ]
                             ]
                         , input
-                            [ type_ "submit"
+                            [ type_ "button"
                             , value "Save change"
                             , id "validationAutoSubmit"
                             , class "btn btn-default"
                             , disabled (formState.formValues.validateAll == formState.initValues.validateAll)
-                            , onClick (CallApi (saveValidateAllSetting formState.formValues.validateAll))
+                            , onClick (WorkflowUsersMsg (CallApi (saveValidateAllSetting formState.formValues.validateAll)))
                             ]
                             []
                         ]
                     ]
-                , createRightInfoSection
+                , createRightInfoSectionParagraphs
                     [ " Any modification made by a validated user will be automatically approved no matter the nature of the change. "
                     , " Hence, configuring the groups below will have no effect on validated users (in the list above), but will apply"
                         ++ " to non-validated users, who will still need to create a change request in order to modify a node from a supervised group. "

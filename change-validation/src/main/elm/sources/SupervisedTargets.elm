@@ -1,9 +1,9 @@
-module SupervisedTargets exposing (Category, Model, Msg(..), Subcategories(..), Target, alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, init, isAlphanumeric, main, saveTargets, subscriptions, update, updateTarget, view)
+module SupervisedTargets exposing (Model, alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, initModel, isAlphanumeric, saveTargets, update, updateTarget, view)
 
-import Browser
+import DataTypes exposing (Category, Msg, Subcategories(..), SupervisedTargetsMsg(..), Target)
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (..)
-import Html.Attributes exposing (checked, class, type_)
+import Html.Attributes exposing (checked, class, id, type_)
 import Html.Events exposing (..)
 import Http exposing (..)
 import Json.Decode as D exposing (Decoder)
@@ -16,39 +16,13 @@ import String
 
 
 ------------------------------
--- SUBSCRIPTIONS
-------------------------------
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
-
-
-
-------------------------------
 -- Init and main --
 ------------------------------
 
 
-init : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
-init flags =
-    let
-        initModel =
-            Model flags.contextPath (Category "waiting for server data..." (Subcategories []) [])
-    in
-    ( initModel
-    , getTargets initModel
-    )
-
-
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
+initModel : String -> Model
+initModel contextPath =
+    Model contextPath (Category "waiting for server data..." (Subcategories []) [])
 
 
 
@@ -57,36 +31,10 @@ main =
 ------------------------------
 
 
-type alias Target =
-    { id : String -- id
-    , name : String -- display name of the rule target
-    , description : String -- description
-    , supervised : Bool -- do you want to validate CR targeting that rule target
-    }
-
-
-type alias Category =
-    { name : String -- name of the category
-    , categories : Subcategories -- sub-categories
-    , targets : List Target -- targets in category
-    }
-
-
-type Subcategories
-    = Subcategories (List Category) -- needed because no recursive type alias support
-
-
 type alias Model =
     { contextPath : String
     , allTargets : Category -- from API
     }
-
-
-type Msg
-    = GetTargets (Result Error Category)
-    | SaveTargets (Result Error String) -- here the string is just the status message
-    | SendSave
-    | UpdateTarget Target
 
 
 
@@ -112,7 +60,7 @@ getTargets model =
                 , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
-                , expect = expectJson GetTargets decodeApiCategory
+                , expect = expectJson (DataTypes.SupervisedTargetsMsg << GetTargets) decodeApiCategory
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -133,7 +81,7 @@ saveTargets model =
                 , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
                 , body = jsonBody (encodeTargets (getSupervisedIds model.allTargets))
-                , expect = expectJson SaveTargets decodeApiSave
+                , expect = expectJson (SaveTargets >> DataTypes.SupervisedTargetsMsg) decodeApiSave
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -220,7 +168,7 @@ encodeTargets targets =
 ------------------------------
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : SupervisedTargetsMsg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         {--Api Calls message --}
@@ -290,13 +238,52 @@ updateTarget target cat =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ div [ class "row" ]
-            [ div [ class "col-xs-12" ]
-                [ displayCategory model.allTargets
-                , div [ class "card-footer" ] [ button [ onClick SendSave, class "btn btn-success right" ] [ text "Save" ] ]
+    div [ id "supervisedTargets" ]
+        [ h3 [ class "page-subtitle" ]
+            [ text "Configure groups with change validations" ]
+        , div [ class "section-with-doc" ]
+            [ div [ class "section-left" ]
+                [ div [ id "supervised-targets-app" ]
+                    [ div [ id "list-groups-change-validation" ]
+                        [ div [ class "row" ]
+                            [ div [ class "col-xs-12" ]
+                                [ displayCategory model.allTargets
+                                , div [ class "card-footer" ] [ button [ onClick (SendSave |> DataTypes.SupervisedTargetsMsg), class "btn btn-success right" ] [ text "Save" ] ]
+                                ]
+                            ]
+                        ]
+                    ]
                 ]
+            , supervisedTargetsInfoSection
             ]
+        ]
+
+
+supervisedTargetsInfoSection : Html Msg
+supervisedTargetsInfoSection =
+    createRightInfoSection
+        [ p []
+            [ text " Change validation are enable for "
+            , b [] [ text "any" ]
+            , text " change that would impact a node belonging to one of the chosen groups below. Be careful: a change on one another group "
+            ]
+        , p [] [ text " The supervised changes are: " ]
+        , ul []
+            [ li [] [ text "any change in a global parameter, as these changes can have side effects spreading technique code," ]
+            , li [] [ text "any modification in one of the supervised groups," ]
+            , li [] [ text "any change in a rule which targets a node which belong to a group marked as supervised, " ]
+            , li [] [ text "any change in a directive used in one of the previous rules." ]
+            ]
+        , p [] []
+        , p [] [ text " Changes in techniques are not subjected to change validation, nor are changes resulting from an archive import. " ]
+        ]
+
+
+createRightInfoSection : List (Html Msg) -> Html Msg
+createRightInfoSection contents =
+    div [ class "section-right" ]
+        [ div [ class "doc doc-info" ]
+            (div [ class "marker" ] [ span [ class "fa fa-info-circle" ] [] ] :: contents)
         ]
 
 
@@ -360,10 +347,10 @@ displayTarget target =
                 [ input
                     [ type_ "checkbox"
                     , checked target.supervised
-                    , onClick (UpdateTarget { target | supervised = not target.supervised })
+                    , onClick (DataTypes.SupervisedTargetsMsg (UpdateTarget { target | supervised = not target.supervised }))
                     ]
                     []
-                , span [ class "ion ion-checkmark-round" ] []
+                , span [ class "fa fa-check" ] []
                 ]
             ]
         ]

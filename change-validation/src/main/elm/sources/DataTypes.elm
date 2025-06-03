@@ -43,21 +43,40 @@ type alias User =
 
 type alias Model =
     { contextPath : String
-    , users : UserList
-    , validatedUsers : UserList
-    , unvalidatedUsers : UserList
-    , rightChecked : List User
-    , leftChecked : List User
-    , hasMoved : List User -- To track updates
     , editMod : EditMod
+    , workflowUsersView : WorkflowUsersView
     , hasWriteRights : Bool
-    , viewState : ViewState
+    , validateAllView : ValidateAllView
     }
 
 
-type ViewState
-    = NoView
-    | Form { initValues : FormState, formValues : FormState }
+type alias WorkflowUsersForm =
+    { users : UserList
+    , validatedUsers : UserList
+    , unvalidatedUsers : UserList
+    , rightChecked : UserList
+    , leftChecked : UserList
+    , hasMoved : UserList -- To track updates
+    }
+
+
+type WorkflowUsersView
+    = WorkflowUsersInitView
+    | WorkflowUsers WorkflowUsersForm
+
+
+type UserListField
+    = Users
+    | ValidatedUsers
+    | UnvalidatedUsers
+    | RightChecked
+    | LeftChecked
+    | HasMoved
+
+
+type ValidateAllView
+    = ValidateAllInitView
+    | ValidateAll { initValues : FormState, formValues : FormState }
 
 
 type alias FormState =
@@ -70,7 +89,7 @@ getUsernames users =
     map .username users
 
 
-type Msg
+type WorkflowUsersMsg
     = {--Messages for the "Workflow Users" table --}
       {--API CALLS --}
       GetUsers (Result Error UserList)
@@ -92,3 +111,34 @@ type Msg
     | SaveValidateAllSetting (Result Error Bool)
       {--VIEW UPDATE--}
     | ChangeValidateAllSetting Bool
+
+
+type Msg
+    = WorkflowUsersMsg WorkflowUsersMsg
+    | SupervisedTargetsMsg SupervisedTargetsMsg
+
+
+type SupervisedTargetsMsg
+    = GetTargets (Result Error Category)
+    | SaveTargets (Result Error String) -- here the string is just the status message
+    | SendSave
+    | UpdateTarget Target
+
+
+type alias Target =
+    { id : String -- id
+    , name : String -- display name of the rule target
+    , description : String -- description
+    , supervised : Bool -- do you want to validate CR targeting that rule target
+    }
+
+
+type alias Category =
+    { name : String -- name of the category
+    , categories : Subcategories -- sub-categories
+    , targets : List Target -- targets in category
+    }
+
+
+type Subcategories
+    = Subcategories (List Category) -- needed because no recursive type alias support
