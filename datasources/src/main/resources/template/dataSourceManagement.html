@@ -6,15 +6,15 @@
   </head_merge>
   <main class="rudder-template" id="datasource">
   </main>
-  <script>
+  <script data-lift="with-nonce">
     var hasWriteRights = false;
   </script>
   <lift:authz role="rule_write">
-    <script>
+    <script data-lift="with-nonce">
       hasWriteRights = true;
     </script>
   </lift:authz>
-  <script>
+  <script data-lift="with-nonce">
     $(document).ready(function(){
       var main = document.querySelector("main");
       var initValues = {

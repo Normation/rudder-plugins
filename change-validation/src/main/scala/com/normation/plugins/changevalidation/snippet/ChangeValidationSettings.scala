@@ -40,6 +40,7 @@ package com.normation.plugins.changevalidation.snippet
 import bootstrap.liftweb.RudderConfig
 import com.normation.appconfig.ReadConfigService
 import com.normation.appconfig.UpdateConfigService
+import com.normation.rudder.web.snippet.WithNonce
 import com.normation.zio.UnsafeRun
 import net.liftweb.http.*
 import net.liftweb.http.js.JsCmds.Run
@@ -119,7 +120,7 @@ class ChangeValidationSettings extends DispatchSnippet {
 
     // if the workflow plugin is not loaded, just removed the correstponding config
     val finalXml = if (workflowLevelService.workflowLevelAllowsEnable) {
-      xml ++ Script(initJs(enabled))
+      xml ++ WithNonce.scriptWithNonce(Script(initJs(enabled)))
     } else {
       NodeSeq.Empty
     }
