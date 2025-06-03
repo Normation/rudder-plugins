@@ -72,7 +72,7 @@ object BrandingConfService {
 
 class BrandingConfService(configFilePath: String) {
 
-  private[this] val cache: Ref[Either[RudderError, BrandingConf]] = (for {
+  private[this] lazy val cache: Ref[Either[RudderError, BrandingConf]] = (for {
     v <- Ref.make[Either[RudderError, BrandingConf]](Left(Unexpected("Cache is not yet initialized")))
     c <- reloadCacheInternal(true, v).either
   } yield v).runNow

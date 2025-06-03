@@ -26,15 +26,15 @@ sealed trait ScaleOutRelayApi extends EnumEntry with EndpointSchema with General
 
 object ScaleOutRelayApi extends Enum[ScaleOutRelayApi] with ApiModuleProvider[ScaleOutRelayApi] {
 
-  final case object PromoteToRelay extends ScaleOutRelayApi with OneParam with StartsAtVersion10 {
-    val z              = implicitly[Line].value
+  case object PromoteToRelay extends ScaleOutRelayApi with OneParam with StartsAtVersion10 {
+    val z: Int = implicitly[Line].value
     val description    = "Promote a node to relay"
     val (action, path) = POST / "scaleoutrelay" / "promote" / "{nodeId}"
     val authz: List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object DemoteToNode extends ScaleOutRelayApi with OneParam with StartsAtVersion14 {
-    val z              = implicitly[Line].value
+  case object DemoteToNode extends ScaleOutRelayApi with OneParam with StartsAtVersion14 {
+    val z: Int = implicitly[Line].value
     val description    = "Demote a relay to a simple node"
     val (action, path) = POST / "scaleoutrelay" / "demote" / "{nodeId}"
     val authz: List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil

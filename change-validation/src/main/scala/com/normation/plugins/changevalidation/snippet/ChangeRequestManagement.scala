@@ -42,8 +42,6 @@ import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventLog
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.workflows.*
-import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.services.JsTableData
 import com.normation.rudder.web.services.JsTableLine
@@ -54,8 +52,6 @@ import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import net.liftweb.http.*
-import net.liftweb.http.DispatchSnippet
-import net.liftweb.http.SHtml
 import net.liftweb.http.SHtml.SelectableOption
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*

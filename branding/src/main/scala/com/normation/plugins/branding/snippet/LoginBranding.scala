@@ -56,17 +56,18 @@ class LoginBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Login]
 
   private[this] val confRepo = BrandingPluginConf.brandingConfService
   def display(xml: NodeSeq)  = {
-    val data                      = confRepo.getConf.either.runNow
-    val bar                       = data match {
+    val data = confRepo.getConf.either.runNow
+    val bar  = data match {
       case Right(d) if (d.displayBarLogin) =>
         <div id="headerBar">
           <div class="background">
-            <span>{if (d.displayLabel) d.labelText}</span>
+            <span>{if (d.displayLabel) d.labelText else ""}</span>
           </div>
         </div>
       case _                               => NodeSeq.Empty
     }
-    var (customLogo, brandingCss) = data match {
+
+    val (customLogo, brandingCss) = data match {
       case Right(d) =>
         (
           d.wideLogo.loginLogo,
@@ -106,9 +107,9 @@ class LoginBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Login]
       </div>
     }
     val motd                      = data match {
-      case Right(data) if (data.displayMotd) =>
-        <div class="motd enabled" style="margin-bottom: 20px; text-align: center;">{data.motd}</div>
-      case _                                 => <div class="motd"></div>
+      case Right(d) if (d.displayMotd) =>
+        <div class="motd enabled" style="margin-bottom: 20px; text-align: center;">{d.motd}</div>
+      case _                           => <div class="motd"></div>
     }
     (".logo-container" #> logoContainer &
     ".plugin-info" #> ((x: NodeSeq) => bar ++ x) &

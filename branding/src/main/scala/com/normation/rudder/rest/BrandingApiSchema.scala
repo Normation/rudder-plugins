@@ -50,31 +50,31 @@ import sourcecode.Line
 sealed trait BrandingApiSchema extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
 
 object BrandingApiEndpoints extends Enum[BrandingApiSchema] with ApiModuleProvider[BrandingApiSchema] {
-  import EndpointSchema.syntax.*
-  final case object GetBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
-    val z              = implicitly[Line].value
+  import com.normation.rudder.rest.EndpointSchema.syntax.*
+  case object GetBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Get branding plugin configuration"
     val (action, path) = GET / "branding"
     val dataContainer:  Option[String]          = None
     override def authz: List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
-  final case object UpdateBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
-    val z              = implicitly[Line].value
+  case object UpdateBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Update branding plugin configuration"
     val (action, path) = POST / "branding"
     val dataContainer: Option[String]          = None
     val authz:         List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object ReloadBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ReloadBrandingConf extends BrandingApiSchema with ZeroParam with StartsAtVersion10 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Reload branding plugin configuration from config file"
     val (action, path) = POST / "branding" / "reload"
     val dataContainer: Option[String]          = None
     val authz:         List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  def endpoints = values.toList.sortBy(_.z)
-  def values    = findValues
+  def endpoints: List[BrandingApiSchema] = values.toList.sortBy(_.z)
+  def values = findValues
 }

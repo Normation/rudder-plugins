@@ -15,7 +15,6 @@ import com.normation.rudder.web.model.LinkUtil
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import jakarta.mail.*
-import jakarta.mail.Session
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
 import java.io.File
