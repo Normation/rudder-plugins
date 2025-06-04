@@ -161,54 +161,36 @@
 				</div>
 			  </div>
 			</div>
-			<div>
-			  <h3 class="page-title">Configure change request triggers</h3>
-			  <div>
-				<p>
-				  By default, change request are created for all users. You can change when a change request
-				  is created with below options:
-				</p>
-				<ul>
-				  <li>exempt some users from validation;</li>
-				  <li>trigger change request only for changes impacting nodes belonging to some supervised groups;
-				  </li>
-				</ul>
-				<p>Be careful: a change request is created when <b>at least one</b> predicate matches, so an
-				  exempted user
-				  still need a change request to modify a node from a supervised group.
-				</p>
-			  </div>
-			  <h3 class="page-subtitle">Configure users with change validation</h3>
+
 			  <div id="changeValidationSettings"></div>
 
-					<script data-lift="with-nonce">
-					  var hasWriteRights = false;
-					</script>
-					<lift:authz role="administration_write">
-					  <script data-lift="with-nonce">
-						hasWriteRights = true;
-					</script>
-				</lift:authz>
+			  <script data-lift="with-nonce">
+				  var hasWriteRights = false;
+			  </script>
+			  <lift:authz role="administration_write">
+				  <script data-lift="with-nonce">
+					  hasWriteRights = true;
+				  </script>
+			  </lift:authz>
 
-				<script data-lift="with-nonce">
-					$(document).ready(function () {
-                      const cvs = document.getElementById("changeValidationSettings");
-                      const initValues = {
-                        contextPath: contextPath,
-                        hasWriteRights: hasWriteRights
-                      };
-                      const app = Elm.ChangeValidationSettings.init({node: cvs, flags: initValues});
-                      app.ports.successNotification.subscribe(function (str) {
-                        createSuccessNotification(str)
-                      });
-                      app.ports.errorNotification.subscribe(function (str) {
-                        createErrorNotification(str)
-                      });
-                      buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
+			  <script data-lift="with-nonce">
+				  $(document).ready(function () {
+                    const cvs = document.getElementById("changeValidationSettings");
+                    const initValues = {
+                      contextPath: contextPath,
+                      hasWriteRights: hasWriteRights
+                    };
+                    const app = Elm.ChangeValidationSettings.init({node: cvs, flags: initValues});
+                    app.ports.successNotification.subscribe(function (str) {
+                      createSuccessNotification(str)
                     });
-				</script>
+                    app.ports.errorNotification.subscribe(function (str) {
+                      createErrorNotification(str)
+                    });
+                    buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
+                  });
+			  </script>
 
-			</div>
 		  </div>
 		</div>
 	  </div>

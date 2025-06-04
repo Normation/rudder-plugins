@@ -3,9 +3,11 @@ module ChangeValidationSettings exposing (..)
 import ApiCalls exposing (getUsers, getValidateAllSetting)
 import Browser
 import DataTypes exposing (Msg(..), WorkflowUsersMsg)
-import Html exposing (Html, div)
+import Html exposing (Html, b, div, h3, li, p, text, ul)
+import Html.Attributes exposing (class, id)
 import SupervisedTargets exposing (getTargets)
 import View
+import WorkflowSettings
 import WorkflowUsers
 
 
@@ -37,6 +39,7 @@ initModel : String -> Bool -> Model
 initModel contextPath hasWriteRights =
     { workflowUsersModel = WorkflowUsers.initModel contextPath hasWriteRights
     , supervisedTargetsModel = SupervisedTargets.initModel contextPath
+    , workflowSettingsModel = WorkflowSettings.initModel contextPath False
     }
 
 
@@ -49,6 +52,7 @@ initModel contextPath hasWriteRights =
 type alias Model =
     { workflowUsersModel : DataTypes.Model
     , supervisedTargetsModel : SupervisedTargets.Model
+    , workflowSettingsModel : WorkflowSettings.Model
     }
 
 
@@ -60,9 +64,28 @@ type alias Model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ View.view model.workflowUsersModel
-        , SupervisedTargets.view model.supervisedTargetsModel
+    div [ id "changeRequestTriggers" ]
+        [ h3 [ class "page-title" ] [ text "Configure change request triggers" ]
+        , div []
+            [ p []
+                [ text " By default, change request are created for all users. You can change when a change request is created with below options: " ]
+            , ul []
+                [ li [] [ text "exempt some users from validation;" ]
+                , li [] [ text "trigger change request only for changes impacting nodes belonging to some supervised groups; " ]
+                ]
+            , p []
+                [ text "Be careful: a change request is created when "
+                , b [] [ text "at least one" ]
+                , text " predicate matches, so an exempted user still need a change request to modify a node from a supervised group. "
+                ]
+            ]
+        , h3
+            [ class "page-subtitle" ]
+            [ text "Configure users with change validation" ]
+        , div []
+            [ View.view model.workflowUsersModel
+            , SupervisedTargets.view model.supervisedTargetsModel
+            ]
         ]
 
 
@@ -88,6 +111,13 @@ update msg model =
                     SupervisedTargets.update stMsg model.supervisedTargetsModel
             in
             ( { model | supervisedTargetsModel = stModel }, stCmd )
+
+        WorkflowSettingsMsg wsMsg ->
+            let
+                ( wsModel, wsCmd ) =
+                    WorkflowSettings.update wsMsg model.workflowSettingsModel
+            in
+            ( { model | workflowSettingsModel = wsModel }, wsCmd )
 
 
 

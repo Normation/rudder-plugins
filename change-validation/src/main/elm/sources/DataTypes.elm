@@ -89,6 +89,12 @@ getUsernames users =
     map .username users
 
 
+type Msg
+    = WorkflowUsersMsg WorkflowUsersMsg
+    | SupervisedTargetsMsg SupervisedTargetsMsg
+    | WorkflowSettingsMsg WorkflowSettingsMsg
+
+
 type WorkflowUsersMsg
     = {--Messages for the "Workflow Users" table --}
       {--API CALLS --}
@@ -113,16 +119,24 @@ type WorkflowUsersMsg
     | ChangeValidateAllSetting Bool
 
 
-type Msg
-    = WorkflowUsersMsg WorkflowUsersMsg
-    | SupervisedTargetsMsg SupervisedTargetsMsg
-
-
 type SupervisedTargetsMsg
     = GetTargets (Result Error Category)
     | SaveTargets (Result Error String) -- here the string is just the status message
     | SendSave
     | UpdateTarget Target
+
+
+type WorkflowSettingsMsg
+    = {--Messages for the change-validation settings list--}
+      -- GET change-validation plugin status
+      GetChangeValidationStatus (Result Error Bool)
+      -- GET all workflow settings
+    | GetAllWorkflowSettings (Result Error Settings)
+      -- SET workflow setting
+    | SaveWorkflowEnabledSetting (Result Error Bool)
+    | SaveWorkflowSelfValidationSetting (Result Error Bool)
+    | SaveWorkflowSelfDeploymentSetting (Result Error Bool)
+    | SaveWorkflowValidateAllSetting (Result Error Bool)
 
 
 type alias Target =
@@ -142,3 +156,17 @@ type alias Category =
 
 type Subcategories
     = Subcategories (List Category) -- needed because no recursive type alias support
+
+
+type alias Settings =
+    { workflowEnabled : Bool
+    , selfValidation : Bool
+    , selfDeployment : Bool
+    , workflowValidateAll : Bool
+    }
+
+
+type alias PluginInfo =
+    { pluginId : String
+    , pluginStatus : Bool
+    }
