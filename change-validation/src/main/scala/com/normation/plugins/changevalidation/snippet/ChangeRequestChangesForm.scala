@@ -65,6 +65,7 @@ import com.normation.rudder.rule.category.RuleCategory
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.ChooseTemplate
 import com.normation.rudder.web.model.*
+import com.normation.rudder.web.snippet.WithNonce
 import com.normation.utils.DateFormaterService
 import com.normation.zio.UnsafeRun
 import net.liftweb.common.Loggable
@@ -132,7 +133,9 @@ class ChangeRequestChangesForm(
                   cr.rules.values.map(_.changes).toList,
                   cr.globalParams.values.map(_.changes).toList
                 ))(form) ++
-                Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");""")) // JsRaw ok, const
+                WithNonce.scriptWithNonce(
+                  Script(JsRaw(s"""buildChangesTree("#changeTree","${S.contextPath}");"""))
+                ) // JsRaw ok, const
             }
 
           case _ => Text("not implemented")
@@ -312,9 +315,11 @@ class ChangeRequestChangesForm(
         $$('.dataTables_filter input').attr("placeholder", "Filter"); """) // JsRaw ok, const
 
     ("#crBody" #> lines).apply(CRTable) ++
-    Script(
-      SetHtml("diff", diff(rootRuleCategory, directives, groups, rules, globalParams)) &
-      initDatatable
+    WithNonce.scriptWithNonce(
+      Script(
+        SetHtml("diff", diff(rootRuleCategory, directives, groups, rules, globalParams)) &
+        initDatatable
+      )
     )
   }
   val CRTable = {
@@ -717,15 +722,17 @@ class ChangeRequestChangesForm(
     <pre style="width:200px;" id={s"after${name}"}
     class="nodisplay">{fun(diff.newValue)}</pre>
     <pre id={s"result${name}"} ></pre> ++
-    Script(
-      OnLoad(
-        JsRaw(
-          s"""
+    WithNonce.scriptWithNonce(
+      Script(
+        OnLoad(
+          JsRaw(
+            s"""
             var before = "before${name}";
             var after  = "after${name}";
             var result = "result${name}";
             makeDiff(before,after,result);"""
-        ) // JsRaw ok, escaped
+          ) // JsRaw ok, escaped
+        )
       )
     )
   }

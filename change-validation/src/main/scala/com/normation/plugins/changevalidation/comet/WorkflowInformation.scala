@@ -46,9 +46,9 @@ import net.liftweb.http.*
 import net.liftweb.http.js.JsCmds.Run
 import scala.xml.*
 
-/** 
+/**
  * Actor to dynamically update the count of change requests once workflows are updated.
- * 
+ *
  * It loads the corresponding WorkflowInformation Elm app, which can also be
  * dynamically loaded depending on feature toggle.
  */
