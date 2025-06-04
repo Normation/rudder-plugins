@@ -1,6 +1,6 @@
-module SupervisedTargets exposing (Model, alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, initModel, isAlphanumeric, saveTargets, update, updateTarget, view)
+module SupervisedTargets exposing (alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, initModel, isAlphanumeric, saveTargets, update, updateTarget, view)
 
-import DataTypes exposing (Category, Msg, Subcategories(..), SupervisedTargetsMsg(..), Target)
+import DataTypes exposing (Category, Msg, Subcategories(..), SupervisedTargetsModel, SupervisedTargetsMsg(..), Target)
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (..)
 import Html.Attributes exposing (checked, class, id, type_)
@@ -20,21 +20,9 @@ import String
 ------------------------------
 
 
-initModel : String -> Model
+initModel : String -> SupervisedTargetsModel
 initModel contextPath =
-    Model contextPath (Category "waiting for server data..." (Subcategories []) [])
-
-
-
-------------------------------
--- MODEL --
-------------------------------
-
-
-type alias Model =
-    { contextPath : String
-    , allTargets : Category -- from API
-    }
+    SupervisedTargetsModel contextPath (Category "waiting for server data..." (Subcategories []) [])
 
 
 
@@ -45,7 +33,7 @@ type alias Model =
 -- API call to get the category tree
 
 
-getTargets : Model -> Cmd Msg
+getTargets : SupervisedTargetsModel -> Cmd Msg
 getTargets model =
     let
         url =
@@ -72,7 +60,7 @@ getTargets model =
 --
 
 
-saveTargets : Model -> Cmd Msg
+saveTargets : SupervisedTargetsModel -> Cmd Msg
 saveTargets model =
     let
         req =
@@ -168,7 +156,7 @@ encodeTargets targets =
 ------------------------------
 
 
-update : SupervisedTargetsMsg -> Model -> ( Model, Cmd Msg )
+update : SupervisedTargetsMsg -> SupervisedTargetsModel -> ( SupervisedTargetsModel, Cmd Msg )
 update msg model =
     case msg of
         {--Api Calls message --}
@@ -236,7 +224,7 @@ updateTarget target cat =
 ------------------------------
 
 
-view : Model -> Html Msg
+view : SupervisedTargetsModel -> Html Msg
 view model =
     div [ id "supervisedTargets" ]
         [ h3 [ class "page-subtitle" ]

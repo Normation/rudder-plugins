@@ -1,10 +1,21 @@
 module WorkflowUsers exposing (..)
 
-import DataTypes exposing (ColPos(..), EditMod(..), Model, Msg, User, UserList, UserListField(..), ValidateAllView(..), WorkflowUsersForm, WorkflowUsersMsg(..), WorkflowUsersView(..))
+import DataTypes exposing (ColPos(..), EditMod(..), Msg, User, UserList, UserListField(..), Username, ValidateAllView(..), WorkflowUsersForm, WorkflowUsersModel, WorkflowUsersMsg(..), WorkflowUsersView(..))
 import ErrorMessages exposing (getErrorMessage)
-import List exposing (filter, member)
+import List exposing (filter, map, member)
 import Ports exposing (errorNotification, successNotification)
 import String
+
+
+
+------------------------------
+-- UTIL                     --
+------------------------------
+
+
+getUsernames : UserList -> List Username
+getUsernames users =
+    map .username users
 
 
 filterValidatedUsers : UserList -> UserList
@@ -17,12 +28,24 @@ filterUnvalidatedUsers users =
     filter (\u -> not u.isValidated) users
 
 
-initModel : String -> Bool -> Model
+
+------------------------------
+-- INIT                     --
+------------------------------
+
+
+initModel : String -> Bool -> WorkflowUsersModel
 initModel contextPath hasWriteRights =
-    Model contextPath Off WorkflowUsersInitView hasWriteRights ValidateAllInitView
+    WorkflowUsersModel contextPath Off WorkflowUsersInitView hasWriteRights ValidateAllInitView
 
 
-update : WorkflowUsersMsg -> Model -> ( Model, Cmd Msg )
+
+------------------------------
+-- UPDATE                   --
+------------------------------
+
+
+update : WorkflowUsersMsg -> WorkflowUsersModel -> ( WorkflowUsersModel, Cmd Msg )
 update msg model =
     case msg of
         GetUsers result ->
@@ -189,20 +212,10 @@ update msg model =
         SaveValidateAllSetting result ->
             case result of
                 Ok newSetting ->
-                    ( { model | validateAllView = initValidateAllForm newSetting }
-                    , successNotification "Successfully saved setting"
-                    )
+                    ( model |> initValidateAllForm newSetting, successNotification "Successfully saved setting" )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to save validate_all_enabled setting :" ++ getErrorMessage error) )
-
-        GetValidateAllSetting result ->
-            case result of
-                Ok setting ->
-                    ( { model | validateAllView = initValidateAllForm setting }, Cmd.none )
-
-                Err error ->
-                    ( model, errorNotification ("An error occurred while trying to get validate_all_enabled setting :" ++ getErrorMessage error) )
 
         ChangeValidateAllSetting enable_validate_all ->
             ( { model | validateAllView = setValidateAll enable_validate_all model.validateAllView }, Cmd.none )
@@ -282,13 +295,13 @@ mapUserList field f viewState =
             viewState
 
 
-initValidateAllForm : Bool -> ValidateAllView
-initValidateAllForm value =
+initValidateAllForm : Bool -> WorkflowUsersModel -> WorkflowUsersModel
+initValidateAllForm validateAll model =
     let
         formState =
-            { validateAll = value }
+            { validateAll = validateAll }
     in
-    ValidateAll { initValues = formState, formValues = formState }
+    { model | validateAllView = ValidateAll { initValues = formState, formValues = formState } }
 
 
 setValidateAll : Bool -> ValidateAllView -> ValidateAllView

@@ -1,13 +1,15 @@
 module ChangeValidationSettings exposing (..)
 
-import ApiCalls exposing (getUsers, getValidateAllSetting)
+import ApiCalls exposing (getAllWorkflowSettings, getUsers)
 import Browser
-import DataTypes exposing (Msg(..), WorkflowUsersMsg)
+import DataTypes exposing (Model, Msg(..), WorkflowSettingsModel, WorkflowUsersModel)
+import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, a, b, div, h3, i, li, p, span, text, ul)
 import Html.Attributes exposing (attribute, class, id, title)
+import Ports exposing (errorNotification)
 import SupervisedTargets exposing (getTargets)
 import View
-import WorkflowSettings
+import WorkflowSettings exposing (getChangeValidationStatus)
 import WorkflowUsers
 
 
@@ -23,7 +25,14 @@ init flags =
         m =
             initModel flags.contextPath flags.hasWriteRights
     in
-    ( m, Cmd.batch [ getUsers m.workflowUsersModel, getValidateAllSetting m.workflowUsersModel, getTargets m.supervisedTargetsModel ] )
+    ( m
+    , Cmd.batch
+        [ getChangeValidationStatus m.workflowSettingsModel
+        , getAllWorkflowSettings m
+        , getUsers m.workflowUsersModel
+        , getTargets m.supervisedTargetsModel
+        ]
+    )
 
 
 main =
@@ -37,22 +46,10 @@ main =
 
 initModel : String -> Bool -> Model
 initModel contextPath hasWriteRights =
-    { workflowUsersModel = WorkflowUsers.initModel contextPath hasWriteRights
+    { contextPath = contextPath
+    , workflowUsersModel = WorkflowUsers.initModel contextPath hasWriteRights
     , supervisedTargetsModel = SupervisedTargets.initModel contextPath
     , workflowSettingsModel = WorkflowSettings.initModel contextPath hasWriteRights
-    }
-
-
-
-------------------------------
--- MODEL --
-------------------------------
-
-
-type alias Model =
-    { workflowUsersModel : DataTypes.Model
-    , supervisedTargetsModel : SupervisedTargets.Model
-    , workflowSettingsModel : WorkflowSettings.Model
     }
 
 
@@ -194,6 +191,22 @@ update msg model =
                     WorkflowSettings.update wsMsg model.workflowSettingsModel
             in
             ( { model | workflowSettingsModel = wsModel }, wsCmd )
+
+        GetAllWorkflowSettings res ->
+            case res of
+                Ok settings ->
+                    let
+                        wsmodel =
+                            model.workflowSettingsModel |> WorkflowSettings.initView settings
+                    in
+                    let
+                        wumodel =
+                            model.workflowUsersModel |> WorkflowUsers.initValidateAllForm settings.workflowValidateAll
+                    in
+                    ( { model | workflowSettingsModel = wsmodel, workflowUsersModel = wumodel }, Cmd.none )
+
+                Err error ->
+                    ( model, errorNotification ("An error occurred while trying to get workflow settings : " ++ getErrorMessage error) )
 
 
 

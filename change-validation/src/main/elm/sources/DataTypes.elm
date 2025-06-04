@@ -1,8 +1,13 @@
 module DataTypes exposing (..)
 
 import Http exposing (Error)
-import List exposing (map)
 import Result exposing (Result)
+
+
+
+------------------------------
+-- WORKFLOW USERS --
+------------------------------
 
 
 type alias UserList =
@@ -41,7 +46,7 @@ type alias User =
     }
 
 
-type alias Model =
+type alias WorkflowUsersModel =
     { contextPath : String
     , editMod : EditMod
     , workflowUsersView : WorkflowUsersView
@@ -84,59 +89,39 @@ type alias FormState =
     }
 
 
-getUsernames : UserList -> List Username
-getUsernames users =
-    map .username users
+
+------------------------------
+-- WORKFLOW SETTINGS --
+------------------------------
 
 
-type Msg
-    = WorkflowUsersMsg WorkflowUsersMsg
-    | SupervisedTargetsMsg SupervisedTargetsMsg
-    | WorkflowSettingsMsg WorkflowSettingsMsg
+type alias WorkflowSettingsModel =
+    { contextPath : String
+    , pluginStatus : Bool
+    , canWrite : Bool
+    , viewState : ViewState
+    }
 
 
-type WorkflowUsersMsg
-    = {--Messages for the "Workflow Users" table --}
-      {--API CALLS --}
-      GetUsers (Result Error UserList)
-    | RemoveUser (Result Error Username)
-    | SaveWorkflow (Result Error UserList)
-    | CallApi (Model -> Cmd Msg)
-      {--TABLE MANAGE CONTENT --}
-    | LeftToRight
-    | RightToLeft
-    | AddLeftChecked User Bool
-    | AddRightChecked User Bool
-    | CheckAll ColPos Bool
-      {--MOD MANAGEMENT --}
-    | SwitchMode
-    | ExitEditMod
-      {--Messages for the "Validate all changes" checkbox and button --}
-      {--API CALLS--}
-    | GetValidateAllSetting (Result Error Bool)
-    | SaveValidateAllSetting (Result Error Bool)
-      {--VIEW UPDATE--}
-    | ChangeValidateAllSetting Bool
+type ViewState
+    = InitWorkflowSettingsView
+    | WorkflowSettingsView
+        { initSettings : WorkflowSettings
+        , formSettings : WorkflowSettings
+        }
 
 
-type SupervisedTargetsMsg
-    = GetTargets (Result Error Category)
-    | SaveTargets (Result Error String) -- here the string is just the status message
-    | SendSave
-    | UpdateTarget Target
+type alias WorkflowSettings =
+    { workflowEnabled : Bool
+    , selfValidation : Bool
+    , selfDeployment : Bool
+    }
 
 
-type WorkflowSettingsMsg
-    = {--Messages for the change-validation settings list--}
-      -- GET change-validation plugin status
-      GetChangeValidationStatus (Result Error Bool)
-      -- GET all workflow settings
-    | GetAllWorkflowSettings (Result Error Settings)
-      -- SET workflow setting
-    | SaveWorkflowEnabledSetting (Result Error Bool)
-    | SaveWorkflowSelfValidationSetting (Result Error Bool)
-    | SaveWorkflowSelfDeploymentSetting (Result Error Bool)
-    | SaveWorkflowValidateAllSetting (Result Error Bool)
+
+------------------------------
+-- SUPERVISED TARGETS --
+------------------------------
 
 
 type alias Target =
@@ -158,6 +143,12 @@ type Subcategories
     = Subcategories (List Category) -- needed because no recursive type alias support
 
 
+type alias SupervisedTargetsModel =
+    { contextPath : String
+    , allTargets : Category -- from API
+    }
+
+
 type alias Settings =
     { workflowEnabled : Bool
     , selfValidation : Bool
@@ -170,3 +161,66 @@ type alias PluginInfo =
     { pluginId : String
     , pluginStatus : Bool
     }
+
+
+
+--------------------------------
+-- CHANGE VALIDATION SETTINGS --
+--------------------------------
+
+
+type alias Model =
+    { contextPath : String
+    , workflowUsersModel : WorkflowUsersModel
+    , supervisedTargetsModel : SupervisedTargetsModel
+    , workflowSettingsModel : WorkflowSettingsModel
+    }
+
+
+type Msg
+    = WorkflowUsersMsg WorkflowUsersMsg
+    | SupervisedTargetsMsg SupervisedTargetsMsg
+    | WorkflowSettingsMsg WorkflowSettingsMsg
+      -- GET all workflow settings
+    | GetAllWorkflowSettings (Result Error Settings)
+
+
+type WorkflowUsersMsg
+    = {--Messages for the "Workflow Users" table --}
+      {--API CALLS --}
+      GetUsers (Result Error UserList)
+    | RemoveUser (Result Error Username)
+    | SaveWorkflow (Result Error UserList)
+    | CallApi (WorkflowUsersModel -> Cmd Msg)
+      {--TABLE MANAGE CONTENT --}
+    | LeftToRight
+    | RightToLeft
+    | AddLeftChecked User Bool
+    | AddRightChecked User Bool
+    | CheckAll ColPos Bool
+      {--MOD MANAGEMENT --}
+    | SwitchMode
+    | ExitEditMod
+      {--Messages for the "Validate all changes" checkbox and button --}
+      {--API CALLS--}
+    | SaveValidateAllSetting (Result Error Bool)
+      {--VIEW UPDATE--}
+    | ChangeValidateAllSetting Bool
+
+
+type SupervisedTargetsMsg
+    = GetTargets (Result Error Category)
+    | SaveTargets (Result Error String) -- here the string is just the status message
+    | SendSave
+    | UpdateTarget Target
+
+
+type WorkflowSettingsMsg
+    = {--Messages for the change-validation settings list--}
+      -- GET change-validation plugin status
+      GetChangeValidationStatus (Result Error Bool)
+      -- SET workflow setting
+    | SaveWorkflowEnabledSetting (Result Error Bool)
+    | SaveWorkflowSelfValidationSetting (Result Error Bool)
+    | SaveWorkflowSelfDeploymentSetting (Result Error Bool)
+    | SaveWorkflowValidateAllSetting (Result Error Bool)

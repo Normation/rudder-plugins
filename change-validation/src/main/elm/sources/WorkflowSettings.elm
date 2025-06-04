@@ -1,8 +1,11 @@
 module WorkflowSettings exposing (..)
 
-import DataTypes exposing (Msg, Settings, WorkflowSettingsMsg(..))
+import DataTypes exposing (Msg, Settings, ViewState(..), WorkflowSettingsModel, WorkflowSettingsMsg(..))
 import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, strong, text, ul)
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, style, type_, value)
+import Http exposing (emptyBody, expectJson, header, jsonBody, request)
+import JsonDecoders exposing (decodePluginStatus, decodeSetting)
+import JsonEncoders exposing (encodeSetting)
 
 
 
@@ -11,29 +14,9 @@ import Html.Attributes exposing (attribute, checked, class, disabled, for, id, n
 ------------------------------
 
 
-initModel : String -> Bool -> Model
+initModel : String -> Bool -> WorkflowSettingsModel
 initModel contextPath canWrite =
-    Model contextPath True canWrite Nothing
-
-
-
-------------------------------
--- MODEL --
-------------------------------
-
-
-type alias Model =
-    { contextPath : String
-    , pluginStatus : Bool
-    , canWrite : Bool
-    , settings : Maybe Settings
-    }
-
-
-type alias ViewState =
-    { initSettings : Settings
-    , formSettings : Settings
-    }
+    WorkflowSettingsModel contextPath True canWrite InitWorkflowSettingsView
 
 
 
@@ -42,7 +25,7 @@ type alias ViewState =
 ------------------------------
 
 
-update : WorkflowSettingsMsg -> Model -> ( Model, Cmd Msg )
+update : WorkflowSettingsMsg -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd Msg )
 update msg model =
     case msg of
         GetChangeValidationStatus result ->
@@ -53,8 +36,77 @@ update msg model =
                 Err _ ->
                     ( model, Cmd.none )
 
-        _ ->
+        SaveWorkflowEnabledSetting result ->
             ( model, Cmd.none )
+
+        SaveWorkflowSelfValidationSetting result ->
+            ( model, Cmd.none )
+
+        SaveWorkflowSelfDeploymentSetting result ->
+            ( model, Cmd.none )
+
+        SaveWorkflowValidateAllSetting result ->
+            ( model, Cmd.none )
+
+
+
+------------------------------
+-- API CALLS --
+------------------------------
+
+
+getUrl : WorkflowSettingsModel -> String -> String
+getUrl m url =
+    m.contextPath ++ "/secure/api/" ++ url
+
+
+setSetting : WorkflowSettingsModel -> String -> (Result Http.Error Bool -> WorkflowSettingsMsg) -> Bool -> Cmd Msg
+setSetting model settingId msg newValue =
+    let
+        req =
+            request
+                { method = "POST"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model ("settings/" ++ settingId)
+                , body = jsonBody (encodeSetting newValue)
+                , expect = expectJson (DataTypes.WorkflowSettingsMsg << msg) (decodeSetting settingId)
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+saveWorkflowEnabledSetting : Bool -> WorkflowSettingsModel -> Cmd Msg
+saveWorkflowEnabledSetting newValue model =
+    setSetting model "enable_change_request" SaveWorkflowEnabledSetting newValue
+
+
+saveWorkflowSelfValidationSetting : WorkflowSettingsModel -> Bool -> Cmd Msg
+saveWorkflowSelfValidationSetting model newValue =
+    setSetting model "enable_self_validation" SaveWorkflowSelfValidationSetting newValue
+
+
+saveWorkflowSelfDeploymentSetting : WorkflowSettingsModel -> Bool -> Cmd Msg
+saveWorkflowSelfDeploymentSetting model newValue =
+    setSetting model "enable_self_deployment" SaveWorkflowSelfDeploymentSetting newValue
+
+
+getChangeValidationStatus : WorkflowSettingsModel -> Cmd Msg
+getChangeValidationStatus model =
+    let
+        req =
+            request
+                { method = "GET"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = model.contextPath ++ "/api/latest/plugins/info"
+                , body = emptyBody
+                , expect = expectJson (DataTypes.WorkflowSettingsMsg << GetChangeValidationStatus) decodePluginStatus
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
 
 
 
@@ -81,7 +133,7 @@ createRightInfoSection contents =
         ]
 
 
-view : Model -> Html Msg
+view : WorkflowSettingsModel -> Html Msg
 view model =
     case model.pluginStatus of
         False ->
@@ -134,7 +186,7 @@ view model =
                 ]
 
 
-settingInput : Model -> String -> String -> Maybe String -> Html Msg
+settingInput : WorkflowSettingsModel -> String -> String -> Maybe String -> Html Msg
 settingInput model settingId settingName tooltipDescOpt =
     let
         tooltip =
@@ -175,7 +227,24 @@ settingInput model settingId settingName tooltipDescOpt =
         ]
 
 
-saveButton : Model -> Html Msg
+initView : Settings -> WorkflowSettingsModel -> WorkflowSettingsModel
+initView settings model =
+    { model | viewState = initWorkflowSettingsView settings }
+
+
+initWorkflowSettingsView : Settings -> ViewState
+initWorkflowSettingsView settings =
+    let
+        formState =
+            { workflowEnabled = settings.workflowEnabled
+            , selfValidation = settings.selfValidation
+            , selfDeployment = settings.selfDeployment
+            }
+    in
+    WorkflowSettingsView { initSettings = formState, formSettings = formState }
+
+
+saveButton : WorkflowSettingsModel -> Html Msg
 saveButton model =
     input
         [ id "workflowSubmit"
@@ -188,6 +257,6 @@ saveButton model =
         []
 
 
-saveMsg : Model -> Html Msg
+saveMsg : WorkflowSettingsModel -> Html Msg
 saveMsg model =
     span [ id "updateWorkflow" ] []
