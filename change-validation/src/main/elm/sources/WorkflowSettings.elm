@@ -1,11 +1,13 @@
 module WorkflowSettings exposing (..)
 
-import DataTypes exposing (Msg, Settings, ViewState(..), WorkflowSettingsModel, WorkflowSettingsMsg(..))
+import DataTypes exposing (Msg, Settings, ViewState(..), WorkflowSettingsForm, WorkflowSettingsModel, WorkflowSettingsMsg(..))
+import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, strong, text, ul)
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, style, type_, value)
 import Http exposing (emptyBody, expectJson, header, jsonBody, request)
 import JsonDecoders exposing (decodePluginStatus, decodeSetting)
 import JsonEncoders exposing (encodeSetting)
+import Ports exposing (errorNotification)
 
 
 
@@ -43,9 +45,6 @@ update msg model =
             ( model, Cmd.none )
 
         SaveWorkflowSelfDeploymentSetting result ->
-            ( model, Cmd.none )
-
-        SaveWorkflowValidateAllSetting result ->
             ( model, Cmd.none )
 
 
@@ -98,7 +97,7 @@ getChangeValidationStatus model =
         req =
             request
                 { method = "GET"
-                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , headers = [ header "X-Requested-With" "X-API-Token" ]
                 , url = model.contextPath ++ "/api/latest/plugins/info"
                 , body = emptyBody
                 , expect = expectJson (DataTypes.WorkflowSettingsMsg << GetChangeValidationStatus) decodePluginStatus
@@ -140,54 +139,58 @@ view model =
             text ""
 
         True ->
-            div
-                [ id "workflowForm" ]
-                [ h3 [ class "page-title", style "margin-top" "0" ] [ text "Change validation status" ]
-                , div [ class "section-with-doc" ]
-                    [ div [ class "section-left" ]
-                        [ form
-                            [ id "workflowSettings" ]
-                            [ ul []
-                                [ settingInput model "workflowEnabled" " Enable change requests " Nothing
-                                , settingInput model "selfVal" " Allow self validation " (Just selfValTooltip)
-                                , settingInput model "selfDep" " Allow self deployment " (Just selfDepTooltip)
+            case model.viewState of
+                InitWorkflowSettingsView ->
+                    text ""
+
+                WorkflowSettingsView settings ->
+                    div
+                        [ id "workflowForm" ]
+                        [ h3 [ class "page-title", style "margin-top" "0" ] [ text "Change validation status" ]
+                        , div [ class "section-with-doc" ]
+                            [ div [ class "section-left" ]
+                                [ form
+                                    [ id "workflowSettings" ]
+                                    [ ul []
+                                        [ settingInput model "workflowEnabled" " Enable change requests " Nothing settings.formSettings.workflowEnabled
+                                        , settingInput model "selfVal" " Allow self validation " (Just selfValTooltip) settings.formSettings.selfValidation
+                                        , settingInput model "selfDep" " Allow self deployment " (Just selfDepTooltip) settings.formSettings.selfDeployment
+                                        ]
+                                    , saveButton settings
+                                    ]
                                 ]
-                            , saveButton model
-                            , saveMsg model
+                            , createRightInfoSection
+                                [ p []
+                                    [ text
+                                        (" If enabled, all change to configuration (directives, rules, groups and parameters)"
+                                            ++ " will be submitted for validation via a change request based on node targeting (configured below)."
+                                        )
+                                    , br [] []
+                                    , text " A new change request will enter the "
+                                    , b [] [ text "Pending validation" ]
+                                    , text " status, then can be moved to "
+                                    , b [] [ text "Pending deployment" ]
+                                    , text " (approved but not yet deployed) or "
+                                    , b [] [ text "Deployed" ]
+                                    , text " (approved and deployed) statuses. "
+                                    ]
+                                , p []
+                                    [ text " If you have the user management plugin, only users with the "
+                                    , b [] [ text "validator" ]
+                                    , text " or "
+                                    , b [] [ text "deployer" ]
+                                    , text " roles are authorized to perform these steps (see "
+                                    , i [] [ strong [] [ text "/opt/rudder/etc/rudder-users.xml" ] ]
+                                    , text "). "
+                                    ]
+                                , p [] [ text " If disabled or if the change is not submitted to validation, the configuration will be immediately deployed. " ]
+                                ]
                             ]
                         ]
-                    , createRightInfoSection
-                        [ p []
-                            [ text
-                                (" If enabled, all change to configuration (directives, rules, groups and parameters)"
-                                    ++ " will be submitted for validation via a change request based on node targeting (configured below)."
-                                )
-                            , br [] []
-                            , text " A new change request will enter the "
-                            , b [] [ text "Pending validation" ]
-                            , text " status, then can be moved to "
-                            , b [] [ text "Pending deployment" ]
-                            , text " (approved but not yet deployed) or "
-                            , b [] [ text "Deployed" ]
-                            , text " (approved and deployed) statuses. "
-                            ]
-                        , p []
-                            [ text " If you have the user management plugin, only users with the "
-                            , b [] [ text "validator" ]
-                            , text " or "
-                            , b [] [ text "deployer" ]
-                            , text " roles are authorized to perform these steps (see "
-                            , i [] [ strong [] [ text "/opt/rudder/etc/rudder-users.xml" ] ]
-                            , text "). "
-                            ]
-                        , p [] [ text " If disabled or if the change is not submitted to validation, the configuration will be immediately deployed. " ]
-                        ]
-                    ]
-                ]
 
 
-settingInput : WorkflowSettingsModel -> String -> String -> Maybe String -> Html Msg
-settingInput model settingId settingName tooltipDescOpt =
+settingInput : WorkflowSettingsModel -> String -> String -> Maybe String -> Bool -> Html Msg
+settingInput model settingId settingName tooltipDescOpt formValue =
     let
         tooltip =
             case tooltipDescOpt of
@@ -196,6 +199,7 @@ settingInput model settingId settingName tooltipDescOpt =
                         [ id (settingId ++ "Tooltip") ]
                         [ span
                             [ class "fa fa-info-circle icon-info"
+                            , disabled (not model.canWrite)
                             , attribute "data-bs-toggle" "tooltip"
                             , attribute "data-bs-placement" "bottom"
                             , attribute "aria-label" tooltipDesc
@@ -215,7 +219,7 @@ settingInput model settingId settingName tooltipDescOpt =
                 [ input
                     [ type_ "checkbox"
                     , id settingId
-                    , checked True
+                    , checked formValue
                     ]
                     []
                 , label [ class "label-radio", for settingId ]
@@ -244,19 +248,21 @@ initWorkflowSettingsView settings =
     WorkflowSettingsView { initSettings = formState, formSettings = formState }
 
 
-saveButton : WorkflowSettingsModel -> Html Msg
-saveButton model =
+saveButton : WorkflowSettingsForm -> Html Msg
+saveButton formState =
     input
         [ id "workflowSubmit"
         , name "workflowSubmit"
         , type_ "submit"
         , class "btn btn-default"
         , value "Save change"
-        , disabled True
+        , disabled (not (formModified formState))
         ]
         []
 
 
-saveMsg : WorkflowSettingsModel -> Html Msg
-saveMsg model =
-    span [ id "updateWorkflow" ] []
+formModified : WorkflowSettingsForm -> Bool
+formModified { initSettings, formSettings } =
+    (not initSettings.workflowEnabled == formSettings.workflowEnabled)
+        || (not initSettings.selfDeployment == formSettings.selfDeployment)
+        || (not initSettings.selfValidation == formSettings.selfValidation)

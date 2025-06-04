@@ -6,7 +6,8 @@ import DataTypes exposing (Model, Msg(..), WorkflowSettingsModel, WorkflowUsersM
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, a, b, div, h3, i, li, p, span, text, ul)
 import Html.Attributes exposing (attribute, class, id, title)
-import Ports exposing (errorNotification)
+import Html.Events exposing (onClick)
+import Ports exposing (copyToClipboard, errorNotification)
 import SupervisedTargets exposing (getTargets)
 import View
 import WorkflowSettings exposing (getChangeValidationStatus)
@@ -121,6 +122,7 @@ emailClipboardElement templateName =
         , a
             [ class "btn-goto btn-clipboard"
             , attribute "onclick" ("copy('" ++ path ++ "')")
+            , onClick (CopyToClipboard path)
             , attribute "data-toggle" "tooltip"
             , attribute "data-placement" "bottom"
             , attribute "data-container" "html"
@@ -207,6 +209,9 @@ update msg model =
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to get workflow settings : " ++ getErrorMessage error) )
+
+        CopyToClipboard selection ->
+            ( model, copyToClipboard selection )
 
 
 

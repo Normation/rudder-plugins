@@ -105,10 +105,13 @@ type alias WorkflowSettingsModel =
 
 type ViewState
     = InitWorkflowSettingsView
-    | WorkflowSettingsView
-        { initSettings : WorkflowSettings
-        , formSettings : WorkflowSettings
-        }
+    | WorkflowSettingsView WorkflowSettingsForm
+
+
+type alias WorkflowSettingsForm =
+    { initSettings : WorkflowSettings
+    , formSettings : WorkflowSettings
+    }
 
 
 type alias WorkflowSettings =
@@ -183,6 +186,7 @@ type Msg
     | WorkflowSettingsMsg WorkflowSettingsMsg
       -- GET all workflow settings
     | GetAllWorkflowSettings (Result Error Settings)
+    | CopyToClipboard String
 
 
 type WorkflowUsersMsg
@@ -223,4 +227,3 @@ type WorkflowSettingsMsg
     | SaveWorkflowEnabledSetting (Result Error Bool)
     | SaveWorkflowSelfValidationSetting (Result Error Bool)
     | SaveWorkflowSelfDeploymentSetting (Result Error Bool)
-    | SaveWorkflowValidateAllSetting (Result Error Bool)

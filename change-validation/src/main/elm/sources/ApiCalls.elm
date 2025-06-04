@@ -78,7 +78,7 @@ getAllWorkflowSettings model =
         req =
             request
                 { method = "GET"
-                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , headers = [ header "X-Requested-With" "X-API-Token" ]
                 , url = getUrl model "/api/latest/settings"
                 , body = emptyBody
                 , expect = expectJson GetAllWorkflowSettings decodeWorkflowSettings
