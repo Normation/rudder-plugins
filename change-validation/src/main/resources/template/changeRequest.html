@@ -19,31 +19,31 @@
 
             <div id="change-request-edit-form" ></div>
 
-              <script>
+              <script data-lift="with-nonce">
                   var hasWriteRights = false;
               </script>
               <lift:authz role="deployer_write">
-                  <script>
+                  <script data-lift="with-nonce">
                       hasWriteRights = true;
                   </script>
               </lift:authz>
               <lift:authz role="deployer_edit">
-                  <script>
+                  <script data-lift="with-nonce">
                       hasWriteRights = true;
                   </script>
               </lift:authz>
               <lift:authz role="validator_write">
-                  <script>
+                  <script data-lift="with-nonce">
                       hasWriteRights = true;
                   </script>
               </lift:authz>
               <lift:authz role="validator_edit">
-                  <script>
+                  <script data-lift="with-nonce">
                       hasWriteRights = true;
                   </script>
               </lift:authz>
 
-            <script>
+            <script data-lift="with-nonce">
             $(document).ready(function () {
               var main = document.getElementById("change-request-edit-form");
               var initValues = {
