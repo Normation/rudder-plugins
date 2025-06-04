@@ -3,8 +3,8 @@ module ChangeValidationSettings exposing (..)
 import ApiCalls exposing (getUsers, getValidateAllSetting)
 import Browser
 import DataTypes exposing (Msg(..), WorkflowUsersMsg)
-import Html exposing (Html, b, div, h3, li, p, text, ul)
-import Html.Attributes exposing (class, id)
+import Html exposing (Html, a, b, div, h3, i, li, p, span, text, ul)
+import Html.Attributes exposing (attribute, class, id, title)
 import SupervisedTargets exposing (getTargets)
 import View
 import WorkflowSettings
@@ -39,7 +39,7 @@ initModel : String -> Bool -> Model
 initModel contextPath hasWriteRights =
     { workflowUsersModel = WorkflowUsers.initModel contextPath hasWriteRights
     , supervisedTargetsModel = SupervisedTargets.initModel contextPath
-    , workflowSettingsModel = WorkflowSettings.initModel contextPath False
+    , workflowSettingsModel = WorkflowSettings.initModel contextPath hasWriteRights
     }
 
 
@@ -64,6 +64,82 @@ type alias Model =
 
 view : Model -> Html Msg
 view model =
+    div
+        [ class "main-details"
+        , attribute "data-bs-spy" "scroll"
+        , attribute "data-bs-target" "#navbar-changevalidation"
+        , attribute "data-bs-smooth-scroll" "true"
+        ]
+        [ workflowSettingsView model
+        , emailNotificationsView
+        , changeRequestTriggersView model
+        ]
+
+
+workflowSettingsView : Model -> Html Msg
+workflowSettingsView model =
+    WorkflowSettings.view model.workflowSettingsModel
+
+
+emailNotificationsView : Html Msg
+emailNotificationsView =
+    div [ id "emailNotifications" ]
+        [ h3 [ class "page-title" ] [ text "Configure email notification" ]
+        , div
+            [ class "section-with-doc" ]
+            [ div [ class "section-left" ]
+                [ p [] [ text "You can modify the email's template of each steps here: " ]
+                , ul [ class "clipboard-list" ]
+                    [ emailClipboardElement "validation-mail"
+                    , emailClipboardElement "deployment-mail"
+                    , emailClipboardElement "cancelled-mail"
+                    , emailClipboardElement "deployed-mail"
+                    ]
+                ]
+            , div
+                [ class "section-right" ]
+                [ div [ class "doc doc-info" ]
+                    [ div [ class "marker" ]
+                        [ span [ class "fa fa-info-circle" ] [] ]
+                    , p []
+                        [ text " By default, email notifications are disabled. To enable them, make sure that the "
+                        , b [] [ text "smtp.hostServer" ]
+                        , text " parameter is not left empty in the configuration file: "
+                        , b [] [ text "/opt/rudder/etc/plugins/change-validation.conf" ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+
+emailClipboardElement : String -> Html Msg
+emailClipboardElement templateName =
+    let
+        path =
+            getEmailTemplatePath templateName
+    in
+    li []
+        [ span [] [ text path ]
+        , a
+            [ class "btn-goto btn-clipboard"
+            , attribute "onclick" ("copy('" ++ path ++ "')")
+            , attribute "data-toggle" "tooltip"
+            , attribute "data-placement" "bottom"
+            , attribute "data-container" "html"
+            , title "Copy to clipboard"
+            ]
+            [ i [ class "far fa-clipboard" ] [] ]
+        ]
+
+
+getEmailTemplatePath : String -> String
+getEmailTemplatePath templateName =
+    "/var/rudder/plugins/change-validation/" ++ templateName ++ ".template"
+
+
+changeRequestTriggersView : Model -> Html Msg
+changeRequestTriggersView model =
     div [ id "changeRequestTriggers" ]
         [ h3 [ class "page-title" ] [ text "Configure change request triggers" ]
         , div []

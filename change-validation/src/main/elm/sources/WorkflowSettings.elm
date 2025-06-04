@@ -1,8 +1,8 @@
 module WorkflowSettings exposing (..)
 
 import DataTypes exposing (Msg, Settings, WorkflowSettingsMsg(..))
-import Html exposing (Html, div, form, input, label, li, span, text, ul)
-import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, type_, value)
+import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, strong, text, ul)
+import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, style, type_, value)
 
 
 
@@ -13,7 +13,7 @@ import Html.Attributes exposing (attribute, checked, class, disabled, for, id, n
 
 initModel : String -> Bool -> Model
 initModel contextPath canWrite =
-    Model contextPath False canWrite Nothing
+    Model contextPath True canWrite Nothing
 
 
 
@@ -73,6 +73,14 @@ selfDepTooltip =
     "Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the \"<b>Pending deployment</b>\" status."
 
 
+createRightInfoSection : List (Html Msg) -> Html Msg
+createRightInfoSection contents =
+    div [ class "section-right" ]
+        [ div [ class "doc doc-info" ]
+            ([ div [ class "marker" ] [ span [ class "fa fa-info-circle" ] [] ] ] ++ contents)
+        ]
+
+
 view : Model -> Html Msg
 view model =
     case model.pluginStatus of
@@ -80,15 +88,49 @@ view model =
             text ""
 
         True ->
-            form
-                [ id "workflowSettings" ]
-                [ ul []
-                    [ settingInput model "workflowEnabled" " Enable change requests " Nothing
-                    , settingInput model "selfVal" " Allow self validation " (Just selfValTooltip)
-                    , settingInput model "selfDep" " Allow self deployment " (Just selfDepTooltip)
+            div
+                [ id "workflowForm" ]
+                [ h3 [ class "page-title", style "margin-top" "0" ] [ text "Change validation status" ]
+                , div [ class "section-with-doc" ]
+                    [ div [ class "section-left" ]
+                        [ form
+                            [ id "workflowSettings" ]
+                            [ ul []
+                                [ settingInput model "workflowEnabled" " Enable change requests " Nothing
+                                , settingInput model "selfVal" " Allow self validation " (Just selfValTooltip)
+                                , settingInput model "selfDep" " Allow self deployment " (Just selfDepTooltip)
+                                ]
+                            , saveButton model
+                            , saveMsg model
+                            ]
+                        ]
+                    , createRightInfoSection
+                        [ p []
+                            [ text
+                                (" If enabled, all change to configuration (directives, rules, groups and parameters)"
+                                    ++ " will be submitted for validation via a change request based on node targeting (configured below)."
+                                )
+                            , br [] []
+                            , text " A new change request will enter the "
+                            , b [] [ text "Pending validation" ]
+                            , text " status, then can be moved to "
+                            , b [] [ text "Pending deployment" ]
+                            , text " (approved but not yet deployed) or "
+                            , b [] [ text "Deployed" ]
+                            , text " (approved and deployed) statuses. "
+                            ]
+                        , p []
+                            [ text " If you have the user management plugin, only users with the "
+                            , b [] [ text "validator" ]
+                            , text " or "
+                            , b [] [ text "deployer" ]
+                            , text " roles are authorized to perform these steps (see "
+                            , i [] [ strong [] [ text "/opt/rudder/etc/rudder-users.xml" ] ]
+                            , text "). "
+                            ]
+                        , p [] [ text " If disabled or if the change is not submitted to validation, the configuration will be immediately deployed. " ]
+                        ]
                     ]
-                , saveButton model
-                , saveMsg model
                 ]
 
 
@@ -121,7 +163,6 @@ settingInput model settingId settingName tooltipDescOpt =
                 [ input
                     [ type_ "checkbox"
                     , id settingId
-                    , class "twoCol"
                     , checked True
                     ]
                     []
