@@ -121,6 +121,12 @@ type alias WorkflowSettings =
     }
 
 
+type WorkflowSetting
+    = WorkflowEnabled
+    | SelfValidation
+    | SelfDeployment
+
+
 
 ------------------------------
 -- SUPERVISED TARGETS --
@@ -221,9 +227,14 @@ type SupervisedTargetsMsg
 
 type WorkflowSettingsMsg
     = {--Messages for the change-validation settings list--}
-      -- GET change-validation plugin status
+      -- GET change-validation plugin status API call
       GetChangeValidationStatus (Result Error Bool)
-      -- SET workflow setting
+      -- SET workflow settings API call
     | SaveWorkflowEnabledSetting (Result Error Bool)
-    | SaveWorkflowSelfValidationSetting (Result Error Bool)
-    | SaveWorkflowSelfDeploymentSetting (Result Error Bool)
+    | SaveSelfValidationSetting (Result Error Bool)
+    | SaveSelfDeploymentSetting (Result Error Bool)
+      -- Edit form in view
+    | SwapWorkflowEnabled
+    | SwapSelfValidation
+    | SwapSelfDeployment
+    | SaveSettings

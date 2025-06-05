@@ -1,13 +1,14 @@
 module WorkflowSettings exposing (..)
 
-import DataTypes exposing (Msg, Settings, ViewState(..), WorkflowSettingsForm, WorkflowSettingsModel, WorkflowSettingsMsg(..))
+import DataTypes exposing (Msg, Settings, ViewState(..), WorkflowSetting(..), WorkflowSettings, WorkflowSettingsForm, WorkflowSettingsModel, WorkflowSettingsMsg(..))
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, strong, text, ul)
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, style, type_, value)
-import Http exposing (emptyBody, expectJson, header, jsonBody, request)
+import Html.Events exposing (onClick)
+import Http exposing (Error, emptyBody, expectJson, header, jsonBody, request)
 import JsonDecoders exposing (decodePluginStatus, decodeSetting)
 import JsonEncoders exposing (encodeSetting)
-import Ports exposing (errorNotification)
+import Ports exposing (errorNotification, successNotification)
 
 
 
@@ -18,7 +19,24 @@ import Ports exposing (errorNotification)
 
 initModel : String -> Bool -> WorkflowSettingsModel
 initModel contextPath canWrite =
-    WorkflowSettingsModel contextPath True canWrite InitWorkflowSettingsView
+    WorkflowSettingsModel contextPath False canWrite InitWorkflowSettingsView
+
+
+initView : Settings -> WorkflowSettingsModel -> WorkflowSettingsModel
+initView settings model =
+    { model | viewState = initWorkflowSettingsView settings }
+
+
+initWorkflowSettingsView : Settings -> ViewState
+initWorkflowSettingsView settings =
+    let
+        formState =
+            { workflowEnabled = settings.workflowEnabled
+            , selfValidation = settings.selfValidation
+            , selfDeployment = settings.selfDeployment
+            }
+    in
+    WorkflowSettingsView { initSettings = formState, formSettings = formState }
 
 
 
@@ -35,17 +53,116 @@ update msg model =
                 Ok value ->
                     ( { model | pluginStatus = value }, Cmd.none )
 
-                Err _ ->
-                    ( model, Cmd.none )
+                Err error ->
+                    ( model, errorNotification (getErrorMessage error) )
 
         SaveWorkflowEnabledSetting result ->
-            ( model, Cmd.none )
+            model |> updateSetting result WorkflowEnabled
 
-        SaveWorkflowSelfValidationSetting result ->
-            ( model, Cmd.none )
+        SaveSelfValidationSetting result ->
+            model |> updateSetting result SelfValidation
 
-        SaveWorkflowSelfDeploymentSetting result ->
-            ( model, Cmd.none )
+        SaveSelfDeploymentSetting result ->
+            model |> updateSetting result SelfDeployment
+
+        SwapWorkflowEnabled ->
+            ( model |> swapSettingOn WorkflowEnabled, Cmd.none )
+
+        SwapSelfValidation ->
+            ( model |> swapSettingOn SelfValidation, Cmd.none )
+
+        SwapSelfDeployment ->
+            ( model |> swapSettingOn SelfDeployment, Cmd.none )
+
+        SaveSettings ->
+            case model.viewState of
+                InitWorkflowSettingsView ->
+                    ( model, Cmd.none )
+
+                WorkflowSettingsView form ->
+                    let
+                        cmdList =
+                            [ WorkflowEnabled, SelfValidation, SelfDeployment ]
+                                -- Select only the settings that were modified by the user
+                                |> List.filter (\setting -> formFieldModified form setting)
+                                -- For each modified setting, make an API request to modify the setting
+                                |> List.map (\setting -> saveWorkflowSetting model setting form)
+                    in
+                    ( model, Cmd.batch cmdList )
+
+
+updateSetting : Result Error Bool -> WorkflowSetting -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd Msg )
+updateSetting result setting model =
+    let
+        settingName =
+            case setting of
+                WorkflowEnabled ->
+                    "enable_change_request"
+
+                SelfValidation ->
+                    "enable_self_validation"
+
+                SelfDeployment ->
+                    "enable_self_deployment"
+    in
+    case result of
+        Ok value ->
+            ( model |> setSettingOn setting value, successNotification ("Successfully updated " ++ settingName ++ " setting") )
+
+        Err error ->
+            ( model, errorNotification ("Could not update " ++ settingName ++ " setting : " ++ getErrorMessage error) )
+
+
+{-| Set the new value of a given setting in the model
+-}
+setSettingOn : WorkflowSetting -> Bool -> WorkflowSettingsModel -> WorkflowSettingsModel
+setSettingOn setting newValue model =
+    case model.viewState of
+        InitWorkflowSettingsView ->
+            model
+
+        WorkflowSettingsView { initSettings, formSettings } ->
+            let
+                newSettings =
+                    case setting of
+                        WorkflowEnabled ->
+                            { formSettings | workflowEnabled = newValue }
+
+                        SelfValidation ->
+                            { formSettings | selfValidation = newValue }
+
+                        SelfDeployment ->
+                            { formSettings | selfDeployment = newValue }
+            in
+            { model | viewState = WorkflowSettingsView { initSettings = newSettings, formSettings = newSettings } }
+
+
+{-| Swap the current value of a setting in the view (when a given setting is clicked)
+-}
+swapSettingOn : WorkflowSetting -> WorkflowSettingsModel -> WorkflowSettingsModel
+swapSettingOn setting model =
+    let
+        swapSettingOnForm s f =
+            case s of
+                WorkflowEnabled ->
+                    { f | workflowEnabled = not f.workflowEnabled }
+
+                SelfValidation ->
+                    { f | selfValidation = not f.selfValidation }
+
+                SelfDeployment ->
+                    { f | selfDeployment = not f.selfDeployment }
+    in
+    case model.viewState of
+        InitWorkflowSettingsView ->
+            model
+
+        WorkflowSettingsView form ->
+            let
+                editedForm =
+                    swapSettingOnForm setting form.formSettings
+            in
+            { model | viewState = WorkflowSettingsView { form | formSettings = editedForm } }
 
 
 
@@ -76,19 +193,17 @@ setSetting model settingId msg newValue =
     req
 
 
-saveWorkflowEnabledSetting : Bool -> WorkflowSettingsModel -> Cmd Msg
-saveWorkflowEnabledSetting newValue model =
-    setSetting model "enable_change_request" SaveWorkflowEnabledSetting newValue
+saveWorkflowSetting : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettingsForm -> Cmd Msg
+saveWorkflowSetting model setting form =
+    case setting of
+        WorkflowEnabled ->
+            setSetting model "enable_change_request" SaveWorkflowEnabledSetting form.formSettings.workflowEnabled
 
+        SelfValidation ->
+            setSetting model "enable_self_validation" SaveSelfValidationSetting form.formSettings.selfValidation
 
-saveWorkflowSelfValidationSetting : WorkflowSettingsModel -> Bool -> Cmd Msg
-saveWorkflowSelfValidationSetting model newValue =
-    setSetting model "enable_self_validation" SaveWorkflowSelfValidationSetting newValue
-
-
-saveWorkflowSelfDeploymentSetting : WorkflowSettingsModel -> Bool -> Cmd Msg
-saveWorkflowSelfDeploymentSetting model newValue =
-    setSetting model "enable_self_deployment" SaveWorkflowSelfDeploymentSetting newValue
+        SelfDeployment ->
+            setSetting model "enable_self_deployment" SaveSelfDeploymentSetting form.formSettings.selfDeployment
 
 
 getChangeValidationStatus : WorkflowSettingsModel -> Cmd Msg
@@ -97,8 +212,8 @@ getChangeValidationStatus model =
         req =
             request
                 { method = "GET"
-                , headers = [ header "X-Requested-With" "X-API-Token" ]
-                , url = model.contextPath ++ "/api/latest/plugins/info"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model "plugins/info"
                 , body = emptyBody
                 , expect = expectJson (DataTypes.WorkflowSettingsMsg << GetChangeValidationStatus) decodePluginStatus
                 , timeout = Nothing
@@ -152,11 +267,11 @@ view model =
                                 [ form
                                     [ id "workflowSettings" ]
                                     [ ul []
-                                        [ settingInput model "workflowEnabled" " Enable change requests " Nothing settings.formSettings.workflowEnabled
-                                        , settingInput model "selfVal" " Allow self validation " (Just selfValTooltip) settings.formSettings.selfValidation
-                                        , settingInput model "selfDep" " Allow self deployment " (Just selfDepTooltip) settings.formSettings.selfDeployment
+                                        [ settingInput model WorkflowEnabled settings.formSettings
+                                        , settingInput model SelfValidation settings.formSettings
+                                        , settingInput model SelfDeployment settings.formSettings
                                         ]
-                                    , saveButton settings
+                                    , saveButton model.canWrite settings
                                     ]
                                 ]
                             , createRightInfoSection
@@ -189,37 +304,63 @@ view model =
                         ]
 
 
-settingInput : WorkflowSettingsModel -> String -> String -> Maybe String -> Bool -> Html Msg
-settingInput model settingId settingName tooltipDescOpt formValue =
+settingInput : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettings -> Html Msg
+settingInput model setting form =
     let
-        tooltip =
-            case tooltipDescOpt of
-                Just tooltipDesc ->
-                    span
-                        [ id (settingId ++ "Tooltip") ]
-                        [ span
-                            [ class "fa fa-info-circle icon-info"
-                            , disabled (not model.canWrite)
-                            , attribute "data-bs-toggle" "tooltip"
-                            , attribute "data-bs-placement" "bottom"
-                            , attribute "aria-label" tooltipDesc
-                            , attribute "data-bs-original-title" tooltipDesc
-                            ]
-                            []
-                        ]
+        mkTooltip sid tooltipDesc =
+            span [ id (sid ++ "Tooltip") ]
+                [ span
+                    [ class "fa fa-info-circle icon-info"
+                    , disabled (not model.canWrite)
+                    , attribute "data-bs-toggle" "tooltip"
+                    , attribute "data-bs-placement" "bottom"
+                    , attribute "aria-label" tooltipDesc
+                    , attribute "data-bs-original-title" tooltipDesc
+                    ]
+                    []
+                ]
 
-                Nothing ->
-                    text ""
+        ( settingId, settingName, tooltip ) =
+            case setting of
+                WorkflowEnabled ->
+                    ( "workflowEnabled", " Enable change requests ", text "" )
+
+                SelfValidation ->
+                    ( "selfVal", " Allow self validation ", mkTooltip "selfVal" selfValTooltip )
+
+                SelfDeployment ->
+                    ( "selfDep", " Allow self deployment ", mkTooltip "selfDep" selfDepTooltip )
+
+        ( isChecked, isDisabled, clickAction ) =
+            case setting of
+                WorkflowEnabled ->
+                    ( form.workflowEnabled, not model.canWrite, SwapWorkflowEnabled )
+
+                SelfValidation ->
+                    ( form.selfValidation, not model.canWrite || not form.workflowEnabled, SwapSelfValidation )
+
+                SelfDeployment ->
+                    ( form.selfDeployment, not model.canWrite || not form.workflowEnabled, SwapSelfDeployment )
+
+        inputGroupClass =
+            case isDisabled of
+                True ->
+                    "input-group disabled"
+
+                False ->
+                    "input-group"
     in
     li
         [ class "rudder-form" ]
         [ div
-            [ class "input-group" ]
+            [ class inputGroupClass ]
             [ label [ for settingId, class "input-group-addon" ]
                 [ input
                     [ type_ "checkbox"
                     , id settingId
-                    , checked formValue
+                    , checked isChecked
+                    , disabled isDisabled
+                    , onClick (clickAction |> DataTypes.WorkflowSettingsMsg)
                     ]
                     []
                 , label [ class "label-radio", for settingId ]
@@ -231,38 +372,39 @@ settingInput model settingId settingName tooltipDescOpt formValue =
         ]
 
 
-initView : Settings -> WorkflowSettingsModel -> WorkflowSettingsModel
-initView settings model =
-    { model | viewState = initWorkflowSettingsView settings }
+saveButton : Bool -> WorkflowSettingsForm -> Html Msg
+saveButton canWrite formState =
+    if canWrite then
+        input
+            [ id "workflowSubmit"
+            , name "workflowSubmit"
+            , type_ "button"
+            , class "btn btn-default"
+            , value "Save change"
+            , disabled (not (formModified formState))
+            , onClick (SaveSettings |> DataTypes.WorkflowSettingsMsg)
+            ]
+            []
 
-
-initWorkflowSettingsView : Settings -> ViewState
-initWorkflowSettingsView settings =
-    let
-        formState =
-            { workflowEnabled = settings.workflowEnabled
-            , selfValidation = settings.selfValidation
-            , selfDeployment = settings.selfDeployment
-            }
-    in
-    WorkflowSettingsView { initSettings = formState, formSettings = formState }
-
-
-saveButton : WorkflowSettingsForm -> Html Msg
-saveButton formState =
-    input
-        [ id "workflowSubmit"
-        , name "workflowSubmit"
-        , type_ "submit"
-        , class "btn btn-default"
-        , value "Save change"
-        , disabled (not (formModified formState))
-        ]
-        []
+    else
+        text ""
 
 
 formModified : WorkflowSettingsForm -> Bool
-formModified { initSettings, formSettings } =
-    (not initSettings.workflowEnabled == formSettings.workflowEnabled)
-        || (not initSettings.selfDeployment == formSettings.selfDeployment)
-        || (not initSettings.selfValidation == formSettings.selfValidation)
+formModified form =
+    formFieldModified form WorkflowEnabled
+        || formFieldModified form SelfValidation
+        || formFieldModified form SelfDeployment
+
+
+formFieldModified : WorkflowSettingsForm -> WorkflowSetting -> Bool
+formFieldModified { initSettings, formSettings } setting =
+    case setting of
+        WorkflowEnabled ->
+            not initSettings.workflowEnabled == formSettings.workflowEnabled
+
+        SelfValidation ->
+            not initSettings.selfValidation == formSettings.selfValidation
+
+        SelfDeployment ->
+            not initSettings.selfDeployment == formSettings.selfDeployment

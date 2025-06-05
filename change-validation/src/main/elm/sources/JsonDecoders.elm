@@ -1,7 +1,7 @@
 module JsonDecoders exposing (..)
 
 import DataTypes exposing (ApiMsg, PluginInfo, Settings, User, UserList, Username)
-import Json.Decode exposing (Decoder, at, bool, field, index, list, map, map2, map4, string, succeed)
+import Json.Decode exposing (Decoder, andThen, at, bool, decodeString, fail, field, index, list, map, map2, map4, string, succeed)
 import Json.Decode.Pipeline exposing (required)
 
 
@@ -45,10 +45,22 @@ changeValidationPluginId =
 
 decodePluginInfo : Decoder PluginInfo
 decodePluginInfo =
+    let
+        pluginStatusFromString s =
+            case s of
+                "enabled" ->
+                    succeed True
+
+                "disabled" ->
+                    succeed False
+
+                _ ->
+                    fail "Invalid plugin status"
+    in
     map2
         PluginInfo
         (field "id" string)
-        (field "status" bool)
+        (field "status" (string |> andThen pluginStatusFromString))
 
 
 findChangeValidationStatus : List PluginInfo -> Bool

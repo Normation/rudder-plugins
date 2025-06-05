@@ -69,7 +69,7 @@ saveValidateAllSetting newValue model =
 
 getUrl : Model -> String -> String
 getUrl m url =
-    m.contextPath ++ url
+    m.contextPath ++ "/secure/api/" ++ url
 
 
 getAllWorkflowSettings : Model -> Cmd Msg
@@ -78,8 +78,8 @@ getAllWorkflowSettings model =
         req =
             request
                 { method = "GET"
-                , headers = [ header "X-Requested-With" "X-API-Token" ]
-                , url = getUrl model "/api/latest/settings"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model "settings"
                 , body = emptyBody
                 , expect = expectJson GetAllWorkflowSettings decodeWorkflowSettings
                 , timeout = Nothing
