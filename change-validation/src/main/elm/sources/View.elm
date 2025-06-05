@@ -367,7 +367,7 @@ view model =
         workflowUsers =
             case model.workflowUsersView of
                 WorkflowUsersInitView ->
-                    text ""
+                    i [ class "fa fa-spinner fa-pulse" ] []
 
                 WorkflowUsers workflowUsersForm ->
                     div [ class "section-with-doc" ]

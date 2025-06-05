@@ -1,7 +1,7 @@
 module JsonDecoders exposing (..)
 
-import DataTypes exposing (ApiMsg, PluginInfo, Settings, User, UserList, Username)
-import Json.Decode exposing (Decoder, andThen, at, bool, decodeString, fail, field, index, list, map, map2, map4, string, succeed)
+import DataTypes exposing (ApiMsg, Settings, User, UserList, Username)
+import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, list, map, map2, map4, string, succeed)
 import Json.Decode.Pipeline exposing (required)
 
 
@@ -36,51 +36,6 @@ decodeSetting fieldName =
 ------------------------------
 -- WorkflowSettings         --
 ------------------------------
-
-
-changeValidationPluginId : String
-changeValidationPluginId =
-    "com.normation.plugins.changevalidation.ChangeValidationPluginDef"
-
-
-decodePluginInfo : Decoder PluginInfo
-decodePluginInfo =
-    let
-        pluginStatusFromString s =
-            case s of
-                "enabled" ->
-                    succeed True
-
-                "disabled" ->
-                    succeed False
-
-                _ ->
-                    fail "Invalid plugin status"
-    in
-    map2
-        PluginInfo
-        (field "id" string)
-        (field "status" (string |> andThen pluginStatusFromString))
-
-
-findChangeValidationStatus : List PluginInfo -> Bool
-findChangeValidationStatus ls =
-    case List.head (List.filter (\elt -> elt.pluginId == changeValidationPluginId) ls) of
-        Just elt ->
-            elt.pluginStatus
-
-        Nothing ->
-            False
-
-
-decodePluginStatus : Decoder Bool
-decodePluginStatus =
-    at [ "data" ]
-        (field "plugins"
-            (index 0
-                (map findChangeValidationStatus (field "details" (list decodePluginInfo)))
-            )
-        )
 
 
 decodeWorkflowSettings : Decoder Settings

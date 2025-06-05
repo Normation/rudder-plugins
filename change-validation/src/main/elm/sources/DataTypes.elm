@@ -97,7 +97,6 @@ type alias FormState =
 
 type alias WorkflowSettingsModel =
     { contextPath : String
-    , pluginStatus : Bool
     , canWrite : Bool
     , viewState : ViewState
     }
@@ -166,12 +165,6 @@ type alias Settings =
     }
 
 
-type alias PluginInfo =
-    { pluginId : String
-    , pluginStatus : Bool
-    }
-
-
 
 --------------------------------
 -- CHANGE VALIDATION SETTINGS --
@@ -227,10 +220,8 @@ type SupervisedTargetsMsg
 
 type WorkflowSettingsMsg
     = {--Messages for the change-validation settings list--}
-      -- GET change-validation plugin status API call
-      GetChangeValidationStatus (Result Error Bool)
       -- SET workflow settings API call
-    | SaveWorkflowEnabledSetting (Result Error Bool)
+      SaveWorkflowEnabledSetting (Result Error Bool)
     | SaveSelfValidationSetting (Result Error Bool)
     | SaveSelfDeploymentSetting (Result Error Bool)
       -- Edit form in view

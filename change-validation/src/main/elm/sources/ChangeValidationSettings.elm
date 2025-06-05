@@ -10,7 +10,7 @@ import Html.Events exposing (onClick)
 import Ports exposing (copyToClipboard, errorNotification)
 import SupervisedTargets exposing (getTargets)
 import View
-import WorkflowSettings exposing (getChangeValidationStatus)
+import WorkflowSettings
 import WorkflowUsers
 
 
@@ -28,8 +28,7 @@ init flags =
     in
     ( m
     , Cmd.batch
-        [ getChangeValidationStatus m.workflowSettingsModel
-        , getAllWorkflowSettings m
+        [ getAllWorkflowSettings m
         , getUsers m.workflowUsersModel
         , getTargets m.supervisedTargetsModel
         ]
@@ -86,7 +85,7 @@ emailNotificationsView =
         , div
             [ class "section-with-doc" ]
             [ div [ class "section-left" ]
-                [ p [] [ text "You can modify the email's template of each steps here: " ]
+                [ p [] [ text "You can modify the email template of each step here: " ]
                 , ul [ class "clipboard-list" ]
                     [ emailClipboardElement "validation-mail"
                     , emailClipboardElement "deployment-mail"
@@ -102,7 +101,7 @@ emailNotificationsView =
                     , p []
                         [ text " By default, email notifications are disabled. To enable them, make sure that the "
                         , b [] [ text "smtp.hostServer" ]
-                        , text " parameter is not left empty in the configuration file: "
+                        , text " parameter is not empty in the configuration file: "
                         , b [] [ text "/opt/rudder/etc/plugins/change-validation.conf" ]
                         ]
                     ]
@@ -143,15 +142,19 @@ changeRequestTriggersView model =
         [ h3 [ class "page-title" ] [ text "Configure change request triggers" ]
         , div []
             [ p []
-                [ text " By default, change request are created for all users. You can change when a change request is created with below options: " ]
+                [ text
+                    (" By default, change requests are created when any user makes a modification. "
+                        ++ "However, change requests can be configured with the options below in order to : "
+                    )
+                ]
             , ul []
-                [ li [] [ text "exempt some users from validation;" ]
-                , li [] [ text "trigger change request only for changes impacting nodes belonging to some supervised groups; " ]
+                [ li [] [ text "Exempt some users from needing to create change requests, and" ]
+                , li [] [ text "Trigger a change request only if a given change impacts a node from a supervised group. " ]
                 ]
             , p []
                 [ text "Be careful: a change request is created when "
                 , b [] [ text "at least one" ]
-                , text " predicate matches, so an exempted user still need a change request to modify a node from a supervised group. "
+                , text " predicate matches, so an exempted user still need a change request in order to edit a node from a supervised group. "
                 ]
             ]
         , h3
