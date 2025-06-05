@@ -19,38 +19,39 @@
 	  <div class="template-main h-100">
 		<div class="main-container">
 
-			  <div id="changeValidationSettings"></div>
+		  <div id="changeValidationSettings"></div>
 
-			  <script data-lift="with-nonce">
-				  var hasWriteRights = false;
-			  </script>
-			  <lift:authz role="administration_write">
-				  <script data-lift="with-nonce">
-					  hasWriteRights = true;
-				  </script>
-			  </lift:authz>
-
-			  <script data-lift="with-nonce">
-				  $(document).ready(function () {
-                    const cvs = document.getElementById("changeValidationSettings");
-                    const initValues = {
-                      contextPath: contextPath,
-                      hasWriteRights: hasWriteRights
-                    };
-                    const app = Elm.ChangeValidationSettings.init({node: cvs, flags: initValues});
-                    app.ports.successNotification.subscribe(function (str) {
-                      createSuccessNotification(str)
-                    });
-                    app.ports.errorNotification.subscribe(function (str) {
-                      createErrorNotification(str)
-                    });
-                    app.ports.copyToClipboard.subscribe(function (str) {
-                      copy(str)
-                    });
-                    buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
+		  <script data-lift="with-nonce">
+		    var hasWriteRights = false;
+		  </script>
+		  <lift:authz role="administration_write">
+		    <script data-lift="with-nonce">
+			  hasWriteRights = true;
+			</script>
+		  </lift:authz>
+		  <script data-lift="with-nonce">
+			  $(document).ready(function () {
+				$('#changeValidationLinkTab').on('show.bs.tab', function() {
+				  const main = document.getElementById("changeValidationSettings")
+				  if (main) {
+			      const initValues = {
+                    contextPath: contextPath,
+                    hasWriteRights: hasWriteRights
+                  };
+                  const app = Elm.ChangeValidationSettings.init({node: main, flags: initValues});
+                  app.ports.successNotification.subscribe(function (str) {
+                    createSuccessNotification(str)
                   });
-			  </script>
-
+                  app.ports.errorNotification.subscribe(function (str) {
+                    createErrorNotification(str)
+                  });
+                  app.ports.copyToClipboard.subscribe(function (str) {
+                    copy(str)
+                  });
+                  buildScrollSpyNav("navbar-changevalidation", "changeValidationTab");
+				}})
+			  });
+		  </script>
 		</div>
 	  </div>
 	</div>
