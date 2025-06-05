@@ -29,12 +29,15 @@ view model =
           h1 [] [
             span [] [ text "Data sources" ]
           ]
-          , div [ class "header-buttons" ] [
-              button [type_ "button", class "btn btn-success", onClick NewDataSource ] [
-                text "Create "
-              , i [ class "add-icon ion ion-android-add-circle" ] []
+          , if model.hasWriteRights then
+              div [ class "header-buttons" ] [
+                button [type_ "button", class "btn btn-success", onClick NewDataSource ] [
+                  text "Create "
+                , i [ class "add-icon ion ion-android-add-circle" ] []
+                ]
               ]
-          ]
+            else
+              text ""
         ]
       ]
     , div [ class "sidebar-body" ] [
@@ -62,12 +65,15 @@ view model =
           , p [] [
               text "You can automatically import node properties by creating data sources that will query a third party REST API to retrieve data and it in a given property key for each node it's available for."
             ]
-          , p [] [
-              button [ class "btn btn-success btn-lg", type_ "button", onClick NewDataSource ] [
-              text "Create "
-            , i [ class "add-icon ion ion-android-add-circle" ] []
-            ]
-          ]
+          , if model.hasWriteRights then
+              p [] [
+                  button [ class "btn btn-success btn-lg", type_ "button", onClick NewDataSource ] [
+                  text "Create "
+                , i [ class "add-icon ion ion-android-add-circle" ] []
+                ]
+              ]
+            else
+              text ""
           ]
         ShowDatasource source origin ->
           datasourceForm model source origin
