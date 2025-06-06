@@ -554,9 +554,9 @@ object RuleChangeJson {
   ): PartialTransformer[ChangeRequestRuleDiff, RuleChangeJson] = {
     PartialTransformer
       .define[ChangeRequestRuleDiff, RuleChangeJson]
-      .withCoproductInstance[AddRuleDiff](_.transformInto[RuleCreateChangeJson])
-      .withCoproductInstance[DeleteRuleDiff](_.transformInto[RuleDeleteChangeJson])
-      .withCoproductInstancePartial[ModifyToRuleDiff](_.transformIntoPartial[RuleModifyChangeJson])
+      .withSealedSubtypeHandled[AddRuleDiff](_.transformInto[RuleCreateChangeJson])
+      .withSealedSubtypeHandled[DeleteRuleDiff](_.transformInto[RuleDeleteChangeJson])
+      .withSealedSubtypeHandledPartial[ModifyToRuleDiff](_.transformIntoPartial[RuleModifyChangeJson])
       .buildTransformer
   }
 
