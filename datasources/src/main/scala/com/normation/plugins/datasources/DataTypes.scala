@@ -43,17 +43,11 @@ import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
 import com.typesafe.config.ConfigValue
 import enumeratum.*
-import net.liftweb.common.Logger
-import org.slf4j.LoggerFactory
 import zio.*
 
 /**
  * Applicative log of interest for Rudder ops.
  */
-object DataSourceLogger extends Logger {
-  override protected def _logger = LoggerFactory.getLogger("datasources")
-}
-
 object DataSourceLoggerPure extends NamedZioLogger {
   override def loggerName: String = "datasources"
 
@@ -65,23 +59,23 @@ object DataSourceLoggerPure extends NamedZioLogger {
   }
 }
 
-final object DataSource {
-  val defaultDuration = 5.minutes
+object DataSource {
+  val defaultDuration: Duration = 5.minutes
 
-  val providerName = PropertyProvider("datasources")
+  val providerName: PropertyProvider = PropertyProvider("datasources")
 
   /*
    * Name used in both datasource id and "reload" place in
    * API, that must not be used as id.
    */
-  val reservedIds = Map(
+  val reservedIds: Map[DataSourceId, String] = Map(
     DataSourceId("reload") -> "That id would conflict with API path for reloading datasources"
   )
 
   /**
    * A node property with the correct DataSource metadata
    */
-  def nodeProperty(name: String, value: ConfigValue) = NodeProperty.apply(name, value, None, Some(providerName))
+  def nodeProperty(name: String, value: ConfigValue): NodeProperty = NodeProperty.apply(name, value, None, Some(providerName))
 }
 
 sealed trait DataSourceType {
@@ -93,17 +87,17 @@ sealed trait DataSourceType {
  * foreign server?
  */
 sealed trait HttpMethod extends EnumEntry        { def name: String }
-final object HttpMethod extends Enum[HttpMethod] {
+object HttpMethod       extends Enum[HttpMethod] {
 
-  final case object GET  extends HttpMethod { override val name = "GET"  }
-  final case object POST extends HttpMethod { override val name = "POST" }
+  case object GET  extends HttpMethod { override val name = "GET"  }
+  case object POST extends HttpMethod { override val name = "POST" }
 
   def values = findValues
 }
 
-final object DataSourceType {
+object DataSourceType {
 
-  final object HTTP {
+  object HTTP {
     val name                      = "HTTP"
     val defaultMaxParallelRequest = 10
   }
@@ -122,7 +116,7 @@ final object DataSourceType {
       requestTimeOut:      Duration,
       missingNodeBehavior: MissingNodeBehavior
   ) extends DataSourceType {
-    val name = HTTP.name
+    val name: String = HTTP.name
   }
 }
 
@@ -133,12 +127,12 @@ final object DataSourceType {
  */
 sealed trait HttpRequestMode { def name: String }
 
-final object HttpRequestMode {
-  final case object OneRequestByNode extends HttpRequestMode {
+object HttpRequestMode {
+  case object OneRequestByNode extends HttpRequestMode {
     val name = "byNode"
   }
 
-  final object OneRequestAllNodes {
+  object OneRequestAllNodes {
     val name = "allNodes"
   }
 
@@ -146,7 +140,7 @@ final object HttpRequestMode {
       matchingPath:  String,
       nodeAttribute: String
   ) extends HttpRequestMode {
-    val name = OneRequestAllNodes.name
+    val name: String = OneRequestAllNodes.name
   }
 }
 
@@ -158,12 +152,12 @@ final object HttpRequestMode {
  */
 sealed trait MissingNodeBehavior { def name: String }
 
-final object MissingNodeBehavior {
+object MissingNodeBehavior {
   // delete is the default behavior is not specified
-  final case object Delete   extends MissingNodeBehavior { val name = "delete"   }
-  final case object NoChange extends MissingNodeBehavior { val name = "noChange" }
-  final object DefaultValue { val name = "defaultValue" }
-  final case class DefaultValue(value: ConfigValue) extends MissingNodeBehavior { val name = DefaultValue.name }
+  case object Delete   extends MissingNodeBehavior { val name = "delete"   }
+  case object NoChange extends MissingNodeBehavior { val name = "noChange" }
+  object DefaultValue { val name = "defaultValue" }
+  final case class DefaultValue(value: ConfigValue) extends MissingNodeBehavior { val name: String = DefaultValue.name }
 }
 
 final case class DataSourceName(value: String)
@@ -173,11 +167,11 @@ sealed trait DataSourceSchedule {
   def duration: Duration
 }
 
-final object DataSourceSchedule {
+object DataSourceSchedule {
   final case class NoSchedule(
       savedDuration: Duration
   ) extends DataSourceSchedule {
-    val duration = savedDuration
+    val duration: Duration = savedDuration
   }
 
   final case class Scheduled(
@@ -185,7 +179,7 @@ final object DataSourceSchedule {
   ) extends DataSourceSchedule
 }
 
-final case class DataSourceRunParameters(
+case class DataSourceRunParameters(
     schedule:     DataSourceSchedule,
     onGeneration: Boolean,
     onNewNode:    Boolean
@@ -208,7 +202,7 @@ sealed trait NodeUpdateResult {
   def nodeId: NodeId
 }
 
-final object NodeUpdateResult {
+object NodeUpdateResult {
 
   // there was a difference between the saved value and the one available
   // on the remote data source

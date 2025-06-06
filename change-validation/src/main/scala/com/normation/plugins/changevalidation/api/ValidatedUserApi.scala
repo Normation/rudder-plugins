@@ -63,16 +63,16 @@ import sourcecode.Line
 sealed trait ValidatedUserApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
 object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
 
-  final case object ListUsers                   extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ListUsers                   extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "List all users"
     val (action, path) = GET / "users"
 
     override def dataContainer: Option[String]          = None
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
-  final case object DeleteValidatedUsersDetails extends ValidatedUserApi with OneParam with StartsAtVersion3 with SortIndex  {
-    val z              = implicitly[Line].value
+  case object DeleteValidatedUsersDetails extends ValidatedUserApi with OneParam with StartsAtVersion3 with SortIndex  {
+    val z: Int = implicitly[Line].value
     val description    = "Remove validated user"
     val (action, path) = DELETE / "validatedUsers" / "{username}"
 
@@ -80,8 +80,8 @@ object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvi
     override def dataContainer: Option[String]          = None
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
-  final case object SaveWorkflowUsers           extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
-    val z              = implicitly[Line].value
+  case object SaveWorkflowUsers           extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "save list of workflow's users"
     val (action, path) = POST / "validatedUsers"
 
@@ -90,8 +90,8 @@ object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvi
     val authz: List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  def endpoints = values.toList.sortBy(_.z)
-  def values    = findValues
+  def endpoints: List[ValidatedUserApi] = values.toList.sortBy(_.z)
+  def values = findValues
 }
 
 class ValidatedUserApiImpl(

@@ -68,7 +68,7 @@ class UserApiTest extends ZIOSpecDefault {
     )
   )
 
-  val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
+  val apiVersions: List[ApiVersion] = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, Some(userService))
 
   val transformations: Map[String, String => String] = Map()

@@ -417,9 +417,9 @@ object DirectiveChangeJson {
   ): PartialTransformer[ChangeRequestDirectiveDiff, DirectiveChangeJson] = {
     PartialTransformer
       .define[ChangeRequestDirectiveDiff, DirectiveChangeJson]
-      .withCoproductInstance[AddDirectiveDiff](_.transformInto[DirectiveCreateChangeJson])
-      .withCoproductInstance[DeleteDirectiveDiff](_.transformInto[DirectiveDeleteChangeJson])
-      .withCoproductInstancePartial[ModifyToDirectiveDiff](_.transformIntoPartial[DirectiveModifyChangeJson])
+      .withSealedSubtypeHandled[AddDirectiveDiff](_.transformInto[DirectiveCreateChangeJson])
+      .withSealedSubtypeHandled[DeleteDirectiveDiff](_.transformInto[DirectiveDeleteChangeJson])
+      .withSealedSubtypeHandledPartial[ModifyToDirectiveDiff](_.transformIntoPartial[DirectiveModifyChangeJson])
       .buildTransformer
   }
 

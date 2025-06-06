@@ -42,7 +42,6 @@ import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.DatasourcesConf
 import com.normation.plugins.*
-import com.normation.plugins.PluginStatus
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider

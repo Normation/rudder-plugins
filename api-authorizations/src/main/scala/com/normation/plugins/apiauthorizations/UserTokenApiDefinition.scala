@@ -44,7 +44,6 @@ import com.normation.rudder.api.*
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.repository.ldap.JsonApiAuthz
 import com.normation.rudder.rest.*
-import com.normation.rudder.rest.UserApi
 import com.normation.rudder.rest.data.*
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.*

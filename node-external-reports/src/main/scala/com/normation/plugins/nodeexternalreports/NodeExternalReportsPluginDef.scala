@@ -40,7 +40,6 @@ import bootstrap.liftweb.ClassPathResource
 import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import com.normation.plugins.*
-import com.normation.plugins.PluginStatus
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates

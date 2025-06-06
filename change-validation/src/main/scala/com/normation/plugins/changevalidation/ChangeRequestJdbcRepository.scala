@@ -79,9 +79,9 @@ import zio.syntax.*
 
 /**
  * Change request from the database does not have a trivial mapping to the `ChangeRequest` structure :
- * there is the XML content that needs to be validated, and in some cases (some APIs) we decide to 
+ * there is the XML content that needs to be validated, and in some cases (some APIs) we decide to
  * return the valid ones and ignore invalid ones.
- * 
+ *
  * So, the type here is used to create a Read that does not fail but contains the failure.
  */
 sealed trait DbChangeRequest
@@ -100,6 +100,8 @@ trait RoChangeRequestJdbcRepositorySQL {
   val changeRequestMapper: ChangeRequestMapper
 
   import changeRequestMapper.*
+
+  implicit val wfRead: Read[WorkflowNodeId] = Read[String].map(x => WorkflowNodeId(x))
 
   implicit val ChangeRequestReadOpt: Read[DbChangeRequest] = {
     Read[CR].map {
@@ -133,12 +135,12 @@ trait RoChangeRequestJdbcRepositorySQL {
     sql"SELECT id, name, description, content, modificationId FROM ChangeRequest".query[DbChangeRequest]
 
   def getSQL(changeRequestId: ChangeRequestId): Query0[ChangeRequest] = {
-    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId}"
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId.value}"
       .query[ChangeRequest]
   }
 
   def getRawCRSQL(changeRequestId: ChangeRequestId): Query0[DbChangeRequest] = {
-    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId}"
+    sql"SELECT id, name, description, content, modificationId FROM ChangeRequest where id = ${changeRequestId.value}"
       .query[DbChangeRequest]
   }
 
@@ -169,7 +171,7 @@ trait RoChangeRequestJdbcRepositorySQL {
   ): Query0[(ChangeRequest, WorkflowNodeId)] = {
     (fr"SELECT CR.id, CR.name, CR.description, CR.content, CR.modificationId, W.state FROM ChangeRequest CR LEFT JOIN workflow W on CR.id = W.id" ++
     fragments.whereAndOpt(
-      statuses.map(fragments.in(fr"state", _)),
+      statuses.map(nel => fragments.in(fr"state", nel.map(_.value))),
       xpathWithValue.map {
         case (xpath, value) =>
           val param = Array(value)
@@ -194,7 +196,7 @@ trait WoChangeRequestJdbcRepositorySQL {
       modId: Option[String],
       id:    ChangeRequestId
   ): Update0 = sql"""update ChangeRequest set name = ${name}, description = ${desc}, content = ${xml}, modificationId = ${modId}
-                                 where id = ${id}""".update
+                                 where id = ${id.value}""".update
 }
 
 object WoChangeRequestJdbcRepositorySQL extends WoChangeRequestJdbcRepositorySQL
@@ -283,7 +285,7 @@ class RoChangeRequestJdbcRepository(
 
   override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
 
-    import ChangeRequestFilter.*
+    import com.normation.plugins.changevalidation.ChangeRequestFilter.*
     val errorMsg = s"Could not get change request by filter ${filter}"
 
     def getXPathWithValue(by: ByFilter): (Fragment, String) = by match {
