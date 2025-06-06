@@ -38,7 +38,6 @@ package com.normation.plugins.nodeexternalreports.snippet
 
 import bootstrap.rudder.plugin.NodeExternalReportsConf
 import net.liftweb.common.*
-import net.liftweb.common.Loggable
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.util.*
 import net.liftweb.util.Helpers.*

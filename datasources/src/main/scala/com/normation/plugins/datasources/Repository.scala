@@ -38,7 +38,6 @@
 package com.normation.plugins.datasources
 
 import com.normation.errors.*
-import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
@@ -465,7 +464,7 @@ class DataSourceJdbcRepository(
       rowsAffected <- update.run
       result       <- rowsAffected match {
                         case 0 =>
-                          DataSourceLogger.debug(s"source ${source.id} is not present in database, creating it")
+                          DataSourceLoggerPure.logEffect.debug(s"source ${source.id} is not present in database, creating it")
                           insert.run
                         case 1 => 1.pure[ConnectionIO]
                         case n => throw new RuntimeException(s"Expected 0 or 1 change, not ${n} for ${source.id}")

@@ -75,7 +75,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
    *   ...
    * ]
    */
-  def render(xml: NodeSeq) = {
+  def render(xml: NodeSeq): NodeSeq = {
     // get all apis and for public one, and create the structure
     import net.liftweb.http.js.JsCmds.*
     import net.liftweb.http.js.JE.*

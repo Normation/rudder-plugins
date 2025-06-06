@@ -102,16 +102,16 @@ import zio.syntax.*
 sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
 object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
 
-  final case object ListChangeRequests     extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ListChangeRequests     extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "List all change requests"
     val (action, path) = GET / "changeRequests"
 
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
     override def dataContainer: Option[String]          = None
   }
-  final case object ChangeRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
-    val z              = implicitly[Line].value
+  case object ChangeRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
+    val z: Int = implicitly[Line].value
     val description    = "Get information about given change request"
     val (action, path) = GET / "changeRequests" / "{id}"
 
@@ -119,8 +119,8 @@ object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvi
     override def dataContainer: Option[String]          = Some("changeRequests")
     override def name:          String                  = "changeRequestDetails"
   }
-  final case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
-    val z              = implicitly[Line].value
+  case object DeclineRequestsDetails extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
+    val z: Int = implicitly[Line].value
     val description    = "Decline given change request"
     val (action, path) = DELETE / "changeRequests" / "{id}"
 
@@ -133,8 +133,8 @@ object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvi
     override def dataContainer: Option[String]          = Some("changeRequests")
     override def name:          String                  = "declineChangeRequest"
   }
-  final case object AcceptRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
-    val z              = implicitly[Line].value
+  case object AcceptRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
+    val z: Int = implicitly[Line].value
     val description    = "Accept given change request"
     val (action, path) = POST / "changeRequests" / "{id}" / "accept"
 
@@ -147,8 +147,8 @@ object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvi
     override def dataContainer: Option[String]          = Some("changeRequests")
     override def name:          String                  = "acceptChangeRequest"
   }
-  final case object UpdateRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
-    val z              = implicitly[Line].value
+  case object UpdateRequestsDetails  extends ChangeRequestApi with OneParam with StartsAtVersion3 with SortIndex  {
+    val z: Int = implicitly[Line].value
     val description    = "Update information about given change request"
     val (action, path) = POST / "changeRequests" / "{id}"
 
@@ -162,8 +162,8 @@ object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvi
     override def name:          String                  = "updateChangeRequest"
   }
 
-  def endpoints = values.toList.sortBy(_.z)
-  def values    = findValues
+  def endpoints: List[ChangeRequestApi] = values.toList.sortBy(_.z)
+  def values = findValues
 }
 
 class ChangeRequestApiImpl(
@@ -205,17 +205,13 @@ class ChangeRequestApiImpl(
   private[this] def apiUserRights = Seq("deployer", "validator")
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    API.endpoints
-      .map(e => {
-        e match {
-          case API.ListChangeRequests     => ListChangeRequests
-          case API.ChangeRequestsDetails  => ChangeRequestsDetails
-          case API.DeclineRequestsDetails => DeclineRequestsDetails
-          case API.AcceptRequestsDetails  => AcceptRequestsDetails
-          case API.UpdateRequestsDetails  => UpdateRequestsDetails
-        }
-      })
-      .toList
+    API.endpoints.map {
+      case API.ListChangeRequests     => ListChangeRequests
+      case API.ChangeRequestsDetails  => ChangeRequestsDetails
+      case API.DeclineRequestsDetails => DeclineRequestsDetails
+      case API.AcceptRequestsDetails  => AcceptRequestsDetails
+      case API.UpdateRequestsDetails  => UpdateRequestsDetails
+    }
   }
 
   def checkUserAction(workflowNodeId: WorkflowNodeId, target: WorkflowNodeId): PureResult[String] = {
@@ -280,7 +276,7 @@ class ChangeRequestApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       implicit val qc: QueryContext = authzToken.qc
-      withChangeRequestContext(sid, params, schema, "find")((changeRequest, status, techniqueByDirective) =>
+      withChangeRequestContext(sid, "find")((changeRequest, status, techniqueByDirective) =>
         serialize(changeRequest, status)(techniqueByDirective, qc).toIO
       ).toLiftResponseOne(params, schema, Some(sid))
     }
@@ -318,7 +314,7 @@ class ChangeRequestApiImpl(
         }
       }
 
-      withChangeRequestContext(id, params, schema, "decline")((changeRequest, status, techniqueByDirective) =>
+      withChangeRequestContext(id, "decline")((changeRequest, status, techniqueByDirective) =>
         actualRefuse(changeRequest, status)(techniqueByDirective.toMap)
       ).toLiftResponseOne(params, schema, Some(id))
     }
@@ -358,8 +354,8 @@ class ChangeRequestApiImpl(
       (for {
         targetStep <- extractWorkflowTargetStatus(req.params).toIO
         res        <- {
-          withChangeRequestContext(id, params, schema, "accept") { (changeRequest, currentState, techniqueByDirective) =>
-            implicit val directiveCtx = techniqueByDirective
+          withChangeRequestContext(id, "accept") { (changeRequest, currentState, techniqueByDirective) =>
+            implicit val directiveCtx: Map[DirectiveId, Technique] = techniqueByDirective
             checkUserAction(currentState, targetStep).toIO *>
             (currentState match {
               case Deployment.id | Validation.id =>
@@ -420,7 +416,7 @@ class ChangeRequestApiImpl(
         }
       }
 
-      withChangeRequestContext(id, params, schema, "update")((changeRequest, status, techniqueByDirective) => {
+      withChangeRequestContext(id, "update")((changeRequest, status, techniqueByDirective) => {
         for {
           json   <- req.fromJson[ChangeRequestInfoJson].toIO
           update <- updateInfo(changeRequest, status, json)(techniqueByDirective.toMap)
@@ -433,8 +429,6 @@ class ChangeRequestApiImpl(
 
   private def withChangeRequestContext[T: JsonEncoder](
       sid:          String,
-      params:       DefaultParams,
-      schema:       EndpointSchema,
       actionDetail: String
   )(
       block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
@@ -524,7 +518,7 @@ class ChangeRequestApiImpl(
   }
 
   private[this] def extractFilters(params: Map[String, List[String]]): PureResult[ChangeRequestFilter] = {
-    import ChangeRequestFilter.*
+    import com.normation.plugins.changevalidation.ChangeRequestFilter.*
     for {
       status     <- extractWorkflowStatus(params)
       byRule      = params.get("ruleId").flatMap(_.headOption).map(id => ByRule(RuleUid(id)))

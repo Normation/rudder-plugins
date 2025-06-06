@@ -47,11 +47,7 @@ import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.*
-import com.normation.rudder.rest.ApiModuleProvider
-import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.EndpointSchema.syntax.*
-import com.normation.rudder.rest.GeneralApi
-import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -69,8 +65,8 @@ sealed trait OpenScapApi extends EnumEntry with EndpointSchema with GeneralApi w
 object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi] {
 
   // use that endpoint to get the original report. Be careful, can XSS
-  final case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
-    val z              = implicitly[Line].value
+  case object GetOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
+    val z: Int = implicitly[Line].value
     val description    = "Get OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "report" / "{id}"
 
@@ -78,8 +74,8 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
     override val authz:         List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
   }
 
-  final case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
-    val z              = implicitly[Line].value
+  case object GetSanitizedOpenScapReport extends OpenScapApi with OneParam with StartsAtVersion12 {
+    val z: Int = implicitly[Line].value
     val description    = "Get sanitized OpenSCAP report for a node"
     val (action, path) = GET / "openscap" / "sanitized" / "{id}"
 
@@ -87,7 +83,7 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
     override val authz:         List[AuthorizationType] = AuthorizationType.Node.Read :: Nil
   }
 
-  def endpoints = values.toList.sortBy(_.z)
+  def endpoints: List[OpenScapApi] = values.toList.sortBy(_.z)
   def values    = findValues
 }
 

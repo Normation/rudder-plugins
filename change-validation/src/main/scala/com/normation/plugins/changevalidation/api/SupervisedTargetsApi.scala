@@ -75,16 +75,16 @@ import zio.ZIO
 sealed trait SupervisedTargetsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
 object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
   val zz = 11
-  final case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
-    val z              = implicitly[Line].value
+  case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
+    val z: Int = implicitly[Line].value
     val description    = "Get all available node groups with their role in change request validation"
     val (action, path) = GET / "changevalidation" / "supervised" / "targets"
 
     override def dataContainer: Option[String]          = None
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
-  final case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
-    val z              = implicitly[Line].value
+  case object UpdateSupervisedTargets extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
+    val z: Int = implicitly[Line].value
     val description    = "Save the updated list of groups"
     val (action, path) = POST / "changevalidation" / "supervised" / "targets"
 
@@ -92,8 +92,8 @@ object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiMod
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  def endpoints = values.toList.sortBy(_.z)
-  def values    = findValues
+  def endpoints: List[SupervisedTargetsApi] = values.toList.sortBy(_.z)
+  def values = findValues
 }
 
 class SupervisedTargetsApiImpl(
@@ -104,14 +104,10 @@ class SupervisedTargetsApiImpl(
   override def schemas: ApiModuleProvider[SupervisedTargetsApi] = SupervisedTargetsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    SupervisedTargetsApi.endpoints
-      .map(e => {
-        e match {
-          case SupervisedTargetsApi.GetAllTargets           => GetAllTargets
-          case SupervisedTargetsApi.UpdateSupervisedTargets => UpdateSupervisedTargets
-        }
-      })
-      .toList
+    SupervisedTargetsApi.endpoints.map {
+      case SupervisedTargetsApi.GetAllTargets           => GetAllTargets
+      case SupervisedTargetsApi.UpdateSupervisedTargets => UpdateSupervisedTargets
+    }
   }
 
   /*
@@ -170,7 +166,7 @@ class SupervisedTargetsApiImpl(
             .fromJson[SupervisedSimpleTargets]
             .toIO
             .chainError(
-              s"Error when trying to parse JSON content ${new String(req.body.getOrElse(Array.empty), StandardCharsets.UTF_8)} as a set of rule target."
+              s"Error when trying to parse JSON content ${new String(req.body.getOrElse(Array[Byte]()), StandardCharsets.UTF_8)} as a set of rule target."
             )
         groups  <- nodeGroupRepository.getFullGroupLibrary()
         saved   <- unsupervisedTargetsRepos.save(UnsupervisedTargetsRepository.invertTargets(targets.supervised, groups))

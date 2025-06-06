@@ -92,9 +92,9 @@ import zio.test.TestClock
  */
 object TestingZioHttpServer {
 
-  def testService[R]: HttpApp[R, Throwable] = Http.collectZIO[Request] {
+  def testService[R]: HttpApp[R, Nothing] = Http.collectZIO[Request] {
     case _ -> !! =>
-      ZIO.fail(new IllegalArgumentException("You cannot access root in test"))
+      ZIO.die(new IllegalArgumentException("You cannot access root in test"))
 
     case _ -> !! / "status" =>
       Response.text("datasources:ok").succeed
@@ -245,9 +245,9 @@ object CmdbServer {
   /*
    * datasource services
    */
-  def service[R]: HttpApp[R, Throwable] = Http.collectZIO[Request] {
+  def service[R]: HttpApp[R, Nothing] = Http.collectZIO[Request] {
     case _ -> !! =>
-      ZIO.fail(new IllegalArgumentException("You cannot access root in test"))
+      ZIO.die(new IllegalArgumentException("You cannot access root in test"))
 
     case _ -> !! / "status" =>
       Response.text("datasources:ok").succeed
@@ -332,10 +332,10 @@ object CmdbServer {
       val headerId = r.headers.toList.toMap.get("nodeId")
 
       for {
-        body   <- r.body.asString // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
+        body   <- r.body.asString.orDie // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
         formId <- (body.split('=').toList match {
                     case _ :: nodeId :: Nil => ZIO.succeed(Some(nodeId))
-                    case _                  => ZIO.fail(throw new IllegalArgumentException(s"Error, can't decode POST form data body: ${body}"))
+                    case _                  => ZIO.die(throw new IllegalArgumentException(s"Error, can't decode POST form data body: ${body}"))
                   })
         res    <- (headerId, formId) match {
                     case (Some(x), Some(y)) if x == y =>
@@ -404,7 +404,7 @@ object CmdbServer {
 
           case _ -> other =>
             Http.collectZIO[Request] {
-              case _ => Console.printLine(s"I didn't handle: '${other}'") *> Response.status(Status.Forbidden).succeed
+              case _ => Console.printLine(s"I didn't handle: '${other}'").orDie *> Response.status(Status.Forbidden).succeed
             }
         }
         Server.port(serverPort) ++ // Setup port - should be next available
