@@ -1,6 +1,5 @@
-module SupervisedTargets exposing (alphanumericRegex, decodeApiCategory, decodeApiSave, decodeCategory, decodeSubcategories, decodeTarget, displayCategory, displaySubcategories, displayTarget, encodeTargets, getSupervisedIds, getTargets, initModel, isAlphanumeric, saveTargets, update, updateTarget, view)
+module SupervisedTargets exposing (Category, Subcategories, SupervisedTargetsModel, SupervisedTargetsMsg, Target, getTargets, initModel, update, view)
 
-import DataTypes exposing (Category, Msg, Subcategories(..), SupervisedTargetsModel, SupervisedTargetsMsg(..), Target)
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (..)
 import Html.Attributes exposing (checked, class, id, type_)
@@ -26,6 +25,44 @@ initModel contextPath =
 
 
 
+------------------------------
+-- MODEL                    --
+------------------------------
+
+
+type alias Target =
+    { id : String -- id
+    , name : String -- display name of the rule target
+    , description : String -- description
+    , supervised : Bool -- do you want to validate CR targeting that rule target
+    }
+
+
+type alias Category =
+    { name : String -- name of the category
+    , categories : Subcategories -- sub-categories
+    , targets : List Target -- targets in category
+    }
+
+
+type Subcategories
+    = Subcategories (List Category) -- needed because no recursive type alias support
+
+
+type alias SupervisedTargetsModel =
+    { contextPath : String
+    , allTargets : Category -- from API
+    }
+
+
+type SupervisedTargetsMsg
+    = GetTargets (Result Error Category)
+    | SaveTargets (Result Error String) -- here the string is just the status message
+    | SendSave
+    | UpdateTarget Target
+
+
+
 -- NOTIFICATIONS
 ------------------------------
 -- API --
@@ -33,7 +70,7 @@ initModel contextPath =
 -- API call to get the category tree
 
 
-getTargets : SupervisedTargetsModel -> Cmd Msg
+getTargets : SupervisedTargetsModel -> Cmd SupervisedTargetsMsg
 getTargets model =
     let
         url =
@@ -48,7 +85,7 @@ getTargets model =
                 , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
-                , expect = expectJson (DataTypes.SupervisedTargetsMsg << GetTargets) decodeApiCategory
+                , expect = expectJson GetTargets decodeApiCategory
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -60,7 +97,7 @@ getTargets model =
 --
 
 
-saveTargets : SupervisedTargetsModel -> Cmd Msg
+saveTargets : SupervisedTargetsModel -> Cmd SupervisedTargetsMsg
 saveTargets model =
     let
         req =
@@ -69,7 +106,7 @@ saveTargets model =
                 , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
                 , body = jsonBody (encodeTargets (getSupervisedIds model.allTargets))
-                , expect = expectJson (SaveTargets >> DataTypes.SupervisedTargetsMsg) decodeApiSave
+                , expect = expectJson SaveTargets decodeApiSave
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -156,7 +193,7 @@ encodeTargets targets =
 ------------------------------
 
 
-update : SupervisedTargetsMsg -> SupervisedTargetsModel -> ( SupervisedTargetsModel, Cmd Msg )
+update : SupervisedTargetsMsg -> SupervisedTargetsModel -> ( SupervisedTargetsModel, Cmd SupervisedTargetsMsg )
 update msg model =
     case msg of
         {--Api Calls message --}
@@ -224,7 +261,7 @@ updateTarget target cat =
 ------------------------------
 
 
-view : SupervisedTargetsModel -> Html Msg
+view : SupervisedTargetsModel -> Html SupervisedTargetsMsg
 view model =
     div [ id "supervisedTargets" ]
         [ h3 [ class "page-subtitle" ]
@@ -236,7 +273,7 @@ view model =
                         [ div [ class "row" ]
                             [ div [ class "col-xs-12" ]
                                 [ displayCategory model.allTargets
-                                , div [ class "card-footer" ] [ button [ onClick (SendSave |> DataTypes.SupervisedTargetsMsg), class "btn btn-success right" ] [ text "Save" ] ]
+                                , div [ class "card-footer" ] [ button [ onClick SendSave, class "btn btn-success right" ] [ text "Save" ] ]
                                 ]
                             ]
                         ]
@@ -247,7 +284,7 @@ view model =
         ]
 
 
-supervisedTargetsInfoSection : Html Msg
+supervisedTargetsInfoSection : Html msg
 supervisedTargetsInfoSection =
     createRightInfoSection
         [ p []
@@ -267,7 +304,7 @@ supervisedTargetsInfoSection =
         ]
 
 
-createRightInfoSection : List (Html Msg) -> Html Msg
+createRightInfoSection : List (Html msg) -> Html msg
 createRightInfoSection contents =
     div [ class "section-right" ]
         [ div [ class "doc doc-info" ]
@@ -275,19 +312,19 @@ createRightInfoSection contents =
         ]
 
 
-displaySubcategories : Subcategories -> List (Html Msg)
+displaySubcategories : Subcategories -> List (Html SupervisedTargetsMsg)
 displaySubcategories (Subcategories categories) =
     categories |> List.map (\cat -> displayCategory cat)
 
 
-displayCategory : Category -> Html Msg
+displayCategory : Category -> Html SupervisedTargetsMsg
 displayCategory category =
     let
-        subcats : List (Html Msg)
+        subcats : List (Html SupervisedTargetsMsg)
         subcats =
             displaySubcategories category.categories
 
-        targets : List (Html Msg)
+        targets : List (Html SupervisedTargetsMsg)
         targets =
             category.targets |> List.map (\target -> displayTarget target)
 
@@ -316,7 +353,7 @@ displayCategory category =
         ]
 
 
-displayTarget : Target -> Html Msg
+displayTarget : Target -> Html SupervisedTargetsMsg
 displayTarget target =
     li [ class "list-group-item" ]
         [ label [ class "node" ]
@@ -335,7 +372,7 @@ displayTarget target =
                 [ input
                     [ type_ "checkbox"
                     , checked target.supervised
-                    , onClick (DataTypes.SupervisedTargetsMsg (UpdateTarget { target | supervised = not target.supervised }))
+                    , onClick (UpdateTarget { target | supervised = not target.supervised })
                     ]
                     []
                 , span [ class "fa fa-check" ] []

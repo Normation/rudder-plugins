@@ -1,8 +1,15 @@
-module JsonUtils exposing (..)
+module JsonUtils exposing (Settings, decodeSetting, decodeWorkflowSettings, encodeSetting)
 
-import DataTypes exposing (ApiMsg, Settings, User, UserList, Username)
 import Json.Decode exposing (Decoder, at, bool, field, map4)
 import Json.Encode exposing (Value, object)
+
+
+type alias Settings =
+    { workflowEnabled : Bool
+    , selfValidation : Bool
+    , selfDeployment : Bool
+    , workflowValidateAll : Bool
+    }
 
 
 decodeSetting : String -> Decoder Bool

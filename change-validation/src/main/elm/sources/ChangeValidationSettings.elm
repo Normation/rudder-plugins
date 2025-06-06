@@ -1,17 +1,16 @@
-module ChangeValidationSettings exposing (..)
+module ChangeValidationSettings exposing (init)
 
-import ApiCalls exposing (getAllWorkflowSettings)
 import Browser
-import DataTypes exposing (Model, Msg(..), WorkflowSettingsModel, WorkflowUsersModel)
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, a, b, div, h3, i, li, p, span, text, ul)
 import Html.Attributes exposing (attribute, class, id, title)
 import Html.Events exposing (onClick)
+import Http exposing (Error, emptyBody, expectJson, header, request)
+import JsonUtils exposing (Settings, decodeWorkflowSettings)
 import Ports exposing (copyToClipboard, errorNotification)
-import SupervisedTargets exposing (getTargets)
-import View
-import WorkflowSettings
-import WorkflowUsers exposing (getUsers)
+import SupervisedTargets exposing (SupervisedTargetsModel, SupervisedTargetsMsg, getTargets)
+import WorkflowSettings exposing (WorkflowSettingsModel, WorkflowSettingsMsg)
+import WorkflowUsers exposing (WorkflowUsersModel, WorkflowUsersMsg, getUsers)
 
 
 
@@ -29,8 +28,8 @@ init flags =
     ( m
     , Cmd.batch
         [ getAllWorkflowSettings m
-        , getUsers m.workflowUsersModel
-        , getTargets m.supervisedTargetsModel
+        , Cmd.map WorkflowUsersMsg (getUsers m.workflowUsersModel)
+        , Cmd.map SupervisedTargetsMsg (getTargets m.supervisedTargetsModel)
         ]
     )
 
@@ -55,6 +54,29 @@ initModel contextPath hasWriteRights =
 
 
 ------------------------------
+-- MODEL                    --
+------------------------------
+
+
+type alias Model =
+    { contextPath : String
+    , workflowUsersModel : WorkflowUsersModel
+    , supervisedTargetsModel : SupervisedTargetsModel
+    , workflowSettingsModel : WorkflowSettingsModel
+    }
+
+
+type Msg
+    = WorkflowUsersMsg WorkflowUsersMsg
+    | SupervisedTargetsMsg SupervisedTargetsMsg
+    | WorkflowSettingsMsg WorkflowSettingsMsg
+      -- GET all workflow settings
+    | GetAllWorkflowSettings (Result Error Settings)
+    | CopyToClipboard String
+
+
+
+------------------------------
 -- VIEW
 ------------------------------
 
@@ -67,15 +89,10 @@ view model =
         , attribute "data-bs-target" "#navbar-changevalidation"
         , attribute "data-bs-smooth-scroll" "true"
         ]
-        [ workflowSettingsView model
+        [ Html.map WorkflowSettingsMsg (WorkflowSettings.view model.workflowSettingsModel)
         , emailNotificationsView
         , changeRequestTriggersView model
         ]
-
-
-workflowSettingsView : Model -> Html Msg
-workflowSettingsView model =
-    WorkflowSettings.view model.workflowSettingsModel
 
 
 emailNotificationsView : Html Msg
@@ -161,8 +178,8 @@ changeRequestTriggersView model =
             [ class "page-subtitle" ]
             [ text "Configure users with change validation" ]
         , div []
-            [ View.view model.workflowUsersModel
-            , SupervisedTargets.view model.supervisedTargetsModel
+            [ Html.map WorkflowUsersMsg (WorkflowUsers.view model.workflowUsersModel)
+            , Html.map SupervisedTargetsMsg (SupervisedTargets.view model.supervisedTargetsModel)
             ]
         ]
 
@@ -181,21 +198,21 @@ update msg model =
                 ( wuModel, wuCmd ) =
                     WorkflowUsers.update wuMsg model.workflowUsersModel
             in
-            ( { model | workflowUsersModel = wuModel }, wuCmd )
+            ( { model | workflowUsersModel = wuModel }, Cmd.map WorkflowUsersMsg wuCmd )
 
         SupervisedTargetsMsg stMsg ->
             let
                 ( stModel, stCmd ) =
                     SupervisedTargets.update stMsg model.supervisedTargetsModel
             in
-            ( { model | supervisedTargetsModel = stModel }, stCmd )
+            ( { model | supervisedTargetsModel = stModel }, Cmd.map SupervisedTargetsMsg stCmd )
 
         WorkflowSettingsMsg wsMsg ->
             let
                 ( wsModel, wsCmd ) =
                     WorkflowSettings.update wsMsg model.workflowSettingsModel
             in
-            ( { model | workflowSettingsModel = wsModel }, wsCmd )
+            ( { model | workflowSettingsModel = wsModel }, Cmd.map WorkflowSettingsMsg wsCmd )
 
         GetAllWorkflowSettings res ->
             case res of
@@ -216,6 +233,34 @@ update msg model =
 
         CopyToClipboard selection ->
             ( model, copyToClipboard selection )
+
+
+
+------------------------------
+-- API CALLS                --
+------------------------------
+
+
+getUrl : Model -> String -> String
+getUrl m url =
+    m.contextPath ++ "/secure/api/" ++ url
+
+
+getAllWorkflowSettings : Model -> Cmd Msg
+getAllWorkflowSettings model =
+    let
+        req =
+            request
+                { method = "GET"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model "settings"
+                , body = emptyBody
+                , expect = expectJson GetAllWorkflowSettings decodeWorkflowSettings
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
 
 
 

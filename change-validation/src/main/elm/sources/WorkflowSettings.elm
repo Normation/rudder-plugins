@@ -1,13 +1,58 @@
-module WorkflowSettings exposing (..)
+module WorkflowSettings exposing (ViewState, WorkflowSettingsModel, WorkflowSettingsMsg, initModel, initWorkflowSettingsView, update, view)
 
-import DataTypes exposing (Msg, Settings, ViewState(..), WorkflowSetting(..), WorkflowSettings, WorkflowSettingsForm, WorkflowSettingsModel, WorkflowSettingsMsg(..))
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, strong, text, ul)
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, style, type_, value)
 import Html.Events exposing (onClick)
 import Http exposing (Error, expectJson, header, jsonBody, request)
-import JsonUtils exposing (decodeSetting, encodeSetting)
+import JsonUtils exposing (Settings, decodeSetting, encodeSetting)
 import Ports exposing (errorNotification, successNotification)
+
+
+
+------------------------------
+-- MODEL                    --
+------------------------------
+
+
+type alias WorkflowSettingsModel =
+    { contextPath : String
+    , hasWriteRights : Bool
+    , viewState : ViewState
+    }
+
+
+type ViewState
+    = InitWorkflowSettingsView
+    | WorkflowSettingsView WorkflowSettingsForm
+
+
+type alias WorkflowSettingsForm =
+    { initSettings : WorkflowSettings
+    , formSettings : WorkflowSettings
+    }
+
+
+type alias WorkflowSettings =
+    { workflowEnabled : Bool
+    , selfValidation : Bool
+    , selfDeployment : Bool
+    }
+
+
+type WorkflowSetting
+    = WorkflowEnabled
+    | SelfValidation
+    | SelfDeployment
+
+
+type WorkflowSettingsMsg
+    = {--Messages for the change-validation settings list--}
+      -- SET workflow settings API call
+      SaveWorkflowSetting WorkflowSetting (Result Error Bool)
+      -- Edit form in view
+    | ToggleSetting WorkflowSetting
+    | SaveSettings
 
 
 
@@ -39,7 +84,7 @@ initWorkflowSettingsView settings =
 ------------------------------
 
 
-update : WorkflowSettingsMsg -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd Msg )
+update : WorkflowSettingsMsg -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd WorkflowSettingsMsg )
 update msg model =
     case msg of
         SaveWorkflowSetting setting result ->
@@ -78,7 +123,7 @@ settingText setting =
             "enable_self_deployment"
 
 
-updateSetting : Result Error Bool -> WorkflowSetting -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd Msg )
+updateSetting : Result Error Bool -> WorkflowSetting -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd WorkflowSettingsMsg )
 updateSetting result setting model =
     let
         settingName =
@@ -151,7 +196,7 @@ getUrl m url =
     m.contextPath ++ "/secure/api/" ++ url
 
 
-setSetting : WorkflowSettingsModel -> String -> (Result Http.Error Bool -> WorkflowSettingsMsg) -> Bool -> Cmd Msg
+setSetting : WorkflowSettingsModel -> String -> (Result Http.Error Bool -> WorkflowSettingsMsg) -> Bool -> Cmd WorkflowSettingsMsg
 setSetting model settingId msg newValue =
     let
         req =
@@ -160,7 +205,7 @@ setSetting model settingId msg newValue =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getUrl model ("settings/" ++ settingId)
                 , body = jsonBody (encodeSetting newValue)
-                , expect = expectJson (DataTypes.WorkflowSettingsMsg << msg) (decodeSetting settingId)
+                , expect = expectJson msg (decodeSetting settingId)
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -168,7 +213,7 @@ setSetting model settingId msg newValue =
     req
 
 
-saveWorkflowSetting : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettingsForm -> Cmd Msg
+saveWorkflowSetting : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettingsForm -> Cmd WorkflowSettingsMsg
 saveWorkflowSetting model setting form =
     let
         setter =
@@ -201,7 +246,7 @@ selfDepTooltip =
     "Allow users to deploy Change Requests they created themselves? Deploying is effectively applying a Change Request in the \"<b>Pending deployment</b>\" status."
 
 
-createRightInfoSection : List (Html Msg) -> Html Msg
+createRightInfoSection : List (Html msg) -> Html msg
 createRightInfoSection contents =
     div [ class "section-right" ]
         [ div [ class "doc doc-info" ]
@@ -209,7 +254,7 @@ createRightInfoSection contents =
         ]
 
 
-view : WorkflowSettingsModel -> Html Msg
+view : WorkflowSettingsModel -> Html WorkflowSettingsMsg
 view model =
     case model.viewState of
         InitWorkflowSettingsView ->
@@ -261,7 +306,7 @@ view model =
                 ]
 
 
-settingInput : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettings -> Html Msg
+settingInput : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettings -> Html WorkflowSettingsMsg
 settingInput model setting form =
     let
         mkTooltip sid tooltipDesc =
@@ -317,7 +362,7 @@ settingInput model setting form =
                     , id settingId
                     , checked isChecked
                     , disabled isDisabled
-                    , onClick (clickAction |> DataTypes.WorkflowSettingsMsg)
+                    , onClick clickAction
                     ]
                     []
                 , label [ class "label-radio", for settingId ]
@@ -329,7 +374,7 @@ settingInput model setting form =
         ]
 
 
-saveButton : Bool -> WorkflowSettingsForm -> Html Msg
+saveButton : Bool -> WorkflowSettingsForm -> Html WorkflowSettingsMsg
 saveButton hasWriteRights formState =
     if hasWriteRights then
         input
@@ -339,7 +384,7 @@ saveButton hasWriteRights formState =
             , class "btn btn-default"
             , value "Save change"
             , disabled (not (formModified formState))
-            , onClick (SaveSettings |> DataTypes.WorkflowSettingsMsg)
+            , onClick SaveSettings
             ]
             []
 
