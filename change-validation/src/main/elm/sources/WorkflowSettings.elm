@@ -6,8 +6,7 @@ import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, 
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, name, style, type_, value)
 import Html.Events exposing (onClick)
 import Http exposing (Error, expectJson, header, jsonBody, request)
-import JsonDecoders exposing (decodeSetting)
-import JsonEncoders exposing (encodeSetting)
+import JsonUtils exposing (decodeSetting, encodeSetting)
 import Ports exposing (errorNotification, successNotification)
 
 
@@ -18,13 +17,8 @@ import Ports exposing (errorNotification, successNotification)
 
 
 initModel : String -> Bool -> WorkflowSettingsModel
-initModel contextPath canWrite =
-    WorkflowSettingsModel contextPath canWrite InitWorkflowSettingsView
-
-
-initView : Settings -> WorkflowSettingsModel -> WorkflowSettingsModel
-initView settings model =
-    { model | viewState = initWorkflowSettingsView settings }
+initModel contextPath hasWriteRights =
+    WorkflowSettingsModel contextPath hasWriteRights InitWorkflowSettingsView
 
 
 initWorkflowSettingsView : Settings -> ViewState
@@ -48,23 +42,11 @@ initWorkflowSettingsView settings =
 update : WorkflowSettingsMsg -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd Msg )
 update msg model =
     case msg of
-        SaveWorkflowEnabledSetting result ->
-            model |> updateSetting result WorkflowEnabled
+        SaveWorkflowSetting setting result ->
+            model |> updateSetting result setting
 
-        SaveSelfValidationSetting result ->
-            model |> updateSetting result SelfValidation
-
-        SaveSelfDeploymentSetting result ->
-            model |> updateSetting result SelfDeployment
-
-        SwapWorkflowEnabled ->
-            ( model |> swapSettingOn WorkflowEnabled, Cmd.none )
-
-        SwapSelfValidation ->
-            ( model |> swapSettingOn SelfValidation, Cmd.none )
-
-        SwapSelfDeployment ->
-            ( model |> swapSettingOn SelfDeployment, Cmd.none )
+        ToggleSetting setting ->
+            ( model |> toggleSettingOn setting, Cmd.none )
 
         SaveSettings ->
             case model.viewState of
@@ -83,19 +65,24 @@ update msg model =
                     ( model, Cmd.batch cmdList )
 
 
+settingText : WorkflowSetting -> String
+settingText setting =
+    case setting of
+        WorkflowEnabled ->
+            "enable_change_request"
+
+        SelfValidation ->
+            "enable_self_validation"
+
+        SelfDeployment ->
+            "enable_self_deployment"
+
+
 updateSetting : Result Error Bool -> WorkflowSetting -> WorkflowSettingsModel -> ( WorkflowSettingsModel, Cmd Msg )
 updateSetting result setting model =
     let
         settingName =
-            case setting of
-                WorkflowEnabled ->
-                    "enable_change_request"
-
-                SelfValidation ->
-                    "enable_self_validation"
-
-                SelfDeployment ->
-                    "enable_self_deployment"
+            settingText setting
     in
     case result of
         Ok value ->
@@ -129,12 +116,12 @@ setSettingOn setting newValue model =
             { model | viewState = WorkflowSettingsView { initSettings = newSettings, formSettings = newSettings } }
 
 
-{-| Swap the current value of a setting in the view (when a given setting is clicked)
+{-| Toggle the current value of a setting in the view (when a given setting is clicked)
 -}
-swapSettingOn : WorkflowSetting -> WorkflowSettingsModel -> WorkflowSettingsModel
-swapSettingOn setting model =
+toggleSettingOn : WorkflowSetting -> WorkflowSettingsModel -> WorkflowSettingsModel
+toggleSettingOn setting model =
     let
-        swapSettingOnForm s f =
+        toggleSettingOnForm s f =
             case s of
                 WorkflowEnabled ->
                     { f | workflowEnabled = not f.workflowEnabled }
@@ -150,11 +137,7 @@ swapSettingOn setting model =
             model
 
         WorkflowSettingsView form ->
-            let
-                editedForm =
-                    swapSettingOnForm setting form.formSettings
-            in
-            { model | viewState = WorkflowSettingsView { form | formSettings = editedForm } }
+            { model | viewState = WorkflowSettingsView { form | formSettings = toggleSettingOnForm setting form.formSettings } }
 
 
 
@@ -187,15 +170,19 @@ setSetting model settingId msg newValue =
 
 saveWorkflowSetting : WorkflowSettingsModel -> WorkflowSetting -> WorkflowSettingsForm -> Cmd Msg
 saveWorkflowSetting model setting form =
+    let
+        setter =
+            setSetting model (settingText setting) (SaveWorkflowSetting setting)
+    in
     case setting of
         WorkflowEnabled ->
-            setSetting model "enable_change_request" SaveWorkflowEnabledSetting form.formSettings.workflowEnabled
+            setter form.formSettings.workflowEnabled
 
         SelfValidation ->
-            setSetting model "enable_self_validation" SaveSelfValidationSetting form.formSettings.selfValidation
+            setter form.formSettings.selfValidation
 
         SelfDeployment ->
-            setSetting model "enable_self_deployment" SaveSelfDeploymentSetting form.formSettings.selfDeployment
+            setter form.formSettings.selfDeployment
 
 
 
@@ -241,7 +228,7 @@ view model =
                                 , settingInput model SelfValidation settings.formSettings
                                 , settingInput model SelfDeployment settings.formSettings
                                 ]
-                            , saveButton model.canWrite settings
+                            , saveButton model.hasWriteRights settings
                             ]
                         ]
                     , createRightInfoSection
@@ -281,7 +268,7 @@ settingInput model setting form =
             span [ id (sid ++ "Tooltip") ]
                 [ span
                     [ class "fa fa-info-circle icon-info"
-                    , disabled (not model.canWrite)
+                    , disabled (not model.hasWriteRights)
                     , attribute "data-bs-toggle" "tooltip"
                     , attribute "data-bs-placement" "bottom"
                     , attribute "aria-label" tooltipDesc
@@ -304,13 +291,13 @@ settingInput model setting form =
         ( isChecked, isDisabled, clickAction ) =
             case setting of
                 WorkflowEnabled ->
-                    ( form.workflowEnabled, not model.canWrite, SwapWorkflowEnabled )
+                    ( form.workflowEnabled, not model.hasWriteRights, ToggleSetting WorkflowEnabled )
 
                 SelfValidation ->
-                    ( form.selfValidation, not model.canWrite || not form.workflowEnabled, SwapSelfValidation )
+                    ( form.selfValidation, not model.hasWriteRights || not form.workflowEnabled, ToggleSetting SelfValidation )
 
                 SelfDeployment ->
-                    ( form.selfDeployment, not model.canWrite || not form.workflowEnabled, SwapSelfDeployment )
+                    ( form.selfDeployment, not model.hasWriteRights || not form.workflowEnabled, ToggleSetting SelfDeployment )
 
         inputGroupClass =
             case isDisabled of
@@ -343,8 +330,8 @@ settingInput model setting form =
 
 
 saveButton : Bool -> WorkflowSettingsForm -> Html Msg
-saveButton canWrite formState =
-    if canWrite then
+saveButton hasWriteRights formState =
+    if hasWriteRights then
         input
             [ id "workflowSubmit"
             , name "workflowSubmit"

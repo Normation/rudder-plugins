@@ -1,6 +1,6 @@
 module ChangeValidationSettings exposing (..)
 
-import ApiCalls exposing (getAllWorkflowSettings, getUsers)
+import ApiCalls exposing (getAllWorkflowSettings)
 import Browser
 import DataTypes exposing (Model, Msg(..), WorkflowSettingsModel, WorkflowUsersModel)
 import ErrorMessages exposing (getErrorMessage)
@@ -11,7 +11,7 @@ import Ports exposing (copyToClipboard, errorNotification)
 import SupervisedTargets exposing (getTargets)
 import View
 import WorkflowSettings
-import WorkflowUsers
+import WorkflowUsers exposing (getUsers)
 
 
 
@@ -201,14 +201,15 @@ update msg model =
             case res of
                 Ok settings ->
                     let
-                        wsmodel =
-                            model.workflowSettingsModel |> WorkflowSettings.initView settings
+                        ( wsModel, wuModel ) =
+                            ( model.workflowSettingsModel, model.workflowUsersModel )
                     in
-                    let
-                        wumodel =
-                            model.workflowUsersModel |> WorkflowUsers.initValidateAllForm settings.workflowValidateAll
-                    in
-                    ( { model | workflowSettingsModel = wsmodel, workflowUsersModel = wumodel }, Cmd.none )
+                    ( { model
+                        | workflowSettingsModel = { wsModel | viewState = WorkflowSettings.initWorkflowSettingsView settings }
+                        , workflowUsersModel = { wuModel | validateAllView = WorkflowUsers.initValidateAllForm settings.workflowValidateAll }
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to get workflow settings : " ++ getErrorMessage error) )

@@ -49,8 +49,8 @@ type alias User =
 type alias WorkflowUsersModel =
     { contextPath : String
     , editMod : EditMod
-    , workflowUsersView : WorkflowUsersView
     , hasWriteRights : Bool
+    , workflowUsersView : WorkflowUsersView
     , validateAllView : ValidateAllView
     }
 
@@ -97,7 +97,7 @@ type alias FormState =
 
 type alias WorkflowSettingsModel =
     { contextPath : String
-    , canWrite : Bool
+    , hasWriteRights : Bool
     , viewState : ViewState
     }
 
@@ -193,7 +193,7 @@ type WorkflowUsersMsg
       {--API CALLS --}
       GetUsers (Result Error UserList)
     | RemoveUser (Result Error Username)
-    | SaveWorkflow (Result Error UserList)
+    | SaveWorkflowUsers (Result Error UserList)
     | CallApi (WorkflowUsersModel -> Cmd Msg)
       {--TABLE MANAGE CONTENT --}
     | LeftToRight
@@ -221,11 +221,7 @@ type SupervisedTargetsMsg
 type WorkflowSettingsMsg
     = {--Messages for the change-validation settings list--}
       -- SET workflow settings API call
-      SaveWorkflowEnabledSetting (Result Error Bool)
-    | SaveSelfValidationSetting (Result Error Bool)
-    | SaveSelfDeploymentSetting (Result Error Bool)
+      SaveWorkflowSetting WorkflowSetting (Result Error Bool)
       -- Edit form in view
-    | SwapWorkflowEnabled
-    | SwapSelfValidation
-    | SwapSelfDeployment
+    | ToggleSetting WorkflowSetting
     | SaveSettings

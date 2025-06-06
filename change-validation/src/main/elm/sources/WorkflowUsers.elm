@@ -2,6 +2,11 @@ module WorkflowUsers exposing (..)
 
 import DataTypes exposing (ColPos(..), EditMod(..), Msg, User, UserList, UserListField(..), Username, ValidateAllView(..), WorkflowUsersForm, WorkflowUsersModel, WorkflowUsersMsg(..), WorkflowUsersView(..))
 import ErrorMessages exposing (getErrorMessage)
+import Http exposing (emptyBody, expectJson, header, jsonBody, request)
+import Json.Decode exposing (Decoder, at, bool, list, string, succeed)
+import Json.Decode.Pipeline exposing (required)
+import Json.Encode exposing (Value, object)
+import JsonUtils exposing (decodeSetting, encodeSetting)
 import List exposing (filter, map, member)
 import Ports exposing (errorNotification, successNotification)
 import String
@@ -36,7 +41,7 @@ filterUnvalidatedUsers users =
 
 initModel : String -> Bool -> WorkflowUsersModel
 initModel contextPath hasWriteRights =
-    WorkflowUsersModel contextPath Off WorkflowUsersInitView hasWriteRights ValidateAllInitView
+    WorkflowUsersModel contextPath Off hasWriteRights WorkflowUsersInitView ValidateAllInitView
 
 
 
@@ -76,7 +81,7 @@ update msg model =
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to delete a validated users:" ++ getErrorMessage error) )
 
-        SaveWorkflow result ->
+        SaveWorkflowUsers result ->
             case result of
                 Ok updatedUsers ->
                     ( { model
@@ -212,13 +217,13 @@ update msg model =
         SaveValidateAllSetting result ->
             case result of
                 Ok newSetting ->
-                    ( model |> initValidateAllForm newSetting, successNotification "Successfully saved setting" )
+                    ( { model | validateAllView = initValidateAllForm newSetting }, successNotification "Successfully saved setting" )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to save validate_all_enabled setting :" ++ getErrorMessage error) )
 
-        ChangeValidateAllSetting enable_validate_all ->
-            ( { model | validateAllView = setValidateAll enable_validate_all model.validateAllView }, Cmd.none )
+        ChangeValidateAllSetting enableValidateAll ->
+            ( model |> setValidateAll enableValidateAll, Cmd.none )
 
 
 setUserListOn : UserListField -> UserList -> WorkflowUsersView -> WorkflowUsersView
@@ -295,24 +300,128 @@ mapUserList field f viewState =
             viewState
 
 
-initValidateAllForm : Bool -> WorkflowUsersModel -> WorkflowUsersModel
-initValidateAllForm validateAll model =
+initValidateAllForm : Bool -> ValidateAllView
+initValidateAllForm validateAll =
     let
         formState =
             { validateAll = validateAll }
     in
-    { model | validateAllView = ValidateAll { initValues = formState, formValues = formState } }
+    ValidateAll { initValues = formState, formValues = formState }
 
 
-setValidateAll : Bool -> ValidateAllView -> ValidateAllView
-setValidateAll newValue viewState =
-    case viewState of
-        ValidateAll formState ->
-            let
-                newFormState =
-                    { validateAll = newValue }
-            in
-            ValidateAll { formState | formValues = newFormState }
+setValidateAll : Bool -> WorkflowUsersModel -> WorkflowUsersModel
+setValidateAll newValue model =
+    let
+        setView viewState =
+            case viewState of
+                ValidateAll formState ->
+                    let
+                        newFormState =
+                            { validateAll = newValue }
+                    in
+                    ValidateAll { formState | formValues = newFormState }
 
-        _ ->
-            viewState
+                _ ->
+                    viewState
+    in
+    { model | validateAllView = setView model.validateAllView }
+
+
+
+------------------------------
+-- API CALLS                --
+------------------------------
+
+
+getUrl : WorkflowUsersModel -> String -> String
+getUrl m url =
+    m.contextPath ++ "/secure/api/" ++ url
+
+
+getUsers : WorkflowUsersModel -> Cmd Msg
+getUsers model =
+    let
+        req =
+            request
+                { method = "GET"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model "users"
+                , body = emptyBody
+                , expect = expectJson (DataTypes.WorkflowUsersMsg << GetUsers) decodeUserList
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+saveWorkflowUsers : List Username -> WorkflowUsersModel -> Cmd Msg
+saveWorkflowUsers usernames model =
+    let
+        req =
+            request
+                { method = "POST"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model "validatedUsers"
+                , body = jsonBody (encodeUsernames usernames)
+                , expect = expectJson (DataTypes.WorkflowUsersMsg << SaveWorkflowUsers) decodeUserList
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+setSetting : WorkflowUsersModel -> String -> (Result Http.Error Bool -> WorkflowUsersMsg) -> Bool -> Cmd Msg
+setSetting model settingId msg newValue =
+    let
+        req =
+            request
+                { method = "POST"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getUrl model ("settings/" ++ settingId)
+                , body = jsonBody (encodeSetting newValue)
+                , expect = expectJson (DataTypes.WorkflowUsersMsg << msg) (decodeSetting settingId)
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+saveValidateAllSetting : Bool -> WorkflowUsersModel -> Cmd Msg
+saveValidateAllSetting newValue model =
+    setSetting model "enable_validate_all" SaveValidateAllSetting newValue
+
+
+
+------------------------------
+-- JSON DECODERS            --
+------------------------------
+
+
+decodeUser : Decoder User
+decodeUser =
+    succeed User
+        |> required "username" string
+        |> required "isValidated" bool
+        |> required "userExists" bool
+
+
+decodeUserList : Decoder UserList
+decodeUserList =
+    at [ "data" ] (list decodeUser)
+
+
+
+------------------------------
+-- JSON ENCODERS            --
+------------------------------
+
+
+encodeUsernames : List Username -> Value
+encodeUsernames usernames =
+    object
+        [ ( "action", Json.Encode.string "addValidatedUsersList" )
+        , ( "validatedUsers", Json.Encode.list Json.Encode.string usernames )
+        ]

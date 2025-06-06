@@ -1,13 +1,12 @@
 module View exposing (..)
 
-import ApiCalls exposing (getUsers, saveValidateAllSetting, saveWorkflow)
 import DataTypes exposing (ColPos(..), EditMod(..), Msg(..), User, UserList, Username, ValidateAllView(..), WorkflowUsersForm, WorkflowUsersModel, WorkflowUsersMsg(..), WorkflowUsersView(..))
 import Html exposing (..)
 import Html.Attributes exposing (attribute, checked, class, disabled, for, id, style, type_, value)
 import Html.Events exposing (onCheck, onClick)
 import List exposing (isEmpty, length, member)
 import String exposing (fromInt)
-import WorkflowUsers exposing (getUsernames)
+import WorkflowUsers exposing (getUsernames, getUsers, saveValidateAllSetting, saveWorkflowUsers)
 
 
 type alias WorkflowUsersMsg =
@@ -304,7 +303,7 @@ displayLeftCol workflowUsersForm editMod =
                         button
                             [ id "save-workflow "
                             , class "btn btn-success btn-action-workflow"
-                            , onClick (CallApi (saveWorkflow (getUsernames workflowUsersForm.validatedUsers)) |> WorkflowUsersMsg)
+                            , onClick (CallApi (saveWorkflowUsers (getUsernames workflowUsersForm.validatedUsers)) |> WorkflowUsersMsg)
                             , type_ "button"
                             ]
                             [ text <| "Save" ]
