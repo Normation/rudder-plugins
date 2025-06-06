@@ -40,7 +40,10 @@ package com.normation.plugins.changevalidation.extension
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.web.ChooseTemplate
+import com.normation.rudder.web.snippet.TabUtils.AddTabMode
+import com.normation.rudder.web.snippet.TabUtils.AppendTab
 import com.normation.rudder.web.snippet.administration.Settings
+import net.liftweb.util.CssSel
 import scala.reflect.ClassTag
 import scala.xml.NodeSeq
 
@@ -50,6 +53,17 @@ class ChangeValidationTab(val status: PluginStatus)(implicit val ttag: ClassTag[
   private val template = ChooseTemplate("template" :: "ChangeValidationManagement" :: Nil, "component-body")
 
   override def pluginCompose(snippet: Settings): Map[String, NodeSeq => NodeSeq] = Map(
-    "body" -> Settings.addTab("changeValidationTab", "Change validation", template)
+    "body" -> addTabWithId("changeValidationTab", "changeValidationLinkTab", "Change validation", template)
   )
+
+  def addTabWithId(tabId: String, linkId: String, name: String, content: NodeSeq, mode: AddTabMode = AppendTab): CssSel =
+    mode(Settings.tabMenuId)(tabMenuWithId(tabId, linkId, name)) & Settings.addTabContent(tabId, content, mode)
+
+  private def tabMenuWithId(tabId: String, linkId: String, name: String) = {
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" id={linkId} data-bs-target={
+      "#" + tabId
+    } type="button" role="tab" aria-controls={tabId}>{name}</button>
+    </li>
+  }
 }

@@ -12,3 +12,6 @@ port errorNotification : String -> Cmd msg
 
 
 port readUrl : (String -> msg) -> Sub msg
+
+
+port copyToClipboard : String -> Cmd msg
