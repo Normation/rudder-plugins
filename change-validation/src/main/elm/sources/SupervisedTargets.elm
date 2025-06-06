@@ -1,4 +1,4 @@
-module SupervisedTargets exposing (Category, Subcategories, SupervisedTargetsModel, SupervisedTargetsMsg, Target, getTargets, initModel, update, view)
+module SupervisedTargets exposing (Category, Subcategories, SupervisedTargetsModel, SupervisedTargetsMsg, Target, initCmd, initModel, update, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (..)
@@ -22,6 +22,11 @@ import String
 initModel : String -> SupervisedTargetsModel
 initModel contextPath =
     SupervisedTargetsModel contextPath (Category "waiting for server data..." (Subcategories []) [])
+
+
+initCmd : SupervisedTargetsModel -> Cmd SupervisedTargetsMsg
+initCmd =
+    getTargets
 
 
 

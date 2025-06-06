@@ -8,9 +8,9 @@ import Html.Events exposing (onClick)
 import Http exposing (Error, emptyBody, expectJson, header, request)
 import JsonUtils exposing (Settings, decodeWorkflowSettings)
 import Ports exposing (copyToClipboard, errorNotification)
-import SupervisedTargets exposing (SupervisedTargetsModel, SupervisedTargetsMsg, getTargets)
-import WorkflowSettings exposing (WorkflowSettingsModel, WorkflowSettingsMsg)
-import WorkflowUsers exposing (WorkflowUsersModel, WorkflowUsersMsg, getUsers)
+import SupervisedTargets exposing (SupervisedTargetsModel, SupervisedTargetsMsg)
+import WorkflowSettings exposing (WorkflowSettingsModel, WorkflowSettingsMsg, updateSettings)
+import WorkflowUsers exposing (WorkflowUsersModel, WorkflowUsersMsg, updateSetting)
 
 
 
@@ -28,8 +28,8 @@ init flags =
     ( m
     , Cmd.batch
         [ getAllWorkflowSettings m
-        , Cmd.map WorkflowUsersMsg (getUsers m.workflowUsersModel)
-        , Cmd.map SupervisedTargetsMsg (getTargets m.supervisedTargetsModel)
+        , Cmd.map WorkflowUsersMsg (WorkflowUsers.initCmd m.workflowUsersModel)
+        , Cmd.map SupervisedTargetsMsg (SupervisedTargets.initCmd m.supervisedTargetsModel)
         ]
     )
 
@@ -222,8 +222,8 @@ update msg model =
                             ( model.workflowSettingsModel, model.workflowUsersModel )
                     in
                     ( { model
-                        | workflowSettingsModel = { wsModel | viewState = WorkflowSettings.initWorkflowSettingsView settings }
-                        , workflowUsersModel = { wuModel | validateAllView = WorkflowUsers.initValidateAllForm settings.workflowValidateAll }
+                        | workflowSettingsModel = wsModel |> updateSettings settings
+                        , workflowUsersModel = wuModel |> updateSetting settings.workflowValidateAll
                       }
                     , Cmd.none
                     )

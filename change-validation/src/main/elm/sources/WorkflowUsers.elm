@@ -1,4 +1,4 @@
-module WorkflowUsers exposing (EditMod, ValidateAllView, WorkflowUsersModel, WorkflowUsersMsg, WorkflowUsersView, getUsers, initModel, initValidateAllForm, update, view)
+module WorkflowUsers exposing (EditMod, ValidateAllView, WorkflowUsersModel, WorkflowUsersMsg, WorkflowUsersView, initCmd, initModel, update, updateSetting, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (..)
@@ -44,6 +44,11 @@ filterUnvalidatedUsers users =
 initModel : String -> Bool -> WorkflowUsersModel
 initModel contextPath hasWriteRights =
     WorkflowUsersModel contextPath Off hasWriteRights WorkflowUsersInitView ValidateAllInitView
+
+
+initCmd : WorkflowUsersModel -> Cmd WorkflowUsersMsg
+initCmd =
+    getUsers
 
 
 
@@ -327,7 +332,7 @@ update msg model =
         SaveValidateAllSetting result ->
             case result of
                 Ok newSetting ->
-                    ( { model | validateAllView = initValidateAllForm newSetting }, successNotification "Successfully saved setting" )
+                    ( model |> updateSetting newSetting, successNotification "Successfully saved setting" )
 
                 Err error ->
                     ( model, errorNotification ("An error occurred while trying to save validate_all_enabled setting :" ++ getErrorMessage error) )
@@ -410,13 +415,13 @@ mapUserList field f viewState =
             viewState
 
 
-initValidateAllForm : Bool -> ValidateAllView
-initValidateAllForm validateAll =
+updateSetting : Bool -> WorkflowUsersModel -> WorkflowUsersModel
+updateSetting validateAll model =
     let
         formState =
             { validateAll = validateAll }
     in
-    ValidateAll { initValues = formState, formValues = formState }
+    { model | validateAllView = ValidateAll { initValues = formState, formValues = formState } }
 
 
 setValidateAll : Bool -> WorkflowUsersModel -> WorkflowUsersModel

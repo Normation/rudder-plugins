@@ -1,4 +1,4 @@
-module WorkflowSettings exposing (ViewState, WorkflowSettingsModel, WorkflowSettingsMsg, initModel, initWorkflowSettingsView, update, view)
+module WorkflowSettings exposing (ViewState, WorkflowSettingsModel, WorkflowSettingsMsg, initModel, update, updateSettings, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, b, br, div, form, h3, i, input, label, li, p, span, strong, text, ul)
@@ -57,7 +57,7 @@ type WorkflowSettingsMsg
 
 
 ------------------------------
--- Init and main --
+-- INIT                     --
 ------------------------------
 
 
@@ -66,8 +66,8 @@ initModel contextPath hasWriteRights =
     WorkflowSettingsModel contextPath hasWriteRights InitWorkflowSettingsView
 
 
-initWorkflowSettingsView : Settings -> ViewState
-initWorkflowSettingsView settings =
+updateSettings : Settings -> WorkflowSettingsModel -> WorkflowSettingsModel
+updateSettings settings model =
     let
         formState =
             { workflowEnabled = settings.workflowEnabled
@@ -75,7 +75,7 @@ initWorkflowSettingsView settings =
             , selfDeployment = settings.selfDeployment
             }
     in
-    WorkflowSettingsView { initSettings = formState, formSettings = formState }
+    { model | viewState = WorkflowSettingsView { initSettings = formState, formSettings = formState } }
 
 
 
