@@ -25,15 +25,12 @@ import os
 import os.path
 import sys
 import csv
-import json
 import requests
 import configparser
 import urllib3
+import argparse
 sys.path.insert(0, "/opt/rudder/share/python")
-from docopt import docopt
 from pyzabbix import ZabbixAPI
-from pprint import pprint
-from requests.exceptions import HTTPError
 
 
 # Used to determine which IP will be given to Zabbix, from all the IPs Rudder sends us (any v4 that's not 127.0.0.1)
@@ -92,6 +89,28 @@ def update(conf, register, zapi):
 class MyConfigParser(configparser.ConfigParser):
     optionxform = lambda self, optionstr : optionstr
 
+def configure_cli():
+    parser = argparse.ArgumentParser(description='Zabbix Plugin CLI')
+
+    subparsers = parser.add_subparsers(dest='command')
+
+    # Parser for the 'update' command
+    subparsers.add_parser('update', help='Update help')
+
+    # Parser for the 'hook addHost' command
+    add_host_parser = subparsers.add_parser('hook_addHost', help='Add host help')
+    add_host_parser.add_argument('id', type=str, help='Host ID')
+
+    # Parser for the 'hook rmHost' command
+    rm_host_parser = subparsers.add_parser('hook_rmHost', help='Remove host help')
+    rm_host_parser.add_argument('host', type=str, help='Host to remove')
+
+    # Parser for the 'apply-configuration' command
+    subparsers.add_parser('apply-configuration', help='Apply configuration help')
+
+    args = parser.parse_args()
+    return args
+    
 if __name__ == "__main__":
     confFile = "/opt/rudder/etc/zabbix.conf"
     nodesTmp = "/var/ruuder/plugin-ressources/rudder_nodes.json"
@@ -102,6 +121,9 @@ if __name__ == "__main__":
     register = MyConfigParser()
     register.read(registerFile)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    ### Parse CLI
+    args = configure_cli()   
 
     try:
         zapi = ZabbixAPI(conf['ZABBIX']['ZabbixWebserviceURL'])
@@ -114,14 +136,13 @@ if __name__ == "__main__":
         print("[!] Unable to connect to the Zabbix API. Check your zabbix.conf")
         sys.exit(1)
 
-    args = docopt(__doc__)
-    if args['update']:
+    if args.command == 'update':
         update(conf, register, zapi)
         register.write(open(registerFile, "w"))
         print("[+] Done.")
 
     # adding new rudder node in zabbix hosts
-    elif args["hook"]:
+    elif args.command == 'hook_addHost':
         if args["addHost"]:
             node = getRequestToRudderAPI(conf, "/nodes/" + args["<id>"])["data"]["nodes"][0]
             zhosts = zapi.host.get()
@@ -132,7 +153,7 @@ if __name__ == "__main__":
                     register.add_section(node["hostname"])
 
         # delete host from zabbix if host is absent in rudder server
-        elif args["rmHost"]:
+        elif args.command == 'hook_rmHost':
             zhosts = zapi.host.get()
             rnodes = getRequestToRudderAPI(conf, "/nodes")["data"]["nodes"]
             for host in zapi.host.get(output="extend"):
@@ -143,7 +164,7 @@ if __name__ == "__main__":
                         register.remove_section(host["host"])
 
     # apply-configuration ( hosts - Templates - Macros)
-    elif args["apply-configuration"]:
+    elif args.command == 'apply-configuration':
         rootPath = '/var/rudder/shared-files/root/files'
         zabbixCsv = '/var/rudder/shared-files'
         zhosts = zapi.host.get()
