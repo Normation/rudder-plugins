@@ -586,32 +586,32 @@ displayFooter workflowUsersForm pos =
                 Right ->
                     (length workflowUsersForm.rightChecked == length workflowUsersForm.unvalidatedUsers) && not (isEmpty workflowUsersForm.rightChecked)
     in
-    div [ class "box-footer" ]
-        [ label [ class "all-items" ]
-            [ input
-                [ class ""
-                , onCheck (CheckAll pos)
-                , type_ "checkbox"
-                , value
-                    (case pos of
-                        Left ->
-                            fromInt (length workflowUsersForm.validatedUsers)
+    div [ class "box-footer form-check" ]
+        [ label [ class "all-items form-check-label" ] []
+        , input
+            [ class ""
+            , onCheck (CheckAll pos)
+            , type_ "checkbox"
+            , class "form-check-input"
+            , value
+                (case pos of
+                    Left ->
+                        fromInt (length workflowUsersForm.validatedUsers)
 
-                        Right ->
-                            fromInt (length workflowUsersForm.unvalidatedUsers)
-                    )
-                , checked isChecked
-                , disabled
-                    (case pos of
-                        Left ->
-                            isEmpty workflowUsersForm.validatedUsers
+                    Right ->
+                        fromInt (length workflowUsersForm.unvalidatedUsers)
+                )
+            , checked isChecked
+            , disabled
+                (case pos of
+                    Left ->
+                        isEmpty workflowUsersForm.validatedUsers
 
-                        Right ->
-                            isEmpty workflowUsersForm.unvalidatedUsers
-                    )
-                ]
-                []
+                    Right ->
+                        isEmpty workflowUsersForm.unvalidatedUsers
+                )
             ]
+            []
         , div [ id "nb-items", class "footer-infos nb-items" ]
             [ case pos of
                 Left ->
@@ -696,21 +696,23 @@ renderUserHelper user pos editMod workflowUsersForm =
                 Right ->
                     member user workflowUsersForm.rightChecked
 
-        content =
-            li [ class "li-box-content-user" ]
-                [ label [ style "vertical-align" "middle", style "display" "inline-block" ]
-                    [ if isEditActivate then
-                        input
-                            [ class "box-input-element center-box-element"
-                            , type_ "checkbox"
-                            , value user.username
-                            , checked isChecked
-                            ]
-                            []
-
-                      else
-                        div [ class "box-input-element center-box-element" ] []
+        input_ =
+            if isEditActivate then
+                input
+                    [ class "box-input-element center-box-element form-check-input"
+                    , type_ "checkbox"
+                    , value user.username
+                    , checked isChecked
                     ]
+                    []
+
+            else
+                div [ class "box-input-element center-box-element" ] []
+
+        content =
+            li [ class "li-box-content-user form-check" ]
+                [ input_
+                , label [ class "form-check-label" ] []
                 , div [ class "center-box-element" ] [ text <| user.username ]
                 , if not user.isInFile then
                     createInfoTootlip
