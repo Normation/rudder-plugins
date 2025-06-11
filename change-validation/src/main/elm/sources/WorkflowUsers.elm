@@ -448,9 +448,9 @@ setValidateAll newValue model =
 ------------------------------
 
 
-getUrl : WorkflowUsersModel -> String -> String
-getUrl m url =
-    m.contextPath ++ "/secure/api/" ++ url
+getUrl : { a | contextPath : String } -> String -> String
+getUrl { contextPath } url =
+    contextPath ++ "/secure/api/" ++ url
 
 
 getUsers : WorkflowUsersModel -> Cmd WorkflowUsersMsg

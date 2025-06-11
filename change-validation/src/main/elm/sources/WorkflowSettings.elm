@@ -191,9 +191,9 @@ toggleSettingOn setting model =
 ------------------------------
 
 
-getUrl : WorkflowSettingsModel -> String -> String
-getUrl m url =
-    m.contextPath ++ "/secure/api/" ++ url
+getUrl : { a | contextPath : String } -> String -> String
+getUrl { contextPath } url =
+    contextPath ++ "/secure/api/" ++ url
 
 
 setSetting : WorkflowSettingsModel -> String -> (Result Http.Error Bool -> WorkflowSettingsMsg) -> Bool -> Cmd WorkflowSettingsMsg

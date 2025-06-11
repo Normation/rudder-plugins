@@ -75,14 +75,16 @@ type SupervisedTargetsMsg
 -- API call to get the category tree
 
 
+getUrl : { a | contextPath : String } -> String -> String
+getUrl { contextPath } url =
+    contextPath ++ "/secure/api/" ++ url
+
+
 getTargets : SupervisedTargetsModel -> Cmd SupervisedTargetsMsg
 getTargets model =
     let
         url =
-            model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
-
-        headers =
-            []
+            getUrl model "changevalidation/supervised/targets"
 
         req =
             request
@@ -109,7 +111,7 @@ saveTargets model =
             request
                 { method = "POST"
                 , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
-                , url = model.contextPath ++ "/secure/api/changevalidation/supervised/targets"
+                , url = getUrl model "changevalidation/supervised/targets"
                 , body = jsonBody (encodeTargets (getSupervisedIds model.allTargets))
                 , expect = expectJson SaveTargets decodeApiSave
                 , timeout = Nothing
