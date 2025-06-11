@@ -171,7 +171,9 @@ changeRequestTriggersView model =
             , p []
                 [ text "Be careful: a change request is created when "
                 , b [] [ text "at least one" ]
-                , text " predicate matches, so an exempted user still need a change request in order to edit a node from a supervised group. "
+                , text " predicate matches, so an exempted user still need a change request in order to edit a node from a supervised group - unless the "
+                , b [] [ text "Validate all changes" ]
+                , text " setting is enabled (see below)."
                 ]
             ]
         , h3
