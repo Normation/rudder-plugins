@@ -1,6 +1,7 @@
 {
     "type": "application",
     "source-directories": [
+        "elm-stuff/gitdeps/github.com/Normation/rudder-elm-library.git/src",
         "sources"
     ],
     "elm-version": "0.19.1",
@@ -13,7 +14,10 @@
             "elm/http": "2.0.0",
             "elm/json": "1.1.3",
             "elm/regex": "1.0.0",
-            "elm-explorations/test": "2.2.0"
+            "elm-community/list-extra": "8.7.0",
+            "elm-explorations/test": "2.2.0",
+            "matthewsj/elm-ordering": "2.0.0",
+            "mgold/elm-nonempty-list": "4.2.0"
         },
         "indirect": {
             "elm/bytes": "1.0.8",

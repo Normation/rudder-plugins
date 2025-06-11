@@ -2,17 +2,33 @@ module ChangeRequestChangesForm exposing (..)
 
 import Browser
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, button, div, input, label, li, option, select, table, text, ul)
-import Html.Attributes exposing (attribute, class, id, name, placeholder, style, tabindex, type_, value)
+import Html exposing (Html, a, button, div, i, input, label, li, option, select, span, table, text, ul)
+import Html.Attributes exposing (attribute, class, href, id, name, placeholder, style, tabindex, type_, value)
 import Http exposing (Error, emptyBody, expectJson, header, request)
 import Json.Decode exposing (Decoder, andThen, at, fail, field, index, int, map4, string, succeed)
+import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
+import RudderDataTable
 
 
 
 ------------------------------
 -- INIT & MAIN
 ------------------------------
+
+
+data =
+    [ { action = "a"
+      , actor = "b"
+      , date = "23/5/2000"
+      , reason = Nothing
+      }
+    , { action = "yyyyy"
+      , actor = "zzzzz"
+      , date = "23/5/2000"
+      , reason = Nothing
+      }
+    ]
 
 
 main =
@@ -27,11 +43,27 @@ main =
 init : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
 init flags =
     let
+        table =
+            RudderDataTable.init
+                { columns =
+                    NonEmptyList.Nonempty
+                        { name = RudderDataTable.ColumnName "Action", accessor = .action }
+                        [ { name = RudderDataTable.ColumnName "Actor", accessor = .actor }
+                        , { name = RudderDataTable.ColumnName "Date", accessor = .date }
+                        , { name = RudderDataTable.ColumnName "Reason", accessor = .reason >> Maybe.withDefault "" }
+                        ]
+                , sortBy = Nothing
+                , sortOrder = Nothing
+                , filter = Nothing
+                }
+                data
+
         initModel =
             Model
                 flags.contextPath
                 ChangeRequestIdNotSet
                 NoView
+                table
     in
     ( initModel, Cmd.none )
 
@@ -46,12 +78,14 @@ type alias Model =
     { contextPath : String
     , changeRequest : ChangeRequestDetailsOpt
     , viewState : ViewState
+    , changesTableModel : RudderDataTable.Model TableRow
     }
 
 
 type Msg
     = GetChangeRequestIdFromUrl String
     | GetChangeRequestDetails (Result Error ChangeRequestDetails)
+    | ChangesTableMsg RudderDataTable.Msg
 
 
 type ViewState
@@ -70,6 +104,14 @@ type alias ChangeRequestDetails =
 type ChangeRequestDetailsOpt
     = Success ChangeRequestDetails
     | ChangeRequestIdNotSet
+
+
+type alias TableRow =
+    { action : String
+    , actor : String
+    , date : String
+    , reason : Maybe String
+    }
 
 
 
@@ -106,6 +148,13 @@ update msg model =
                     ( { model | viewState = ViewError errMsg }
                     , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
                     )
+
+        ChangesTableMsg tableMsg ->
+            let
+                ( updatedModel, cmd, _ ) =
+                    RudderDataTable.update tableMsg model.changesTableModel
+            in
+            ( { model | changesTableModel = updatedModel }, Cmd.map ChangesTableMsg cmd )
 
 
 
@@ -191,21 +240,14 @@ view : Model -> Html Msg
 view model =
     div [ id "changeRequestChanges" ]
         [ div [ id "changesContainer" ]
-            [ div [ id "changeSelector" ]
-                [ div [ id "changeTree" ]
-                    [ ul [] []
-                    ]
-                ]
+            [ div [ id "changeSelector" ] [ changeTree model ]
             , div [ id "changeDisplay" ]
                 [ ul
                     [ class "nav nav-underline"
                     , id "changeRequestTabMenu"
                     , attribute "role" "tablist"
                     ]
-                    [ li
-                        [ class "nav-item"
-                        , attribute "role" "presentation"
-                        ]
+                    [ li [ class "nav-item", attribute "role" "presentation" ]
                         [ button
                             [ attribute "aria-selected" "true"
                             , attribute "aria-controls" "historyTab"
@@ -217,10 +259,7 @@ view model =
                             ]
                             [ text "Change history" ]
                         ]
-                    , li
-                        [ class "nav-item"
-                        , attribute "role" "presentation"
-                        ]
+                    , li [ class "nav-item", attribute "role" "presentation" ]
                         [ button
                             [ attribute "aria-selected" "false"
                             , attribute "aria-controls" "diffTab"
@@ -242,53 +281,57 @@ view model =
                         , id "historyTab"
                         ]
                         [ div [ id "history" ]
-                            [ div
-                                [ id "changeHistory_wrapper"
-                                , class "dataTables_wrapper no-footer"
-                                ]
-                                [ div [ class "dataTables_wrapper_top" ]
-                                    [ div
-                                        [ id "changeHistory_filter"
-                                        , class "dataTables_filter"
-                                        ]
-                                        [ label []
-                                            [ input
-                                                [ type_ "search"
-                                                , class ""
-                                                , placeholder "Filter"
-                                                , attribute "aria_controls" "changeHistory"
-                                                ]
-                                                []
-                                            ]
-                                        ]
-                                    , div
-                                        [ class "dataTables_length"
-                                        , id "changeHistory_length"
-                                        ]
-                                        [ label []
-                                            [ text "Show "
-                                            , select
-                                                [ name "changeHistory_length"
-                                                , attribute "aria-controls" "changeHistory"
-                                                , class ""
-                                                ]
-                                                [ option [ value "10" ] [ text "10" ]
-                                                , option [ value "25" ] [ text "25" ]
-                                                , option [ value "50" ] [ text "50" ]
-                                                , option [ value "100" ] [ text "100" ]
-                                                ]
-                                            , text " entries"
-                                            ]
-                                        ]
-                                    , table [] []
-                                    ]
-                                ]
-                            ]
+                            [ changesTable model ]
                         ]
                     ]
                 ]
             ]
         ]
+
+
+changeTree : Model -> Html Msg
+changeTree model =
+    div
+        [ id "changeTree"
+        , class "jstree jstree-1 jstree-default"
+        , attribute "role" "tree"
+        , attribute "aria-multiselectable" "true"
+        , tabindex 0
+        , attribute "aria-activedescendant" "changes"
+        , attribute "aria-busy" "false"
+        ]
+        [ ul [ class "jstree-container-ul jstree-children", attribute "role" "presentation" ]
+            [ li
+                [ attribute "role" "none"
+                , attribute "data-jstree" "{ \"type\" : \"changeType\" }"
+                , id "changes"
+                , class "jstree-node  jstree-closed jstree-last"
+                ]
+                [ i [ class "jstree-icon jstree-ocl", attribute "role" "presentation" ] []
+                , a
+                    [ class "jstree-anchor"
+                    , href "#"
+                    , tabindex -1
+                    , attribute "role" "treeitem"
+                    , attribute "aria-selected" "false"
+                    , attribute "aria-level" "1"
+                    , attribute "aria-expanded" "false"
+                    ]
+                    [ i
+                        [ class "jstree-icon jstree-themeicon fa fa-folder jstree-themeicon-custom"
+                        , attribute "role" "presentation"
+                        ]
+                        []
+                    , span [] [ text "Changes" ]
+                    ]
+                ]
+            ]
+        ]
+
+
+changesTable : Model -> Html Msg
+changesTable model =
+    Html.map ChangesTableMsg (RudderDataTable.view model.changesTableModel)
 
 
 
