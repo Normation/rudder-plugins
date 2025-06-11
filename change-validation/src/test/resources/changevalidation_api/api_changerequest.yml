@@ -403,7 +403,8 @@ response:
                     "from" : false,
                     "to" : true
                   },
-                  "system" : false
+                  "system" : false,
+                  "policyMode" : null
                 }
               }
             ],
@@ -708,7 +709,11 @@ response:
                     "to" : "testing node group change"
                   },
                   "query" : {
-                    "to" : "{ returnType:'node' (identity) with 'And' criteria [] }"
+                    "to" : {
+                      "select" : "node",
+                      "composition" : "and",
+                      "where" : []
+                    }
                   },
                   "properties" : {
                     "from" : [
@@ -762,7 +767,8 @@ response:
                   "enabled" : {
                     "from" : true,
                     "to" : false
-                  }
+                  },
+                  "system" : false
                 }
               }
             ],
@@ -916,7 +922,9 @@ response:
                   "enabled" : {
                     "from" : true,
                     "to" : false
-                  }
+                  },
+                  "system" : false,
+                  "categoryId" : "rootRuleCategory"
                 }
               }
             ],
@@ -1467,7 +1475,8 @@ response:
                     "from" : false,
                     "to" : true
                   },
-                  "system" : false
+                  "system" : false,
+                  "policyMode" : null
                 }
               }
             ],
@@ -1772,7 +1781,11 @@ response:
                     "to" : "testing node group change"
                   },
                   "query" : {
-                    "to" : "{ returnType:'node' (identity) with 'And' criteria [] }"
+                    "to" : {
+                      "select" : "node",
+                      "composition" : "and",
+                      "where" : []
+                    }
                   },
                   "properties" : {
                     "from" : [
@@ -1826,7 +1839,8 @@ response:
                   "enabled" : {
                     "from" : true,
                     "to" : false
-                  }
+                  },
+                  "system" : false
                 }
               }
             ],
@@ -1995,7 +2009,9 @@ response:
                   "enabled" : {
                     "from" : true,
                     "to" : false
-                  }
+                  },
+                  "system" : false,
+                  "categoryId" : "rootRuleCategory"
                 }
               }
             ],
@@ -2544,7 +2560,8 @@ response:
                     "from" : false,
                     "to" : true
                   },
-                  "system" : false
+                  "system" : false,
+                  "policyMode" : null
                 }
               }
             ],
@@ -2849,7 +2866,11 @@ response:
                     "to" : "testing node group change"
                   },
                   "query" : {
-                    "to" : "{ returnType:'node' (identity) with 'And' criteria [] }"
+                    "to" : {
+                      "select" : "node",
+                      "composition" : "and",
+                      "where" : []
+                    }
                   },
                   "properties" : {
                     "from" : [
@@ -2903,7 +2924,8 @@ response:
                   "enabled" : {
                     "from" : true,
                     "to" : false
-                  }
+                  },
+                  "system" : false
                 }
               }
             ],

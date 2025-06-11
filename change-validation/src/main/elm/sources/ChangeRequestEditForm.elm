@@ -6,11 +6,11 @@ module ChangeRequestEditForm exposing (..)
 
 import Browser
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, a, div, form, h2, h3, input, label, p, span, text, textarea)
+import Html exposing (Html, a, div, form, h2, h3, input, label, span, text, textarea)
 import Html.Attributes exposing (class, disabled, for, href, id, maxlength, name, readonly, required, style, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Events exposing (onClick, onInput)
 import Http exposing (Error, emptyBody, expectJson, header, jsonBody, request)
-import Json.Decode exposing (Decoder, andThen, at, fail, field, index, int, map3, map4, map5, string, succeed)
+import Json.Decode exposing (Decoder, andThen, at, fail, field, index, int, map4, string, succeed)
 import Json.Encode as Encode
 import Ports exposing (errorNotification, readUrl, successNotification)
 
