@@ -46,6 +46,8 @@ import com.normation.eventlog.EventActor
 import com.normation.plugins.changevalidation.ChangeValidationLogger
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
+import com.normation.rudder.AuthorizationType.Deployer
+import com.normation.rudder.AuthorizationType.Validator
 import com.normation.rudder.domain.eventlog.AddChangeRequest
 import com.normation.rudder.domain.eventlog.DeleteChangeRequest
 import com.normation.rudder.domain.eventlog.ModifyChangeRequest
@@ -181,11 +183,13 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
   }
 
   def displayActionButton(cr: ChangeRequest, step: WorkflowNodeId)(implicit qc: QueryContext): NodeSeq = {
-    val authz   = Nil // we are sideStepping it, see: https://issues.rudder.io/issues/22595
-    val isOwner = cr.owner == CurrentUser.actor.name
+    val authz                   = Nil // we are sideStepping it, see: https://issues.rudder.io/issues/22595
+    val isOwner                 = cr.owner == CurrentUser.actor.name
+    val hasValidatorWriteRights = CurrentUser.checkRights(Validator.Write)
+    val hasDeployerWriteRights  = CurrentUser.checkRights(Deployer.Write)
 
     ("#backStep" #> {
-      workflowService.findBackSteps(authz, step, isOwner) match {
+      workflowService.findBackSteps(authz, step, isOwner, hasValidatorWriteRights, hasDeployerWriteRights) match {
         case Nil   =>
           ChangeValidationLogger.trace(
             s"- no back step found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
@@ -203,7 +207,7 @@ class ChangeRequestDetails extends DispatchSnippet with Loggable {
       }
     } &
     "#nextStep" #> {
-      workflowService.findNextSteps(authz, step, isOwner) match {
+      workflowService.findNextSteps(authz, step, isOwner, hasValidatorWriteRights, hasDeployerWriteRights) match {
         case NoWorkflowAction                                             =>
           ChangeValidationLogger.trace(
             s"- no next step found for user '${CurrentUser.actor.name}' for CR #${cr.id.value} for step '${step}' (user is owner: ${isOwner})"
