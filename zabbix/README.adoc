@@ -29,6 +29,11 @@ when the corresponding node is set up for monitoring in Rudder.
 
 * Install the plugin on your Rudder server
 
+* Install the dependances
+```
+$ apt install python3-packaging python3-requests
+```
+
 * Edit the configuration file `/opt/rudder/etc/zabbix.conf`. This config file has to contain your Zabbix
   server's webservice API URL and the credentials to access it.
   You also need to provide the Rudder API URL, and a token to access it, which you will need to issue :
