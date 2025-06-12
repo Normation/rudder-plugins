@@ -370,7 +370,7 @@ class ChangeRequestApiImpl(
           optStep     = nextSteps.actions.find(_._1 == targetStep)
           stepFunc   <-
             optStep.notOptional(
-              s"Could not accept ChangeRequest ${id} details cause is: you could not send Change Request from '${step.value}' to '${targetStep.value}'. Allowed steps are ${nextSteps}"
+              s"Could not accept ChangeRequest ${id} details cause is: you could not send Change Request from '${step.value}' to '${targetStep.value}'"
             )
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
