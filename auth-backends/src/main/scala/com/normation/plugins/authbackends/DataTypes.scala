@@ -127,10 +127,10 @@ object JsonSerialization {
  * - remove: completely remove the HTML for the form
  */
 sealed trait LoginFormRendering extends EnumEntry                { def name: String }
-final object LoginFormRendering extends Enum[LoginFormRendering] {
-  final case object Show   extends LoginFormRendering { val name = "show"   }
-  final case object Hide   extends LoginFormRendering { val name = "hide"   }
-  final case object Remove extends LoginFormRendering { val name = "remove" }
+object LoginFormRendering       extends Enum[LoginFormRendering] {
+  case object Show   extends LoginFormRendering { val name = "show"   }
+  case object Hide   extends LoginFormRendering { val name = "hide"   }
+  case object Remove extends LoginFormRendering { val name = "remove" }
 
   def values = findValues
 

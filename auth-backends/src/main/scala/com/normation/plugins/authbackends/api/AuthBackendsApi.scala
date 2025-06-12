@@ -71,8 +71,8 @@ sealed trait AuthBackendsApi extends EnumEntry with EndpointSchema with Internal
 
 object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[AuthBackendsApi] {
 
-  final case object GetAuthenticationInformation extends AuthBackendsApi with ZeroParam with StartsAtVersion10 {
-    val z              = implicitly[Line].value
+  case object GetAuthenticationInformation extends AuthBackendsApi with ZeroParam with StartsAtVersion10 {
+    val z: Int = implicitly[Line].value
     val description    = "Get information about current authentication configuration"
     val (action, path) = GET / "authbackends" / "current-configuration"
 
@@ -80,8 +80,8 @@ object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[Auth
     override def dataContainer: Option[String]          = None
   }
 
-  def endpoints = values.toList.sortBy(_.z)
-  def values    = findValues
+  def endpoints: List[AuthBackendsApi] = values.toList.sortBy(_.z)
+  def values = findValues
 }
 
 class AuthBackendsApiImpl(
@@ -92,13 +92,7 @@ class AuthBackendsApiImpl(
   def schemas: ApiModuleProvider[AuthBackendsApi] = AuthBackendsApi
 
   def getLiftEndpoints(): List[LiftApiModule] = {
-    AuthBackendsApi.endpoints
-      .map(e => {
-        e match {
-          case AuthBackendsApi.GetAuthenticationInformation => GetAuthenticationInformation
-        }
-      })
-      .toList
+    AuthBackendsApi.endpoints.map { case AuthBackendsApi.GetAuthenticationInformation => GetAuthenticationInformation }
   }
 
   /*
@@ -110,7 +104,7 @@ class AuthBackendsApiImpl(
     val schema: AuthBackendsApi.GetAuthenticationInformation.type = AuthBackendsApi.GetAuthenticationInformation
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      import JsonSerialization.*
+      import com.normation.plugins.authbackends.JsonSerialization.*
 
       IOResult
         .attempt("Error when trying to get group information")(

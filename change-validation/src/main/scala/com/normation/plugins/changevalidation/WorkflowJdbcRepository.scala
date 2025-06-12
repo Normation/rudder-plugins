@@ -69,18 +69,22 @@ trait WoWorkflowRepository {
 }
 
 trait RoWorkflowJdbcRepositorySQL {
+
+  implicit val crRead: Read[ChangeRequestId] = Read[Int].map(x => ChangeRequestId(x))
+  implicit val wfRead: Read[WorkflowNodeId]  = Read[String].map(x => WorkflowNodeId(x))
+
   def getAllByStateSQL(state: WorkflowNodeId): Query0[ChangeRequestId] = {
-    sql"select id from workflow where state = $state".query[ChangeRequestId]
+    sql"select id from workflow where state = ${state.value}".query[ChangeRequestId]
   }
 
   def getCountByStateSQL(filter: NonEmptyList[WorkflowNodeId]): Query0[(WorkflowNodeId, Long)] = {
-    val f = fragments.in(fr"state", filter)
+    val f = fragments.in(fr"state", filter.map(_.value))
     sql"select state,count(distinct(id)) from workflow where ${f} group by state"
       .query[(WorkflowNodeId, Long)]
   }
 
   def getStateOfChangeRequestSQL(crId: ChangeRequestId): Query0[WorkflowNodeId] = {
-    sql"select state from workflow where id = $crId".query[WorkflowNodeId]
+    sql"select state from workflow where id = ${crId.value}".query[WorkflowNodeId]
   }
 
   def getAllChangeRequestsStateSQL: Query0[(ChangeRequestId, WorkflowNodeId)] = {
@@ -90,17 +94,17 @@ trait RoWorkflowJdbcRepositorySQL {
 
 trait WoWorkflowJdbcRepositorySQL {
   def createWorkflowSQL(crId: ChangeRequestId, state: WorkflowNodeId): Update0 = {
-    sql"insert into workflow (id, state) values ($crId, $state)".update
+    sql"insert into workflow (id, state) values (${crId.value}, ${state.value})".update
   }
 
   def updateStateSQL(crId: ChangeRequestId, from: WorkflowNodeId, state: WorkflowNodeId): Update0 = {
-    sql"update workflow set state = $state where id = $crId".update
+    sql"update workflow set state = ${state.value} where id = ${crId.value}".update
   }
 }
 object WorkflowJdbcRepositorySQL extends RoWorkflowJdbcRepositorySQL with WoWorkflowJdbcRepositorySQL {}
 
 class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with Loggable {
-  import WorkflowJdbcRepositorySQL.*
+  import com.normation.plugins.changevalidation.WorkflowJdbcRepositorySQL.*
   import doobie.*
 
   def getAllByState(state: WorkflowNodeId): IOResult[Seq[ChangeRequestId]] = {
@@ -140,7 +144,7 @@ class RoWorkflowJdbcRepository(doobie: Doobie) extends RoWorkflowRepository with
 }
 
 class WoWorkflowJdbcRepository(doobie: Doobie) extends WoWorkflowRepository with Loggable {
-  import WorkflowJdbcRepositorySQL.*
+  import com.normation.plugins.changevalidation.WorkflowJdbcRepositorySQL.*
   import doobie.*
 
   def createWorkflow(crId: ChangeRequestId, state: WorkflowNodeId): IOResult[WorkflowNodeId] = {

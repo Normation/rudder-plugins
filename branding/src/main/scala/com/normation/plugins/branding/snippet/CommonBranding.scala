@@ -51,18 +51,18 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
     extends PluginExtensionPoint[CommonLayout] with Loggable {
 
   def pluginCompose(snippet: CommonLayout): Map[String, NodeSeq => NodeSeq] = Map(
-    "display" -> display _
+    "display" -> display
   )
 
   private[this] val confRepo = BrandingPluginConf.brandingConfService
 
-  def display(xml: NodeSeq) = {
+  def display(xml: NodeSeq): NodeSeq = {
     val data                                          = confRepo.getConf.either.runNow
     val bar                                           = data match {
       case Right(d) if (d.displayBar) =>
         <div id="headerBar">
         <div class="background">
-          <span>{if (d.displayLabel) d.labelText}</span>
+          <span>{if (d.displayLabel) d.labelText else ""}</span>
         </div>
         <style>
           .main-header {{top:30px }}
@@ -154,9 +154,9 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
     val commonBrandingCss: NodeSeq = data match {
       case Right(d) =>
         (d.wideLogo.enable, d.wideLogo.data, d.smallLogo.enable, d.smallLogo.data) match {
-          case (true, Some(wideLogoData), _, _)  => style
-          case (_, _, true, Some(smallLogoData)) => style
-          case _                                 => NodeSeq.Empty
+          case (true, Some(_), _, _) => style
+          case (_, _, true, Some(_)) => style
+          case _                     => NodeSeq.Empty
         }
       case _        => NodeSeq.Empty
     }

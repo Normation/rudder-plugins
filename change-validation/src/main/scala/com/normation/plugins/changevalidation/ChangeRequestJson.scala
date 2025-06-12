@@ -417,9 +417,9 @@ object DirectiveChangeJson {
   ): PartialTransformer[ChangeRequestDirectiveDiff, DirectiveChangeJson] = {
     PartialTransformer
       .define[ChangeRequestDirectiveDiff, DirectiveChangeJson]
-      .withCoproductInstance[AddDirectiveDiff](_.transformInto[DirectiveCreateChangeJson])
-      .withCoproductInstance[DeleteDirectiveDiff](_.transformInto[DirectiveDeleteChangeJson])
-      .withCoproductInstancePartial[ModifyToDirectiveDiff](_.transformIntoPartial[DirectiveModifyChangeJson])
+      .withSealedSubtypeHandled[AddDirectiveDiff](_.transformInto[DirectiveCreateChangeJson])
+      .withSealedSubtypeHandled[DeleteDirectiveDiff](_.transformInto[DirectiveDeleteChangeJson])
+      .withSealedSubtypeHandledPartial[ModifyToDirectiveDiff](_.transformIntoPartial[DirectiveModifyChangeJson])
       .buildTransformer
   }
 
@@ -554,9 +554,9 @@ object RuleChangeJson {
   ): PartialTransformer[ChangeRequestRuleDiff, RuleChangeJson] = {
     PartialTransformer
       .define[ChangeRequestRuleDiff, RuleChangeJson]
-      .withCoproductInstance[AddRuleDiff](_.transformInto[RuleCreateChangeJson])
-      .withCoproductInstance[DeleteRuleDiff](_.transformInto[RuleDeleteChangeJson])
-      .withCoproductInstancePartial[ModifyToRuleDiff](_.transformIntoPartial[RuleModifyChangeJson])
+      .withSealedSubtypeHandled[AddRuleDiff](_.transformInto[RuleCreateChangeJson])
+      .withSealedSubtypeHandled[DeleteRuleDiff](_.transformInto[RuleDeleteChangeJson])
+      .withSealedSubtypeHandledPartial[ModifyToRuleDiff](_.transformIntoPartial[RuleModifyChangeJson])
       .buildTransformer
   }
 
@@ -757,9 +757,9 @@ object GroupChangeJson {
   ): PartialTransformer[ChangeRequestNodeGroupDiff, GroupChangeJson] = {
     PartialTransformer
       .define[ChangeRequestNodeGroupDiff, GroupChangeJson]
-      .withCoproductInstance[AddNodeGroupDiff](_.transformInto[GroupCreateChangeJson])
-      .withCoproductInstance[DeleteNodeGroupDiff](_.transformInto[GroupDeleteChangeJson])
-      .withCoproductInstancePartial[ModifyToNodeGroupDiff](_.transformIntoPartial[GroupModifyChangeJson])
+      .withSealedSubtypeHandled[AddNodeGroupDiff](_.transformInto[GroupCreateChangeJson])
+      .withSealedSubtypeHandled[DeleteNodeGroupDiff](_.transformInto[GroupDeleteChangeJson])
+      .withSealedSubtypeHandledPartial[ModifyToNodeGroupDiff](_.transformIntoPartial[GroupModifyChangeJson])
       .buildTransformer
   }
 

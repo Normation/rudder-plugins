@@ -2,7 +2,6 @@ package com.normation.plugins.changevalidation
 
 import better.files.File
 import com.normation.errors.*
-import com.normation.plugins.changevalidation.ChangeValidationLoggerPure
 import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.FullNodeGroupCategory

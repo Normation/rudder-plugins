@@ -14,8 +14,10 @@ import zio.syntax.*
 
 trait RoValidatedUserJdbcRepositorySQL {
 
+  implicit val actorRead: Read[EventActor] = Read[String].map(s => EventActor(s))
+
   def getSQL(actor: EventActor): Query0[EventActor] = {
-    sql"""SELECT username FROM change_validation_validated_users where username = $actor""".query[EventActor]
+    sql"""SELECT username FROM change_validation_validated_users where username = ${actor.name}""".query[EventActor]
   }
 
   def getValidatedUsersSQL: Query0[EventActor] = {
@@ -96,8 +98,8 @@ class WoValidatedUserJdbcRepository(
     roRepo
       .get(EventActor(newVU.name))
       .flatMap {
-        case Some(EventActor(name)) => newVU.succeed // already validated
-        case None                   =>
+        case Some(EventActor(_)) => newVU.succeed // already validated
+        case None                =>
           transactIOResult(s"Creation of validated user ${newVU.name} have failed")(xa =>
             createUserSQL(newVU).run.transact(xa)
           ).flatMap {
@@ -135,8 +137,8 @@ class WoValidatedUserJdbcRepository(
         val toRemove    = actualUsers.diff(newUsers)
         val toAdd       = newUsers.diff(actualUsers)
 
-        ZIO.foreach(toRemove)(deleteUser(_)) *>
-        ZIO.foreach(toAdd)(createUser(_)) *>
+        ZIO.foreach(toRemove)(deleteUser) *>
+        ZIO.foreach(toAdd)(createUser) *>
         roRepo.getUsers()
       })
       .chainError("Error when trying to get all validated user to save workflow's users")

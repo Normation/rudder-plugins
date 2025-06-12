@@ -56,7 +56,6 @@ import com.normation.rudder.domain.nodes.NodeGroup
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.*
-import com.normation.rudder.domain.properties.GroupProperty
 import com.normation.rudder.domain.queries.Query
 import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.facts.nodes.QueryContext

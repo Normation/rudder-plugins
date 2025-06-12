@@ -61,8 +61,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
    * And then the simpler on datasource CRUD
    */
 
-  final case object ReloadAllDatasourcesAllNodes extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ReloadAllDatasourcesAllNodes extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Reload all datasources for all nodes"
     val (action, path) = POST / "datasources" / "reload" / "node"
 
@@ -70,8 +70,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object ReloadAllDatasourcesOneNode extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ReloadAllDatasourcesOneNode extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Reload all datasources for the given node"
     val (action, path) = POST / "datasources" / "reload" / "node" / "{nodeid}"
 
@@ -79,8 +79,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object ReloadOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ReloadOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Reload this given datasources for all nodes"
     val (action, path) = POST / "datasources" / "reload" / "{datasourceid}"
 
@@ -88,8 +88,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object ReloadOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ReloadOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Reload the given datasource for the given node"
     val (action, path) = POST / "datasources" / "reload" / "{datasourceid}" / "node" / "{nodeid}"
 
@@ -97,8 +97,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object ClearValueOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ClearValueOneDatasourceAllNodes extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Clear node property values on all nodes for given datasource"
     val (action, path) = POST / "datasources" / "clear" / "{datasourceid}"
 
@@ -106,8 +106,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object ClearValueOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object ClearValueOneDatasourceOneNode extends DataSourceApi with TwoParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Clear node property value set by given datasource on given node"
     val (action, path) = POST / "datasources" / "clear" / "{datasourceid}" / "node" / "{nodeid}"
 
@@ -115,8 +115,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object GetAllDataSources extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object GetAllDataSources extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Get the list of all defined datasources"
     val (action, path) = GET / "datasources"
 
@@ -124,8 +124,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
-  final case object GetDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object GetDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Get information about the given datasource"
     val (action, path) = GET / "datasources" / "{datasourceid}"
 
@@ -133,8 +133,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Administration.Read)
   }
 
-  final case object DeleteDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object DeleteDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Delete given datasource"
     val (action, path) = DELETE / "datasources" / "{datasourceid}"
 
@@ -142,8 +142,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object CreateDataSource extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object CreateDataSource extends DataSourceApi with ZeroParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Create given datasource"
     val (action, path) = PUT / "datasources"
 
@@ -151,8 +151,8 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  final case object UpdateDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
-    val z              = implicitly[Line].value
+  case object UpdateDataSource extends DataSourceApi with OneParam with StartsAtVersion9 with SortIndex {
+    val z: Int = implicitly[Line].value
     val description    = "Update information about the given datasource"
     val (action, path) = POST / "datasources" / "{datasourceid}"
 
@@ -160,6 +160,6 @@ object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[Da
     val authz:                  List[AuthorizationType] = AuthorizationType.Administration.Write :: Nil
   }
 
-  def endpoints = values.toList.sortBy(_.z)
-  def values    = findValues
+  def endpoints: List[DataSourceApi] = values.toList.sortBy(_.z)
+  def values = findValues
 }

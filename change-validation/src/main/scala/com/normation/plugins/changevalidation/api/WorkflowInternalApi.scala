@@ -71,8 +71,8 @@ import zio.syntax.ToZio
 sealed trait WorkflowInternalApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
 object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModuleProvider[WorkflowInternalApi] {
 
-  final case object PendingChangeRequestCount extends WorkflowInternalApi with ZeroParam with StartsAtVersion21 with SortIndex {
-    val z              = implicitly[Line].value
+  case object PendingChangeRequestCount extends WorkflowInternalApi with ZeroParam with StartsAtVersion21 with SortIndex {
+    val z: Int = implicitly[Line].value
     val (action, path) = GET / "changevalidation" / "workflow" / "pendingCountByStatus"
     val description    =
       "Get total count of change requests in each state, i.e. PendingValidation and PendingDeployment"

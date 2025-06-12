@@ -37,8 +37,6 @@
 package com.normation.plugins.branding
 
 import better.files.*
-import com.normation.plugins.branding.BrandingConf
-import com.normation.plugins.branding.BrandingConfService
 import com.normation.zio.UnsafeRun
 import org.junit.runner.RunWith
 import org.specs2.mutable.Specification

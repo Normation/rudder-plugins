@@ -37,9 +37,9 @@
 
 package com.normation.plugins.datasources
 
-import DataSourceJsonCodec.*
 import cats.implicits.*
 import com.normation.errors.*
+import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.repository.json.JsonExtractorUtils
 import com.normation.rudder.rest.RudderJsonRequest.*
@@ -63,10 +63,10 @@ import zio.json.ast.Json
 
 object Translate {
   implicit class DurationToScala(d: Duration) {
-    def toScala = FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
+    def toScala: FiniteDuration = FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
   }
 }
-import Translate.*
+import com.normation.plugins.datasources.Translate.*
 
 /**
  * All the content of the datasource without it's id
@@ -160,8 +160,8 @@ object FullDataSource {
 
 sealed trait FullDataSourceHttpMethod { def name: String }
 object FullDataSourceHttpMethod       {
-  final case object GET  extends FullDataSourceHttpMethod { val name = "GET"  }
-  final case object POST extends FullDataSourceHttpMethod { val name = "POST" }
+  case object GET  extends FullDataSourceHttpMethod { val name = "GET"  }
+  case object POST extends FullDataSourceHttpMethod { val name = "POST" }
 
   implicit val transformerFrom: Transformer[FullDataSourceHttpMethod, HttpMethod] =
     Transformer.derive[FullDataSourceHttpMethod, HttpMethod]
@@ -201,7 +201,7 @@ object FullDataSourceType {
   implicit val transformerFrom: Transformer[FullDataSourceType, DataSourceType] = {
     Transformer
       .define[FullDataSourceType, DataSourceType]
-      .withCoproductInstance[FullDataSourceType] {
+      .withSealedSubtypeHandled[FullDataSourceType] {
         case http: FullDataSourceParameterHttp => http.parameters.transformInto[DataSourceType.HTTP]
       }
       .buildTransformer
@@ -210,7 +210,7 @@ object FullDataSourceType {
   implicit val transformerTo: Transformer[DataSourceType, FullDataSourceType] = {
     Transformer
       .define[DataSourceType, FullDataSourceType]
-      .withCoproductInstance[DataSourceType] {
+      .withSealedSubtypeHandled[DataSourceType] {
         case http: DataSourceType.HTTP => FullDataSourceParameterHttp(http.transformInto[FullDataSourceHttpType])
       }
       .buildTransformer
@@ -221,7 +221,7 @@ object FullDataSourceType {
 object FullDataSourceHttpType {
   final case class MaxParallelRequest(value: Int) extends AnyVal
   object MaxParallelRequest {
-    val default = MaxParallelRequest(DataSourceType.HTTP.defaultMaxParallelRequest)
+    val default: MaxParallelRequest = MaxParallelRequest(DataSourceType.HTTP.defaultMaxParallelRequest)
   }
 
   implicit val transformerFrom: Transformer[FullDataSourceHttpType, DataSourceType.HTTP] = {
@@ -268,8 +268,8 @@ object FullDataSourceMode {
 @jsonDiscriminator("name") sealed trait FullDataSourceMissing
 
 object FullDataSourceMissing {
-  @jsonHint(MissingNodeBehavior.Delete.name) final case object Delete                                extends FullDataSourceMissing
-  @jsonHint(MissingNodeBehavior.NoChange.name) final case object NoChange                            extends FullDataSourceMissing
+  @jsonHint(MissingNodeBehavior.Delete.name) case object Delete                                      extends FullDataSourceMissing
+  @jsonHint(MissingNodeBehavior.NoChange.name) case object NoChange                                  extends FullDataSourceMissing
   @jsonHint(MissingNodeBehavior.DefaultValue.name) final case class DefaultValue(value: ConfigValue) extends FullDataSourceMissing
 
   implicit val transformerFrom: Transformer[FullDataSourceMissing, MissingNodeBehavior] =
@@ -357,7 +357,7 @@ object DataSourceJsonCodec {
   implicit val fullDataSourceRunParametersDecoder: JsonDecoder[FullDataSourceRunParameters] =
     DeriveJsonDecoder.gen[FullDataSourceRunParameters]
   implicit val fullDataSourceHttpMethodDecoder:    JsonDecoder[FullDataSourceHttpMethod]    =
-    JsonDecoder[String].mapOrFail(FullDataSourceHttpMethod.byName(_))
+    JsonDecoder[String].mapOrFail(FullDataSourceHttpMethod.byName)
   implicit val fullDataSourceHttpTypeDecoder:      JsonDecoder[FullDataSourceHttpType]      =
     DeriveJsonDecoder.gen[FullDataSourceHttpType]
   implicit val fullDataSourceParameterHttpDecoder: JsonDecoder[FullDataSourceParameterHttp] =
@@ -386,11 +386,6 @@ object RestResponseMessage {
  */
 object DataSourceExtractor {
 
-  // For patching we have the strategy of not overriding the base value if the patch value is None
-  // see https://chimney.readthedocs.io/en/0.8.3/supported-patching/ and "the cookbook" for scala 3 migration
-  // (or more verbose solution : define the Patcher with the .ignoreNoneInPatch option instead of deriving)
-  implicit protected val patchCfg: PatcherConfiguration[?] = PatcherConfiguration.default.ignoreNoneInPatch
-
   case class PatchDataSourceRunParam(
       onGeneration: Option[Boolean],
       onNewNode:    Option[Boolean],
@@ -401,8 +396,9 @@ object DataSourceExtractor {
 
   object PatchDataSourceRunParam {
     implicit val patcher: Patcher[DataSourceRunParameters, PatchDataSourceRunParam] =
-      Patcher.derive[DataSourceRunParameters, PatchDataSourceRunParam]
-    implicit val decoder: JsonDecoder[PatchDataSourceRunParam]                      = DeriveJsonDecoder.gen[PatchDataSourceRunParam]
+      Patcher.define[DataSourceRunParameters, PatchDataSourceRunParam].ignoreNoneInPatch.buildPatcher
+
+    implicit val decoder: JsonDecoder[PatchDataSourceRunParam] = DeriveJsonDecoder.gen[PatchDataSourceRunParam]
 
     def empty: PatchDataSourceRunParam = PatchDataSourceRunParam(None, None, None)
   }
@@ -433,7 +429,7 @@ object DataSourceExtractor {
 
   object PatchDataSourceType {
     implicit val httpPatcher: Patcher[DataSourceType.HTTP, PatchDataSourceHttpType] =
-      Patcher.derive[DataSourceType.HTTP, PatchDataSourceHttpType]
+      Patcher.define[DataSourceType.HTTP, PatchDataSourceHttpType].ignoreNoneInPatch.buildPatcher
 
     implicit val patcher: Patcher[DataSourceType, PatchDataSourceType] = {
       case (obj: DataSourceType.HTTP, patch: PatchDataSourceParameterHttp) => httpPatcher.patch(obj, patch.parameters)

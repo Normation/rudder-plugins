@@ -54,33 +54,6 @@
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
 
-    <!-- Test: rudder -->
-    <dependency>
-      <groupId>com.normation.rudder</groupId>
-      <artifactId>rudder-web</artifactId>
-      <version>${rudder-build-version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.normation.rudder</groupId>
-      <artifactId>rudder-core</artifactId>
-      <version>${rudder-build-version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <!--
-      Aaaannnnd maven is horrible, so we need to put back needed dependencies, see:
-      https://maven.apache.org/plugins/maven-jar-plugin/examples/create-test-jar.html
-      Perhaps it's time to quit maven.
-     -->
-     <!-- Testing Liftweb -->
-    <dependency>
-      <groupId>net.liftweb</groupId>
-      <artifactId>lift-testkit_${scala-binary-version}</artifactId>
-      <version>${lift-version}</version>
-      <scope>test</scope>
-    </dependency>
     <!-- YAML parser, for REST API test -->
     <dependency>
       <groupId>org.yaml</groupId>
@@ -89,20 +62,11 @@
       <scope>test</scope>
     </dependency>
 
-
     <!-- Tests: a rest server -->
     <dependency>
       <groupId>io.d11</groupId>
       <artifactId>zhttp_${scala-binary-version}</artifactId>
       <version>${zio-http-version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- zio tests -->
-    <dependency>
-      <groupId>dev.zio</groupId>
-      <artifactId>zio-test_${scala-binary-version}</artifactId>
-      <version>${dev-zio-version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
