@@ -5,6 +5,10 @@
   "version": "${plugin-version}",
   "build-date": "${maven.build.timestamp}",
   "build-commit": "${commit-id}",
+  "depends": {
+    "apt": [ "python3-packaging", "python3-requests" ],
+    "rpm": [ "python3-packaging", "python3-requests" ]
+  },
   "content": {
     "files.txz": "/opt/rudder/"
   }

@@ -10,7 +10,7 @@ SCRIPTS = postinst
 include ../makefiles/common-plugin.mk
 targets = $(addprefix target/, $(FILES))
 
-PYZABBIX_VERSION = 0.7.5
+PYZABBIX_VERSION = 1.3.1
 
 $(targets): target/%: %
 	cp -a $< target/
