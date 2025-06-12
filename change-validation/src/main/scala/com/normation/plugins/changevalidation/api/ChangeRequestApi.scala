@@ -90,6 +90,7 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
+import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.UserService
 import enumeratum.*
 import net.liftweb.http.LiftResponse
@@ -218,20 +219,21 @@ class ChangeRequestApiImpl(
       .toList
   }
 
-  def checkUserAction(workflowNodeId: WorkflowNodeId, target: WorkflowNodeId): PureResult[String] = {
+  def checkUserAction(
+      workflowNodeId:          WorkflowNodeId,
+      target:                  WorkflowNodeId,
+      hasValidatorWriteRights: Boolean,
+      hasDeployerWriteRights:  Boolean
+  ): PureResult[String] = {
     if (workflowNodeId == Validation.id) {
-      if (!userService.getCurrentUser.checkRights(AuthorizationType.Validator.Write)) {
+      if (!hasValidatorWriteRights) {
         Left(Inconsistency(s"User is not authorized to update a 'pending validation' change"))
-      } else if (target == Deployed.id && !userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Write)) {
+      } else if (target == Deployed.id && !hasDeployerWriteRights) {
         Left(Inconsistency(s"User is not authorized to update a 'pending validation' change to 'deployed' state"))
       } else {
         Right("user is authorized to do step")
       }
-    } else if (
-      workflowNodeId == Deployment.id && !userService.getCurrentUser.checkRights(
-        AuthorizationType.Deployer.Write
-      )
-    ) {
+    } else if (workflowNodeId == Deployment.id && !hasDeployerWriteRights) {
       Left(Inconsistency("User is not authorized to update a 'pending deployment' change"))
     } else {
       Right("user is authorized to do step")
@@ -297,13 +299,25 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
+      val user: AuthenticatedUser = userService.getCurrentUser
+      val (hasValidatorWriteRights, hasDeployerWriteRights) =
+        (user.checkRights(AuthorizationType.Validator.Write), user.checkRights(AuthorizationType.Deployer.Write))
       implicit val qc: QueryContext = authzToken.qc
       // we need to check rights for validator/deployer here, API level is not sufficient.
       def actualRefuse(changeRequest: ChangeRequest, step: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(apiUserRights, step, false).succeed
+          backSteps  <- workflowLevelService
+                          .getWorkflowService()
+                          .findBackSteps(
+                            apiUserRights,
+                            step,
+                            isCreator = false,
+                            hasValidatorWriteRights = hasValidatorWriteRights,
+                            hasDeployerWriteRights = hasDeployerWriteRights
+                          )
+                          .succeed
           optStep     = backSteps.find(_._1 == WorkflowNodeId("Cancelled"))
           stepFunc   <-
             optStep.notOptional(
@@ -335,16 +349,28 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
+      val user: AuthenticatedUser = userService.getCurrentUser
+      val (hasValidatorWriteRights, hasDeployerWriteRights) =
+        (user.checkRights(AuthorizationType.Validator.Write), user.checkRights(AuthorizationType.Deployer.Write))
       implicit val qc: QueryContext = authzToken.qc
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(apiUserRights, step, false).succeed
+          nextSteps  <- workflowLevelService
+                          .getWorkflowService()
+                          .findNextSteps(
+                            apiUserRights,
+                            step,
+                            isCreator = false,
+                            hasValidatorWriteRights = hasValidatorWriteRights,
+                            hasDeployerWriteRights = hasDeployerWriteRights
+                          )
+                          .succeed
           optStep     = nextSteps.actions.find(_._1 == targetStep)
           stepFunc   <-
             optStep.notOptional(
-              s"Could not accept ChangeRequest ${id} details cause is: you could not send Change Request from '${step.value}' to '${targetStep.value}'."
+              s"Could not accept ChangeRequest ${id} details cause is: you could not send Change Request from '${step.value}' to '${targetStep.value}'. Allowed steps are ${nextSteps}"
             )
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
@@ -360,7 +386,12 @@ class ChangeRequestApiImpl(
         res        <- {
           withChangeRequestContext(id, params, schema, "accept") { (changeRequest, currentState, techniqueByDirective) =>
             implicit val directiveCtx = techniqueByDirective
-            checkUserAction(currentState, targetStep).toIO *>
+            checkUserAction(
+              currentState,
+              targetStep,
+              hasValidatorWriteRights = hasValidatorWriteRights,
+              hasDeployerWriteRights = hasDeployerWriteRights
+            ).toIO *>
             (currentState match {
               case Deployment.id | Validation.id =>
                 actualAccept(changeRequest, currentState, targetStep)
