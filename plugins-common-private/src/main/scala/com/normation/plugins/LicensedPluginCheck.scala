@@ -54,7 +54,7 @@ import scala.util.control.NonFatal
  */
 
 trait LicensedPluginCheck extends PluginStatus {
-  import LicensedPluginCheck.*
+  import com.normation.plugins.LicensedPluginCheck.*
 
   /*
    * implementation must define variable with the following maven properties
@@ -157,6 +157,7 @@ private object LicensedPluginCheck {
       .define[LicenseInformation, PluginLicense]
       .withFieldComputed(_.startDate, _.startDate.value.toJava)
       .withFieldComputed(_.endDate, _.endDate.value.toJava)
+      .withFieldComputed(_.others, _.others.map(_.raw).toMap)
       .buildTransformer
   }
 }
