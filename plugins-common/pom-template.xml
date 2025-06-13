@@ -254,7 +254,7 @@
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_3</artifactId><scope>provided</scope><version>${fs2-version}</version></dependency>
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_3</artifactId><scope>provided</scope><version>${fs2-version}</version></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum_3</artifactId><scope>provided</scope><version>${enumeratum-version}</version></dependency>
-    <dependency><groupId>com.beachape</groupId><artifactId>enumeratum-macros_3</artifactId><scope>provided</scope><version>${enumeratum-version}</version></dependency>
+    <dependency><groupId>com.beachape</groupId><artifactId>enumeratum-macros_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_3</artifactId><scope>provided</scope><version>${ip4s-version}</version></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-atto_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
@@ -356,10 +356,10 @@
     <dependency><groupId>org.reflections</groupId><artifactId>reflections</artifactId><scope>provided</scope><version>${reflections-version}</version></dependency>
     <dependency><groupId>org.scalaj</groupId><artifactId>scalaj-http_2.13</artifactId><scope>provided</scope><version>${scalaj-version}</version></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala3-library_3</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
     <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-collection-compat_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parallel-collections_2.13</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_2.13</artifactId><scope>provided</scope></dependency>
@@ -375,7 +375,7 @@
     <dependency><groupId>org.springframework</groupId><artifactId>spring-jcl</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
-    <dependency><groupId>org.springframework.ldap</groupId><artifactId>spring-ldap-core</artifactId><scope>provided</scope><version>${spring-version}</version></dependency>
+    <dependency><groupId>org.springframework.ldap</groupId><artifactId>spring-ldap-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-config</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-core</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-crypto</artifactId><scope>provided</scope><version>${spring-security-version}</version></dependency>
