@@ -12,6 +12,7 @@
     "through2": "^4.0.2"
   },
   "dependencies": {
+    "elm-git-install": "^0.1.4",
     "elm-review": "^2.11.2",
     "gulp-sass": "^6.0.0",
     "gulp-sourcemaps": "^2.6.5",

@@ -5,6 +5,7 @@
 	<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
 	<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
     <script src="/toserve/changevalidation/rudder-changerequesteditform.js" data-lift="with-cached-resource"></script>
+    <script src="/toserve/changevalidation/rudder-changerequestchangesform.js" data-lift="with-cached-resource"></script>
 </head_merge>
 
 <div class="rudder-template">
@@ -18,6 +19,12 @@
           <div class="main-details">
 
             <div id="change-request-edit-form" ></div>
+
+            <div id="warnOnUnmergeable">
+              <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
+            </div>
+
+            <div id="changeRequestChanges"></div>
 
               <script data-lift="with-nonce">
                   var hasWriteRights = false;
@@ -46,6 +53,7 @@
             <script data-lift="with-nonce">
             $(document).ready(function () {
               var main = document.getElementById("change-request-edit-form");
+              var ch = document.getElementById("changeRequestChanges");
               var initValues = {
                 contextPath: contextPath,
                 hasWriteRights : hasWriteRights
@@ -57,10 +65,17 @@
               app.ports.successNotification.subscribe(function(str) {
                 createSuccessNotification(str)
               });
+
+              var app2 = Elm.ChangeRequestChangesForm.init({node: ch, flags: initValues});
+              app2.ports.errorNotification.subscribe(function (str) {
+                createErrorNotification(str)
+              });
+
               var path = window.location.pathname.split("/")
               if (path.length > 2) {
                 var id = path[path.length -1];
                 app.ports.readUrl.send(id);
+                app2.ports.readUrl.send(id);
               }
             });
             </script>
@@ -71,11 +86,9 @@
             </div>
             -->
 
-            <div id="warnOnUnmergeable">
-              <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
-            </div>
-
+            <!--
             <div class="lift:ChangeRequestDetails.changes"></div>
+            -->
 
           </div>
         </div>
