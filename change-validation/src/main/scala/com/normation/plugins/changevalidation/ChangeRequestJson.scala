@@ -43,9 +43,23 @@ import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueName
 import com.normation.cfclerk.domain.TechniqueVersion
 import com.normation.errors.*
+import com.normation.eventlog.EventActor
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.changevalidation.Action.ResourceChangeEvent
+import com.normation.plugins.changevalidation.Action.SimpleEvent
+import com.normation.plugins.changevalidation.ActionChangeJson.create
+import com.normation.plugins.changevalidation.ActionChangeJson.delete
+import com.normation.plugins.changevalidation.ActionChangeJson.modify
+import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveCreateChangeJson
+import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveDeleteChangeJson
+import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveModifyChangeJson
 import com.normation.rudder.apidata.JsonResponseObjects.*
 import com.normation.rudder.apidata.implicits.*
+import com.normation.rudder.domain.eventlog.AddChangeRequest
+import com.normation.rudder.domain.eventlog.ChangeRequestEventLog
+import com.normation.rudder.domain.eventlog.DeleteChangeRequest
+import com.normation.rudder.domain.eventlog.ModifyChangeRequest
+import com.normation.rudder.domain.eventlog.WorkflowStepChanged
 import com.normation.rudder.domain.nodes.AddNodeGroupDiff
 import com.normation.rudder.domain.nodes.ChangeRequestNodeGroupDiff
 import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
@@ -96,12 +110,15 @@ import com.normation.rudder.domain.workflows.NodeGroupChanges
 import com.normation.rudder.domain.workflows.RuleChange
 import com.normation.rudder.domain.workflows.RuleChanges
 import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.modification.DiffService
+import com.normation.utils.DateFormaterService
 import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.PartialTransformer
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.partial.Result
 import io.scalaland.chimney.syntax.*
+import org.joda.time.DateTime
 import scala.util.Try
 import zio.Chunk
 import zio.NonEmptyChunk
@@ -234,6 +251,222 @@ object PendingCountJson {
     PendingCountJson(
       map.get(TwoValidationStepsWorkflowServiceImpl.Validation.id),
       map.get(TwoValidationStepsWorkflowServiceImpl.Deployment.id)
+    )
+  }
+}
+
+@jsonDiscriminator("resourceType") sealed trait ResourceType {
+  def name: String = this match {
+    case ResourceType.directive   => "Directive"
+    case ResourceType.nodeGroup   => "Node group"
+    case ResourceType.rule        => "Rule"
+    case ResourceType.globalParam => "Global parameter"
+  }
+}
+
+object ResourceType {
+  case object directive   extends ResourceType
+  case object nodeGroup   extends ResourceType
+  case object rule        extends ResourceType
+  case object globalParam extends ResourceType
+
+  implicit val encoder: JsonEncoder[ResourceType] = JsonEncoder[String].contramap[ResourceType](_.name)
+}
+
+@jsonDiscriminator("type") sealed trait Action
+
+object Action {
+
+  final case class ResourceChangeEvent(
+      resourceType: ResourceType,
+      resourceName: String,
+      resourceId:   String,
+      action:       ActionChangeJson
+  ) extends Action
+
+  object ResourceChangeEvent {
+    implicit val encoder: JsonEncoder[ResourceChangeEvent] = DeriveJsonEncoder.gen[ResourceChangeEvent]
+  }
+
+  final case class SimpleEvent(
+      action: String
+  ) extends Action
+  object SimpleEvent         {
+    implicit val encoder: JsonEncoder[SimpleEvent] = DeriveJsonEncoder.gen[SimpleEvent]
+  }
+
+  implicit val encoder: JsonEncoder[Action] = DeriveJsonEncoder.gen[Action]
+}
+
+/**
+ * Class that represent an event log, whether it is a
+ *  - workflow event log
+ *  - change request event log
+ *  - resource change event log.
+ *
+ * @param action the description of the event
+ * @param actor the name of the actor who triggered the event
+ * @param reason the reason of the event, which may be empty
+ * @param date the date of the event
+ */
+final case class EventLogJson(
+    action: Action,
+    actor:  String,
+    reason: String,
+    date:   String
+)
+
+object EventLogJson {
+
+  def from(wfEvent: WorkflowStepChanged)(implicit eventLogDetailsService: EventLogDetailsService): EventLogJson = {
+    val step   = eventLogDetailsService.getWorkflotStepChange(wfEvent.details)
+    val action = step.map(step => s"Status changed from ${step.from} to ${step.to}").getOrElse("State changed")
+
+    EventLogJson(
+      SimpleEvent(action),
+      wfEvent.principal.name,
+      DateFormaterService.getDisplayDate(wfEvent.creationDate),
+      wfEvent.eventDetails.reason.getOrElse("")
+    )
+  }
+
+  def from(crEventLog: ChangeRequestEventLog): EventLogJson = {
+    val action = crEventLog match {
+      case _: AddChangeRequest    => "Change request created"
+      case _: ModifyChangeRequest => "Change request details modified"
+      case _: DeleteChangeRequest => "Change request deleted"
+    }
+
+    EventLogJson(
+      SimpleEvent(action),
+      crEventLog.principal.name,
+      DateFormaterService.getDisplayDate(crEventLog.creationDate),
+      crEventLog.eventDetails.reason.getOrElse("")
+    )
+  }
+
+  private def resourceChangeEvent(name: String, id: String, action: ActionChangeJson)(implicit
+      resourceType: ResourceType
+  ): ResourceChangeEvent = {
+    ResourceChangeEvent(resourceType, name, id, action)
+  }
+
+  private def eventLog(action: ResourceChangeEvent, actor: EventActor, reason: Option[String], date: DateTime): EventLogJson = {
+    EventLogJson(action, actor.name, reason.getOrElse(""), DateFormaterService.getDisplayDate(date))
+  }
+
+  def from(directiveChange: DirectiveChange): EventLogJson = {
+    val change = directiveChange.firstChange
+
+    implicit val (directiveRes, name, id) = change.diff.directive match {
+      case directive => (ResourceType.directive, directive.name, directive.id.serialize)
+    }
+
+    val event = change.diff match {
+      case a: AddDirectiveDiff      => resourceChangeEvent(name, id, create)
+      case d: DeleteDirectiveDiff   => resourceChangeEvent(name, id, delete)
+      case m: ModifyToDirectiveDiff => resourceChangeEvent(name, id, modify)
+    }
+
+    eventLog(event, change.actor, change.reason, change.creationDate)
+  }
+
+  def from(groupChange: NodeGroupChange): EventLogJson = {
+    val change = groupChange.firstChange
+
+    implicit val (groupRes, name, id) = change.diff.group match {
+      case group => (ResourceType.nodeGroup, group.name, group.id.serialize)
+    }
+
+    val event = change.diff match {
+      case a: AddNodeGroupDiff      => resourceChangeEvent(name, id, create)
+      case d: DeleteNodeGroupDiff   => resourceChangeEvent(name, id, delete)
+      case m: ModifyToNodeGroupDiff => resourceChangeEvent(name, id, modify)
+    }
+
+    eventLog(event, change.actor, change.reason, change.creationDate)
+  }
+
+  def from(ruleChange: RuleChange): EventLogJson = {
+    val change = ruleChange.firstChange
+
+    implicit val (ruleRes, name, id) = change.diff.rule match {
+      case rule => (ResourceType.rule, rule.name, rule.id.serialize)
+    }
+
+    val event = change.diff match {
+      case a: AddRuleDiff      => resourceChangeEvent(name, id, create)
+      case d: DeleteRuleDiff   => resourceChangeEvent(name, id, delete)
+      case m: ModifyToRuleDiff => resourceChangeEvent(name, id, modify)
+    }
+
+    eventLog(event, change.actor, change.reason, change.creationDate)
+  }
+
+  def from(paramChange: GlobalParameterChange): EventLogJson = {
+    val change = paramChange.firstChange
+
+    implicit val (paramRes, name, id) = change.diff.parameter match {
+      case param => (ResourceType.globalParam, param.name, param.name)
+    }
+
+    val event = change.diff match {
+      case a: AddGlobalParameterDiff      => resourceChangeEvent(name, id, create)
+      case d: DeleteGlobalParameterDiff   => resourceChangeEvent(name, id, delete)
+      case m: ModifyToGlobalParameterDiff => resourceChangeEvent(name, id, modify)
+    }
+
+    eventLog(event, change.actor, change.reason, change.creationDate)
+  }
+}
+
+/**
+ * Class that represents the main details of a given change request (name, id, status, ...)
+ * along with some additional info, including its full event log history.
+ */
+final case class ChangeRequestWithHistoryJson(
+    changeRequest: ChangeRequestJson,
+    isPending:     Boolean,
+    eventLogs:     Chunk[EventLogJson]
+)
+
+object ChangeRequestWithHistoryJson {
+  implicit val encoder:         JsonEncoder[ChangeRequestWithHistoryJson] = DeriveJsonEncoder.gen[ChangeRequestWithHistoryJson]
+  implicit val eventLogEncoder: JsonEncoder[EventLogJson]                 = DeriveJsonEncoder.gen[EventLogJson]
+
+  def from(
+      cr:        ChangeRequest,
+      crJson:    ChangeRequestJson,
+      isPending: Boolean,
+      wfLogs:    Seq[WorkflowStepChanged],
+      crLogs:    Seq[ChangeRequestEventLog]
+  )(implicit eventLogDetailsService: EventLogDetailsService): ChangeRequestWithHistoryJson = {
+
+    val resourceChangeLogs = cr match {
+      case cr: ConfigurationChangeRequest =>
+        cr.directives.values
+          .map(_.changes)
+          .map(EventLogJson.from)
+          .concat(cr.nodeGroups.values.map(_.changes).map(EventLogJson.from))
+          .concat(cr.rules.values.map(_.changes).map(EventLogJson.from))
+          .concat(cr.globalParams.values.map(_.changes).map(EventLogJson.from))
+      case _ =>
+        Seq.empty
+    }
+
+    val eventLogs = {
+      Chunk.from(
+        crLogs
+          .map(EventLogJson.from)
+          .concat(wfLogs.map(EventLogJson.from))
+          .concat(resourceChangeLogs)
+      )
+    }
+
+    ChangeRequestWithHistoryJson(
+      crJson,
+      isPending,
+      eventLogs
     )
   }
 }
