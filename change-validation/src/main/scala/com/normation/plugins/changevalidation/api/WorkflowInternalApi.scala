@@ -38,12 +38,27 @@
 package com.normation.plugins.changevalidation.api
 
 import cats.data.NonEmptyList
+import com.normation.cfclerk.domain.Technique
+import com.normation.cfclerk.domain.TechniqueId
+import com.normation.cfclerk.services.TechniqueRepository
+import com.normation.errors.Inconsistency
+import com.normation.errors.IOResult
+import com.normation.errors.OptionToIoResult
+import com.normation.plugins.changevalidation.ChangeRequestJson
+import com.normation.plugins.changevalidation.ChangeRequestWithHistoryJson
 import com.normation.plugins.changevalidation.PendingCountJson
+import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
+import com.normation.rudder.domain.policies.DirectiveId
+import com.normation.rudder.domain.workflows.ChangeRequest
+import com.normation.rudder.domain.workflows.ChangeRequestId
+import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
+import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
@@ -52,6 +67,7 @@ import com.normation.rudder.rest.EndpointSchema.syntax.AddPath
 import com.normation.rudder.rest.EndpointSchema.syntax.BuildPath
 import com.normation.rudder.rest.EndpointSchema0
 import com.normation.rudder.rest.InternalApi
+import com.normation.rudder.rest.OneParam
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion21
 import com.normation.rudder.rest.ZeroParam
@@ -60,12 +76,20 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
+import com.normation.rudder.services.eventlog.EventLogDetailsService
+import com.normation.rudder.services.eventlog.WorkflowEventLogService
+import com.normation.rudder.services.modification.DiffService
+import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
+import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.users.UserService
 import enumeratum.Enum
 import enumeratum.EnumEntry
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
+import zio.ZIO
+import zio.json.JsonEncoder
 import zio.syntax.ToZio
 
 sealed trait WorkflowInternalApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
@@ -83,20 +107,43 @@ object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModul
     }
   }
 
+  final case object ChangeRequestDetailsWithHistory
+      extends WorkflowInternalApi with OneParam with StartsAtVersion21 with SortIndex {
+    val z              = implicitly[Line].value
+    val (action, path) = GET / "changevalidation" / "workflow" / "changeRequestWithHistory" / "{id}"
+    val description    =
+      "Get the details of a given change request by its ID, i.e. its name, description, and status, as well as its full change history and associated diffs."
+
+    override def dataContainer: Option[String]          = Some("workflow")
+    override def authz:         List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
+  }
+
   override def endpoints: List[WorkflowInternalApi]       = values.toList.sortBy(_.z)
   override def values:    IndexedSeq[WorkflowInternalApi] = findValues
 }
 
 class WorkflowInternalApiImpl(
-    readWorkflow: RoWorkflowRepository,
-    userService:  UserService
+    readWorkflow:                 RoWorkflowRepository,
+    userService:                  UserService,
+    diffService:                  DiffService,
+    readTechnique:                TechniqueRepository,
+    workflowService:              WorkflowService,
+    roChangeRequestRepository:    RoChangeRequestRepository,
+    eventLogDetailsService:       EventLogDetailsService,
+    changeRequestEventLogService: ChangeRequestEventLogService,
+    commitRepository:             CommitAndDeployChangeRequestService,
+    workflowEventLogService:      WorkflowEventLogService
 ) extends LiftApiModuleProvider[WorkflowInternalApi] {
+
   import com.normation.plugins.changevalidation.api.WorkflowInternalApi as API
 
   override def schemas: ApiModuleProvider[WorkflowInternalApi] = API
 
   override def getLiftEndpoints(): List[LiftApiModule] = {
-    API.endpoints.map { case API.PendingChangeRequestCount => PendingChangeRequestCount }
+    API.endpoints.map {
+      case API.PendingChangeRequestCount       => PendingChangeRequestCount
+      case API.ChangeRequestDetailsWithHistory => ChangeRequestDetailsWithHistory
+    }
   }
 
   object PendingChangeRequestCount extends LiftApiModule0 {
@@ -139,4 +186,101 @@ class WorkflowInternalApiImpl(
     }
 
   }
+
+  object ChangeRequestDetailsWithHistory extends LiftApiModule {
+
+    override val schema:  WorkflowInternalApi.ChangeRequestDetailsWithHistory.type = API.ChangeRequestDetailsWithHistory
+    implicit val encoder: JsonEncoder[ChangeRequestWithHistoryJson]                = ChangeRequestWithHistoryJson.encoder
+
+    // Checks if we need external validation
+    def checkWorkflow: Boolean = workflowService.needExternalValidation()
+
+    private[this] def disabledWorkflowAnswer[T]: IOResult[T] = {
+      Inconsistency("Workflow are disabled in Rudder, change request API is not available").fail
+    }
+
+    private def getDirectiveTechniques(changeRequest: ChangeRequest): IOResult[Map[DirectiveId, Technique]] = {
+      (ZIO
+        .foreach(changeRequest match {
+          case cr: ConfigurationChangeRequest => cr.directives.toList
+          case _ => List.empty
+        }) {
+          case (directiveId, changes) =>
+            changes.changes.change.toIO.flatMap(item => {
+              val diff        = item.diff
+              val techniqueId = TechniqueId(diff.techniqueName, diff.directive.techniqueVersion)
+              val technique   = readTechnique.get(techniqueId)
+              technique
+                .map((directiveId, _))
+                .notOptional(s"Could not find technique ${techniqueId.serialize} for directive ${directiveId.serialize}")
+            })
+        })
+        .map(_.toMap)
+    }
+
+    private def withChangeRequestContext[T: JsonEncoder](
+        sid:          String,
+        params:       DefaultParams,
+        schema:       EndpointSchema,
+        actionDetail: String
+    )(
+        block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
+    ): IOResult[T] = {
+
+      if (checkWorkflow) {
+        (for {
+          crId          <- sid.toIntOption
+                             .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
+                             .map(ChangeRequestId(_))
+          changeRequest <- roChangeRequestRepository
+                             .get(crId)
+                             .chainError(s"Could not find ChangeRequest ${sid}")
+                             .notOptional(s"Change request with id ${sid} does not exist.")
+          status        <- readWorkflow
+                             .getStateOfChangeRequest(crId)
+                             .chainError(s"Could not find ChangeRequest ${sid} status")
+          result        <- getDirectiveTechniques(changeRequest)
+                             .flatMap(block(changeRequest, status, _))
+        } yield {
+          result
+        })
+          .chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
+      } else {
+        disabledWorkflowAnswer
+      }
+    }
+
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        sid:        String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
+
+      implicit val qc: QueryContext = authzToken.qc
+      val userRights = Seq("deployer", "validator")
+
+      withChangeRequestContext(sid, params, schema, "find")((changeRequest, status, techniqueByDirective) => {
+        for {
+          isMergeable <- commitRepository.isMergeable(changeRequest).succeed
+          isPending   <- workflowService.isPending(status).succeed
+          nextSteps   <-
+            workflowService
+              .findNextSteps(userRights, status, changeRequest.owner == userService.getCurrentUser.actor.name)
+              .succeed
+          crEventLogs <- changeRequestEventLogService.getChangeRequestHistory(changeRequest.id)
+          wfEventLogs <- workflowEventLogService.getChangeRequestHistory(changeRequest.id)
+          crJson      <- ChangeRequestJson.from(changeRequest, status, isMergeable)(techniqueByDirective, diffService).toIO
+
+        } yield {
+          ChangeRequestWithHistoryJson.from(changeRequest, crJson, isPending, wfEventLogs, crEventLogs)(eventLogDetailsService)
+        }
+      }).toLiftResponseOne(params, schema, Some(sid))
+
+    }
+
+  }
+
 }
