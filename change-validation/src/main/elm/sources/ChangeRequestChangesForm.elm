@@ -2,10 +2,10 @@ module ChangeRequestChangesForm exposing (..)
 
 import Browser
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, a, button, div, i, input, label, li, option, select, span, table, text, ul)
-import Html.Attributes exposing (attribute, class, href, id, name, placeholder, style, tabindex, type_, value)
+import Html exposing (Html, a, button, div, i, li, span, table, text, ul)
+import Html.Attributes exposing (attribute, class, href, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, andThen, at, fail, field, index, int, map4, string, succeed)
+import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, list, map, map3, map4, maybe, string, succeed)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
 import RudderDataTable
@@ -15,20 +15,6 @@ import RudderDataTable
 ------------------------------
 -- INIT & MAIN
 ------------------------------
-
-
-data =
-    [ { action = "a"
-      , actor = "b"
-      , date = "23/5/2000"
-      , reason = Nothing
-      }
-    , { action = "yyyyy"
-      , actor = "zzzzz"
-      , date = "23/5/2000"
-      , reason = Nothing
-      }
-    ]
 
 
 main =
@@ -56,7 +42,7 @@ init flags =
                 , sortOrder = Nothing
                 , filter = Nothing
                 }
-                data
+                []
 
         initModel =
             Model
@@ -84,13 +70,41 @@ type alias Model =
 
 type Msg
     = GetChangeRequestIdFromUrl String
-    | GetChangeRequestDetails (Result Error ChangeRequestDetails)
+    | GetChangeRequestDetailsWithHistory (Result Error ChangeRequestDetailsWithHistory)
     | ChangesTableMsg RudderDataTable.Msg
 
 
 type ViewState
     = NoView
     | ViewError String
+
+
+type alias ResourceChange =
+    { resourceType : String
+    , resourceName : String
+    , resourceId : String
+    , action : String
+    }
+
+
+type Event
+    = ChangeLogEvent String
+    | ResourceChangeEvent ResourceChange
+
+
+type alias EventLog =
+    { action : Event
+    , actor : String
+    , date : String
+    , reason : Maybe String
+    }
+
+
+type alias ChangeRequestDetailsWithHistory =
+    { changeRequest : ChangeRequestDetails
+    , isPending : Bool
+    , eventLogs : List EventLog
+    }
 
 
 type alias ChangeRequestDetails =
@@ -102,7 +116,7 @@ type alias ChangeRequestDetails =
 
 
 type ChangeRequestDetailsOpt
-    = Success ChangeRequestDetails
+    = Success ChangeRequestDetailsWithHistory
     | ChangeRequestIdNotSet
 
 
@@ -112,6 +126,20 @@ type alias TableRow =
     , date : String
     , reason : Maybe String
     }
+
+
+eventLogToTableRow : EventLog -> TableRow
+eventLogToTableRow log =
+    let
+        action =
+            case log.action of
+                ChangeLogEvent aaa ->
+                    aaa
+
+                ResourceChangeEvent change ->
+                    change.action ++ " " ++ change.resourceType ++ " " ++ change.resourceName
+    in
+    { action = action, actor = log.actor, date = log.date, reason = log.reason }
 
 
 
@@ -126,7 +154,7 @@ update msg model =
         GetChangeRequestIdFromUrl crIdStr ->
             case String.toInt crIdStr of
                 Just crId ->
-                    ( model, getChangeRequestDetails model crId )
+                    ( model, getChangeRequestDetailsWithHistory model crId )
 
                 Nothing ->
                     let
@@ -135,10 +163,19 @@ update msg model =
                     in
                     ( { model | viewState = ViewError errMsg }, Cmd.none )
 
-        GetChangeRequestDetails result ->
+        GetChangeRequestDetailsWithHistory result ->
             case result of
-                Ok changeRequestDetails ->
-                    ( { model | changeRequest = Success changeRequestDetails }, Cmd.none )
+                Ok cr ->
+                    let
+                        updatedTable =
+                            RudderDataTable.updateData (List.map eventLogToTableRow cr.eventLogs) model.changesTableModel
+                    in
+                    ( { model
+                        | changeRequest = Success cr
+                        , changesTableModel = updatedTable
+                      }
+                    , Cmd.none
+                    )
 
                 Err err ->
                     let
@@ -168,16 +205,16 @@ getApiUrl m url =
     m.contextPath ++ "/secure/api/" ++ url
 
 
-getChangeRequestDetails : Model -> Int -> Cmd Msg
-getChangeRequestDetails model crId =
+getChangeRequestDetailsWithHistory : Model -> Int -> Cmd Msg
+getChangeRequestDetailsWithHistory model crId =
     let
         req =
             request
                 { method = "GET"
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model ("changeRequests/" ++ String.fromInt crId)
+                , url = getApiUrl model ("changevalidation/workflow/changeRequestWithHistory/" ++ String.fromInt crId)
                 , body = emptyBody
-                , expect = expectJson GetChangeRequestDetails decodeChangeRequestDetails
+                , expect = expectJson GetChangeRequestDetailsWithHistory decodeChangeRequestDetailsWithHistory
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -185,20 +222,106 @@ getChangeRequestDetails model crId =
     req
 
 
-decodeChangeRequestDetails : Decoder ChangeRequestDetails
-decodeChangeRequestDetails =
+decodeChangeRequestDetailsWithHistory : Decoder ChangeRequestDetailsWithHistory
+decodeChangeRequestDetailsWithHistory =
     at [ "data" ]
-        (field "changeRequests"
+        (field "workflow"
             (index 0
-                (map4
-                    ChangeRequestDetails
-                    (field "displayName" string)
-                    (field "status" decodeChangeRequestStatus)
-                    (field "id" int)
-                    (field "description" string)
+                (map3 ChangeRequestDetailsWithHistory
+                    (field "changeRequest" decodeChangeRequestDetails)
+                    (field "isPending" bool)
+                    (field "eventLogs" (list decodeEventLog))
                 )
             )
         )
+
+
+decodeEventLog : Decoder EventLog
+decodeEventLog =
+    map4
+        EventLog
+        (field "action" decodeEvent)
+        (field "actor" string)
+        (field "date" string)
+        (maybe (field "reason" string))
+
+
+decodeEvent : Decoder Event
+decodeEvent =
+    field "type" string
+        |> andThen decodeEventContent
+
+
+decodeEventContent : String -> Decoder Event
+decodeEventContent eventType =
+    case eventType of
+        "ChangeLogEvent" ->
+            map ChangeLogEvent (field "action" string)
+
+        "ResourceChangeEvent" ->
+            map ResourceChangeEvent
+                (map4 ResourceChange
+                    (field "resourceType" decodeResourceType)
+                    (field "resourceName" string)
+                    (field "resourceId" string)
+                    (field "action" decodeAction)
+                )
+
+        _ ->
+            fail "Invalid event log type"
+
+
+decodeAction : Decoder String
+decodeAction =
+    string
+        |> andThen
+            (\s ->
+                case s of
+                    "create" ->
+                        succeed "Create"
+
+                    "delete" ->
+                        succeed "Delete"
+
+                    "modify" ->
+                        succeed "Modify"
+
+                    _ ->
+                        fail "Invalid action"
+            )
+
+
+decodeResourceType : Decoder String
+decodeResourceType =
+    string
+        |> andThen
+            (\s ->
+                case s of
+                    "directive" ->
+                        succeed s
+
+                    "node group" ->
+                        succeed s
+
+                    "rule" ->
+                        succeed s
+
+                    "global parameter" ->
+                        succeed s
+
+                    _ ->
+                        fail "Invalid resource type"
+            )
+
+
+decodeChangeRequestDetails : Decoder ChangeRequestDetails
+decodeChangeRequestDetails =
+    map4
+        ChangeRequestDetails
+        (field "displayName" string)
+        (field "status" decodeChangeRequestStatus)
+        (field "id" int)
+        (field "description" string)
 
 
 decodeChangeRequestStatus : Decoder String
