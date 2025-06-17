@@ -41,10 +41,13 @@ import cats.data.NonEmptyList
 import com.normation.errors.*
 import com.normation.plugins.authbackends.RudderRegistrationPropertyCommon.readProviders
 import com.typesafe.config.Config
+import java.time.format.DateTimeParseException
+import java.util.concurrent.TimeUnit
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
-import zio.*
+import scala.concurrent.duration.*
+import zio.{Duration as _, *}
 import zio.syntax.*
 
 /**
@@ -151,15 +154,17 @@ object RudderJwtRegistration {
  * API access with JWT (bearer token) - client_credentials workflow
  */
 final case class RudderOpaqueTokenRegistration(
-    registrationId:     String,
-    clientId:           String,
-    clientSecret:       String,
-    introspectUri:      String,
-    pivotAttributeName: String
+    registrationId:       String,
+    clientId:             String,
+    clientSecret:         String,
+    introspectUri:        String,
+    pivotAttributeName:   String,
+    cacheRequestDuration: Option[Duration]
 ) extends RudderOAuth2Registration with RegistrationWithPivotAttribute {
   // be careful to not leak secret in "toString"
   override def toString: String = {
-    s"""{${registrationId}}, clientId:'${clientId}' introspect URL: '${introspectUri}', token mapping attribute: ${pivotAttributeName}"""
+    s"""{${registrationId}}, clientId: '${clientId}' introspect URL: '${introspectUri}', token mapping attribute: '${pivotAttributeName}', use validation cache: ${cacheRequestDuration
+        .fold("no")(d => s"yes, ${d.toString}")}"""
   }
 }
 
@@ -225,6 +230,7 @@ object RudderRegistrationPropertyCommon {
   val A_URI_LOGOUT_REDIRECT     = "uri.logoutRedirect"
   val A_URI_INTROSPECT          = "uri.introspect"
   val A_PIVOT_ATTRIBUTE         = "userNameAttributeName"
+  val A_CACHE_VALIDATION        = "validationCacheDuration"
   val A_ROLES_ENABLED           = "roles.enabled"
   val A_ROLES_ATTRIBUTE         = "roles.attribute"
   val A_ROLES_OVERRIDE          = "roles.override"
@@ -268,6 +274,7 @@ object RudderRegistrationPropertyCommon {
     A_URI_LOGOUT_REDIRECT     -> "(optional) the redirect URL to provide to the IdP after logout",
     A_URI_INTROSPECT          -> "in case of opaque access bearer token, the introspect URL on which the token must be validated",
     A_PIVOT_ATTRIBUTE         -> "the attribute used to find local app user (OIDC user authentication) or the local API token (opaque bearer token)",
+    A_CACHE_VALIDATION        -> "(optional) the duration (number followed by a time unit) for which a validated opaque token should be cached",
     A_ROLES_ENABLED           -> "(default false) enable custom role extension by OIDC",
     A_ROLES_ATTRIBUTE         -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
     A_ROLES_OVERRIDE          -> "(default false) keep user configured roles in rudder-user.xml or override them with the one provided in the token",
@@ -565,6 +572,9 @@ class RudderPropertyBasedOpaqueTokenRegistrationDefinition(val registrations: Re
 
   import com.normation.plugins.authbackends.RudderRegistrationPropertyCommon.*
 
+  // the maximum duration for request cache above which we log a warning
+  private val MAX_CACHE_DURATION_WARN: Duration = Duration(5, TimeUnit.MINUTES)
+
   override def baseProperty:        String = RudderPropertyBasedOpaqueTokenRegistrationDefinition.baseProperty
   override def registrationLogName: String = RudderPropertyBasedOpaqueTokenRegistrationDefinition.registrationLogName
 
@@ -573,6 +583,36 @@ class RudderPropertyBasedOpaqueTokenRegistrationDefinition(val registrations: Re
       newOnes <- readAllRegistrations(config, readOneRegistration)
       _       <- registrations.set(newOnes)
     } yield ()
+  }
+
+  private def parseRequestCache()(implicit base: BasePath, config: Config): IOResult[Option[Duration]] = {
+    read(A_CACHE_VALIDATION).option.flatMap {
+      case None =>
+        AuthBackendsLoggerPure.debug(s"Cache for bearer token validation request is disabled") *> None.succeed
+
+      case Some(x) =>
+        try {
+          val d = Duration(x)
+          // we impose that the cache is at least 1ms
+          if (d.toMillis < 1) {
+            AuthBackendsLoggerPure.info(
+              s"Cache for bearer token validation request has an invalid value '${x}': disabling it"
+            ) *> None.succeed
+          } else {
+            AuthBackendsLoggerPure.info(
+              s"Cache for bearer token validation request is configured with a duration of '${d.toString}'"
+            ) *>
+            ZIO.when(d > MAX_CACHE_DURATION_WARN) {
+              AuthBackendsLoggerPure.warn(
+                s"The cache has a retention duration of '${d.toString}' which is too long: it increases " +
+                s"risks of stolen token replay without identity provider validation"
+              )
+            } *> Some(d).succeed
+          }
+        } catch {
+          case ex: DateTimeParseException => Inconsistency(ex.getMessage).fail
+        }
+    }
   }
 
   def readOneRegistration(id: String, config: Config): IOResult[RudderOpaqueTokenRegistration] = {
@@ -584,13 +624,15 @@ class RudderPropertyBasedOpaqueTokenRegistrationDefinition(val registrations: Re
       clientSecret   <- read(A_CLIENT_SECRET)
       introspectUri  <- read(A_URI_INTROSPECT)
       pivotAttribute <- read(A_PIVOT_ATTRIBUTE).catchAll(_ => RudderOpaqueTokenRegistration.defaultPivotAttribute.succeed)
+      cacheDuration  <- parseRequestCache()
     } yield {
       RudderOpaqueTokenRegistration(
         id,
         clientId,
         clientSecret,
         introspectUri,
-        pivotAttribute
+        pivotAttribute,
+        cacheDuration
       )
     }
   }
