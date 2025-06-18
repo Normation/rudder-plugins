@@ -1,6 +1,6 @@
 /*
  *************************************************************************************
- * Copyright 2011 Normation SAS
+ * Copyright 2024 Normation SAS
  *************************************************************************************
  *
  * This file is part of Rudder.
@@ -44,6 +44,7 @@ import com.typesafe.config.ConfigFactory
 import org.junit.runner.RunWith
 import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
+import scala.concurrent.duration.*
 import zio.Chunk
 
 @RunWith(classOf[JUnitRunner])
@@ -178,13 +179,15 @@ class TestReadOidcConfig extends Specification {
   }
 
   "reading an opaque configuration" should {
-    val reg          = RudderOpaqueTokenRegistration(
+    val reg = RudderOpaqueTokenRegistration(
       "someidp",
       "xxxClientIdxxx",
       "xxxClientPassxxx",
       "https://someidp/oauth2/v1/introspect",
-      "email"
+      "email",
+      Some(6.minutes)
     )
+
     val registration = RudderPropertyBasedOpaqueTokenRegistrationDefinition.make().runNow
 
     "read the correct configuration" in {
@@ -200,7 +203,7 @@ class TestReadOidcConfig extends Specification {
       val config = ConfigFactory.parseResources("opaque/opaque_default.properties")
       val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
-      regs.keySet === Set("someidp") and regs("someidp") === reg.copy(pivotAttributeName = "sub")
+      regs.keySet === Set("someidp") and regs("someidp") === reg.copy(pivotAttributeName = "sub", cacheRequestDuration = None)
     }
 
   }
