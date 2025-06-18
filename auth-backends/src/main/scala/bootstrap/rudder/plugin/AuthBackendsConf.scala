@@ -1048,7 +1048,7 @@ class RudderOidcUserService(
     roleApiMapping:                      RoleApiMapping
 ) extends OidcUserService with RudderUserServerMapping[OidcUserRequest, OidcUser, RudderUserDetail with OidcUser] {
   // we need to use our copy of DefaultOAuth2UserService to log/manage errors
-  super.setOauth2UserService(new RudderDefaultOAuth2UserService())
+  super.setOauth2UserService(new RudderDefaultOAuth2UserService()): @unchecked
 
   override val protocolId   = RudderOidcUserService.PROTOCOL_ID
   override val protocolName = "OIDC"

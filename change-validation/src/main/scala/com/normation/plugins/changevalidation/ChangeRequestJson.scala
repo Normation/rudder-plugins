@@ -871,9 +871,9 @@ object GlobalParameterChangeJson {
   ): PartialTransformer[ChangeRequestGlobalParameterDiff, GlobalParameterChangeJson] = {
     PartialTransformer
       .define[ChangeRequestGlobalParameterDiff, GlobalParameterChangeJson]
-      .withCoproductInstance[AddGlobalParameterDiff](_.transformInto[GlobalParameterCreateChangeJson])
-      .withCoproductInstance[DeleteGlobalParameterDiff](_.transformInto[GlobalParameterDeleteChangeJson])
-      .withCoproductInstancePartial[ModifyToGlobalParameterDiff](_.transformIntoPartial[GlobalParameterModifyChangeJson])
+      .withSealedSubtypeHandled[AddGlobalParameterDiff](_.transformInto[GlobalParameterCreateChangeJson])
+      .withSealedSubtypeHandled[DeleteGlobalParameterDiff](_.transformInto[GlobalParameterDeleteChangeJson])
+      .withSealedSubtypeHandledPartial[ModifyToGlobalParameterDiff](_.transformIntoPartial[GlobalParameterModifyChangeJson])
       .buildTransformer
   }
 
