@@ -428,7 +428,7 @@ was not declared in `rudder-users.xml`. The sibylline error was:
 'DC=com,DC=example,DC=people'
 ----
 
-It was an AD error that seems to have been triggered by some unexpected request by Rudder in that case. 
+It was an AD error that seems to have been triggered by some unexpected request by Rudder in that case.
 
 === Using a certificate for secure connection to LDAP/AD
 
@@ -845,6 +845,23 @@ Tenants and roles mapping can be configured for both :
 
 WARNING: In Rudder, you should use only one of both tokens, provided that they are configured correctly (see below for example configurations)
 
+==== Enable OIDC authentication for API
+
+Note that you can only use one of JWT or Opaque bearer at a time.
+In addition to their own configuration described below, you need to add the chosen provider
+in `rudder.auth.provider` main configuration in `/opt/rudder/etc/rudder-web.properties`:
+
+- for JWT token, use: `oauth2ApiJwt`
+- for Opaque token, use: `oauth2ApiOpaqueToken`
+
+==== Using a bearer token
+
+Whatever the kind of token, once you obtain it, you need to pass it in request with the header `Authorization: Bearer the_access_token`, like in the following example:
+
+```
+curl -k -H "Authorization: Bearer eyJraWQiOiJ....nTkfqTlX5YCpG1DAfo58Vw" -H "Content-Type: application/json" -X GET 'https://xxxx/rudder/api/latest/nodes?include=minimal'
+```
+
 ==== Obtaining and using JWT token in Rudder
 
 First you will need to obtain a valid JWT token from your IdP, for example from Okta :
@@ -857,7 +874,7 @@ curl --request POST 'https://xxxx.okta.com/oauth2/xxxxaudiencexxxx/v1/token' \
 --data 'grant_type=client_credentials'
 ```
 
-It will return an access token in the payload that should directly be usable with the Rudder REST API as a `Bearer` token i.e. with the header `Authorization: Bearer the_access_token`.
+It will return an access token in the payload that should directly be usable with the Rudder REST API as a `Bearer` token.
 
 Below is an example configuration for handling JWT tokens in Rudder from an external OAuth2 provider `okta`.
 You will need to put this configuration in the application properties by adding it to the properties folder, so `/opt/rudder/etc/rudder-web.properties.d/oauth2-api-jwt.properties` by default, and you will need to replace `okta` with your actual provider.
@@ -886,7 +903,7 @@ rudder.auth.oauth2.jwt.provider.okta.name=Okta
 rudder.auth.oauth2.jwt.provider.okta.scope=openid email profile groups
 
 # The single most important property for a JWT token: where the
-# IdP public keys that will be used to check the JWT signature are located. 
+# IdP public keys that will be used to check the JWT signature are located.
 # The audience is part of the uri :
 rudder.auth.oauth2.jwt.provider.okta.uri.jwkSet=https://xxxx.okta.com/oauth2/xxx/v1/keys
 
@@ -894,7 +911,7 @@ rudder.auth.oauth2.jwt.provider.okta.uri.jwkSet=https://xxxx.okta.com/oauth2/xxx
 rudder.auth.oauth2.jwt.provider.okta.roles.enabled=true
 rudder.auth.oauth2.jwt.provider.okta.roles.attribute=customroles
 rudder.auth.oauth2.jwt.provider.okta.roles.override=true
-rudder.auth.oauth2.jwt.provider.okta.roles.mapping.enforced=true 
+rudder.auth.oauth2.jwt.provider.okta.roles.mapping.enforced=true
 rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
 rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
 rudder.auth.oauth2.jwt.provider.okta.enableProvisioning=true
@@ -903,7 +920,7 @@ rudder.auth.oauth2.jwt.provider.okta.enableProvisioning=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.enabled=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.attribute=customroles
 rudder.auth.oauth2.jwt.provider.okta.tenants.override=true
-rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.enforced=true 
+rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.enforced=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_ta=tenantA
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_tb=tenantB
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_admin=*
@@ -918,6 +935,7 @@ Then you will need to create an API account in Rudder, without a token (because 
 When creating the API account, The `Account ID` field should have the value of the `cid` (client id) attribute of the opaque bearer token that needs to be identified.
 
 Once the API account is created and as long as it is not expired, the access token that was obtained above should directly be usable with the Rudder REST API as a `Bearer` token i.e. with the header `Authorization: Bearer the_access_token`.
+
 
 Below is an example configuration for handling opaque bearer token tokens in Rudder from an external OAuth2 provider `okta`.
 You will need to put this configuration in the application properties by adding it to the properties folder, so `/opt/rudder/etc/rudder-web.properties.d/oauth2-api-opaque.properties` by default, and you will need to replace `okta` with your actual provider.
@@ -976,6 +994,19 @@ rudder.auth.oauth2.opaque.provider.okta.uri.introspect=https://xxxx.okta.com/oau
 # Rudder API token ID.
 #
 rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName=client_id
+
+#
+# Optionally, you can define a duration for the `validationCacheDuration` property to
+# enable a cache of request. When the cache is enable, for the duration specified, no
+# new token validation request will be done to the identity provider. This is useful for
+# avoiding resource exhaustion during API request burst.
+# Nonetheless, that cache duration should be kept small, ideally less than a minute, to
+# avoid increasing risk of stolen tokens that can't be disabled IdP-side.
+#
+# The format is "number timeUnit", with timeUnit = [ms, s, min, h] (or long form).
+# Value below 1 ms are ignored.
+#
+#rudder.auth.oauth2.opaque.provider.okta.validationCacheDuration=1 min
 ```
 
 ==== Common errors during token authentication
@@ -1019,7 +1050,7 @@ In the case of opaque bearer tokens, an API account with a specific account ID i
 
 *Token ID is invalid because due to missing claim*
 
-In the configuration properties for opaque bearer tokens, there is a `rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName` property that should be an attribute that is defined in the token. Otherwise, an error will be logged and the property will need to be changed (https://jwt.io/[debugging the Base64 token] could help finding the right value) : 
+In the configuration properties for opaque bearer tokens, there is a `rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName` property that should be an attribute that is defined in the token. Otherwise, an error will be logged and the property will need to be changed (https://jwt.io/[debugging the Base64 token] could help finding the right value) :
 
 ----
 [timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiOpaqueToken': failure: An opaque Bearer token was received but it doesn't have a '[userNameAttributeName_value]' claim, so we don't have a token ID and the token is invalid
