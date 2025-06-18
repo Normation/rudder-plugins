@@ -42,6 +42,7 @@ import bootstrap.liftweb.AuthenticationMethods
 import bootstrap.liftweb.RudderConfig
 import bootstrap.liftweb.RudderInMemoryUserDetailsService
 import bootstrap.liftweb.RudderProperties
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.normation.errors.IOResult
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.authbackends.*
@@ -61,6 +62,7 @@ import com.typesafe.config.ConfigException
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.net.URI
+import java.time.Instant
 import java.util
 import org.joda.time.DateTime
 import org.springframework.context.ApplicationContext
@@ -75,6 +77,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.AuthenticationException
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper
@@ -111,6 +114,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken
 import org.springframework.security.oauth2.server.resource.authentication.DefaultOpaqueTokenAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider
@@ -118,6 +122,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.OpaqueTokenAuthenticationProvider
 import org.springframework.security.oauth2.server.resource.introspection.NimbusOpaqueTokenIntrospector
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenAuthenticationConverter
+import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter
 import org.springframework.security.web.DefaultSecurityFilterChain
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
@@ -128,6 +133,7 @@ import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestOperations
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.UnknownContentTypeException
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import zio.ZIO
 import zio.syntax.*
@@ -574,7 +580,9 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         val introspector = new NimbusOpaqueTokenIntrospector(config.introspectUri, config.clientId, config.clientSecret)
         new RudderOpaqueTokenAuthenticationProvider(
           introspector,
-          new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config.pivotAttributeName)
+          new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config.pivotAttributeName),
+          config.cacheRequestDuration,
+          () => Instant.now()
         )
 
       case None => MissingConfigurationAuthenticationProvider
@@ -1367,15 +1375,85 @@ object RudderOpaqueTokenAuthenticationProvider {
 
 // this class is only here to allow to use our convert in place of default spring configuration
 class RudderOpaqueTokenAuthenticationProvider(
-    introspector: NimbusOpaqueTokenIntrospector,
-    converter:    RudderOpaqueTokenAuthenticationConverter
+    introspector:    OpaqueTokenIntrospector,
+    converter:       OpaqueTokenAuthenticationConverter,
+    validationCache: Option[Duration],
+    now:             () => Instant
 ) extends AuthenticationProvider {
   private val opaqueTokenAuthenticationProvider = new OpaqueTokenAuthenticationProvider(introspector)
   opaqueTokenAuthenticationProvider.setAuthenticationConverter(converter)
 
+  /*
+   * The cache semantic is:
+   * - if the key is not defined, we don't have that token in cache: IdP validation is needed
+   * - if the key is defined:
+   *   - when `Left(ex)`, it means that the token is not valid and we can fail the authentication
+   *   - when `Right(auth)`, it means we can check if the auth is already ok.
+   */
+  private val cache = validationCache match {
+    // negative or too small duration are the same as no cache defined.
+    case Some(duration) if (duration.toMillis > 0) =>
+      Some(
+        Caffeine
+          .newBuilder()
+          .maximumSize(1_000)
+          .expireAfterWrite(java.time.Duration.ofMillis(duration.toMillis))
+          .build[String, Either[AuthenticationException, RudderOAuth2OpaqueToken]]()
+      )
+
+    case _ => None
+  }
+
+  /*
+   * The (pure) method to use in case of cache miss.
+   */
+  private def doRemoteAuthentication(
+      authentication: BearerTokenAuthenticationToken
+  ): Either[AuthenticationException, RudderOAuth2OpaqueToken] = {
+    try {
+      opaqueTokenAuthenticationProvider.authenticate(authentication) match {
+        case token: RudderOAuth2OpaqueToken => Right(token)
+
+        case _ => Left(new InvalidBearerTokenException(s"Token is not of the expected RudderOAuth2OpaqueToken type"))
+      }
+    } catch {
+      case ex: AuthenticationException =>
+        Left(ex)
+    }
+  }
+
   override def authenticate(authentication: Authentication): Authentication = {
-    val a = opaqueTokenAuthenticationProvider.authenticate(authentication)
-    a
+    authentication match {
+      case token: BearerTokenAuthenticationToken =>
+        // check is that token already have an authentication
+        cache match {
+          // cache defined:
+          case Some(c) =>
+            c.get(token.getToken, (_: String) => doRemoteAuthentication(token)) match {
+              case Left(ex)                                     => throw ex
+              // we do have an existing authentication.
+              // Expiration will be checked in convert.
+              case Right(auth @ RudderOAuth2OpaqueToken(ta, _)) =>
+                ta.getCredentials match {
+                  case x: OAuth2AccessToken =>
+                    if (now().isAfter(x.getExpiresAt)) {
+                      // token is expired, remove it from cache
+                      c.invalidate(token.getToken)
+                      // and it's an authentication error
+                      throw new InvalidBearerTokenException(s"Token is expired")
+                    } else auth
+
+                  case _ =>
+                    throw new InvalidBearerTokenException(s"Token credential is not of the expected OAuth2AccessToken type")
+                }
+            }
+
+          // no cache in use
+          case None    => opaqueTokenAuthenticationProvider.authenticate(authentication)
+        }
+
+      case _ => null
+    }
   }
 
   override def supports(authentication: Class[?]): Boolean = opaqueTokenAuthenticationProvider.supports(authentication)
