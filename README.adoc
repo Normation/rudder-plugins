@@ -21,25 +21,25 @@ Each authentication method is detailed below. Users are expected to know how an 
 Rudder has general info level information for user authentication. They trace what user get connected, with the use of what means.
 
 ====
-[2020-07-28 12:01:13+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': success
+2025-06-19 09:23:54+0000 INFO  application.authentication - Rudder authentication attempt for principal 'alice' with backend 'ldap': success
 ====
 
-They trace log login failure at trace level:
+They log login failures at INFO & WARN level:
 ====
-[2023-07-28 12:00:07+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'ldap': failure
-[2023-07-28 12:00:07+0200] INFO  application - Rudder authentication attempt for principal 'alice' with backend 'file': failure
-[2023-07-28 12:00:07+0200] WARN  application - Login authentication failed for user 'alice' from IP '127.0.0.1': Bad credentials
+2025-06-19 09:23:54+0000 INFO  application.authentication - Rudder authentication attempt for principal 'alice' with backend 'ldap': failure
+2025-06-19 09:23:54+0000 INFO  application.authentication - Rudder authentication attempt for principal 'alice' with backend 'file': failure
+2025-06-19 09:23:54+0000 WARN  application - Login authentication failed for user 'alice' from IP '127.0.0.1': Bad credentials
 ====
 
-They are enough to follow user authentication. But authentication methods based on central authentication provider can be tricky to configure correctly, and that level of log won't help you to set-up things.
-Rudder try to give you helpful information for that task:
+They are enough to track user authentication. But authentication methods based on central authentication provider can be tricky to configure correctly, and that level of log won't help you to set-up things.
+Rudder tries to give you helpful information for that task:
 
 - there is a logger for the authentication backend plugin that can help you for general information like configuration:  `<logger name="auth-backends" level="debug" />`
 - each authentication backend can provide more information with other loggers, which are in that case documented in their relevant section.
 
 == Centralized user authorization management with OIDC
 
-In addition to alternative authentication provider, the OIDC backends allow providing Rudder roles through the OIDC token so that you can control your Rudder user authorisation directly from your identity provider.
+In addition to alternative authentication provider, the OIDC backends allow providing Rudder roles and tenants through the OIDC token so that you can control your Rudder user authorisation directly from your identity provider.
 See OIDC chapter below for more information.
 
 == Configure login form rendering
@@ -503,7 +503,7 @@ rudder.auth.oauth2.provider.registrations=okta,google
 ```
 
 
-Each provider needs to then have a bunch of properties defined for it. They are listed below and all follow the pattern `rudder.auth.oauth2.provider.${providerID}.${subPath} where `providerId` is the ID in the previous list, and `subPath` is the remaining name of the property.
+Then, you need to define multiple properties for each provider. They are listed below and all follow the pattern `rudder.auth.oauth2.provider.${providerID}.${subPath} where `providerId` is the ID in the previous list, and `subPath` is the remaining name of the property.
 
 We advise to configure each provider in its own configuration file under `/opt/rudder/etc/rudder-web.properties.d`
 so that it is easier to change or disable some of them.
@@ -511,7 +511,7 @@ Make sure that the parameter `rudder.auth.oauth2.provider.registrations` is set 
 
 === IdP-provided authorizations for Rudder users
 
-You can configure an `OAuth2` or `OIDC` provider so that it informs Rudder of the roles the user need to have. This allows to centrally
+You can configure an `OAuth2` or `OIDC` provider so that it informs Rudder of the roles the user need to have, and the tenants they belong to. This allows to centrally
 manage both user and authorization in the same place.
 
 This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
