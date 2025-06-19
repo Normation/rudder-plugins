@@ -102,10 +102,9 @@ By convention, when LDAP authentication is enabled, 'password' field in
 [NOTE]
 =====
 
-After a change in `rudder-users.xml` configuration file, you need to reload user
-information. This can be done with `user-management` plugin (either in UI or via API,
-see that plugin documentation for more information), or by restarting the web
-application with the command:
+After a change in `rudder-users.xml` configuration file, you need to reload user information.
+This can be done in the xref:administration:users.adoc#_user_management_interface[User management page], or with the dedicated https://docs.rudder.io/api/#tag/User-management/operation/reloadUserConf[REST API endpoint].
+The reload is also done when restarting the web application with the command:
 
 ```
 systemctl restart rudder-jetty
@@ -514,13 +513,13 @@ Make sure that the parameter `rudder.auth.oauth2.provider.registrations` is set 
 You can configure an `OAuth2` or `OIDC` provider so that it informs Rudder of the roles the user need to have, and the tenants they belong to. This allows to centrally
 manage both user and authorization in the same place.
 
-This feature works with the `custom roles` feature provided by the xref:plugins:user-management.adoc[user-management plugin]. Please see that linked documentation to understand how custom roles work in Rudder.
+This feature works with built-in roles or custom roles defined in the users definition XML file. Please see the xref:administration:users.adoc#_user_roles_and_fine_grained_authorizations[linked documentation] for more information about authorizations in Rudder.
 
 [WARNING]
 
 ====
 
-xref:plugins:user-management.adoc#_unitary_permission_a_right[Unitary rights] like `node_all`, `technique_read`, `rule_write` etc are not supported to describe a user's authorizations through OIDC. It must be a xref:plugins:user-management.adoc#_pre_defined_roles[pre-defined role] or a xref:plugins:user-management.adoc#_custom_roles[custom role]
+xref:administration:users.adoc#_rights[Unitary rights] like `node_all`, `technique_read`, `rule_write` etc are not supported to describe a user's authorizations through OIDC. It must be a xref:administration:users.adoc#_pre_defined_roles[pre-defined role] or a xref:administration:users.adoc#_custom_roles[custom role].
 
 ====
 
@@ -654,9 +653,9 @@ rudder.auth.oauth2.provider.okta.roles.override=true
 #
 # Unitary right like `node_all` `rule_read` `technique_write` cannot be mapped.
 # If none of the pre-defined role suits you, please create a custom role to be able to map it.
-# see https://docs.rudder.io/reference/8.1/plugins/user-management.html#_custom_roles
+# see https://docs.rudder.io/reference/current/administration/users.html#_custom_roles
 #
-# Check the list of pre-defined roles: https://docs.rudder.io/reference/8.1/plugins/user-management.html#_pre_defined_roles
+# Check the list of pre-defined roles: https://docs.rudder.io/reference/current/administration/users.html#_pre_defined_roles
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
 # You can restrict the role that The IdP can assign to only role mapped to entitlements.
@@ -817,7 +816,7 @@ In the log, you see:
 [timestamp] DEBUG auth-backends - Role 'role-oidc-a' does not match any Rudder role, ignoring it for user toto@acme.com
 ----
 
-It means that the role `node_all` is not recognized. It is because it is not a ref:plugins:user-management.adoc#_pre_defined_roles[pre-defined role] or a xref:plugins:user-management.adoc#_custom_roles[custom role]
+It means that the role `node_all` is not recognized. It is because it is not a xref:administration:users.adoc#_pre_defined_roles[pre-defined role] or a xref:administration:users.adoc#_custom_roles[custom role]
 
 In this case you should create a custom role (let's say `access_to_node`) with the permission `node_all`
 that you will map to your IdP role `role-oidc-a` and modifying the parameter `mapping.entitlements` in the OIDC config file like so:
