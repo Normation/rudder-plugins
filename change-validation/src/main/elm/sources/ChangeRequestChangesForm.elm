@@ -1,14 +1,17 @@
-module ChangeRequestChangesForm exposing (..)
+module ChangeRequestChangesForm exposing (init)
 
 import Browser
+import Dict
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, a, button, div, i, li, span, table, text, ul)
-import Html.Attributes exposing (attribute, class, href, id, style, tabindex, type_)
+import Html exposing (Html, button, div, li, table, text, ul)
+import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, list, map, map3, map4, maybe, string, succeed)
+import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map6, maybe, oneOf, string, succeed)
+import Json.Decode.Pipeline exposing (optional, required)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
-import RudderDataTable
+import RudderDataTable exposing (ColumnName(..))
+import RudderTree exposing (initFlatTree)
 
 
 
@@ -38,9 +41,10 @@ init flags =
                         , { name = RudderDataTable.ColumnName "Date", accessor = .date }
                         , { name = RudderDataTable.ColumnName "Reason", accessor = .reason >> Maybe.withDefault "" }
                         ]
-                , sortBy = Nothing
+                , sortBy = Just (ColumnName "Date")
                 , sortOrder = Nothing
                 , filter = Nothing
+                , options = { refresh = Nothing }
                 }
                 []
 
@@ -50,6 +54,7 @@ init flags =
                 ChangeRequestIdNotSet
                 NoView
                 table
+                RudderTree.init
     in
     ( initModel, Cmd.none )
 
@@ -65,6 +70,7 @@ type alias Model =
     , changeRequest : ChangeRequestDetailsOpt
     , viewState : ViewState
     , changesTableModel : RudderDataTable.Model TableRow
+    , tree : RudderTree.Model
     }
 
 
@@ -72,6 +78,7 @@ type Msg
     = GetChangeRequestIdFromUrl String
     | GetChangeRequestDetailsWithHistory (Result Error ChangeRequestDetailsWithHistory)
     | ChangesTableMsg RudderDataTable.Msg
+    | TreeMsg RudderTree.Msg
 
 
 type ViewState
@@ -107,11 +114,186 @@ type alias ChangeRequestDetailsWithHistory =
     }
 
 
+type alias PolicyMode =
+    String
+
+
+type alias Var =
+    { name : String
+    , value : String
+    }
+
+
+type alias Tag =
+    Var
+
+
+type alias Section =
+    { name : String
+    , sections : Maybe SectionList
+    , vars : Maybe (List Var)
+    }
+
+
+type SectionList
+    = SectionList (List Section)
+
+
+type alias DiffChange fieldType =
+    { from : fieldType
+    , to : fieldType
+    }
+
+
+type Diff fieldType
+    = NoChange fieldType
+    | Change (DiffChange fieldType)
+
+
+type Tmp
+    = Todo
+
+
+type alias Directive =
+    { id : String
+    , displayName : String
+    , techniqueName : String
+    , shortDescription : String
+    , techniqueVersion : String
+    , priority : Int
+    , enabled : Bool
+    , system : Bool
+    , longDescription : String
+    , policyMode : PolicyMode
+    , parameters : Section
+    , tags : List Tag
+    }
+
+
+type alias DirectiveDiff =
+    { -- unmodifiable
+      id : String
+    , techniqueName : String
+
+    -- modifiable
+    , displayName : Diff String
+    , shortDescription : Maybe (Diff String)
+    , longDescription : Maybe (Diff String)
+    , techniqueVersion : Maybe (Diff String)
+    , priority : Maybe (Diff Int)
+    , enabled : Maybe (Diff Bool)
+    , system : Maybe (Diff Bool)
+    , policyMode : Maybe (Diff PolicyMode)
+    , parameters : Maybe (Diff Section)
+    , tags : Maybe (Diff (List Tag))
+    }
+
+
+type alias Rule =
+    { id : String
+    , displayName : String
+    , shortDescription : String
+    , longDescription : String
+    , targets : List Tmp -- List of targets in JSON format
+    , directives : List String -- List of directive ids
+    , enabled : Bool
+    , system : Bool
+    , categoryId : String -- Rule category id
+    , tags : List Tmp
+    }
+
+
+type alias RuleDiff =
+    { -- unmodifiable
+      id : String
+
+    -- modifiable
+    , displayName : Diff String
+    , serial : Maybe (Diff Int)
+    , shortDescription : Maybe (Diff String)
+    , longDescription : Maybe (Diff String)
+    , targets : Maybe (Diff (List String)) -- List of targets in JSON format
+    , directives : Maybe (Diff (List String)) -- List of directive ids
+    , enabled : Maybe (Diff Bool)
+    , system : Maybe (Diff Bool)
+    , reasons : Maybe (Diff String)
+    , categoryId : Maybe (Diff String) -- Rule category id
+    , tags : Maybe (Diff (List Tmp))
+    }
+
+
+type alias NodeGroup =
+    { id : String
+    , displayName : String
+    , description : String
+    , enabled : Bool
+    , dynamic : Bool
+    , system : Bool
+    , properties : Tmp
+    , query : Tmp
+    , nodeList : List String -- List of node ids
+    , category : Maybe String -- Node group category id
+    }
+
+
+type alias NodeGroupDiff =
+    { -- unmodifiable
+      id : String
+
+    -- modifiable
+    , displayName : Diff String
+    , description : Maybe (Diff String)
+    , enabled : Maybe (Diff Bool)
+    , dynamic : Maybe (Diff Bool)
+    , system : Maybe (Diff Bool)
+    , properties : Maybe (Diff Tmp)
+    , query : Maybe (Diff String)
+    , nodeList : Maybe (Diff (List String)) -- List of node ids
+    , category : Maybe (Diff String) -- Node group category id
+    }
+
+
+type alias GlobalParameter =
+    { name : String
+    , value : String
+    , description : String
+    }
+
+
+type alias GlobalParameterDiff =
+    { -- unmodifiable
+      name : String
+
+    -- modifiable
+    , value : Maybe (Diff Tmp)
+    , description : Maybe (Diff String)
+    , provider : Maybe (Diff Tmp)
+    , inheritMode : Maybe (Diff Tmp)
+    , visibility : Maybe (Diff Tmp)
+    }
+
+
+type ResourceDiff resource modifyDiff
+    = Create resource
+    | Delete resource
+    | Modify modifyDiff
+
+
+type alias Changes =
+    { directives : List (ResourceDiff Directive DirectiveDiff)
+    , rules : List (ResourceDiff Rule RuleDiff)
+    , groups : List (ResourceDiff NodeGroup NodeGroupDiff)
+    , parameters : List (ResourceDiff GlobalParameter GlobalParameterDiff)
+    }
+
+
 type alias ChangeRequestDetails =
     { title : String
     , state : String
     , id : Int
     , description : String
+    , isMergeable : Maybe Bool
+    , changes : Changes
     }
 
 
@@ -173,6 +355,7 @@ update msg model =
                     ( { model
                         | changeRequest = Success cr
                         , changesTableModel = updatedTable
+                        , tree = RudderTree.initFlatTree (Dict.fromList [])
                       }
                     , Cmd.none
                     )
@@ -192,6 +375,13 @@ update msg model =
                     RudderDataTable.update tableMsg model.changesTableModel
             in
             ( { model | changesTableModel = updatedModel }, Cmd.map ChangesTableMsg cmd )
+
+        TreeMsg treeMsg ->
+            let
+                ( updatedTree, cmd ) =
+                    RudderTree.update treeMsg model.tree
+            in
+            ( { model | tree = updatedTree }, Cmd.map TreeMsg cmd )
 
 
 
@@ -249,26 +439,24 @@ decodeEventLog =
 decodeEvent : Decoder Event
 decodeEvent =
     field "type" string
-        |> andThen decodeEventContent
+        |> andThen
+            (\eventType ->
+                case eventType of
+                    "ChangeLogEvent" ->
+                        map ChangeLogEvent (field "action" string)
 
+                    "ResourceChangeEvent" ->
+                        map ResourceChangeEvent
+                            (map4 ResourceChange
+                                (field "resourceType" decodeResourceType)
+                                (field "resourceName" string)
+                                (field "resourceId" string)
+                                (field "action" decodeAction)
+                            )
 
-decodeEventContent : String -> Decoder Event
-decodeEventContent eventType =
-    case eventType of
-        "ChangeLogEvent" ->
-            map ChangeLogEvent (field "action" string)
-
-        "ResourceChangeEvent" ->
-            map ResourceChangeEvent
-                (map4 ResourceChange
-                    (field "resourceType" decodeResourceType)
-                    (field "resourceName" string)
-                    (field "resourceId" string)
-                    (field "action" decodeAction)
-                )
-
-        _ ->
-            fail "Invalid event log type"
+                    _ ->
+                        fail "Invalid event log type"
+            )
 
 
 decodeAction : Decoder String
@@ -314,43 +502,299 @@ decodeResourceType =
             )
 
 
+tmpDecoder : Decoder Tmp
+tmpDecoder =
+    succeed Todo
+
+
+decodeDiffField : String -> Decoder fieldType -> Decoder (Diff fieldType)
+decodeDiffField fieldName dec =
+    let
+        noChangeDec =
+            map NoChange (field fieldName dec)
+
+        diffDec =
+            map Change
+                (at [ fieldName ] (map2 DiffChange (field "from" dec) (field "to" dec)))
+    in
+    oneOf [ noChangeDec, diffDec ]
+
+
+decodeSection : Decoder Section
+decodeSection =
+    field "section"
+        (succeed Section
+            |> required "name" string
+            |> map2 (|>) (maybe (field "sections" (lazy (\_ -> decodeSectionList))))
+            |> map2 (|>) (maybe (field "vars" (list decodeVar)))
+        )
+
+
+decodeSectionList : Decoder SectionList
+decodeSectionList =
+    map SectionList (list (lazy (\_ -> decodeSection)))
+
+
+decodeVar : Decoder Var
+decodeVar =
+    map2 Var (field "name" decodeResourceType) (field "value" decodeResourceType)
+
+
+decodeDirectiveDiff : Decoder (ResourceDiff Directive DirectiveDiff)
+decodeDirectiveDiff =
+    let
+        decodePolicyMode : Decoder PolicyMode
+        decodePolicyMode =
+            string
+                |> andThen
+                    (\policyMode ->
+                        if (policyMode == "default") || (policyMode == "audit") || (policyMode == "enforce") then
+                            succeed policyMode
+
+                        else
+                            fail "Invalid policy mode"
+                    )
+
+        decodeDirective : Decoder Directive
+        decodeDirective =
+            succeed Directive
+                |> required "id" string
+                |> required "displayName" string
+                |> required "techniqueName" string
+                |> required "shortDescription" string
+                |> required "techniqueVersion" string
+                |> required "priority" int
+                |> required "enabled" bool
+                |> required "system" bool
+                |> required "longDescription" string
+                |> required "policyMode" decodePolicyMode
+                |> required "parameters" decodeSection
+                |> required "tags" (list decodeVar)
+    in
+    field "action" string
+        |> andThen
+            (\action ->
+                at [ "change" ]
+                    (case action of
+                        "modify" ->
+                            map Modify
+                                (succeed DirectiveDiff
+                                    |> required "id" string
+                                    |> map2 (|>) (field "techniqueName" string)
+                                    |> map2 (|>) (decodeDiffField "displayName" string)
+                                    |> map2 (|>) (maybe (decodeDiffField "shortDescription" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "longDescription" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "techniqueVersion" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "priority" int))
+                                    |> map2 (|>) (maybe (decodeDiffField "enabled" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "system" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "policyMode" decodePolicyMode))
+                                    |> map2 (|>) (maybe (decodeDiffField "parameters" decodeSection))
+                                    |> map2 (|>) (maybe (decodeDiffField "tags" (list decodeVar)))
+                                )
+
+                        "create" ->
+                            map Create decodeDirective
+
+                        "delete" ->
+                            map Delete decodeDirective
+
+                        _ ->
+                            fail "Invalid action type"
+                    )
+            )
+
+
+decodeRuleDiff : Decoder (ResourceDiff Rule RuleDiff)
+decodeRuleDiff =
+    let
+        decodeRule : Decoder Rule
+        decodeRule =
+            succeed Rule
+                |> required "id" string
+                |> required "displayName" string
+                |> required "shortDescription" string
+                |> required "longDescription" string
+                |> required "targets" (list tmpDecoder)
+                |> required "directives" (list string)
+                |> required "enabled" bool
+                |> required "system" bool
+                |> required "categoryId" string
+                |> required "tags" (list tmpDecoder)
+    in
+    field "action" string
+        |> andThen
+            (\action ->
+                at [ "change" ]
+                    (case action of
+                        "modify" ->
+                            map Modify
+                                (succeed RuleDiff
+                                    |> required "id" string
+                                    |> map2 (|>) (decodeDiffField "displayName" string)
+                                    |> map2 (|>) (maybe (decodeDiffField "serial" int))
+                                    |> map2 (|>) (maybe (decodeDiffField "shortDescription" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "longDescription" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "targets" (list string)))
+                                    |> map2 (|>) (maybe (decodeDiffField "directives" (list string)))
+                                    |> map2 (|>) (maybe (decodeDiffField "enabled" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "system" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "reasons" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "categoryId" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "tags" (list tmpDecoder)))
+                                )
+
+                        "create" ->
+                            map Create decodeRule
+
+                        "delete" ->
+                            map Delete decodeRule
+
+                        _ ->
+                            fail "Invalid action type"
+                    )
+            )
+
+
+decodeGroupDiff : Decoder (ResourceDiff NodeGroup NodeGroupDiff)
+decodeGroupDiff =
+    let
+        decodeNodeGroup : Decoder NodeGroup
+        decodeNodeGroup =
+            succeed NodeGroup
+                |> required "id" string
+                |> required "displayName" string
+                |> required "description" string
+                |> required "enabled" bool
+                |> required "dynamic" bool
+                |> required "system" bool
+                |> required "properties" tmpDecoder
+                |> required "query" tmpDecoder
+                |> optional "nodeList" (list string) []
+                |> optional "category" (maybe string) Nothing
+    in
+    field "action" string
+        |> andThen
+            (\action ->
+                at [ "change" ]
+                    (case action of
+                        "modify" ->
+                            map
+                                Modify
+                                (succeed NodeGroupDiff
+                                    |> required "id" string
+                                    |> map2 (|>) (decodeDiffField "displayName" string)
+                                    |> map2 (|>) (maybe (decodeDiffField "description" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "enabled" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "dynamic" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "system" bool))
+                                    |> map2 (|>) (maybe (decodeDiffField "properties" tmpDecoder))
+                                    |> map2 (|>) (maybe (decodeDiffField "query" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "nodeList" (list string)))
+                                    |> map2 (|>) (maybe (decodeDiffField "category" string))
+                                )
+
+                        "create" ->
+                            map Create decodeNodeGroup
+
+                        "delete" ->
+                            map Delete decodeNodeGroup
+
+                        _ ->
+                            fail "Invalid action type"
+                    )
+            )
+
+
+decodeParameterDiff : Decoder (ResourceDiff GlobalParameter GlobalParameterDiff)
+decodeParameterDiff =
+    let
+        decodeGlobalParameter : Decoder GlobalParameter
+        decodeGlobalParameter =
+            map3
+                GlobalParameter
+                (field "id" string)
+                (field "value" string)
+                (field "description" string)
+    in
+    field "action" string
+        |> andThen
+            (\action ->
+                at [ "change" ]
+                    (case action of
+                        "modify" ->
+                            map Modify
+                                (map6
+                                    GlobalParameterDiff
+                                    (field "name" string)
+                                    (maybe (decodeDiffField "value" tmpDecoder))
+                                    (maybe (decodeDiffField "description" string))
+                                    (maybe (decodeDiffField "provider" tmpDecoder))
+                                    (maybe (decodeDiffField "inheritMode" tmpDecoder))
+                                    (maybe (decodeDiffField "visibility" tmpDecoder))
+                                )
+
+                        "create" ->
+                            map Create decodeGlobalParameter
+
+                        "delete" ->
+                            map Delete decodeGlobalParameter
+
+                        _ ->
+                            fail "Invalid action type"
+                    )
+            )
+
+
+decodeChanges : Decoder Changes
+decodeChanges =
+    map4
+        Changes
+        (field "directives" (list decodeDirectiveDiff))
+        (field "rules" (list decodeRuleDiff))
+        (field "groups" (list decodeGroupDiff))
+        (field "parameters" (list decodeParameterDiff))
+
+
 decodeChangeRequestDetails : Decoder ChangeRequestDetails
 decodeChangeRequestDetails =
-    map4
+    let
+        decodeChangeRequestStatus : Decoder String
+        decodeChangeRequestStatus =
+            string
+                |> andThen
+                    (\str ->
+                        case str of
+                            "Open" ->
+                                succeed str
+
+                            "Closed" ->
+                                succeed str
+
+                            "Pending validation" ->
+                                succeed str
+
+                            "Pending deployment" ->
+                                succeed str
+
+                            "Cancelled" ->
+                                succeed str
+
+                            "Deployed" ->
+                                succeed str
+
+                            _ ->
+                                fail "Invalid change request status"
+                    )
+    in
+    map6
         ChangeRequestDetails
         (field "displayName" string)
         (field "status" decodeChangeRequestStatus)
         (field "id" int)
         (field "description" string)
-
-
-decodeChangeRequestStatus : Decoder String
-decodeChangeRequestStatus =
-    string
-        |> andThen
-            (\str ->
-                case str of
-                    "Open" ->
-                        succeed str
-
-                    "Closed" ->
-                        succeed str
-
-                    "Pending validation" ->
-                        succeed str
-
-                    "Pending deployment" ->
-                        succeed str
-
-                    "Cancelled" ->
-                        succeed str
-
-                    "Deployed" ->
-                        succeed str
-
-                    _ ->
-                        fail "Invalid change request status"
-            )
+        (maybe (field "isMergeable" bool))
+        (field "changes" decodeChanges)
 
 
 
@@ -403,8 +847,8 @@ view model =
                         , class "tab-pane active"
                         , id "historyTab"
                         ]
-                        [ div [ id "history" ]
-                            [ changesTable model ]
+                        [ div [ id "history" ] [ changesTable model ]
+                        , div [ id "diff" ] [ diff model ]
                         ]
                     ]
                 ]
@@ -414,47 +858,17 @@ view model =
 
 changeTree : Model -> Html Msg
 changeTree model =
-    div
-        [ id "changeTree"
-        , class "jstree jstree-1 jstree-default"
-        , attribute "role" "tree"
-        , attribute "aria-multiselectable" "true"
-        , tabindex 0
-        , attribute "aria-activedescendant" "changes"
-        , attribute "aria-busy" "false"
-        ]
-        [ ul [ class "jstree-container-ul jstree-children", attribute "role" "presentation" ]
-            [ li
-                [ attribute "role" "none"
-                , attribute "data-jstree" "{ \"type\" : \"changeType\" }"
-                , id "changes"
-                , class "jstree-node  jstree-closed jstree-last"
-                ]
-                [ i [ class "jstree-icon jstree-ocl", attribute "role" "presentation" ] []
-                , a
-                    [ class "jstree-anchor"
-                    , href "#"
-                    , tabindex -1
-                    , attribute "role" "treeitem"
-                    , attribute "aria-selected" "false"
-                    , attribute "aria-level" "1"
-                    , attribute "aria-expanded" "false"
-                    ]
-                    [ i
-                        [ class "jstree-icon jstree-themeicon fa fa-folder jstree-themeicon-custom"
-                        , attribute "role" "presentation"
-                        ]
-                        []
-                    , span [] [ text "Changes" ]
-                    ]
-                ]
-            ]
-        ]
+    Html.map TreeMsg (RudderTree.view model.tree)
 
 
 changesTable : Model -> Html Msg
 changesTable model =
     Html.map ChangesTableMsg (RudderDataTable.view model.changesTableModel)
+
+
+diff : Model -> Html Msg
+diff model =
+    text ""
 
 
 
