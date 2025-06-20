@@ -44,6 +44,7 @@ import com.normation.cfclerk.services.TechniqueRepository
 import com.normation.errors.Inconsistency
 import com.normation.errors.IOResult
 import com.normation.errors.OptionToIoResult
+import com.normation.plugins.changevalidation.ChangeRequestChangesJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
 import com.normation.plugins.changevalidation.ChangeRequestWithHistoryJson
 import com.normation.plugins.changevalidation.PendingCountJson
@@ -112,10 +113,22 @@ object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModul
     val z              = implicitly[Line].value
     val (action, path) = GET / "changevalidation" / "workflow" / "changeRequestWithHistory" / "{id}"
     val description    =
-      "Get the details of a given change request by its ID, i.e. its name, description, and status, as well as its full change history and associated diffs."
+      "Get the main details and list of logs of a change request by its ID."
 
     override def dataContainer: Option[String]          = Some("workflow")
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
+  }
+
+  final case object ChangeRequestChanges extends WorkflowInternalApi with OneParam with StartsAtVersion21 with SortIndex {
+    val z              = implicitly[Line].value
+    val (action, path) = GET / "changevalidation" / "workflow" / "changeRequestChanges" / "{id}"
+    val description    =
+      "Get all the changes of a configuration change request."
+
+    override def dataContainer: Option[String] = Some("workflow")
+
+    override def authz: List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
+
   }
 
   override def endpoints: List[WorkflowInternalApi]       = values.toList.sortBy(_.z)
@@ -192,11 +205,11 @@ class WorkflowInternalApiImpl(
     override val schema:  WorkflowInternalApi.ChangeRequestDetailsWithHistory.type = API.ChangeRequestDetailsWithHistory
     implicit val encoder: JsonEncoder[ChangeRequestWithHistoryJson]                = ChangeRequestWithHistoryJson.encoder
 
-    // Checks if we need external validation
+    // Checks if external validation is needed
     def checkWorkflow: Boolean = workflowService.needExternalValidation()
 
     private[this] def disabledWorkflowAnswer[T]: IOResult[T] = {
-      Inconsistency("Workflow are disabled in Rudder, change request API is not available").fail
+      Inconsistency("Workflows are disabled in Rudder, the internal workflow API is not available").fail
     }
 
     private def getDirectiveTechniques(changeRequest: ChangeRequest): IOResult[Map[DirectiveId, Technique]] = {
@@ -281,6 +294,30 @@ class WorkflowInternalApiImpl(
 
     }
 
+  }
+
+  object ChangeRequestChanges extends LiftApiModule {
+    override val schema:  WorkflowInternalApi.ChangeRequestChanges.type = API.ChangeRequestChanges
+    implicit val encoder: JsonEncoder[ChangeRequestChangesJson]         = ChangeRequestChangesJson.encoder
+
+    // Checks if external validation is needed
+    def checkWorkflow: Boolean = workflowService.needExternalValidation()
+
+    private[this] def disabledWorkflowAnswer[T]: IOResult[T] = {
+      Inconsistency("Workflows are disabled in Rudder, the internal workflow API is not available").fail
+    }
+
+    def process(
+        version:    ApiVersion,
+        path:       ApiPath,
+        sid:        String,
+        req:        Req,
+        params:     DefaultParams,
+        authzToken: AuthzToken
+    ): LiftResponse = {
+      
+      ???
+    }
   }
 
 }
