@@ -6,7 +6,7 @@ import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, button, div, li, table, text, ul)
 import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map6, maybe, oneOf, string, succeed)
+import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map6, maybe, oneOf, string, succeed, value)
 import Json.Decode.Pipeline exposing (optional, required)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
@@ -114,18 +114,10 @@ type alias ChangeRequestDetailsWithHistory =
     }
 
 
-type alias PolicyMode =
-    String
-
-
 type alias Var =
     { name : String
     , value : String
     }
-
-
-type alias Tag =
-    Var
 
 
 type alias Section =
@@ -139,6 +131,25 @@ type SectionList
     = SectionList (List Section)
 
 
+type TargetComposition
+    = Or TargetList
+    | And TargetList
+
+
+type alias TargetComposed =
+    { include : TargetComposition, exclude : TargetComposition }
+
+
+type Target
+    = Simple String
+    | Composed TargetComposed
+    | Composition TargetComposition
+
+
+type TargetList
+    = TargetList (List Target)
+
+
 type alias DiffChange fieldType =
     { from : fieldType
     , to : fieldType
@@ -150,23 +161,18 @@ type Diff fieldType
     | Change (DiffChange fieldType)
 
 
-type Tmp
-    = Todo
-
-
 type alias Directive =
     { id : String
     , displayName : String
-    , techniqueName : String
     , shortDescription : String
+    , techniqueName : String
     , techniqueVersion : String
     , priority : Int
     , enabled : Bool
     , system : Bool
     , longDescription : String
-    , policyMode : PolicyMode
+    , policyMode : String
     , parameters : Section
-    , tags : List Tag
     }
 
 
@@ -183,9 +189,8 @@ type alias DirectiveDiff =
     , priority : Maybe (Diff Int)
     , enabled : Maybe (Diff Bool)
     , system : Maybe (Diff Bool)
-    , policyMode : Maybe (Diff PolicyMode)
+    , policyMode : Maybe (Diff String)
     , parameters : Maybe (Diff Section)
-    , tags : Maybe (Diff (List Tag))
     }
 
 
@@ -194,12 +199,11 @@ type alias Rule =
     , displayName : String
     , shortDescription : String
     , longDescription : String
-    , targets : List Tmp -- List of targets in JSON format
+    , targets : List Target -- List of targets
     , directives : List String -- List of directive ids
     , enabled : Bool
     , system : Bool
     , categoryId : String -- Rule category id
-    , tags : List Tmp
     }
 
 
@@ -209,16 +213,13 @@ type alias RuleDiff =
 
     -- modifiable
     , displayName : Diff String
-    , serial : Maybe (Diff Int)
     , shortDescription : Maybe (Diff String)
     , longDescription : Maybe (Diff String)
-    , targets : Maybe (Diff (List String)) -- List of targets in JSON format
+    , targets : Maybe (Diff (List String)) -- List of targets
     , directives : Maybe (Diff (List String)) -- List of directive ids
     , enabled : Maybe (Diff Bool)
     , system : Maybe (Diff Bool)
-    , reasons : Maybe (Diff String)
     , categoryId : Maybe (Diff String) -- Rule category id
-    , tags : Maybe (Diff (List Tmp))
     }
 
 
@@ -229,10 +230,9 @@ type alias NodeGroup =
     , enabled : Bool
     , dynamic : Bool
     , system : Bool
-    , properties : Tmp
-    , query : Tmp
+    , properties : Value
+    , query : Value
     , nodeList : List String -- List of node ids
-    , category : Maybe String -- Node group category id
     }
 
 
@@ -245,17 +245,15 @@ type alias NodeGroupDiff =
     , description : Maybe (Diff String)
     , enabled : Maybe (Diff Bool)
     , dynamic : Maybe (Diff Bool)
-    , system : Maybe (Diff Bool)
-    , properties : Maybe (Diff Tmp)
-    , query : Maybe (Diff String)
+    , properties : Maybe (Diff Value)
+    , query : Maybe (Diff Value)
     , nodeList : Maybe (Diff (List String)) -- List of node ids
-    , category : Maybe (Diff String) -- Node group category id
     }
 
 
 type alias GlobalParameter =
     { name : String
-    , value : String
+    , value : Value
     , description : String
     }
 
@@ -265,11 +263,8 @@ type alias GlobalParameterDiff =
       name : String
 
     -- modifiable
-    , value : Maybe (Diff Tmp)
+    , value : Maybe (Diff Value)
     , description : Maybe (Diff String)
-    , provider : Maybe (Diff Tmp)
-    , inheritMode : Maybe (Diff Tmp)
-    , visibility : Maybe (Diff Tmp)
     }
 
 
@@ -315,8 +310,8 @@ eventLogToTableRow log =
     let
         action =
             case log.action of
-                ChangeLogEvent aaa ->
-                    aaa
+                ChangeLogEvent event ->
+                    event
 
                 ResourceChangeEvent change ->
                     change.action ++ " " ++ change.resourceType ++ " " ++ change.resourceName
@@ -412,6 +407,12 @@ getChangeRequestDetailsWithHistory model crId =
     req
 
 
+
+------------------------------
+-- JSON DECODERS
+------------------------------
+
+
 decodeChangeRequestDetailsWithHistory : Decoder ChangeRequestDetailsWithHistory
 decodeChangeRequestDetailsWithHistory =
     at [ "data" ]
@@ -502,11 +503,6 @@ decodeResourceType =
             )
 
 
-tmpDecoder : Decoder Tmp
-tmpDecoder =
-    succeed Todo
-
-
 decodeDiffField : String -> Decoder fieldType -> Decoder (Diff fieldType)
 decodeDiffField fieldName dec =
     let
@@ -522,6 +518,10 @@ decodeDiffField fieldName dec =
 
 decodeSection : Decoder Section
 decodeSection =
+    let
+        decodeVar =
+            map2 Var (field "name" decodeResourceType) (field "value" decodeResourceType)
+    in
     field "section"
         (succeed Section
             |> required "name" string
@@ -535,15 +535,10 @@ decodeSectionList =
     map SectionList (list (lazy (\_ -> decodeSection)))
 
 
-decodeVar : Decoder Var
-decodeVar =
-    map2 Var (field "name" decodeResourceType) (field "value" decodeResourceType)
-
-
 decodeDirectiveDiff : Decoder (ResourceDiff Directive DirectiveDiff)
 decodeDirectiveDiff =
     let
-        decodePolicyMode : Decoder PolicyMode
+        decodePolicyMode : Decoder String
         decodePolicyMode =
             string
                 |> andThen
@@ -560,8 +555,8 @@ decodeDirectiveDiff =
             succeed Directive
                 |> required "id" string
                 |> required "displayName" string
-                |> required "techniqueName" string
                 |> required "shortDescription" string
+                |> required "techniqueName" string
                 |> required "techniqueVersion" string
                 |> required "priority" int
                 |> required "enabled" bool
@@ -569,7 +564,6 @@ decodeDirectiveDiff =
                 |> required "longDescription" string
                 |> required "policyMode" decodePolicyMode
                 |> required "parameters" decodeSection
-                |> required "tags" (list decodeVar)
     in
     field "action" string
         |> andThen
@@ -590,7 +584,6 @@ decodeDirectiveDiff =
                                     |> map2 (|>) (maybe (decodeDiffField "system" bool))
                                     |> map2 (|>) (maybe (decodeDiffField "policyMode" decodePolicyMode))
                                     |> map2 (|>) (maybe (decodeDiffField "parameters" decodeSection))
-                                    |> map2 (|>) (maybe (decodeDiffField "tags" (list decodeVar)))
                                 )
 
                         "create" ->
@@ -605,6 +598,43 @@ decodeDirectiveDiff =
             )
 
 
+decodeTarget : Decoder Target
+decodeTarget =
+    let
+        simpleDec =
+            map Simple string
+
+        composedDec =
+            map Composed
+                (map2 TargetComposed
+                    (field "include" targetCompositionDec)
+                    (field "exclude" targetCompositionDec)
+                )
+    in
+    oneOf [ simpleDec, composedDec, compositionDec ]
+
+
+decodeTargetList : Decoder TargetList
+decodeTargetList =
+    map TargetList (list (lazy (\_ -> decodeTarget)))
+
+
+targetCompositionDec : Decoder TargetComposition
+targetCompositionDec =
+    let
+        decodeOr =
+            map Or (field "or" (lazy (\_ -> decodeTargetList)))
+
+        decodeAnd =
+            map And (field "or" (lazy (\_ -> decodeTargetList)))
+    in
+    oneOf [ decodeOr, decodeAnd ]
+
+
+compositionDec =
+    map Composition (lazy (\_ -> targetCompositionDec))
+
+
 decodeRuleDiff : Decoder (ResourceDiff Rule RuleDiff)
 decodeRuleDiff =
     let
@@ -615,12 +645,11 @@ decodeRuleDiff =
                 |> required "displayName" string
                 |> required "shortDescription" string
                 |> required "longDescription" string
-                |> required "targets" (list tmpDecoder)
+                |> required "targets" (list decodeTarget)
                 |> required "directives" (list string)
                 |> required "enabled" bool
                 |> required "system" bool
                 |> required "categoryId" string
-                |> required "tags" (list tmpDecoder)
     in
     field "action" string
         |> andThen
@@ -632,16 +661,13 @@ decodeRuleDiff =
                                 (succeed RuleDiff
                                     |> required "id" string
                                     |> map2 (|>) (decodeDiffField "displayName" string)
-                                    |> map2 (|>) (maybe (decodeDiffField "serial" int))
                                     |> map2 (|>) (maybe (decodeDiffField "shortDescription" string))
                                     |> map2 (|>) (maybe (decodeDiffField "longDescription" string))
                                     |> map2 (|>) (maybe (decodeDiffField "targets" (list string)))
                                     |> map2 (|>) (maybe (decodeDiffField "directives" (list string)))
                                     |> map2 (|>) (maybe (decodeDiffField "enabled" bool))
                                     |> map2 (|>) (maybe (decodeDiffField "system" bool))
-                                    |> map2 (|>) (maybe (decodeDiffField "reasons" string))
                                     |> map2 (|>) (maybe (decodeDiffField "categoryId" string))
-                                    |> map2 (|>) (maybe (decodeDiffField "tags" (list tmpDecoder)))
                                 )
 
                         "create" ->
@@ -668,10 +694,9 @@ decodeGroupDiff =
                 |> required "enabled" bool
                 |> required "dynamic" bool
                 |> required "system" bool
-                |> required "properties" tmpDecoder
-                |> required "query" tmpDecoder
+                |> required "properties" value
+                |> required "query" value
                 |> optional "nodeList" (list string) []
-                |> optional "category" (maybe string) Nothing
     in
     field "action" string
         |> andThen
@@ -687,11 +712,9 @@ decodeGroupDiff =
                                     |> map2 (|>) (maybe (decodeDiffField "description" string))
                                     |> map2 (|>) (maybe (decodeDiffField "enabled" bool))
                                     |> map2 (|>) (maybe (decodeDiffField "dynamic" bool))
-                                    |> map2 (|>) (maybe (decodeDiffField "system" bool))
-                                    |> map2 (|>) (maybe (decodeDiffField "properties" tmpDecoder))
-                                    |> map2 (|>) (maybe (decodeDiffField "query" string))
+                                    |> map2 (|>) (maybe (decodeDiffField "properties" value))
+                                    |> map2 (|>) (maybe (decodeDiffField "query" value))
                                     |> map2 (|>) (maybe (decodeDiffField "nodeList" (list string)))
-                                    |> map2 (|>) (maybe (decodeDiffField "category" string))
                                 )
 
                         "create" ->
@@ -714,7 +737,7 @@ decodeParameterDiff =
             map3
                 GlobalParameter
                 (field "id" string)
-                (field "value" string)
+                (field "value" value)
                 (field "description" string)
     in
     field "action" string
@@ -724,14 +747,11 @@ decodeParameterDiff =
                     (case action of
                         "modify" ->
                             map Modify
-                                (map6
+                                (map3
                                     GlobalParameterDiff
                                     (field "name" string)
-                                    (maybe (decodeDiffField "value" tmpDecoder))
+                                    (maybe (decodeDiffField "value" value))
                                     (maybe (decodeDiffField "description" string))
-                                    (maybe (decodeDiffField "provider" tmpDecoder))
-                                    (maybe (decodeDiffField "inheritMode" tmpDecoder))
-                                    (maybe (decodeDiffField "visibility" tmpDecoder))
                                 )
 
                         "create" ->
