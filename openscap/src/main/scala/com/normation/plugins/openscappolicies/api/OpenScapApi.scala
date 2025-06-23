@@ -84,7 +84,7 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
   }
 
   def endpoints: List[OpenScapApi] = values.toList.sortBy(_.z)
-  def values    = findValues
+  def values = findValues
 }
 
 class OpenScapApiImpl(

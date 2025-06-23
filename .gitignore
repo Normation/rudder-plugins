@@ -30,3 +30,4 @@ node_modules
 */*/*/gulpfile.mjs
 **/toserve/*/*.css
 **/toserve/*/*.scss
+*/dependency-reduced-pom.xml
