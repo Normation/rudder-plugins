@@ -327,7 +327,8 @@ class HttpQueryDataSourceService(
                         .timeout(timeout)
                         .notOptional(
                           s"Timeout error after ${zio.Duration.fromJava(timeout).render}"
-                        ).timed
+                        )
+                        .timed
       _            <- DataSourceLoggerPure.trace(s"Done querying data for ${nodes.size} nodes in ${updated._1.toString}")
       // execute hooks
       _            <- onUpdatedHook(updated._2.collect { case Right(NodeUpdateResult.Updated(id)) => id }.toSet, cause)

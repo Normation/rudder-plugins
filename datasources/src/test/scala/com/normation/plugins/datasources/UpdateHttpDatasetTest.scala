@@ -332,7 +332,8 @@ object CmdbServer {
       val headerId = r.headers.toList.toMap.get("nodeId")
 
       for {
-        body   <- r.body.asString.orDie // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
+        body   <-
+          r.body.asString.orDie // we should correctly decode POST form data, but here we only have one field nodeId=nodexxxx
         formId <- (body.split('=').toList match {
                     case _ :: nodeId :: Nil => ZIO.succeed(Some(nodeId))
                     case _                  => ZIO.die(throw new IllegalArgumentException(s"Error, can't decode POST form data body: ${body}"))
