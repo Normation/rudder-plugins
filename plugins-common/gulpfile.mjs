@@ -105,10 +105,12 @@ function elm(cb) {
 };
 
 function scss(cb) {
-
+    // with the pinned sass version we could ignore some deprecations :
+    // https://github.com/twbs/bootstrap/issues/40962#issuecomment-2470260308
+    const deprecations = ['legacy-js-api', 'mixed-decls', 'color-functions', 'global-builtin', 'import'];
     src(paths.scss.src, { encoding: false })
       .pipe(sourcemaps.init())
-      .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
+      .pipe(sass.sync({style: 'compressed', silenceDeprecations: deprecations}).on('error', sass.logError))
       .pipe(sourcemaps.write())
       .pipe(dest(gestScssDest(__dirname)));
     cb();
