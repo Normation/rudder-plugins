@@ -6,7 +6,7 @@ import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, button, div, li, table, text, ul)
 import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map6, maybe, oneOf, string, succeed, value)
+import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map5, map6, maybe, oneOf, string, succeed, value)
 import Json.Decode.Pipeline exposing (optional, required)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
@@ -51,7 +51,8 @@ init flags =
         initModel =
             Model
                 flags.contextPath
-                ChangeRequestIdNotSet
+                NotSet
+                NotSet
                 NoView
                 table
                 RudderTree.init
@@ -67,7 +68,8 @@ init flags =
 
 type alias Model =
     { contextPath : String
-    , changeRequest : ChangeRequestDetailsOpt
+    , changeRequest : DetailsOpt ChangeRequestDetailsWithHistory
+    , changes : DetailsOpt Changes
     , viewState : ViewState
     , changesTableModel : RudderDataTable.Model TableRow
     , tree : RudderTree.Model
@@ -77,6 +79,7 @@ type alias Model =
 type Msg
     = GetChangeRequestIdFromUrl String
     | GetChangeRequestDetailsWithHistory (Result Error ChangeRequestDetailsWithHistory)
+    | GetChangeRequestChanges (Result Error Changes)
     | ChangesTableMsg RudderDataTable.Msg
     | TreeMsg RudderTree.Msg
 
@@ -288,13 +291,12 @@ type alias ChangeRequestDetails =
     , id : Int
     , description : String
     , isMergeable : Maybe Bool
-    , changes : Changes
     }
 
 
-type ChangeRequestDetailsOpt
-    = Success ChangeRequestDetailsWithHistory
-    | ChangeRequestIdNotSet
+type DetailsOpt data
+    = Success data
+    | NotSet
 
 
 type alias TableRow =
@@ -331,7 +333,7 @@ update msg model =
         GetChangeRequestIdFromUrl crIdStr ->
             case String.toInt crIdStr of
                 Just crId ->
-                    ( model, getChangeRequestDetailsWithHistory model crId )
+                    ( model, Cmd.batch [ getChangeRequestDetailsWithHistory model crId, getChangeRequestChanges model crId ] )
 
                 Nothing ->
                     let
@@ -360,7 +362,21 @@ update msg model =
                         errMsg =
                             getErrorMessage err
                     in
-                    ( { model | viewState = ViewError errMsg }
+                    ( { model | changeRequest = NotSet, viewState = ViewError errMsg }
+                    , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
+                    )
+
+        GetChangeRequestChanges result ->
+            case result of
+                Ok changes ->
+                    ( { model | changes = Success changes }, Cmd.none )
+
+                Err err ->
+                    let
+                        errMsg =
+                            getErrorMessage err
+                    in
+                    ( { model | changes = NotSet, viewState = ViewError errMsg }
                     , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
                     )
 
@@ -405,6 +421,19 @@ getChangeRequestDetailsWithHistory model crId =
                 }
     in
     req
+
+
+getChangeRequestChanges : Model -> Int -> Cmd Msg
+getChangeRequestChanges model crId =
+    request
+        { method = "GET"
+        , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+        , url = getApiUrl model ("changevalidation/workflow/changeRequestChanges/" ++ String.fromInt crId)
+        , body = emptyBody
+        , expect = expectJson GetChangeRequestChanges decodeChanges
+        , timeout = Nothing
+        , tracker = Nothing
+        }
 
 
 
@@ -768,12 +797,20 @@ decodeParameterDiff =
 
 decodeChanges : Decoder Changes
 decodeChanges =
-    map4
-        Changes
-        (field "directives" (list decodeDirectiveDiff))
-        (field "rules" (list decodeRuleDiff))
-        (field "groups" (list decodeGroupDiff))
-        (field "parameters" (list decodeParameterDiff))
+    at [ "data" ]
+        (field "workflow"
+            (index 0
+                (field "changes"
+                    (map4
+                        Changes
+                        (field "directives" (list decodeDirectiveDiff))
+                        (field "rules" (list decodeRuleDiff))
+                        (field "groups" (list decodeGroupDiff))
+                        (field "parameters" (list decodeParameterDiff))
+                    )
+                )
+            )
+        )
 
 
 decodeChangeRequestDetails : Decoder ChangeRequestDetails
@@ -807,14 +844,13 @@ decodeChangeRequestDetails =
                                 fail "Invalid change request status"
                     )
     in
-    map6
+    map5
         ChangeRequestDetails
         (field "displayName" string)
         (field "status" decodeChangeRequestStatus)
         (field "id" int)
         (field "description" string)
         (maybe (field "isMergeable" bool))
-        (field "changes" decodeChanges)
 
 
 

@@ -331,7 +331,10 @@ object ChangeValidationConf extends RudderPluginModule {
       RudderConfig.eventLogDetailsService,
       RudderConfig.changeRequestEventLogService,
       commitAndDeployChangeRequest,
-      RudderConfig.workflowEventLogService
+      RudderConfig.workflowEventLogService,
+      RudderConfig.nodeFactRepository,
+      RudderConfig.roDirectiveRepository,
+      RudderConfig.roNodeGroupRepository
     )
     new LiftApiModuleProvider[EndpointSchema] {
       override def schemas: ApiModuleProvider[EndpointSchema] = new ApiModuleProvider[EndpointSchema] {
