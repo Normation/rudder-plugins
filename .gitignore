@@ -30,4 +30,5 @@ node_modules
 */*/*/gulpfile.mjs
 **/toserve/*/*.css
 **/toserve/*/*.scss
+*.scala.semanticdb
 */dependency-reduced-pom.xml
