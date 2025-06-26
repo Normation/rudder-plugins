@@ -38,11 +38,11 @@
 package com.normation.plugins.changevalidation
 
 import cats.data.NonEmptyList
+import com.normation.cfclerk.domain.SectionSpec
 import com.normation.cfclerk.domain.Technique
+import com.normation.cfclerk.domain.TechniqueName
 import com.normation.errors.Accumulated
-import com.normation.errors.AccumulateErrors
 import com.normation.errors.Inconsistency
-import com.normation.errors.IOResult
 import com.normation.errors.PureResult
 import com.normation.errors.RudderError
 import com.normation.eventlog.EventActor
@@ -52,75 +52,39 @@ import com.normation.plugins.changevalidation.Action.ResourceChangeEvent
 import com.normation.plugins.changevalidation.ActionChangeJson.create
 import com.normation.plugins.changevalidation.ActionChangeJson.delete
 import com.normation.plugins.changevalidation.ActionChangeJson.modify
+import com.normation.plugins.changevalidation.DirectiveChangeJson.SectionValContentJson
+import com.normation.plugins.changevalidation.DirectiveChangeJson.SectionValJson
 import com.normation.plugins.changevalidation.GroupChangeJson.GroupCreateChangeJson
 import com.normation.plugins.changevalidation.GroupChangeJson.GroupDeleteChangeJson
 import com.normation.plugins.changevalidation.GroupChangeJson.GroupModifyChangeJson
-import com.normation.rudder.domain.eventlog.AddChangeRequest
-import com.normation.rudder.domain.eventlog.ChangeRequestEventLog
-import com.normation.rudder.domain.eventlog.DeleteChangeRequest
-import com.normation.rudder.domain.eventlog.ModifyChangeRequest
-import com.normation.rudder.domain.eventlog.WorkflowStepChanged
+import com.normation.rudder.domain.eventlog.*
 import com.normation.rudder.domain.nodes.AddNodeGroupDiff
 import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
 import com.normation.rudder.domain.nodes.ModifyToNodeGroupDiff
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies
-import com.normation.rudder.domain.policies.AddDirectiveDiff
-import com.normation.rudder.domain.policies.AddRuleDiff
-import com.normation.rudder.domain.policies.CompositeRuleTarget
-import com.normation.rudder.domain.policies.DeleteDirectiveDiff
-import com.normation.rudder.domain.policies.DeleteRuleDiff
-import com.normation.rudder.domain.policies.DirectiveId
-import com.normation.rudder.domain.policies.DirectiveUid
-import com.normation.rudder.domain.policies.GroupTarget
-import com.normation.rudder.domain.policies.ModifyToDirectiveDiff
-import com.normation.rudder.domain.policies.ModifyToRuleDiff
-import com.normation.rudder.domain.policies.NonGroupRuleTarget
-import com.normation.rudder.domain.policies.RuleId
-import com.normation.rudder.domain.policies.RuleTarget
-import com.normation.rudder.domain.policies.SimpleTarget
-import com.normation.rudder.domain.policies.TargetComposition
-import com.normation.rudder.domain.policies.TargetExclusion
-import com.normation.rudder.domain.policies.TargetIntersection
-import com.normation.rudder.domain.policies.TargetUnion
+import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.DeleteGlobalParameterDiff
 import com.normation.rudder.domain.properties.ModifyToGlobalParameterDiff
-import com.normation.rudder.domain.workflows.Change
-import com.normation.rudder.domain.workflows.ChangeItem
-import com.normation.rudder.domain.workflows.ChangeRequest
-import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
-import com.normation.rudder.domain.workflows.DirectiveChangeItem
-import com.normation.rudder.domain.workflows.DirectiveChanges
-import com.normation.rudder.domain.workflows.GlobalParameterChangeItem
-import com.normation.rudder.domain.workflows.GlobalParameterChanges
-import com.normation.rudder.domain.workflows.NodeGroupChangeItem
-import com.normation.rudder.domain.workflows.NodeGroupChanges
-import com.normation.rudder.domain.workflows.RuleChangeItem
-import com.normation.rudder.domain.workflows.RuleChanges
-import com.normation.rudder.domain.workflows.WorkflowNodeId
-import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.QueryContext
-import com.normation.rudder.repository.RoDirectiveRepository
-import com.normation.rudder.repository.RoNodeGroupRepository
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.modification.DiffService
 import com.normation.utils.DateFormaterService
-import com.normation.zio.UnsafeRun
 import io.scalaland.chimney.PartialTransformer
 import io.scalaland.chimney.Transformer
-import io.scalaland.chimney.partial
 import io.scalaland.chimney.partial.Result
-import io.scalaland.chimney.partial.syntax.asResult
-import io.scalaland.chimney.partial.syntax.orErrorAsResult
 import io.scalaland.chimney.syntax.*
 import org.joda.time.DateTime
+import scala.collection.MapView
+import scala.xml.Elem
+import scala.xml.Null
+import scala.xml.Text
+import scala.xml.TopScope
 import zio.Chunk
 import zio.json.DeriveJsonEncoder
 import zio.json.JsonEncoder
 import zio.json.jsonDiscriminator
-import zio.json.jsonExclude
 import zio.json.jsonField
 
 final case class SimpleChangeRequestJson(
@@ -171,21 +135,19 @@ object ChangeRequestChangesJson {
   }
 
   def from(cr: ChangeRequest)(implicit
-      techniqueByDirective:  Map[DirectiveId, Technique],
-      diffService:           DiffService,
-      qc:                    QueryContext,
-      nodeFactRepository:    NodeFactRepository,
-      directiveRepository:   RoDirectiveRepository,
-      roNodeGroupRepository: RoNodeGroupRepository
+      techniqueByDirective: Map[DirectiveId, Technique],
+      diffService:          DiffService,
+      nodeGroups:           MapView[NodeGroupId, String],
+      directives:           MapView[DirectiveId, Directive],
+      nodes:                MapView[NodeId, String]
   ): PureResult[ChangeRequestChangesJson] = {
     cr match {
-      case cr: ConfigurationChangeRequest => {
+      case cr: ConfigurationChangeRequest =>
         cr.transformIntoPartial[ConfigurationChangesJson](ConfigurationChangesJson.transformer)
           .map(c => ChangeRequestChangesJson(Some(c)))
           .asEither
           .left
           .map(_.transformInto[RudderError])
-      }
       case _ =>
         Right(ChangeRequestChangesJson(None))
     }
@@ -193,7 +155,7 @@ object ChangeRequestChangesJson {
 }
 
 final case class ConfigurationChangesJson(
-    directives: Chunk[DirectiveChangeActionJson],
+    directives: Chunk[ExtendedDirectiveChangeJson],
     rules:      Chunk[ExtendedRuleChangeJson],
     groups:     Chunk[ExtendedGroupChangeJson],
     parameters: Chunk[GlobalParameterChangeActionJson]
@@ -202,19 +164,18 @@ final case class ConfigurationChangesJson(
 object ConfigurationChangesJson {
 
   implicit def transformer(implicit
-      techniqueByDirective:  Map[DirectiveId, Technique],
-      diffService:           DiffService,
-      qc:                    QueryContext,
-      nodeFactRepository:    NodeFactRepository,
-      roDirectiveRepository: RoDirectiveRepository,
-      roNodeGroupRepository: RoNodeGroupRepository
+      techniqueByDirective: Map[DirectiveId, Technique],
+      diffService:          DiffService,
+      nodeGroups:           MapView[NodeGroupId, String],
+      directives:           MapView[DirectiveId, Directive],
+      nodes:                MapView[NodeId, String]
   ): PartialTransformer[ConfigurationChangeRequest, ConfigurationChangesJson] = {
     PartialTransformer
       .define[ConfigurationChangeRequest, ConfigurationChangesJson]
       .withFieldComputedPartial(
         _.directives,
         cr => {
-          Result.traverse[Chunk[DirectiveChangeActionJson], (DirectiveId, DirectiveChanges), DirectiveChangeActionJson](
+          Result.traverse[Chunk[ExtendedDirectiveChangeJson], (DirectiveId, DirectiveChanges), ExtendedDirectiveChangeJson](
             cr.directives.iterator,
             {
               case (directiveId, changes) =>
@@ -223,9 +184,12 @@ object ConfigurationChangesJson {
                                  techniqueByDirective.get(directiveId),
                                  s"Error while fetching technique for directive ${directiveId}"
                                )
+                  directive  = directives(directiveId)
                   res       <- {
                     implicit val foundTechnique = technique
-                    changes.changes.transformIntoPartial[DirectiveChangeActionJson]
+                    changes.changes
+                      .transformIntoPartial[DirectiveChangeActionJson]
+                      .map(json => ExtendedDirectiveChangeJson.toExtended(directive, json))
                   }
 
                 } yield res
@@ -243,7 +207,7 @@ object ConfigurationChangesJson {
               case (directiveId, changes) =>
                 changes.changes
                   .transformIntoPartial[RuleChangeActionJson]
-                  .flatMap(_.transformIntoPartial[ExtendedRuleChangeJson])
+                  .map(ExtendedRuleChangeJson.toExtended)
             },
             failFast = false
           )
@@ -259,7 +223,7 @@ object ConfigurationChangesJson {
                 case (groupId, changes) =>
                   changes.changes
                     .transformIntoPartial[GroupChangeActionJson]
-                    .flatMap(_.transformIntoPartial[ExtendedGroupChangeJson])
+                    .map(ExtendedGroupChangeJson.toExtended)
               },
               failFast = false
             )
@@ -285,60 +249,142 @@ object ConfigurationChangesJson {
   implicit val encoder: JsonEncoder[ConfigurationChangesJson] = DeriveJsonEncoder.gen[ConfigurationChangesJson]
 }
 
-final case class ExtendedGroupChangeJson(
-    action:   ActionChangeJson,
-    change:   GroupChangeJson,
-    nodeInfo: Chunk[NodeIdent]
-)
+@jsonDiscriminator("type") sealed trait ExtendedDirectiveChangeJson
 
-object ExtendedGroupChangeJson {
+final case class DirectiveChangeDefaultJson(
+    action:     ActionChangeJson,
+    change:     DirectiveChangeJson,
+    parameters: String
+) extends ExtendedDirectiveChangeJson
 
-  implicit def transformer(implicit
-      nodeFactRepo: NodeFactRepository,
-      qc:           QueryContext
-  ): PartialTransformer[GroupChangeActionJson, ExtendedGroupChangeJson] = {
+final case class DirectiveChangeDiffJson(
+    action:     ActionChangeJson,
+    change:     DirectiveChangeJson,
+    parameters: SimpleDiffOrValueJson[String]
+) extends ExtendedDirectiveChangeJson
 
-    def nodeIdtoIdent(id: NodeId): Result[NodeIdent] = {
-      (for {
-        node <- nodeFactRepo.get(id).notOptional(s"Node with id ${id.value} not found.")
-      } yield {
-        (id, node.fqdn)
-      }).either.runNow match {
-        case Left(err)       => partial.Result.fromErrorString(s"Node with id ${id.value} not found.")
-        case Right(id, name) => partial.Result.fromValue(NodeIdent(id, name))
+object ExtendedDirectiveChangeJson {
+
+  implicit def toSectionVal: Transformer[SectionValJson, SectionVal] = svJson => {
+    def unserializeSectionVal(sv: SectionValContentJson): SectionVal = {
+
+      val vars = sv.vars match {
+        case Some(value) => value.map(v => (v.`var`.name, v.`var`.value)).toMap
+        case None        => Map()
+      }
+
+      val sec = sv.sections match {
+        case Some(value) =>
+          value.map(s => (s.name, Seq(unserializeSectionVal(s)))).toMap
+        case None        => Map()
+      }
+
+      SectionVal(sec, vars)
+
+    }
+    unserializeSectionVal(svJson.section)
+  }
+
+  implicit def toExtended(
+      directive:           Directive,
+      change:              DirectiveChangeActionJson
+  )(implicit
+      directiveTechniques: Map[DirectiveId, Technique],
+      diffService:         DiffService
+  ): ExtendedDirectiveChangeJson = {
+
+    val xmlPretty = new scala.xml.PrettyPrinter(80, 2)
+
+    def toSimpleDiff[T](json: SimpleDiffJson[T]): SimpleDiff[T] = {
+      SimpleDiff(json.oldValue, json.newValue)
+    }
+
+    def sectionXml(id: DirectiveId): String = {
+      directiveTechniques.get(id).map(_.rootSection) match {
+        case Some(rs) =>
+          xmlPretty.format(SectionVal.toXml(SectionVal.directiveValToSectionVal(rs, directive.parameters)))
+        case None     =>
+          s"<div> ${directive.parameters} </div>"
       }
     }
 
-    PartialTransformer
-      .define[GroupChangeActionJson, ExtendedGroupChangeJson]
-      .withFieldComputedPartial(
-        _.nodeInfo,
-        _.change match {
-          case c: GroupCreateChangeJson =>
-            Result.traverse[Chunk[NodeIdent], NodeId, NodeIdent](
-              c.group.serverList.iterator,
-              nodeIdtoIdent,
-              failFast = false
+    change.change match {
+      case c: DirectiveChangeJson.DirectiveCreateChangeJson =>
+        DirectiveChangeDefaultJson(change.action, c, sectionXml(directive.id))
+      case d: DirectiveChangeJson.DirectiveDeleteChangeJson =>
+        DirectiveChangeDefaultJson(change.action, d, sectionXml(directive.id))
+      case m: DirectiveChangeJson.DirectiveModifyChangeJson =>
+        val section = m.change.modParameters match {
+          case SimpleDiffJson(oldValue, newValue) =>
+            val old  = oldValue.transformInto[SectionVal](toSectionVal)
+            val newv = newValue.transformInto[SectionVal](toSectionVal)
+
+            val diff = SimpleDiff(old, newv)
+
+            val elem = new Elem(
+              prefix = null,
+              label = "tmp",
+              attributes1 = Null,
+              scope = TopScope,
+              minimizeEmpty = false,
+              child = { Seq.empty }*
             )
 
-          case d: GroupDeleteChangeJson =>
-            Result.traverse[Chunk[NodeIdent], NodeId, NodeIdent](
-              d.group.serverList.iterator,
-              nodeIdtoIdent,
-              failFast = false
-            )
-          case m: GroupModifyChangeJson =>
-            Result.traverse[Chunk[NodeIdent], NodeId, NodeIdent](
-              m.change.modNodeList match {
-                case SimpleValueJson(value)             => value.iterator
-                case SimpleDiffJson(oldValue, newValue) => Set.from(oldValue ++ newValue).iterator
-              },
-              nodeIdtoIdent,
-              failFast = false
-            )
+            SimpleDiff.toXml(elem, diff)(s => Text(xmlPretty.format(SectionVal.toXml(s)))).toString()
+
+          case SimpleValueJson(_) => sectionXml(directive.id)
+
         }
-      )
-      .buildTransformer
+
+        DirectiveChangeDefaultJson(change.action, m, section)
+
+    }
+
+  }
+
+  implicit val encoder: JsonEncoder[ExtendedDirectiveChangeJson] = DeriveJsonEncoder.gen[ExtendedDirectiveChangeJson]
+
+}
+
+@jsonDiscriminator("type") sealed trait ExtendedGroupChangeJson
+
+final case class GroupChangeDefaultJson(
+    action:   ActionChangeJson,
+    change:   GroupChangeJson,
+    nodeInfo: Chunk[NodeIdent]
+) extends ExtendedGroupChangeJson
+
+final case class GroupChangeDiffJson(
+    action:   ActionChangeJson,
+    change:   GroupChangeJson,
+    nodeInfo: SimpleDiffOrValueJson[Chunk[NodeIdent]]
+) extends ExtendedGroupChangeJson
+
+object ExtendedGroupChangeJson {
+
+  implicit def toExtended(g: GroupChangeActionJson)(implicit nodes: MapView[NodeId, String]): ExtendedGroupChangeJson = {
+    implicit def nodeIdentTransformer: Transformer[NodeId, NodeIdent] = NodeIdent.transformer
+
+    g.change match {
+      case c: GroupCreateChangeJson =>
+        GroupChangeDefaultJson(g.action, c, Chunk.from(c.group.serverList.map(_.transformInto[NodeIdent])))
+      case d: GroupDeleteChangeJson =>
+        GroupChangeDefaultJson(g.action, d, Chunk.from(d.group.serverList.map(_.transformInto[NodeIdent])))
+      case m: GroupModifyChangeJson =>
+        GroupChangeDiffJson(
+          g.action,
+          g.change,
+          m.change.modNodeList match {
+            case SimpleDiffJson(oldValue, newValue) =>
+              SimpleDiffJson(
+                Chunk.from(oldValue.map(_.transformInto[NodeIdent])),
+                Chunk.from(newValue.map(_.transformInto[NodeIdent]))
+              )
+            case SimpleValueJson(value)             =>
+              SimpleValueJson(Chunk.from(value.map(_.transformInto[NodeIdent])))
+          }
+        )
+    }
   }
 
   implicit val encoder: JsonEncoder[ExtendedGroupChangeJson] = DeriveJsonEncoder.gen[ExtendedGroupChangeJson]
@@ -352,86 +398,76 @@ final case class NodeIdent(
 object NodeIdent {
   implicit val idEncoder: JsonEncoder[NodeId]    = JsonEncoder[String].contramap[NodeId](_.value)
   implicit val encoder:   JsonEncoder[NodeIdent] = DeriveJsonEncoder.gen[NodeIdent]
+
+  implicit def transformer(implicit nodes: MapView[NodeId, String]): Transformer[NodeId, NodeIdent] = {
+    Transformer
+      .define[NodeId, NodeIdent]
+      .withFieldComputed(_.id, id => id)
+      .withFieldComputed(_.name, id => nodes(id))
+      .buildTransformer
+  }
 }
 
-final case class ExtendedRuleChangeJson(
+@jsonDiscriminator("type") sealed trait ExtendedRuleChangeJson
+
+final case class RuleChangeDefaultJson(
     action:         ActionChangeJson,
     change:         RuleChangeJson,
     ruleTargetInfo: Chunk[RuleTargetExtended],
     directiveInfo:  Chunk[DirectiveIdent]
-)
+) extends ExtendedRuleChangeJson
+
+final case class RuleChangeDiffJson(
+    action:         ActionChangeJson,
+    change:         RuleChangeJson,
+    ruleTargetInfo: SimpleDiffOrValueJson[Chunk[RuleTargetExtended]],
+    directiveInfo:  SimpleDiffOrValueJson[Chunk[DirectiveIdent]]
+) extends ExtendedRuleChangeJson
 
 object ExtendedRuleChangeJson {
 
-  implicit def transformer(implicit
-      roDirectiveRepo:       RoDirectiveRepository,
-      roNodeGroupRepository: RoNodeGroupRepository,
-      qc:                    QueryContext
-  ): PartialTransformer[RuleChangeActionJson, ExtendedRuleChangeJson] = {
+  def toExtended(r: RuleChangeActionJson)(implicit
+      nodeGroups: MapView[NodeGroupId, String],
+      directives: MapView[DirectiveId, Directive]
+  ): ExtendedRuleChangeJson = {
 
-    implicit val ruleTargetTransformer: Transformer[RuleTarget, RuleTargetExtended] = RuleTargetExtended.transformer
-
-    def directiveIdToIdent(uid: DirectiveUid): Result[DirectiveIdent] = {
-      (for {
-        directive <- roDirectiveRepo.getDirective(uid).notOptional(s"Directive with id ${uid} not found.")
-      } yield {
-        (uid, directive.name)
-      }).either.runNow match {
-        case Left(err)        => partial.Result.fromErrorString(s"Directive with id ${uid} not found.")
-        case Right(uid, name) => partial.Result.fromValue(DirectiveIdent(uid, name))
-      }
+    implicit def toDirectiveIdent(s: Iterable[DirectiveId]): Chunk[DirectiveIdent] = {
+      Chunk.from(s.map(_.transformInto[DirectiveIdent]))
     }
 
-    PartialTransformer
-      .define[RuleChangeActionJson, ExtendedRuleChangeJson]
-      .withFieldComputedPartial(
-        _.ruleTargetInfo,
-        _.change match {
-          case RuleChangeJson.RuleCreateChangeJson(rule)   =>
-            partial.Result.fromValue(Chunk.from(rule.targets.map(_.toRuleTarget.transformInto[RuleTargetExtended])))
-          case RuleChangeJson.RuleDeleteChangeJson(rule)   =>
-            partial.Result.fromValue(Chunk.from(rule.targets.map(_.toRuleTarget.transformInto[RuleTargetExtended])))
-          case RuleChangeJson.RuleModifyChangeJson(change) =>
-            change.modTarget match {
-              case SimpleDiffJson(oldValue, newValue) =>
-                partial.Result.fromValue(
-                  Chunk.from(oldValue.map(_.transformInto[RuleTargetExtended]))
-                  ++ Chunk.from(newValue.map(_.transformInto[RuleTargetExtended]))
-                )
+    implicit def toRuleTargetExtended(s: Iterable[RuleTarget]): Chunk[RuleTargetExtended] = {
+      Chunk.from(s.map(_.transformInto[RuleTargetExtended]))
+    }
 
-              case SimpleValueJson(value) =>
-                partial.Result.fromValue(Chunk.from(value.map(_.transformInto[RuleTargetExtended])))
-            }
-        }
-      )
-      .withFieldComputedPartial(
-        _.directiveInfo,
-        _.change match {
-          case RuleChangeJson.RuleCreateChangeJson(rule) =>
-            Result.traverse[Chunk[DirectiveIdent], DirectiveUid, DirectiveIdent](
-              rule.directives.map(DirectiveUid(_)).iterator,
-              directiveIdToIdent,
-              failFast = false
-            )
-
-          case RuleChangeJson.RuleDeleteChangeJson(rule)   =>
-            Result.traverse[Chunk[DirectiveIdent], DirectiveUid, DirectiveIdent](
-              rule.directives.map(DirectiveUid(_)).iterator,
-              directiveIdToIdent,
-              failFast = false
-            )
-          case RuleChangeJson.RuleModifyChangeJson(change) =>
-            Result.traverse[Chunk[DirectiveIdent], DirectiveUid, DirectiveIdent](
-              change.modDirectiveIds match {
-                case SimpleDiffJson(oldValue, newValue) => Set.from(oldValue ++ newValue).map(_.uid).iterator
-                case SimpleValueJson(value)             => value.map(_.uid).iterator
-              },
-              directiveIdToIdent,
-              failFast = false
-            )
-        }
-      )
-      .buildTransformer
+    r.change match {
+      case c: RuleChangeJson.RuleCreateChangeJson =>
+        RuleChangeDefaultJson(
+          r.action,
+          c,
+          c.rule.targets.map(_.toRuleTarget),
+          c.rule.directives.map(id => DirectiveId(DirectiveUid(id)))
+        )
+      case d: RuleChangeJson.RuleDeleteChangeJson =>
+        RuleChangeDefaultJson(
+          r.action,
+          d,
+          d.rule.targets.map(_.toRuleTarget),
+          d.rule.directives.map(id => DirectiveId(DirectiveUid(id)))
+        )
+      case m: RuleChangeJson.RuleModifyChangeJson =>
+        RuleChangeDiffJson(
+          r.action,
+          m,
+          m.change.modTarget match {
+            case SimpleDiffJson(oldValue, newValue) => SimpleDiffJson(oldValue, newValue)
+            case SimpleValueJson(value)             => SimpleValueJson(value)
+          },
+          m.change.modDirectiveIds match {
+            case SimpleDiffJson(oldValue, newValue) => SimpleDiffJson(oldValue, newValue)
+            case SimpleValueJson(value)             => SimpleValueJson(value)
+          }
+        )
+    }
   }
 
   implicit val encoder:                  JsonEncoder[ExtendedRuleChangeJson]        = DeriveJsonEncoder.gen[ExtendedRuleChangeJson]
@@ -442,8 +478,8 @@ object ExtendedRuleChangeJson {
 }
 
 @jsonDiscriminator("type") sealed trait RuleTargetExtended {}
-sealed trait CompositionRuleTargetExtended extends RuleTargetExtended {}
-sealed trait SimpleRuleTargetExtended      extends RuleTargetExtended {}
+@jsonDiscriminator("type") sealed trait CompositionRuleTargetExtended extends RuleTargetExtended {}
+@jsonDiscriminator("type") sealed trait SimpleRuleTargetExtended      extends RuleTargetExtended {}
 
 final case class GroupTargetExtended(
     id:   NodeGroupId,
@@ -454,32 +490,20 @@ object GroupTargetExtended {
   implicit val idEncoder: JsonEncoder[NodeGroupId]         = JsonEncoder[String].contramap[NodeGroupId](_.serialize)
   implicit val encoder:   JsonEncoder[GroupTargetExtended] = DeriveJsonEncoder.gen[GroupTargetExtended]
 }
-final case class NonGroupTargetExtended(r: String) extends SimpleRuleTargetExtended
+
+final case class NonGroupTargetExtended(nonGroupTarget: String) extends SimpleRuleTargetExtended
 final case class ComposedTarget(
     include: CompositionRuleTargetExtended,
     exclude: CompositionRuleTargetExtended
 ) extends RuleTargetExtended
-@jsonExclude final case class OrComposition(or: Chunk[RuleTargetExtended]) extends CompositionRuleTargetExtended
-@jsonExclude final case class AndComposition(and: Chunk[RuleTargetExtended]) extends CompositionRuleTargetExtended
+
+final case class OrComposition(or: Chunk[RuleTargetExtended])   extends CompositionRuleTargetExtended
+final case class AndComposition(and: Chunk[RuleTargetExtended]) extends CompositionRuleTargetExtended
 
 object RuleTargetExtended {
 
-  private def nodeGroupIdToIdent(
-      id: NodeGroupId
-  )(implicit groupRepository: RoNodeGroupRepository, qc: QueryContext): Result[GroupTargetExtended] = {
-    (for {
-      group <- groupRepository.getNodeGroup(id)
-    } yield {
-      (id, group._1.name)
-    }).either.runNow match {
-      case Left(err)       => partial.Result.fromErrorString(s"Node group with id ${id.serialize} not found.")
-      case Right(id, name) => partial.Result.fromValue(GroupTargetExtended(id, name))
-    }
-  }
-
   implicit def composedTransformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetExclusion, ComposedTarget] = {
     Transformer
       .define[TargetExclusion, ComposedTarget]
@@ -489,8 +513,7 @@ object RuleTargetExtended {
   }
 
   implicit def compositionTransformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetComposition, CompositionRuleTargetExtended] = {
     Transformer
       .define[TargetComposition, CompositionRuleTargetExtended]
@@ -500,8 +523,7 @@ object RuleTargetExtended {
   }
 
   implicit def orTransformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetUnion, OrComposition] = {
     Transformer
       .define[TargetUnion, OrComposition]
@@ -510,8 +532,7 @@ object RuleTargetExtended {
   }
 
   implicit def andTransformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetIntersection, AndComposition] = {
     Transformer
       .define[TargetIntersection, AndComposition]
@@ -520,29 +541,26 @@ object RuleTargetExtended {
   }
 
   implicit def groupTransformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[GroupTarget, GroupTargetExtended] = {
     Transformer
       .define[GroupTarget, GroupTargetExtended]
       .withFieldComputed(_.id, _.groupId)
-      .withFieldComputed(_.name, _ => "TODO")
+      .withFieldComputed(_.name, id => nodeGroups(id.groupId))
       .buildTransformer
   }
 
   implicit def nonGroupTransformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[NonGroupRuleTarget, NonGroupTargetExtended] = {
     Transformer
       .define[NonGroupRuleTarget, NonGroupTargetExtended]
-      .withFieldComputed(_.r, _.target)
+      .withFieldComputed(_.nonGroupTarget, _.target)
       .buildTransformer
   }
 
   implicit def transformer(implicit
-      groupRepository: RoNodeGroupRepository,
-      qc:              QueryContext
+      nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[RuleTarget, RuleTargetExtended] = {
 
     Transformer
@@ -567,6 +585,15 @@ final case class DirectiveIdent(
 object DirectiveIdent {
   implicit val idEncoder: JsonEncoder[DirectiveUid]   = JsonEncoder[String].contramap[DirectiveUid](_.serialize)
   implicit val encoder:   JsonEncoder[DirectiveIdent] = DeriveJsonEncoder.gen[DirectiveIdent]
+
+  implicit def transformer(implicit directives: MapView[DirectiveId, Directive]): Transformer[DirectiveId, DirectiveIdent] = {
+    Transformer
+      .define[DirectiveId, DirectiveIdent]
+      .withFieldComputed(_.id, _.uid)
+      .withFieldComputed(_.name, id => directives(id).name)
+      .buildTransformer
+  }
+
 }
 
 @jsonDiscriminator("resourceType") sealed trait ResourceType {

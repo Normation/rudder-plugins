@@ -61,6 +61,7 @@ import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.domain.nodes.NodeGroupId
 import com.normation.rudder.domain.policies.AddRuleDiff
 import com.normation.rudder.domain.policies.DeleteRuleDiff
+import com.normation.rudder.domain.policies.Directive
 import com.normation.rudder.domain.policies.DirectiveId
 import com.normation.rudder.domain.policies.ModifyToRuleDiff
 import com.normation.rudder.domain.workflows.ChangeRequest
@@ -304,16 +305,28 @@ class WorkflowInternalApiImpl(
         .map(_.toMap)
     }
 
-    private def getNodeGroupNames(changeRequest: ChangeRequest): IOResult[Map[NodeGroupId, String]] = {
-      ???
+    private def getNodeGroupNames: IOResult[MapView[NodeGroupId, String]] = {
+      for {
+        library <- nodeGroupRepository.getFullGroupLibrary()
+      } yield {
+        library.allGroups.view.mapValues(_.nodeGroup.name)
+      }
     }
 
-    private def getDirectiveNames(changeRequest: ChangeRequest): IOResult[Map[DirectiveId, String]] = {
-      ???
+    private def getDirectives: IOResult[MapView[DirectiveId, Directive]] = {
+      for {
+        library <- directiveRepository.getFullDirectiveLibrary()
+      } yield {
+        library.allDirectives.view.mapValues(_._2)
+      }
     }
 
-    private def getNodeNames(changeRequest: ChangeRequest): IOResult[Map[NodeId, String]] = {
-      ???
+    private def getNodeNames(implicit qc: QueryContext): IOResult[MapView[NodeId, String]] = {
+      for {
+        library <- nodeFactRepository.getAll()
+      } yield {
+        library.mapValues(_.fqdn)
+      }
     }
 
     private def withChangeRequestContext[T: JsonEncoder](
@@ -362,17 +375,12 @@ class WorkflowInternalApiImpl(
 
       withChangeRequestContext(sid, params, schema, "find")((changeRequest, status, techniqueByDirective) => {
         for {
-          changesJson <-
-            ChangeRequestChangesJson
-              .from(changeRequest)(
-                techniqueByDirective,
-                diffService,
-                qc,
-                nodeFactRepository,
-                directiveRepository,
-                nodeGroupRepository
-              )
-              .toIO
+          nodeGroups  <- getNodeGroupNames
+          directives  <- getDirectives
+          nodes       <- getNodeNames
+          changesJson <- ChangeRequestChangesJson
+                           .from(changeRequest)(techniqueByDirective, diffService, nodeGroups, directives, nodes)
+                           .toIO
         } yield {
           changesJson
         }
