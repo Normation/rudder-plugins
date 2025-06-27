@@ -52,8 +52,6 @@ import com.normation.plugins.changevalidation.Action.ResourceChangeEvent
 import com.normation.plugins.changevalidation.ActionChangeJson.create
 import com.normation.plugins.changevalidation.ActionChangeJson.delete
 import com.normation.plugins.changevalidation.ActionChangeJson.modify
-import com.normation.plugins.changevalidation.DirectiveChangeJson.SectionValContentJson
-import com.normation.plugins.changevalidation.DirectiveChangeJson.SectionValJson
 import com.normation.plugins.changevalidation.GroupChangeJson.GroupCreateChangeJson
 import com.normation.plugins.changevalidation.GroupChangeJson.GroupDeleteChangeJson
 import com.normation.plugins.changevalidation.GroupChangeJson.GroupModifyChangeJson
@@ -265,26 +263,6 @@ final case class DirectiveChangeDiffJson(
 
 object ExtendedDirectiveChangeJson {
 
-  implicit def toSectionVal: Transformer[SectionValJson, SectionVal] = svJson => {
-    def unserializeSectionVal(sv: SectionValContentJson): SectionVal = {
-
-      val vars = sv.vars match {
-        case Some(value) => value.map(v => (v.`var`.name, v.`var`.value)).toMap
-        case None        => Map()
-      }
-
-      val sec = sv.sections match {
-        case Some(value) =>
-          value.map(s => (s.name, Seq(unserializeSectionVal(s)))).toMap
-        case None        => Map()
-      }
-
-      SectionVal(sec, vars)
-
-    }
-    unserializeSectionVal(svJson.section)
-  }
-
   implicit def toExtended(
       directive:           Directive,
       change:              DirectiveChangeActionJson
@@ -294,10 +272,6 @@ object ExtendedDirectiveChangeJson {
   ): ExtendedDirectiveChangeJson = {
 
     val xmlPretty = new scala.xml.PrettyPrinter(80, 2)
-
-    def toSimpleDiff[T](json: SimpleDiffJson[T]): SimpleDiff[T] = {
-      SimpleDiff(json.oldValue, json.newValue)
-    }
 
     def sectionXml(id: DirectiveId): String = {
       directiveTechniques.get(id).map(_.rootSection) match {
@@ -316,8 +290,8 @@ object ExtendedDirectiveChangeJson {
       case m: DirectiveChangeJson.DirectiveModifyChangeJson =>
         val section = m.change.modParameters match {
           case SimpleDiffJson(oldValue, newValue) =>
-            val old  = oldValue.transformInto[SectionVal](toSectionVal)
-            val newv = newValue.transformInto[SectionVal](toSectionVal)
+            val old  = oldValue
+            val newv = newValue
 
             val diff = SimpleDiff(old, newv)
 
@@ -403,7 +377,7 @@ object NodeIdent {
     Transformer
       .define[NodeId, NodeIdent]
       .withFieldComputed(_.id, id => id)
-      .withFieldComputed(_.name, id => nodes(id))
+      .withFieldComputed(_.name, id => nodes.getOrElse(id, "unknown"))
       .buildTransformer
   }
 }
@@ -493,8 +467,8 @@ object GroupTargetExtended {
 
 final case class NonGroupTargetExtended(nonGroupTarget: String) extends SimpleRuleTargetExtended
 final case class ComposedTarget(
-    include: CompositionRuleTargetExtended,
-    exclude: CompositionRuleTargetExtended
+    @jsonField("include") includedTarget: CompositionRuleTargetExtended,
+    @jsonField("exclude") excludedTarget: CompositionRuleTargetExtended
 ) extends RuleTargetExtended
 
 final case class OrComposition(or: Chunk[RuleTargetExtended])   extends CompositionRuleTargetExtended
@@ -502,17 +476,13 @@ final case class AndComposition(and: Chunk[RuleTargetExtended]) extends Composit
 
 object RuleTargetExtended {
 
-  implicit def composedTransformer(implicit
+  implicit private def composedTransformer(implicit
       nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetExclusion, ComposedTarget] = {
-    Transformer
-      .define[TargetExclusion, ComposedTarget]
-      .withFieldComputed(_.include, _.includedTarget.transformInto[CompositionRuleTargetExtended])
-      .withFieldComputed(_.exclude, _.excludedTarget.transformInto[CompositionRuleTargetExtended])
-      .buildTransformer
+    Transformer.derive[TargetExclusion, ComposedTarget]
   }
 
-  implicit def compositionTransformer(implicit
+  implicit private def compositionTransformer(implicit
       nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetComposition, CompositionRuleTargetExtended] = {
     Transformer
@@ -522,7 +492,7 @@ object RuleTargetExtended {
       .buildTransformer
   }
 
-  implicit def orTransformer(implicit
+  implicit private def orTransformer(implicit
       nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetUnion, OrComposition] = {
     Transformer
@@ -531,7 +501,7 @@ object RuleTargetExtended {
       .buildTransformer
   }
 
-  implicit def andTransformer(implicit
+  implicit private def andTransformer(implicit
       nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[TargetIntersection, AndComposition] = {
     Transformer
@@ -540,22 +510,20 @@ object RuleTargetExtended {
       .buildTransformer
   }
 
-  implicit def groupTransformer(implicit
+  implicit private def groupTransformer(implicit
       nodeGroups: MapView[NodeGroupId, String]
   ): Transformer[GroupTarget, GroupTargetExtended] = {
     Transformer
       .define[GroupTarget, GroupTargetExtended]
-      .withFieldComputed(_.id, _.groupId)
-      .withFieldComputed(_.name, id => nodeGroups(id.groupId))
+      .withFieldRenamed(_.groupId, _.id)
+      .withFieldComputed(_.name, id => nodeGroups.getOrElse(id.groupId, "unknown"))
       .buildTransformer
   }
 
-  implicit def nonGroupTransformer(implicit
-      nodeGroups: MapView[NodeGroupId, String]
-  ): Transformer[NonGroupRuleTarget, NonGroupTargetExtended] = {
+  implicit private def nonGroupTransformer: Transformer[NonGroupRuleTarget, NonGroupTargetExtended] = {
     Transformer
       .define[NonGroupRuleTarget, NonGroupTargetExtended]
-      .withFieldComputed(_.nonGroupTarget, _.target)
+      .withFieldRenamed(_.target, _.nonGroupTarget)
       .buildTransformer
   }
 
