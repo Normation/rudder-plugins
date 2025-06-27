@@ -41,29 +41,17 @@ import cats.data.NonEmptyList
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.services.TechniqueRepository
-import com.normation.errors.Accumulated
-import com.normation.errors.AccumulateErrors
 import com.normation.errors.Inconsistency
 import com.normation.errors.IOResult
 import com.normation.errors.OptionToIoResult
 import com.normation.inventory.domain.NodeId
-import com.normation.plugins.changevalidation.ChangeRequestChangesJson
-import com.normation.plugins.changevalidation.ChangeRequestJson
-import com.normation.plugins.changevalidation.ChangeRequestWithHistoryJson
-import com.normation.plugins.changevalidation.PendingCountJson
-import com.normation.plugins.changevalidation.RoChangeRequestRepository
-import com.normation.plugins.changevalidation.RoWorkflowRepository
-import com.normation.plugins.changevalidation.SimpleChangeRequestJson
-import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
+import com.normation.plugins.changevalidation.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
 import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.AddRuleDiff
-import com.normation.rudder.domain.policies.DeleteRuleDiff
 import com.normation.rudder.domain.policies.Directive
 import com.normation.rudder.domain.policies.DirectiveId
-import com.normation.rudder.domain.policies.ModifyToRuleDiff
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
@@ -72,18 +60,9 @@ import com.normation.rudder.facts.nodes.NodeFactRepository
 import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.RoDirectiveRepository
 import com.normation.rudder.repository.RoNodeGroupRepository
-import com.normation.rudder.rest.ApiModuleProvider
-import com.normation.rudder.rest.ApiPath
-import com.normation.rudder.rest.AuthzToken
-import com.normation.rudder.rest.EndpointSchema
+import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.AddPath
 import com.normation.rudder.rest.EndpointSchema.syntax.BuildPath
-import com.normation.rudder.rest.EndpointSchema0
-import com.normation.rudder.rest.InternalApi
-import com.normation.rudder.rest.OneParam
-import com.normation.rudder.rest.SortIndex
-import com.normation.rudder.rest.StartsAtVersion21
-import com.normation.rudder.rest.ZeroParam
 import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
@@ -121,8 +100,7 @@ object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModul
     }
   }
 
-  final case object ChangeRequestDetailsWithHistory
-      extends WorkflowInternalApi with OneParam with StartsAtVersion21 with SortIndex {
+  case object ChangeRequestDetailsWithHistory extends WorkflowInternalApi with OneParam with StartsAtVersion21 with SortIndex {
     val z              = implicitly[Line].value
     val (action, path) = GET / "changevalidation" / "workflow" / "changeRequestWithHistory" / "{id}"
     val description    =
@@ -132,7 +110,7 @@ object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModul
     override def authz:         List[AuthorizationType] = List(AuthorizationType.Deployer.Read, AuthorizationType.Validator.Read)
   }
 
-  final case object ChangeRequestChanges extends WorkflowInternalApi with OneParam with StartsAtVersion21 with SortIndex {
+  case object ChangeRequestChanges extends WorkflowInternalApi with OneParam with StartsAtVersion21 with SortIndex {
     val z              = implicitly[Line].value
     val (action, path) = GET / "changevalidation" / "workflow" / "changeRequestChanges" / "{id}"
     val description    =
@@ -371,7 +349,7 @@ class WorkflowInternalApiImpl(
     ): LiftResponse = {
 
       implicit val qc: QueryContext = authzToken.qc
-      val userRights = Seq("deployer", "validator")
+      // val userRights = Seq("deployer", "validator")
 
       withChangeRequestContext(sid, params, schema, "find")((changeRequest, status, techniqueByDirective) => {
         for {

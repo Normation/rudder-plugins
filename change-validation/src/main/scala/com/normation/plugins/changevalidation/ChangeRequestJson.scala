@@ -49,32 +49,8 @@ import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveDelet
 import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveModifyChangeJson
 import com.normation.rudder.apidata.JsonResponseObjects.*
 import com.normation.rudder.apidata.implicits.*
-import com.normation.rudder.domain.nodes.AddNodeGroupDiff
-import com.normation.rudder.domain.nodes.ChangeRequestNodeGroupDiff
-import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
-import com.normation.rudder.domain.nodes.ModifyNodeGroupDiff
-import com.normation.rudder.domain.nodes.ModifyToNodeGroupDiff
-import com.normation.rudder.domain.nodes.NodeGroup
-import com.normation.rudder.domain.nodes.NodeGroupCategoryId
-import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.AddDirectiveDiff
-import com.normation.rudder.domain.policies.AddRuleDiff
-import com.normation.rudder.domain.policies.ChangeRequestDirectiveDiff
-import com.normation.rudder.domain.policies.ChangeRequestRuleDiff
-import com.normation.rudder.domain.policies.DeleteDirectiveDiff
-import com.normation.rudder.domain.policies.DeleteRuleDiff
-import com.normation.rudder.domain.policies.Directive
-import com.normation.rudder.domain.policies.DirectiveId
-import com.normation.rudder.domain.policies.GroupTarget
-import com.normation.rudder.domain.policies.ModifyDirectiveDiff
-import com.normation.rudder.domain.policies.ModifyRuleDiff
-import com.normation.rudder.domain.policies.ModifyToDirectiveDiff
-import com.normation.rudder.domain.policies.ModifyToRuleDiff
-import com.normation.rudder.domain.policies.Rule
-import com.normation.rudder.domain.policies.RuleId
-import com.normation.rudder.domain.policies.RuleTarget
-import com.normation.rudder.domain.policies.SectionVal
-import com.normation.rudder.domain.policies.SimpleDiff
+import com.normation.rudder.domain.nodes.*
+import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.ChangeRequestGlobalParameterDiff
 import com.normation.rudder.domain.properties.DeleteGlobalParameterDiff
@@ -86,25 +62,7 @@ import com.normation.rudder.domain.properties.ModifyGlobalParameterDiff
 import com.normation.rudder.domain.properties.ModifyToGlobalParameterDiff
 import com.normation.rudder.domain.properties.PropertyProvider
 import com.normation.rudder.domain.queries.Query
-import com.normation.rudder.domain.workflows.Change
-import com.normation.rudder.domain.workflows.ChangeItem
-import com.normation.rudder.domain.workflows.ChangeRequest
-import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.domain.workflows.ChangeRequestInfo
-import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
-import com.normation.rudder.domain.workflows.DirectiveChange
-import com.normation.rudder.domain.workflows.DirectiveChangeItem
-import com.normation.rudder.domain.workflows.DirectiveChanges
-import com.normation.rudder.domain.workflows.GlobalParameterChange
-import com.normation.rudder.domain.workflows.GlobalParameterChangeItem
-import com.normation.rudder.domain.workflows.GlobalParameterChanges
-import com.normation.rudder.domain.workflows.NodeGroupChange
-import com.normation.rudder.domain.workflows.NodeGroupChangeItem
-import com.normation.rudder.domain.workflows.NodeGroupChanges
-import com.normation.rudder.domain.workflows.RuleChange
-import com.normation.rudder.domain.workflows.RuleChangeItem
-import com.normation.rudder.domain.workflows.RuleChanges
-import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.services.modification.DiffService
 import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.PartialTransformer
@@ -337,7 +295,7 @@ object DirectiveChangeJson {
       @jsonField("longDescription") modLongDescription:   SimpleDiffOrValueJson[String],
       techniqueName:                                      TechniqueName,
       @jsonField("techniqueVersion") modTechniqueVersion: SimpleDiffOrValueJson[TechniqueVersion],
-      @jsonField("parameters") modParameters:             SimpleDiffOrValueJson[SectionValJson],
+      @jsonField("parameters") modParameters:             SimpleDiffOrValueJson[SectionVal],
       @jsonField("priority") modPriority:                 SimpleDiffOrValueJson[Int],
       @jsonField("enabled") modIsActivated:               SimpleDiffOrValueJson[Boolean],
       system:                                             Boolean
@@ -345,11 +303,14 @@ object DirectiveChangeJson {
 
   object ModifyDirectiveJson {
     // encoders in this nested scope need to be lazy
-    implicit lazy val directiveIdEncoder:      JsonEncoder[DirectiveId]         = JsonEncoder[String].contramap[DirectiveId](_.serialize)
-    implicit lazy val techniqueNameEncoder:    JsonEncoder[TechniqueName]       = JsonEncoder[String].contramap[TechniqueName](_.value)
-    implicit lazy val techniqueVersionEncoder: JsonEncoder[TechniqueVersion]    =
+    implicit lazy val directiveIdEncoder:      JsonEncoder[DirectiveId]      = JsonEncoder[String].contramap[DirectiveId](_.serialize)
+    implicit lazy val techniqueNameEncoder:    JsonEncoder[TechniqueName]    = JsonEncoder[String].contramap[TechniqueName](_.value)
+    implicit lazy val techniqueVersionEncoder: JsonEncoder[TechniqueVersion] =
       JsonEncoder[String].contramap[TechniqueVersion](_.serialize)
-    implicit lazy val encoder:                 JsonEncoder[ModifyDirectiveJson] =
+
+    implicit lazy val sectionValEncoder: JsonEncoder[SectionVal]          =
+      JsonEncoder[SectionValJson].contramap[SectionVal](_.transformInto[SectionValJson])
+    implicit lazy val encoder:           JsonEncoder[ModifyDirectiveJson] =
       DeriveJsonEncoder.gen[ModifyDirectiveJson]
 
     def from(
@@ -358,7 +319,6 @@ object DirectiveChangeJson {
         technique:          Technique,
         initialRootSection: SectionSpec
     ): Either[String, ModifyDirectiveJson] = {
-      import io.scalaland.chimney.dsl.*
       // This is in a try/catch because directiveValToSectionVal may fail
       Try(
         ModifyDirectiveJson(
@@ -370,10 +330,8 @@ object DirectiveChangeJson {
           SimpleDiffOrValueJson.withDefault(diff.modTechniqueVersion, initialState.techniqueVersion),
           SimpleDiffOrValueJson
             .withDefault(
-              diff.modParameters.map(_.transformInto[SimpleDiff[SectionValJson]]),
-              SectionVal
-                .directiveValToSectionVal(initialRootSection, initialState.parameters)
-                .transformInto[SectionValJson]
+              diff.modParameters,
+              SectionVal.directiveValToSectionVal(initialRootSection, initialState.parameters)
             ),
           SimpleDiffOrValueJson.withDefault(diff.modPriority, initialState.priority),
           SimpleDiffOrValueJson.withDefault(diff.modIsActivated, initialState.isEnabled),
