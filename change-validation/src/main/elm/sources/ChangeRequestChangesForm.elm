@@ -3,17 +3,16 @@ module ChangeRequestChangesForm exposing (init)
 import Browser
 import Dict exposing (Dict)
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Attribute, Html, a, b, button, div, h4, li, node, span, table, text, ul)
-import Html.Attributes exposing (attribute, class, href, id, style, tabindex, type_)
+import Html exposing (Attribute, Html, button, div, h4, li, pre, table, text, ul)
+import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map5, map6, maybe, oneOf, string, succeed, value)
-import Json.Decode.Pipeline exposing (hardcoded, optional, required)
-import Json.Encode exposing (encode)
+import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map5, maybe, oneOf, string, succeed, value)
+import Json.Decode.Pipeline exposing (hardcoded, required)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
 import RudderDataTable exposing (ColumnName(..))
 import RudderDiff exposing (..)
-import RudderTree exposing (initFlatTree)
+import RudderTree
 
 
 
@@ -117,36 +116,6 @@ type alias ChangeRequestDetailsWithHistory =
     , isPending : Bool
     , eventLogs : List EventLog
     }
-
-
-type alias ResourceIdent =
-    { id : String
-    , name : String
-    }
-
-
-type SimpleTarget
-    = Group ResourceIdent
-    | NonGroup String
-
-
-type TargetComposition
-    = Or TargetList
-    | And TargetList
-
-
-type alias TargetExclusion =
-    { include : TargetComposition, exclude : TargetComposition }
-
-
-type Target
-    = Simple SimpleTarget
-    | Exclusion TargetExclusion
-    | Composition TargetComposition
-
-
-type TargetList
-    = TargetList (List Target)
 
 
 type alias Diff ty =
@@ -989,14 +958,6 @@ diff model =
             text ""
 
 
-strFromBool b =
-    if b then
-        "true"
-
-    else
-        "false"
-
-
 diffDefault : Diff ty -> ty
 diffDefault diffVal =
     case diffVal of
@@ -1007,62 +968,20 @@ diffDefault diffVal =
             diffChange.from
 
 
-displayResourceIdent : String -> (String -> String -> Html msg) -> Maybe (List (Attribute msg)) -> ResourceIdent -> Html msg
-displayResourceIdent resourceType linkFun attrOpt ident =
-    let
-        attr =
-            case attrOpt of
-                Just a ->
-                    style "list-style-type" "none" :: a
-
-                Nothing ->
-                    [ style "list-style-type" "none" ]
-    in
-    li attr [ span [] [ text (" " ++ resourceType ++ " "), linkFun ident.id ident.name ] ]
-
-
-displayIdentList : String -> (String -> String -> Html msg) -> List ResourceIdent -> Html msg
-displayIdentList resourceType linkFun directives =
-    ul [ style "padding-left" "10px" ] (List.map (displayResourceIdent resourceType linkFun Nothing) directives)
-
-
-displayIdentListDiff : String -> (String -> String -> Html msg) -> Diff (List ResourceIdent) -> Html msg
-displayIdentListDiff resourceType linkFun ls =
-    case ls of
-        NoChange d ->
-            displayIdentList resourceType linkFun d
-
-        Change change ->
-            let
-                unchanged =
-                    List.filter (\e -> List.member e change.to) change.from
-                        |> List.map (displayResourceIdent resourceType linkFun Nothing)
-
-                added =
-                    List.filter (\e -> not (List.member e change.from)) change.to
-                        |> List.map (displayResourceIdent resourceType linkFun (Just [ style "background" "none repeat scroll 0 0 #D6FFD6" ]))
-
-                deleted =
-                    List.filter (\e -> not (List.member e change.to)) change.from
-                        |> List.map (displayResourceIdent resourceType linkFun (Just [ style "background" "none repeat scroll 0 0 #FFD6D6" ]))
-            in
-            ul [ style "padding-left" "10px" ] (unchanged ++ added ++ deleted)
-
-
 displayDirective : Directive -> Html Msg
 displayDirective directive =
     displayResourceDiff "Directive"
         [ displayField "Directive" (directiveLink directive.id directive.displayName)
-        , displayField "Name" (text directive.displayName)
-        , displayField "Short description" (text directive.shortDescription)
-        , displayField "Technique name" (text directive.techniqueName)
-        , displayField "Technique version" (text directive.techniqueVersion)
-        , displayField "Priority" (text (String.fromInt directive.priority))
-        , displayField "Enabled" (text (directive.enabled |> strFromBool))
-        , displayField "System" (text (directive.system |> strFromBool))
-        , displayField "Long description" (text directive.longDescription)
-        , displayField "Policy Mode" (text directive.policyMode)
-        , displayField "Parameters" (text directive.parameters)
+        , displayStringField "Name" directive.displayName
+        , displayStringField "Short description" directive.shortDescription
+        , displayStringField "Technique name" directive.techniqueName
+        , displayStringField "Technique version" directive.techniqueVersion
+        , displayStringField "Priority" (String.fromInt directive.priority)
+        , displayBoolField "Enabled" directive.enabled
+        , displayBoolField "System" directive.system
+        , displayStringField "Long description" directive.longDescription
+        , displayStringField "Policy Mode" directive.policyMode
+        , displayField "Parameters" (pre [] [ text directive.parameters ])
         ]
 
 
@@ -1072,14 +991,14 @@ displayDirectiveDiff directive =
         [ displayField "Directive" (directiveLink directive.id (diffDefault directive.displayName))
         , displayStringDiff "Name" directive.displayName
         , displayStringDiff "Short description" directive.shortDescription
-        , displayField "Technique name" (text directive.techniqueName)
+        , displayStringField "Technique name" directive.techniqueName
         , displayStringDiff "Technique version" directive.techniqueVersion
-        , displayDiffField (String.fromInt >> text) "Priority" directive.priority
+        , displayIntDiff "Priority" directive.priority
         , displayBoolDiff "Enabled" directive.enabled
         , displayBoolDiff "System" directive.system
         , displayStringDiff "Long description" directive.longDescription
-        , displayField "Policy Mode" (text "")
-        , displayStringDiff "Parameters" directive.parameters
+        , displayStringField "Policy Mode" ""
+        , displayDiffField (\param -> pre [] [ text param ]) "Parameters" directive.parameters
         ]
 
 
@@ -1087,13 +1006,13 @@ displayGroup : NodeGroup -> Html Msg
 displayGroup group =
     displayResourceDiff "Node Group"
         [ displayField "Group" (groupLink group.id group.displayName)
-        , displayField "Name" (text group.displayName)
-        , displayField "Description" (text group.description)
-        , displayField "Enabled" (text (group.enabled |> strFromBool))
-        , displayField "Dynamic" (text (group.dynamic |> strFromBool))
-        , displayField "System" (text (group.system |> strFromBool))
-        , displayField "Properties" (text (encode 5 group.properties))
-        , displayField "Query" (text (encode 5 group.query))
+        , displayStringField "Name" group.displayName
+        , displayStringField "Description" group.description
+        , displayBoolField "Enabled" group.enabled
+        , displayBoolField "Dynamic" group.dynamic
+        , displayBoolField "System" group.system
+        , displayValueField "Properties" group.properties
+        , displayValueField "Query" group.query
         , displayField "Node list" (displayIdentList "Group" groupLink group.nodeList)
         ]
 
@@ -1106,9 +1025,9 @@ displayGroupDiff group =
         , displayStringDiff "Description" group.description
         , displayBoolDiff "Enabled" group.enabled
         , displayBoolDiff "Dynamic" group.dynamic
-        , displayField "System" (text "")
-        , displayDiffField (\v -> text (encode 5 v)) "Properties" group.properties
-        , displayDiffField (\v -> text (encode 5 v)) "Query" group.query
+        , displayStringField "System" ""
+        , displayValueDiff "Properties" group.properties
+        , displayValueDiff "Query" group.query
         , displayField "Node list" (displayIdentListDiff "Group" groupLink group.nodeList)
         ]
 
@@ -1117,14 +1036,14 @@ displayRule : Rule -> Html Msg
 displayRule rule =
     displayResourceDiff "Rule"
         [ displayField "Rule" (ruleLink rule.id rule.displayName)
-        , displayField "Name" (text rule.displayName)
-        , displayField "Category" (text rule.categoryId)
-        , displayField "Short description" (text rule.shortDescription)
-        , displayField "Targets" (text "todo") -- todo
+        , displayStringField "Name" rule.displayName
+        , displayStringField "Category" rule.categoryId
+        , displayStringField "Short description" rule.shortDescription
+        , displayRuleTarget "Target" rule.targets
         , displayField "Directives" (displayIdentList "Directive" directiveLink rule.directives)
-        , displayField "Enabled" (text (rule.enabled |> strFromBool))
-        , displayField "System" (text (rule.system |> strFromBool))
-        , displayField "Long description" (text rule.longDescription)
+        , displayBoolField "Enabled" rule.enabled
+        , displayBoolField "System" rule.system
+        , displayStringField "Long description" rule.longDescription
         ]
 
 
@@ -1133,12 +1052,12 @@ displayRuleDiff rule =
     displayResourceDiff "Rule"
         [ displayField "Rule" (ruleLink rule.id (diffDefault rule.displayName))
         , displayStringDiff "Name" rule.displayName
-        , displayField "Category" (text "")
+        , displayStringField "Category" ""
         , displayStringDiff "Short description" rule.shortDescription
-        , displayField "Targets" (text "todo") -- todo
+        , displayRuleTargetDiff "Target" rule.targets
         , displayField "Directives" (displayIdentListDiff "Directive" directiveLink rule.directives)
         , displayBoolDiff "Enabled" rule.enabled
-        , displayField "System" (text "")
+        , displayStringField "System" ""
         , displayStringDiff "Long description" rule.longDescription
         ]
 
@@ -1147,9 +1066,9 @@ displayParameter : GlobalParameter -> Html Msg
 displayParameter param =
     displayResourceDiff "Global parameter"
         [ displayField "Global Parameter" (paramLink param.name)
-        , displayField "Name" (text param.name)
-        , displayField "Value" (text (encode 5 param.value))
-        , displayField "Description" (text param.description)
+        , displayStringField "Name" param.name
+        , displayValueField "Value" param.value
+        , displayStringField "Description" param.description
         ]
 
 
@@ -1157,8 +1076,8 @@ displayParameterDiff : GlobalParameterDiff -> Html Msg
 displayParameterDiff param =
     displayResourceDiff "Global parameter"
         [ displayField "Global Parameter" (paramLink param.name)
-        , displayField "Name" (text param.name)
-        , displayDiffField (\v -> text (encode 5 v)) "Value" param.value
+        , displayStringField "Name" param.name
+        , displayValueDiff "Value" param.value
         , displayStringDiff "Description" param.description
         ]
 
@@ -1169,64 +1088,6 @@ displayResourceDiff resourceType fields =
         [ h4 [] [ text (resourceType ++ " overview:") ]
         , ul [ class "evlogviewpad" ] fields
         ]
-
-
-displayField : String -> Html msg -> Html msg
-displayField fieldName v =
-    li []
-        [ b [] [ text (fieldName ++ " : ") ]
-        , node "value" [] [ v ]
-        ]
-
-
-displayStringDiff : String -> Diff String -> Html msg
-displayStringDiff fieldName diffValue =
-    displayDiffField (\s -> text s) fieldName diffValue
-
-
-displayBoolDiff : String -> Diff Bool -> Html msg
-displayBoolDiff fieldName diffValue =
-    displayDiffField (\b -> text (strFromBool b)) fieldName diffValue
-
-
-displayDiffField : (ty -> Html msg) -> String -> Diff ty -> Html msg
-displayDiffField toHtml fieldName diffValue =
-    li []
-        [ b [] [ text (fieldName ++ " : ") ]
-        , displayFormDiff toHtml diffValue
-        ]
-
-
-directiveLink : String -> String -> Html msg
-directiveLink id name =
-    span []
-        [ a [ href ("/rudder/secure/configurationManager/directiveManagement#{\"directiveId\":\"" ++ id ++ "\"}") ]
-            [ text name ]
-        , text (" (Rudder ID : " ++ id ++ ")")
-        ]
-
-
-groupLink : String -> String -> Html msg
-groupLink id name =
-    span []
-        [ a [ href ("/rudder/secure/nodeManager/groups#{\"groupId\":\"" ++ id ++ "\"}") ]
-            [ text name ]
-        , text (" (Rudder ID : " ++ id ++ ")")
-        ]
-
-
-ruleLink : String -> String -> Html msg
-ruleLink ruleId ruleName =
-    span []
-        [ a [ href ("/rudder/secure/configurationManager/ruleManagement/rule/" ++ ruleId) ]
-            [ text ruleName ]
-        , text (" (Rudder ID : " ++ ruleId ++ ")")
-        ]
-
-
-paramLink : String -> Html msg
-paramLink paramName =
-    a [ href "/rudder/secure/configurationManager/parameterManagement" ] [ text paramName ]
 
 
 

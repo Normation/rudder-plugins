@@ -75,10 +75,6 @@ import io.scalaland.chimney.partial.Result
 import io.scalaland.chimney.syntax.*
 import org.joda.time.DateTime
 import scala.collection.MapView
-import scala.xml.Elem
-import scala.xml.Null
-import scala.xml.Text
-import scala.xml.TopScope
 import zio.Chunk
 import zio.json.DeriveJsonEncoder
 import zio.json.JsonEncoder
@@ -290,27 +286,13 @@ object ExtendedDirectiveChangeJson {
       case m: DirectiveChangeJson.DirectiveModifyChangeJson =>
         val section = m.change.modParameters match {
           case SimpleDiffJson(oldValue, newValue) =>
-            val old  = oldValue
-            val newv = newValue
+            SimpleDiffJson(xmlPretty.format(SectionVal.toXml(oldValue)), xmlPretty.format(SectionVal.toXml(newValue)))
 
-            val diff = SimpleDiff(old, newv)
-
-            val elem = new Elem(
-              prefix = null,
-              label = "tmp",
-              attributes1 = Null,
-              scope = TopScope,
-              minimizeEmpty = false,
-              child = { Seq.empty }*
-            )
-
-            SimpleDiff.toXml(elem, diff)(s => Text(xmlPretty.format(SectionVal.toXml(s)))).toString()
-
-          case SimpleValueJson(_) => sectionXml(directive.id)
+          case SimpleValueJson(_) => SimpleValueJson(sectionXml(directive.id))
 
         }
 
-        DirectiveChangeDefaultJson(change.action, m, section)
+        DirectiveChangeDiffJson(change.action, m, section)
 
     }
 
@@ -557,8 +539,8 @@ object DirectiveIdent {
   implicit def transformer(implicit directives: MapView[DirectiveId, Directive]): Transformer[DirectiveId, DirectiveIdent] = {
     Transformer
       .define[DirectiveId, DirectiveIdent]
-      .withFieldComputed(_.id, _.uid)
-      .withFieldComputed(_.name, id => directives(id).name)
+      .withFieldRenamed(_.uid, _.id)
+      .withFieldComputed(_.name, id => directives.get(id).map(_.name).getOrElse("unknown"))
       .buildTransformer
   }
 
