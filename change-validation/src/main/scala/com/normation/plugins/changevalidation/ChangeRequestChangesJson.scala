@@ -259,7 +259,7 @@ final case class DirectiveChangeDiffJson(
 
 object ExtendedDirectiveChangeJson {
 
-  implicit def toExtended(
+  def toExtended(
       directive:           Directive,
       change:              DirectiveChangeActionJson
   )(implicit
@@ -270,12 +270,11 @@ object ExtendedDirectiveChangeJson {
     val xmlPretty = new scala.xml.PrettyPrinter(80, 2)
 
     def sectionXml(id: DirectiveId): String = {
-      directiveTechniques.get(id).map(_.rootSection) match {
-        case Some(rs) =>
-          xmlPretty.format(SectionVal.toXml(SectionVal.directiveValToSectionVal(rs, directive.parameters)))
-        case None     =>
-          s"<div> ${directive.parameters} </div>"
-      }
+      val sectionSpecOpt = directiveTechniques.get(id).map(_.rootSection)
+
+      xmlPretty.format(
+        SectionVal.toOptionnalXml(sectionSpecOpt.map(SectionVal.directiveValToSectionVal(_, directive.parameters)))
+      )
     }
 
     change.change match {

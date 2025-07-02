@@ -7,12 +7,14 @@ import Html exposing (Attribute, Html, button, div, h4, li, pre, table, text, ul
 import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
 import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map5, maybe, oneOf, string, succeed, value)
-import Json.Decode.Pipeline exposing (hardcoded, required)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
 import RudderDataTable exposing (ColumnName(..))
+import RudderDataTypes exposing (..)
 import RudderDiff exposing (..)
-import RudderTree
+import RudderLinkUtil exposing (ContextPath, directiveLink, getApiUrl, getContextPath, groupLink, nodeLink, paramLink, ruleLink)
+import RudderTree exposing (..)
 
 
 
@@ -51,7 +53,7 @@ init flags =
 
         initModel =
             Model
-                flags.contextPath
+                (getContextPath flags.contextPath)
                 NotSet
                 NotSet
                 NoView
@@ -68,7 +70,7 @@ init flags =
 
 
 type alias Model =
-    { contextPath : String
+    { contextPath : ContextPath
     , changeRequest : DetailsOpt ChangeRequestDetailsWithHistory
     , changes : DetailsOpt Changes
     , viewState : ViewState
@@ -81,6 +83,7 @@ type Msg
     = GetChangeRequestIdFromUrl String
     | GetChangeRequestDetailsWithHistory (Result Error ChangeRequestDetailsWithHistory)
     | GetChangeRequestChanges (Result Error Changes)
+    | CallApi (Model -> Cmd Msg)
     | ChangesTableMsg RudderDataTable.Msg
     | TreeMsg RudderTree.Msg
 
@@ -153,7 +156,7 @@ type alias DirectiveDiff =
     , techniqueVersion : Diff String
     , priority : Diff Int
     , enabled : Diff Bool
-    , system : Diff Bool
+    , system : Bool
     , parameters : Diff String
     }
 
@@ -193,7 +196,7 @@ type alias NodeGroup =
     , dynamic : Bool
     , system : Bool
     , properties : Value
-    , query : Value
+    , query : Maybe Value
     , nodeList : List ResourceIdent -- (NodeId,name) pairs
     }
 
@@ -208,7 +211,7 @@ type alias NodeGroupDiff =
     , enabled : Diff Bool
     , dynamic : Diff Bool
     , properties : Diff Value
-    , query : Diff Value
+    , query : Diff (Maybe Value)
     , nodeList : Diff (List ResourceIdent) -- (NodeId,name) pairs
     }
 
@@ -286,13 +289,89 @@ eventLogToTableRow log =
 ------------------------------
 
 
+buildChangesTree : Changes -> List ( TreeNodeId, ( TreeNode, List TreeNode, BranchFoldStatus ) )
+buildChangesTree changes =
+    let
+        getResourceName res =
+            case res of
+                Create resource ->
+                    resource.displayName
+
+                Delete resource ->
+                    resource.displayName
+
+                Modify modifyDiff ->
+                    case modifyDiff.displayName of
+                        NoChange name ->
+                            name
+
+                        Change nameDiff ->
+                            nameDiff.from
+
+        getParamName directive =
+            case directive of
+                Create resource ->
+                    resource.name
+
+                Delete resource ->
+                    resource.name
+
+                Modify modifyDiff ->
+                    modifyDiff.name
+
+        directiveNodes =
+            List.map getResourceName changes.directives
+                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+
+        directives =
+            directiveNodes
+                |> List.map (\( _, ( node, _, _ ) ) -> node)
+                |> (\nodeList -> ( "Directives", ( TreeNode "Directives" "Directives", nodeList, Closed ) ))
+
+        ruleNodes =
+            List.map getResourceName changes.rules
+                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+
+        rules =
+            ruleNodes
+                |> List.map (\( _, ( node, _, _ ) ) -> node)
+                |> (\nodeList -> ( "Rules", ( TreeNode "Rules" "Rules", nodeList, Closed ) ))
+
+        groupNodes =
+            List.map getResourceName changes.groups
+                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+
+        groups =
+            groupNodes
+                |> List.map (\( _, ( node, _, _ ) ) -> node)
+                |> (\nodeList -> ( "Groups", ( TreeNode "Groups" "Groups", nodeList, Closed ) ))
+
+        paramNodes =
+            List.map getParamName changes.parameters
+                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+
+        params =
+            paramNodes
+                |> List.map (\( _, ( node, _, _ ) ) -> node)
+                |> (\nodeList -> ( "Global Parameters", ( TreeNode "Global Parameters" "Global Parameters", nodeList, Closed ) ))
+
+        rootNode =
+            (directives :: rules :: groups :: [ params ])
+                |> List.filter (\( _, ( _, ls, _ ) ) -> List.isEmpty ls)
+                |> List.map (\( _, ( node, _, _ ) ) -> node)
+                |> (\nodeList -> ( "Changes", ( TreeNode "Changes" "Changes", nodeList, Closed ) ))
+    in
+    ([ directives, rules, groups, params ] |> List.filter (\( _, ( _, ls, _ ) ) -> not (List.isEmpty ls)))
+        ++ [ rootNode ]
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetChangeRequestIdFromUrl crIdStr ->
             case String.toInt crIdStr of
                 Just crId ->
-                    ( model, Cmd.batch [ getChangeRequestDetailsWithHistory model crId, getChangeRequestChanges model crId ] )
+                    ( model, Cmd.batch [ getChangeRequestDetailsWithHistory model crId, getChangeRequestChanges crId model ] )
 
                 Nothing ->
                     let
@@ -311,7 +390,6 @@ update msg model =
                     ( { model
                         | changeRequest = Success cr
                         , changesTableModel = updatedTable
-                        , tree = RudderTree.initFlatTree (Dict.fromList [])
                       }
                     , Cmd.none
                     )
@@ -328,7 +406,12 @@ update msg model =
         GetChangeRequestChanges result ->
             case result of
                 Ok changes ->
-                    ( { model | changes = Success changes }, Cmd.none )
+                    ( { model
+                        | changes = Success changes
+                        , tree = RudderTree.initFlatTree (Dict.fromList (buildChangesTree changes))
+                      }
+                    , Cmd.none
+                    )
 
                 Err err ->
                     let
@@ -353,16 +436,14 @@ update msg model =
             in
             ( { model | tree = updatedTree }, Cmd.map TreeMsg cmd )
 
+        CallApi call ->
+            ( model, call model )
+
 
 
 ------------------------------
 -- API CALLS
 ------------------------------
-
-
-getApiUrl : Model -> String -> String
-getApiUrl m url =
-    m.contextPath ++ "/secure/api/" ++ url
 
 
 getChangeRequestDetailsWithHistory : Model -> Int -> Cmd Msg
@@ -372,7 +453,7 @@ getChangeRequestDetailsWithHistory model crId =
             request
                 { method = "GET"
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model ("changevalidation/workflow/changeRequestWithHistory/" ++ String.fromInt crId)
+                , url = getApiUrl model.contextPath ("changevalidation/workflow/changeRequestWithHistory/" ++ String.fromInt crId)
                 , body = emptyBody
                 , expect = expectJson GetChangeRequestDetailsWithHistory decodeChangeRequestDetailsWithHistory
                 , timeout = Nothing
@@ -382,12 +463,12 @@ getChangeRequestDetailsWithHistory model crId =
     req
 
 
-getChangeRequestChanges : Model -> Int -> Cmd Msg
-getChangeRequestChanges model crId =
+getChangeRequestChanges : Int -> Model -> Cmd Msg
+getChangeRequestChanges crId model =
     request
         { method = "GET"
         , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-        , url = getApiUrl model ("changevalidation/workflow/changeRequestChanges/" ++ String.fromInt crId)
+        , url = getApiUrl model.contextPath ("changevalidation/workflow/changeRequestChanges/" ++ String.fromInt crId)
         , body = emptyBody
         , expect = expectJson GetChangeRequestChanges decodeChanges
         , timeout = Nothing
@@ -553,7 +634,7 @@ decodeDirectiveDiff =
                                                 |> map2 (|>) (decodeDiffField "techniqueVersion" string)
                                                 |> map2 (|>) (decodeDiffField "priority" int)
                                                 |> map2 (|>) (decodeDiffField "enabled" bool)
-                                                |> map2 (|>) (decodeDiffField "system" bool)
+                                                |> map2 (|>) (field "system" bool)
                                                 |> hardcoded parameters
                                             )
                                         )
@@ -709,7 +790,7 @@ decodeGroupDiff =
                 |> required "dynamic" bool
                 |> required "system" bool
                 |> required "properties" value
-                |> required "query" value
+                |> optional "query" (maybe value) Nothing
                 |> hardcoded nodeList
     in
     field "action" string
@@ -730,7 +811,7 @@ decodeGroupDiff =
                                                 |> map2 (|>) (decodeDiffField "enabled" bool)
                                                 |> map2 (|>) (decodeDiffField "dynamic" bool)
                                                 |> map2 (|>) (decodeDiffField "properties" value)
-                                                |> map2 (|>) (decodeDiffField "query" value)
+                                                |> map2 (|>) (decodeDiffField "query" (maybe value))
                                                 |> hardcoded nodeList
                                             )
                                         )
@@ -854,7 +935,7 @@ view : Model -> Html Msg
 view model =
     div [ id "changeRequestChanges" ]
         [ div [ id "changesContainer" ]
-            [ div [ id "changeSelector" ] [ changeTree model ]
+            [ div [ id "changeSelector" ] [ viewChangeTree model.tree ]
             , div [ id "changeDisplay" ]
                 [ ul
                     [ class "nav nav-underline"
@@ -895,7 +976,7 @@ view model =
                         , attribute "role" "tabpanel"
                         , id "historyTab"
                         ]
-                        [ div [ id "history" ] [ changesTable model ] ]
+                        [ div [ id "history" ] [ viewChangesTable model.changesTableModel ] ]
                     , div
                         [ style "max-height" "345px"
                         , style "overflow" "auto"
@@ -911,14 +992,14 @@ view model =
         ]
 
 
-changeTree : Model -> Html Msg
-changeTree model =
-    Html.map TreeMsg (RudderTree.view model.tree)
+viewChangeTree : RudderTree.Model -> Html Msg
+viewChangeTree tree =
+    Html.map TreeMsg (RudderTree.view tree)
 
 
-changesTable : Model -> Html Msg
-changesTable model =
-    Html.map ChangesTableMsg (RudderDataTable.view model.changesTableModel)
+viewChangesTable : RudderDataTable.Model TableRow -> Html Msg
+viewChangesTable table =
+    Html.map ChangesTableMsg (RudderDataTable.view table)
 
 
 diff : Model -> Html Msg
@@ -926,28 +1007,28 @@ diff model =
     case model.changes of
         Success data ->
             let
-                defaultOrDiff f1 f2 resource =
+                defaultOrDiff f1 f2 contextPath resource =
                     case resource of
                         Create r ->
-                            f1 r
+                            f1 contextPath r
 
                         Delete r ->
-                            f1 r
+                            f1 contextPath r
 
                         Modify r ->
-                            f2 r
+                            f2 contextPath r
 
                 directives =
-                    List.map (defaultOrDiff displayDirective displayDirectiveDiff) data.directives
+                    List.map (defaultOrDiff displayDirective displayDirectiveDiff model.contextPath) data.directives
 
                 groups =
-                    List.map (defaultOrDiff displayGroup displayGroupDiff) data.groups
+                    List.map (defaultOrDiff displayGroup displayGroupDiff model.contextPath) data.groups
 
                 rules =
-                    List.map (defaultOrDiff displayRule displayRuleDiff) data.rules
+                    List.map (defaultOrDiff displayRule displayRuleDiff model.contextPath) data.rules
 
                 params =
-                    List.map (defaultOrDiff displayParameter displayParameterDiff) data.parameters
+                    List.map (defaultOrDiff displayParameter displayParameterDiff model.contextPath) data.parameters
 
                 changes =
                     List.map (\change -> li [] [ change ]) (directives ++ groups ++ rules ++ params)
@@ -968,10 +1049,10 @@ diffDefault diffVal =
             diffChange.from
 
 
-displayDirective : Directive -> Html Msg
-displayDirective directive =
+displayDirective : ContextPath -> Directive -> Html Msg
+displayDirective contextPath directive =
     displayResourceDiff "Directive"
-        [ displayField "Directive" (directiveLink directive.id directive.displayName)
+        [ displayField "Directive" (directiveLink contextPath directive.id directive.displayName)
         , displayStringField "Name" directive.displayName
         , displayStringField "Short description" directive.shortDescription
         , displayStringField "Technique name" directive.techniqueName
@@ -985,97 +1066,97 @@ displayDirective directive =
         ]
 
 
-displayDirectiveDiff : DirectiveDiff -> Html Msg
-displayDirectiveDiff directive =
+displayDirectiveDiff : ContextPath -> DirectiveDiff -> Html Msg
+displayDirectiveDiff contextPath directive =
     displayResourceDiff "Directive"
-        [ displayField "Directive" (directiveLink directive.id (diffDefault directive.displayName))
+        [ displayField "Directive" (directiveLink contextPath directive.id (diffDefault directive.displayName))
         , displayStringDiff "Name" directive.displayName
         , displayStringDiff "Short description" directive.shortDescription
         , displayStringField "Technique name" directive.techniqueName
         , displayStringDiff "Technique version" directive.techniqueVersion
         , displayIntDiff "Priority" directive.priority
         , displayBoolDiff "Enabled" directive.enabled
-        , displayBoolDiff "System" directive.system
+        , displayBoolField "System" directive.system
         , displayStringDiff "Long description" directive.longDescription
         , displayStringField "Policy Mode" ""
         , displayDiffField (\param -> pre [] [ text param ]) "Parameters" directive.parameters
         ]
 
 
-displayGroup : NodeGroup -> Html Msg
-displayGroup group =
+displayGroup : ContextPath -> NodeGroup -> Html Msg
+displayGroup contextPath group =
     displayResourceDiff "Node Group"
-        [ displayField "Group" (groupLink group.id group.displayName)
+        [ displayField "Group" (groupLink contextPath group.id group.displayName)
         , displayStringField "Name" group.displayName
         , displayStringField "Description" group.description
         , displayBoolField "Enabled" group.enabled
         , displayBoolField "Dynamic" group.dynamic
         , displayBoolField "System" group.system
         , displayValueField "Properties" group.properties
-        , displayValueField "Query" group.query
-        , displayField "Node list" (displayIdentList "Group" groupLink group.nodeList)
+        , displayMaybeField "Query" group.query displayValue
+        , displayField "Node list" (displayIdentList "Node" (nodeLink contextPath) group.nodeList)
         ]
 
 
-displayGroupDiff : NodeGroupDiff -> Html Msg
-displayGroupDiff group =
+displayGroupDiff : ContextPath -> NodeGroupDiff -> Html Msg
+displayGroupDiff contextPath group =
     displayResourceDiff "Node Group"
-        [ displayField "Group" (groupLink group.id (diffDefault group.displayName))
+        [ displayField "Group" (groupLink contextPath group.id (diffDefault group.displayName))
         , displayStringDiff "Name" group.displayName
         , displayStringDiff "Description" group.description
         , displayBoolDiff "Enabled" group.enabled
         , displayBoolDiff "Dynamic" group.dynamic
         , displayStringField "System" ""
         , displayValueDiff "Properties" group.properties
-        , displayValueDiff "Query" group.query
-        , displayField "Node list" (displayIdentListDiff "Group" groupLink group.nodeList)
+        , displayDiffField (displayMaybe displayValue) "Query" group.query
+        , displayField "Node list" (displayIdentListDiff "Node" (nodeLink contextPath) group.nodeList)
         ]
 
 
-displayRule : Rule -> Html Msg
-displayRule rule =
+displayRule : ContextPath -> Rule -> Html Msg
+displayRule contextPath rule =
     displayResourceDiff "Rule"
-        [ displayField "Rule" (ruleLink rule.id rule.displayName)
+        [ displayField "Rule" (ruleLink contextPath rule.id rule.displayName)
         , displayStringField "Name" rule.displayName
         , displayStringField "Category" rule.categoryId
         , displayStringField "Short description" rule.shortDescription
-        , displayRuleTarget "Target" rule.targets
-        , displayField "Directives" (displayIdentList "Directive" directiveLink rule.directives)
+        , displayRuleTarget "Target" contextPath rule.targets
+        , displayField "Directives" (displayIdentList "Directive" (directiveLink contextPath) rule.directives)
         , displayBoolField "Enabled" rule.enabled
         , displayBoolField "System" rule.system
         , displayStringField "Long description" rule.longDescription
         ]
 
 
-displayRuleDiff : RuleDiff -> Html Msg
-displayRuleDiff rule =
+displayRuleDiff : ContextPath -> RuleDiff -> Html Msg
+displayRuleDiff contextPath rule =
     displayResourceDiff "Rule"
-        [ displayField "Rule" (ruleLink rule.id (diffDefault rule.displayName))
+        [ displayField "Rule" (ruleLink contextPath rule.id (diffDefault rule.displayName))
         , displayStringDiff "Name" rule.displayName
         , displayStringField "Category" ""
         , displayStringDiff "Short description" rule.shortDescription
-        , displayRuleTargetDiff "Target" rule.targets
-        , displayField "Directives" (displayIdentListDiff "Directive" directiveLink rule.directives)
+        , displayRuleTargetDiff "Target" contextPath rule.targets
+        , displayField "Directives" (displayIdentListDiff "Directive" (directiveLink contextPath) rule.directives)
         , displayBoolDiff "Enabled" rule.enabled
         , displayStringField "System" ""
         , displayStringDiff "Long description" rule.longDescription
         ]
 
 
-displayParameter : GlobalParameter -> Html Msg
-displayParameter param =
+displayParameter : ContextPath -> GlobalParameter -> Html Msg
+displayParameter contextPath param =
     displayResourceDiff "Global parameter"
-        [ displayField "Global Parameter" (paramLink param.name)
+        [ displayField "Global Parameter" (paramLink contextPath param.name)
         , displayStringField "Name" param.name
         , displayValueField "Value" param.value
         , displayStringField "Description" param.description
         ]
 
 
-displayParameterDiff : GlobalParameterDiff -> Html Msg
-displayParameterDiff param =
+displayParameterDiff : ContextPath -> GlobalParameterDiff -> Html Msg
+displayParameterDiff contextPath param =
     displayResourceDiff "Global parameter"
-        [ displayField "Global Parameter" (paramLink param.name)
+        [ displayField "Global Parameter" (paramLink contextPath param.name)
         , displayStringField "Name" param.name
         , displayValueDiff "Value" param.value
         , displayStringDiff "Description" param.description

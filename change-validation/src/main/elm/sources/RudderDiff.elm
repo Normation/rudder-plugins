@@ -1,9 +1,11 @@
-module RudderDiff exposing (Diff(..), DiffChange, ResourceIdent, SimpleTarget(..), Target(..), TargetComposition(..), TargetExclusion, TargetList(..), directiveLink, displayBoolDiff, displayBoolField, displayDiffField, displayField, displayFormDiff, displayIdentList, displayIdentListDiff, displayIntDiff, displayResourceIdent, displayRuleTarget, displayRuleTargetDiff, displayStringDiff, displayStringField, displayValueDiff, displayValueField, groupLink, paramLink, ruleLink)
+module RudderDiff exposing (Diff(..), DiffChange, displayBoolDiff, displayBoolField, displayDiffField, displayField, displayFormDiff, displayIdentList, displayIdentListDiff, displayIntDiff, displayMaybe, displayMaybeField, displayResourceIdent, displayRuleTarget, displayRuleTargetDiff, displayStringDiff, displayStringField, displayValue, displayValueDiff, displayValueField)
 
-import Html exposing (Attribute, Html, a, b, br, li, node, pre, span, text, ul)
-import Html.Attributes exposing (href, style)
+import Html exposing (Attribute, Html, b, br, li, node, pre, span, text, ul)
+import Html.Attributes exposing (style)
 import Json.Decode exposing (Value)
 import Json.Encode exposing (encode)
+import RudderDataTypes exposing (..)
+import RudderLinkUtil exposing (ContextPath, groupLink)
 
 
 
@@ -21,36 +23,6 @@ type alias DiffChange fieldType =
 type Diff fieldType
     = NoChange fieldType
     | Change (DiffChange fieldType)
-
-
-type alias ResourceIdent =
-    { id : String
-    , name : String
-    }
-
-
-type SimpleTarget
-    = Group ResourceIdent
-    | NonGroup String
-
-
-type TargetComposition
-    = Or TargetList
-    | And TargetList
-
-
-type alias TargetExclusion =
-    { include : TargetComposition, exclude : TargetComposition }
-
-
-type Target
-    = Simple SimpleTarget
-    | Exclusion TargetExclusion
-    | Composition TargetComposition
-
-
-type TargetList
-    = TargetList (List Target)
 
 
 type ChangeType
@@ -129,7 +101,7 @@ displayIntDiff fieldName diffValue =
 
 displayValueDiff : String -> Diff Value -> Html msg
 displayValueDiff fieldName diffValue =
-    displayDiffField (encode 4 >> text) fieldName diffValue
+    displayDiffField displayValue fieldName diffValue
 
 
 displayDiffField : (ty -> Html msg) -> String -> Diff ty -> Html msg
@@ -160,7 +132,32 @@ displayStringField fieldName s =
 
 displayValueField : String -> Value -> Html msg
 displayValueField fieldName v =
-    displayField fieldName (v |> encode 4 >> text)
+    displayField fieldName (displayValue v)
+
+
+displayValue : Value -> Html msg
+displayValue =
+    encode 4 >> text
+
+
+displayMaybe : (ty -> Html msg) -> Maybe ty -> Html msg
+displayMaybe toHtml optValue =
+    case optValue of
+        Just value ->
+            toHtml value
+
+        Nothing ->
+            text ""
+
+
+displayMaybeField : String -> Maybe ty -> (ty -> Html msg) -> Html msg
+displayMaybeField fieldName optValue toHtml =
+    case optValue of
+        Just value ->
+            displayField fieldName (toHtml value)
+
+        Nothing ->
+            displayField fieldName (text "")
 
 
 
@@ -219,8 +216,8 @@ displayIdentListDiff resourceType linkFun ls =
 ------------------------------
 
 
-displaySimpleTarget : SimpleTarget -> ChangeType -> Html msg
-displaySimpleTarget target change =
+displaySimpleTarget : ContextPath -> SimpleTarget -> ChangeType -> Html msg
+displaySimpleTarget contextPath target change =
     let
         displayNonGroup nonGroup =
             case change of
@@ -238,65 +235,64 @@ displaySimpleTarget target change =
     in
     case target of
         Group group ->
-            displayResourceIdent "Group" groupLink change group
+            displayResourceIdent "Group" (groupLink contextPath) change group
 
         NonGroup nonGroup ->
             displayNonGroup nonGroup
 
 
-displayExclusionTarget : TargetExclusion -> ChangeType -> Html msg
-displayExclusionTarget exclusion change =
+displayExclusionTarget : ContextPath -> TargetExclusion -> ChangeType -> Html msg
+displayExclusionTarget contextPath exclusion change =
     li []
         ([ span [] [ text "Include" ] ]
-            ++ displayCompositionTarget exclusion.include change
+            ++ displayCompositionTarget contextPath exclusion.include change
             ++ [ span [] [ text "Exclude" ] ]
-            ++ displayCompositionTarget exclusion.exclude change
+            ++ displayCompositionTarget contextPath exclusion.exclude change
         )
 
 
-displayCompositionTarget : TargetComposition -> ChangeType -> List (Html msg)
-displayCompositionTarget composition change =
+displayCompositionTarget : ContextPath -> TargetComposition -> ChangeType -> List (Html msg)
+displayCompositionTarget contextPath composition change =
     case composition of
         Or targetList ->
             [ li [ style "list-style-type" "none", style "padding-left" "10px" ]
                 [ span [] [ text "Nodes that belong to any of the following groups :" ]
-                , ul [ style "padding-left" "10px" ] (displayTargetList targetList change)
+                , ul [ style "padding-left" "10px" ] (displayTargetList contextPath targetList change)
                 ]
             ]
 
         And targetList ->
             [ li [ style "list-style-type" "none", style "padding-left" "10px" ]
                 [ span [] [ text "  Nodes that belong to all of the following groups :" ]
-                , ul [ style "padding-left" "10px" ] (displayTargetList targetList change)
+                , ul [ style "padding-left" "10px" ] (displayTargetList contextPath targetList change)
                 ]
             ]
 
 
-displayTargetList : TargetList -> ChangeType -> List (Html msg)
-displayTargetList targetList change =
+displayTargetList : ContextPath -> TargetList -> ChangeType -> List (Html msg)
+displayTargetList contextPath targetList change =
     case targetList of
         TargetList targets ->
-            List.map (displayTarget change) targets
-                |> List.concat
+            List.concatMap (displayTarget contextPath change) targets
 
 
-displayTarget : ChangeType -> Target -> List (Html msg)
-displayTarget change target =
+displayTarget : ContextPath -> ChangeType -> Target -> List (Html msg)
+displayTarget contextPath change target =
     case target of
         Simple simpleTarget ->
-            [ displaySimpleTarget simpleTarget change ]
+            [ displaySimpleTarget contextPath simpleTarget change ]
 
         Exclusion targetExclusion ->
-            [ displayExclusionTarget targetExclusion change ]
+            [ displayExclusionTarget contextPath targetExclusion change ]
 
         Composition targetComposition ->
-            displayCompositionTarget targetComposition change
+            displayCompositionTarget contextPath targetComposition change
 
 
-displayRuleTarget : String -> TargetList -> Html msg
-displayRuleTarget fieldName targets =
+displayRuleTarget : String -> ContextPath -> TargetList -> Html msg
+displayRuleTarget fieldName contextPath targets =
     li []
-        ([ b [] [ text (fieldName ++ " : ") ] ] ++ displayTargetList targets Unchanged)
+        ([ b [] [ text (fieldName ++ " : ") ] ] ++ displayTargetList contextPath targets Unchanged)
 
 
 
@@ -305,104 +301,66 @@ displayRuleTarget fieldName targets =
 ------------------------------
 
 
-displayExclusionTargetDiff : TargetExclusion -> TargetExclusion -> List (Html msg)
-displayExclusionTargetDiff from to =
+displayExclusionTargetDiff : ContextPath -> TargetExclusion -> TargetExclusion -> List (Html msg)
+displayExclusionTargetDiff contextPath from to =
     [ li []
         ([ span [] [ text "Include" ] ]
-            ++ displayCompositionTargetDiff from.include to.include
+            ++ displayCompositionTargetDiff contextPath from.include to.include
             ++ [ span [] [ text "Exclude" ] ]
-            ++ displayCompositionTargetDiff from.exclude to.exclude
+            ++ displayCompositionTargetDiff contextPath from.exclude to.exclude
         )
     ]
 
 
-displayCompositionTargetDiff : TargetComposition -> TargetComposition -> List (Html msg)
-displayCompositionTargetDiff from to =
+displayCompositionTargetDiff : ContextPath -> TargetComposition -> TargetComposition -> List (Html msg)
+displayCompositionTargetDiff contextPath from to =
     case ( from, to ) of
         ( Or l1, Or l2 ) ->
             [ li [ style "list-style-type" "none", style "padding-left" "10px" ]
                 [ span [] [ text "Nodes that belong to any of the following groups :" ]
-                , ul [ style "padding-left" "10px" ] (displayTargetListDiff l1 l2)
+                , ul [ style "padding-left" "10px" ] (displayTargetListDiff contextPath l1 l2)
                 ]
             ]
 
         ( And l1, And l2 ) ->
             [ li [ style "list-style-type" "none", style "padding-left" "10px" ]
                 [ span [] [ text "Nodes that belong to all of the following groups :" ]
-                , ul [ style "padding-left" "10px" ] (displayTargetListDiff l1 l2)
+                , ul [ style "padding-left" "10px" ] (displayTargetListDiff contextPath l1 l2)
                 ]
             ]
 
         ( _, _ ) ->
-            displayCompositionTarget from Deleted ++ displayCompositionTarget to Added
+            displayCompositionTarget contextPath from Deleted ++ displayCompositionTarget contextPath to Added
 
 
-displayTargetListDiff : TargetList -> TargetList -> List (Html msg)
-displayTargetListDiff from to =
+displayTargetListDiff : ContextPath -> TargetList -> TargetList -> List (Html msg)
+displayTargetListDiff contextPath from to =
     case ( from, to ) of
         ( TargetList [ Exclusion e1 ], TargetList [ Exclusion e2 ] ) ->
-            displayExclusionTargetDiff e1 e2
+            displayExclusionTargetDiff contextPath e1 e2
 
         ( TargetList l1, TargetList l2 ) ->
             let
                 unchanged =
                     List.filter (\e -> List.member e l2) l1
-                        |> List.map (displayTarget Unchanged)
+                        |> List.map (displayTarget contextPath Unchanged)
 
                 added =
                     List.filter (\e -> not (List.member e l1)) l2
-                        |> List.map (displayTarget Added)
+                        |> List.map (displayTarget contextPath Added)
 
                 deleted =
                     List.filter (\e -> not (List.member e l2)) l1
-                        |> List.map (displayTarget Deleted)
+                        |> List.map (displayTarget contextPath Deleted)
             in
             [ ul [ style "padding-left" "10px" ] (List.concat (deleted ++ unchanged ++ added)) ]
 
 
-displayRuleTargetDiff : String -> Diff TargetList -> Html msg
-displayRuleTargetDiff fieldName diff =
+displayRuleTargetDiff : String -> ContextPath -> Diff TargetList -> Html msg
+displayRuleTargetDiff fieldName contextPath diff =
     case diff of
         NoChange targetList ->
-            displayRuleTarget fieldName targetList
+            displayRuleTarget fieldName contextPath targetList
 
         Change { from, to } ->
-            li [] ([ b [] [ text (fieldName ++ " : ") ] ] ++ displayTargetListDiff from to)
-
-
-
-------------------------------
--- LINK DISPLAY
-------------------------------
-
-
-directiveLink : String -> String -> Html msg
-directiveLink id name =
-    span []
-        [ a [ href ("/rudder/secure/configurationManager/directiveManagement#{\"directiveId\":\"" ++ id ++ "\"}") ]
-            [ text name ]
-        , text (" (Rudder ID : " ++ id ++ ")")
-        ]
-
-
-groupLink : String -> String -> Html msg
-groupLink id name =
-    span []
-        [ a [ href ("/rudder/secure/nodeManager/groups#{\"groupId\":\"" ++ id ++ "\"}") ]
-            [ text name ]
-        , text (" (Rudder ID : " ++ id ++ ")")
-        ]
-
-
-ruleLink : String -> String -> Html msg
-ruleLink ruleId ruleName =
-    span []
-        [ a [ href ("/rudder/secure/configurationManager/ruleManagement/rule/" ++ ruleId) ]
-            [ text ruleName ]
-        , text (" (Rudder ID : " ++ ruleId ++ ")")
-        ]
-
-
-paramLink : String -> Html msg
-paramLink paramName =
-    a [ href "/rudder/secure/configurationManager/parameterManagement" ] [ text paramName ]
+            li [] ([ b [] [ text (fieldName ++ " : ") ] ] ++ displayTargetListDiff contextPath from to)

@@ -668,7 +668,6 @@ object GroupChangeJson {
 
   object ModifyGroupJson {
     implicit lazy val nodeIdEncoder: JsonEncoder[NodeId]          = JsonEncoder[String].contramap[NodeId](_.value)
-    implicit lazy val queryEncoder:  JsonEncoder[Query]           = JsonEncoder[String].contramap[Query](_.toString)
     implicit lazy val encoder:       JsonEncoder[ModifyGroupJson] =
       DeriveJsonEncoder.gen[ModifyGroupJson]
 
