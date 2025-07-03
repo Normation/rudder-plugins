@@ -1,7 +1,8 @@
-module RudderLinkUtil exposing (ContextPath, directiveLink, getApiUrl, getContextPath, groupLink, nodeLink, paramLink, ruleLink)
+module RudderLinkUtil exposing (ContextPath, directiveLink, getApiUrl, getContextPath, groupLink, nodeLink, paramLink, ruleLink, targetLink)
 
 import Html exposing (Html, a, span, text)
 import Html.Attributes exposing (href)
+import RudderDataTypes exposing (SimpleTarget)
 
 
 type ContextPath
@@ -33,6 +34,15 @@ groupLink (ContextPath contextPath) id name =
         [ a [ href (contextPath ++ "/secure/nodeManager/groups#{\"groupId\":\"" ++ id ++ "\"}") ]
             [ text name ]
         , text (" (Rudder ID : " ++ id ++ ")")
+        ]
+
+
+targetLink : ContextPath -> SimpleTarget -> Html msg
+targetLink (ContextPath contextPath) target =
+    span []
+        [ a [ href (contextPath ++ "/secure/nodeManager/groups#{\"" ++ target.targetType ++ "\":\"" ++ target.id ++ "\"}") ]
+            [ text target.name ]
+        , text (" (Rudder ID : " ++ target.id ++ ")")
         ]
 
 

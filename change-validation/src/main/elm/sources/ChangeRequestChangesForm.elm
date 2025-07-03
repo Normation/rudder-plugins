@@ -6,8 +6,8 @@ import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Attribute, Html, button, div, h4, li, pre, table, text, ul)
 import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map5, maybe, oneOf, string, succeed, value)
-import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, list, map, map2, map3, map4, map5, maybe, string, succeed, value)
+import Json.Decode.Pipeline exposing (optionalAt, required, requiredAt)
 import List.Nonempty as NonEmptyList
 import Ports exposing (errorNotification, readUrl)
 import RudderDataTable exposing (ColumnName(..))
@@ -170,7 +170,7 @@ type alias Rule =
     , directives : List ResourceIdent -- List of (DirectiveId, DirectiveName) pairs
     , enabled : Bool
     , system : Bool
-    , categoryId : String -- Rule category id
+    , categoryName : String -- Rule category name
     }
 
 
@@ -269,6 +269,12 @@ type alias TableRow =
     }
 
 
+
+------------------------------
+-- UPDATE
+------------------------------
+
+
 eventLogToTableRow : EventLog -> TableRow
 eventLogToTableRow log =
     let
@@ -283,86 +289,60 @@ eventLogToTableRow log =
     { action = action, actor = log.actor, date = log.date, reason = log.reason }
 
 
-
-------------------------------
--- UPDATE
-------------------------------
-
-
-buildChangesTree : Changes -> List ( TreeNodeId, ( TreeNode, List TreeNode, BranchFoldStatus ) )
+buildChangesTree : Changes -> RudderTree.Model
 buildChangesTree changes =
     let
-        getResourceName res =
-            case res of
-                Create resource ->
-                    resource.displayName
+        getLeaf res =
+            Leaf
+                (case res of
+                    Create resource ->
+                        TreeNode resource.id resource.displayName
 
-                Delete resource ->
-                    resource.displayName
+                    Delete resource ->
+                        TreeNode resource.id resource.displayName
 
-                Modify modifyDiff ->
-                    case modifyDiff.displayName of
-                        NoChange name ->
-                            name
+                    Modify modifyDiff ->
+                        case modifyDiff.displayName of
+                            NoChange name ->
+                                TreeNode modifyDiff.id name
 
-                        Change nameDiff ->
-                            nameDiff.from
+                            Change nameDiff ->
+                                TreeNode modifyDiff.id nameDiff.from
+                )
 
-        getParamName directive =
-            case directive of
-                Create resource ->
-                    resource.name
+        getParamLeaf param =
+            Leaf
+                (case param of
+                    Create res ->
+                        TreeNode res.name res.name
 
-                Delete resource ->
-                    resource.name
+                    Delete res ->
+                        TreeNode res.name res.name
 
-                Modify modifyDiff ->
-                    modifyDiff.name
+                    Modify res ->
+                        TreeNode res.name res.name
+                )
 
-        directiveNodes =
-            List.map getResourceName changes.directives
-                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+        makeTree name children =
+            let
+                node =
+                    TreeNode ("__" ++ name) name
+            in
+            Branch node children Open
 
         directives =
-            directiveNodes
-                |> List.map (\( _, ( node, _, _ ) ) -> node)
-                |> (\nodeList -> ( "Directives", ( TreeNode "Directives" "Directives", nodeList, Closed ) ))
-
-        ruleNodes =
-            List.map getResourceName changes.rules
-                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+            List.map getLeaf changes.directives |> makeTree "Directives"
 
         rules =
-            ruleNodes
-                |> List.map (\( _, ( node, _, _ ) ) -> node)
-                |> (\nodeList -> ( "Rules", ( TreeNode "Rules" "Rules", nodeList, Closed ) ))
-
-        groupNodes =
-            List.map getResourceName changes.groups
-                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+            List.map getLeaf changes.rules |> makeTree "Rules"
 
         groups =
-            groupNodes
-                |> List.map (\( _, ( node, _, _ ) ) -> node)
-                |> (\nodeList -> ( "Groups", ( TreeNode "Groups" "Groups", nodeList, Closed ) ))
-
-        paramNodes =
-            List.map getParamName changes.parameters
-                |> List.map (\name -> ( name, ( TreeNode name name, [], Closed ) ))
+            List.map getLeaf changes.groups |> makeTree "Groups"
 
         params =
-            paramNodes
-                |> List.map (\( _, ( node, _, _ ) ) -> node)
-                |> (\nodeList -> ( "Global Parameters", ( TreeNode "Global Parameters" "Global Parameters", nodeList, Closed ) ))
-
-        rootNode =
-            (directives :: rules :: groups :: [ params ])
-                |> List.filter (\( _, ( _, ls, _ ) ) -> List.isEmpty ls)
-                |> List.map (\( _, ( node, _, _ ) ) -> node)
-                |> (\nodeList -> ( "Changes", ( TreeNode "Changes" "Changes", nodeList, Closed ) ))
+            List.map getParamLeaf changes.parameters |> makeTree "Global Parameters"
     in
-    ([ directives, rules, groups, params ] |> List.filter (\( _, ( _, ls, _ ) ) -> not (List.isEmpty ls)))
-        ++ [ rootNode ]
+    RudderTree.Model (Root [ makeTree "Changes" [ directives, rules, groups, params ] ])
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -408,7 +388,7 @@ update msg model =
                 Ok changes ->
                     ( { model
                         | changes = Success changes
-                        , tree = RudderTree.initFlatTree (Dict.fromList (buildChangesTree changes))
+                        , tree = buildChangesTree changes
                       }
                     , Cmd.none
                     )
@@ -572,19 +552,6 @@ decodeResourceType =
             )
 
 
-decodeDiffField : String -> Decoder fieldType -> Decoder (Diff fieldType)
-decodeDiffField fieldName dec =
-    let
-        diffDec =
-            map Change
-                (at [ fieldName ] (map2 RudderDiff.DiffChange (field "from" dec) (field "to" dec)))
-
-        noChangeDec =
-            map NoChange (field fieldName dec)
-    in
-    oneOf [ diffDec, noChangeDec ]
-
-
 decodeDirectiveDiff : Decoder (ResourceDiff Directive DirectiveDiff)
 decodeDirectiveDiff =
     let
@@ -600,170 +567,88 @@ decodeDirectiveDiff =
                             fail "Invalid policy mode"
                     )
 
-        decodeDirective : String -> Decoder Directive
-        decodeDirective parameters =
+        decodeDirective : Decoder Directive
+        decodeDirective =
             succeed Directive
-                |> required "id" string
-                |> required "displayName" string
-                |> required "shortDescription" string
-                |> required "techniqueName" string
-                |> required "techniqueVersion" string
-                |> required "priority" int
-                |> required "enabled" bool
-                |> required "system" bool
-                |> required "longDescription" string
-                |> required "policyMode" decodePolicyMode
-                |> hardcoded parameters
+                |> requiredAt [ "change", "id" ] string
+                |> requiredAt [ "change", "displayName" ] string
+                |> requiredAt [ "change", "shortDescription" ] string
+                |> requiredAt [ "change", "techniqueName" ] string
+                |> requiredAt [ "change", "techniqueVersion" ] string
+                |> requiredAt [ "change", "priority" ] int
+                |> requiredAt [ "change", "enabled" ] bool
+                |> requiredAt [ "change", "system" ] bool
+                |> requiredAt [ "change", "longDescription" ] string
+                |> requiredAt [ "change", "policyMode" ] decodePolicyMode
+                |> required "parameters" string
     in
     field "action" string
         |> andThen
             (\action ->
                 case action of
-                    "modify" ->
-                        decodeDiffField "parameters" string
-                            |> andThen
-                                (\parameters ->
-                                    at [ "change" ]
-                                        (map Modify
-                                            (succeed DirectiveDiff
-                                                |> required "id" string
-                                                |> map2 (|>) (field "techniqueName" string)
-                                                |> map2 (|>) (decodeDiffField "displayName" string)
-                                                |> map2 (|>) (decodeDiffField "shortDescription" string)
-                                                |> map2 (|>) (decodeDiffField "longDescription" string)
-                                                |> map2 (|>) (decodeDiffField "techniqueVersion" string)
-                                                |> map2 (|>) (decodeDiffField "priority" int)
-                                                |> map2 (|>) (decodeDiffField "enabled" bool)
-                                                |> map2 (|>) (field "system" bool)
-                                                |> hardcoded parameters
-                                            )
-                                        )
-                                )
-
                     "create" ->
-                        field "parameters" string
-                            |> andThen (\parameters -> at [ "change" ] (map Create (decodeDirective parameters)))
+                        map Create decodeDirective
 
                     "delete" ->
-                        field "parameters" string
-                            |> andThen (\parameters -> at [ "change" ] (map Delete (decodeDirective parameters)))
+                        map Delete decodeDirective
+
+                    "modify" ->
+                        map Modify
+                            (succeed DirectiveDiff
+                                |> requiredAt [ "change", "id" ] string
+                                |> map2 (|>) (at [ "change", "techniqueName" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "displayName" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "shortDescription" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "longDescription" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "techniqueVersion" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "priority" ] int)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "enabled" ] bool)
+                                |> map2 (|>) (at [ "change", "system" ] bool)
+                                |> map2 (|>) (decodeDiffField "parameters" string)
+                            )
 
                     _ ->
                         fail "Invalid action type"
             )
 
 
-decodeTarget : Decoder Target
-decodeTarget =
-    field "type" string
-        |> andThen
-            (\targetType ->
-                case targetType of
-                    "GroupTargetExtended" ->
-                        map Simple (map Group decodeResourceIdent)
-
-                    "NonGroupTargetExtended" ->
-                        map Simple (map NonGroup (field "nonGroupTarget" string))
-
-                    "ComposedTarget" ->
-                        map Exclusion
-                            (map2 TargetExclusion
-                                (field "include" targetCompositionDec)
-                                (field "exclude" targetCompositionDec)
-                            )
-
-                    _ ->
-                        compositionDec
-            )
-
-
-decodeTargetList : Decoder TargetList
-decodeTargetList =
-    map TargetList (list (lazy (\_ -> decodeTarget)))
-
-
-targetCompositionDec : Decoder TargetComposition
-targetCompositionDec =
-    field "type" string
-        |> andThen
-            (\compositionType ->
-                case compositionType of
-                    "OrComposition" ->
-                        map Or (field "or" (lazy (\_ -> decodeTargetList)))
-
-                    "AndComposition" ->
-                        map And (field "and" (lazy (\_ -> decodeTargetList)))
-
-                    _ ->
-                        fail ""
-            )
-
-
-compositionDec =
-    map Composition (lazy (\_ -> targetCompositionDec))
-
-
 decodeRuleDiff : Decoder (ResourceDiff Rule RuleDiff)
 decodeRuleDiff =
     let
-        decodeRule : TargetList -> List ResourceIdent -> Decoder Rule
-        decodeRule targets directives =
+        decodeRule : Decoder Rule
+        decodeRule =
             succeed Rule
-                |> required "id" string
-                |> required "displayName" string
-                |> required "shortDescription" string
-                |> required "longDescription" string
-                |> hardcoded targets
-                |> hardcoded directives
-                |> required "enabled" bool
-                |> required "system" bool
-                |> required "categoryId" string
+                |> requiredAt [ "change", "id" ] string
+                |> requiredAt [ "change", "displayName" ] string
+                |> requiredAt [ "change", "shortDescription" ] string
+                |> requiredAt [ "change", "longDescription" ] string
+                |> required "ruleTargetInfo" decodeTargetList
+                |> required "directiveInfo" (list decodeResourceIdent)
+                |> requiredAt [ "change", "enabled" ] bool
+                |> requiredAt [ "change", "system" ] bool
+                |> required "categoryName" string
     in
     field "action" string
         |> andThen
             (\action ->
                 case action of
-                    "modify" ->
-                        decodeDiffField "ruleTargetInfo" decodeTargetList
-                            |> andThen
-                                (\targets ->
-                                    decodeDiffField "directiveInfo" (list decodeResourceIdent)
-                                        |> andThen
-                                            (\directives ->
-                                                at [ "change" ]
-                                                    (map
-                                                        Modify
-                                                        (succeed RuleDiff
-                                                            |> required "id" string
-                                                            |> map2 (|>) (decodeDiffField "displayName" string)
-                                                            |> map2 (|>) (decodeDiffField "shortDescription" string)
-                                                            |> map2 (|>) (decodeDiffField "longDescription" string)
-                                                            |> hardcoded targets
-                                                            |> hardcoded directives
-                                                            |> map2 (|>) (decodeDiffField "enabled" bool)
-                                                        )
-                                                    )
-                                            )
-                                )
-
                     "create" ->
-                        field "ruleTargetInfo" decodeTargetList
-                            |> andThen
-                                (\targets ->
-                                    field "directiveInfo" (list decodeResourceIdent)
-                                        |> andThen (\directives -> at [ "change" ] (map Create (decodeRule targets directives)))
-                                )
+                        map Create decodeRule
 
                     "delete" ->
-                        field "ruleTargetInfo" decodeTargetList
-                            |> andThen
-                                (\targets ->
-                                    field "directiveInfo" (list decodeResourceIdent)
-                                        |> andThen
-                                            (\directives ->
-                                                at [ "change" ] (map Delete (decodeRule targets directives))
-                                            )
-                                )
+                        map Delete decodeRule
+
+                    "modify" ->
+                        map Modify
+                            (succeed RuleDiff
+                                |> requiredAt [ "change", "id" ] string
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "displayName" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "shortDescription" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "longDescription" ] string)
+                                |> map2 (|>) (decodeDiffField "ruleTargetInfo" decodeTargetList)
+                                |> map2 (|>) (decodeDiffField "directiveInfo" (list decodeResourceIdent))
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "enabled" ] bool)
+                            )
 
                     _ ->
                         fail "Invalid action type"
@@ -780,50 +665,41 @@ decodeResourceIdent =
 decodeGroupDiff : Decoder (ResourceDiff NodeGroup NodeGroupDiff)
 decodeGroupDiff =
     let
-        decodeNodeGroup : List ResourceIdent -> Decoder NodeGroup
-        decodeNodeGroup nodeList =
+        decodeNodeGroup : Decoder NodeGroup
+        decodeNodeGroup =
             succeed NodeGroup
-                |> required "id" string
-                |> required "displayName" string
-                |> required "description" string
-                |> required "enabled" bool
-                |> required "dynamic" bool
-                |> required "system" bool
-                |> required "properties" value
-                |> optional "query" (maybe value) Nothing
-                |> hardcoded nodeList
+                |> requiredAt [ "change", "id" ] string
+                |> requiredAt [ "change", "displayName" ] string
+                |> requiredAt [ "change", "description" ] string
+                |> requiredAt [ "change", "enabled" ] bool
+                |> requiredAt [ "change", "dynamic" ] bool
+                |> requiredAt [ "change", "system" ] bool
+                |> requiredAt [ "change", "properties" ] value
+                |> optionalAt [ "change", "query" ] (maybe value) Nothing
+                |> required "nodeInfo" (list decodeResourceIdent)
     in
     field "action" string
         |> andThen
             (\action ->
                 case action of
-                    "modify" ->
-                        decodeDiffField "nodeInfo" (list decodeResourceIdent)
-                            |> andThen
-                                (\nodeList ->
-                                    at [ "change" ]
-                                        (map
-                                            Modify
-                                            (succeed NodeGroupDiff
-                                                |> required "id" string
-                                                |> map2 (|>) (decodeDiffField "displayName" string)
-                                                |> map2 (|>) (decodeDiffField "description" string)
-                                                |> map2 (|>) (decodeDiffField "enabled" bool)
-                                                |> map2 (|>) (decodeDiffField "dynamic" bool)
-                                                |> map2 (|>) (decodeDiffField "properties" value)
-                                                |> map2 (|>) (decodeDiffField "query" (maybe value))
-                                                |> hardcoded nodeList
-                                            )
-                                        )
-                                )
-
                     "create" ->
-                        field "nodeInfo" (list decodeResourceIdent)
-                            |> andThen (\nodeList -> at [ "change" ] (map Create (decodeNodeGroup nodeList)))
+                        map Create decodeNodeGroup
 
                     "delete" ->
-                        field "nodeInfo" (list decodeResourceIdent)
-                            |> andThen (\nodeList -> at [ "change" ] (map Delete (decodeNodeGroup nodeList)))
+                        map Delete decodeNodeGroup
+
+                    "modify" ->
+                        map Modify
+                            (succeed NodeGroupDiff
+                                |> requiredAt [ "change", "id" ] string
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "displayName" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "description" ] string)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "enabled" ] bool)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "dynamic" ] bool)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "properties" ] value)
+                                |> map2 (|>) (decodeDiffFieldAt [ "change", "query" ] (maybe value))
+                                |> map2 (|>) (decodeDiffField "nodeInfo" (list decodeResourceIdent))
+                            )
 
                     _ ->
                         fail "Invalid action type"
@@ -1118,7 +994,7 @@ displayRule contextPath rule =
     displayResourceDiff "Rule"
         [ displayField "Rule" (ruleLink contextPath rule.id rule.displayName)
         , displayStringField "Name" rule.displayName
-        , displayStringField "Category" rule.categoryId
+        , displayStringField "Category" rule.categoryName
         , displayStringField "Short description" rule.shortDescription
         , displayRuleTarget "Target" contextPath rule.targets
         , displayField "Directives" (displayIdentList "Directive" (directiveLink contextPath) rule.directives)

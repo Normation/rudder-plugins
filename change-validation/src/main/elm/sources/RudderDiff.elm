@@ -1,11 +1,11 @@
-module RudderDiff exposing (Diff(..), DiffChange, displayBoolDiff, displayBoolField, displayDiffField, displayField, displayFormDiff, displayIdentList, displayIdentListDiff, displayIntDiff, displayMaybe, displayMaybeField, displayResourceIdent, displayRuleTarget, displayRuleTargetDiff, displayStringDiff, displayStringField, displayValue, displayValueDiff, displayValueField)
+module RudderDiff exposing (Diff(..), DiffChange, decodeDiffField, decodeDiffFieldAt, displayBoolDiff, displayBoolField, displayDiffField, displayField, displayFormDiff, displayIdentList, displayIdentListDiff, displayIntDiff, displayMaybe, displayMaybeField, displayResourceIdent, displayRuleTarget, displayRuleTargetDiff, displayStringDiff, displayStringField, displayValue, displayValueDiff, displayValueField)
 
 import Html exposing (Attribute, Html, b, br, li, node, pre, span, text, ul)
 import Html.Attributes exposing (style)
-import Json.Decode exposing (Value)
+import Json.Decode exposing (Decoder, Value, at, field, map, map2, oneOf)
 import Json.Encode exposing (encode)
 import RudderDataTypes exposing (..)
-import RudderLinkUtil exposing (ContextPath, groupLink)
+import RudderLinkUtil exposing (ContextPath, targetLink)
 
 
 
@@ -29,6 +29,38 @@ type ChangeType
     = Unchanged
     | Added
     | Deleted
+
+
+
+------------------------------
+-- JSON DECODERS
+------------------------------
+
+
+decodeDiffField : String -> Decoder fieldType -> Decoder (Diff fieldType)
+decodeDiffField fieldName dec =
+    let
+        diffDec =
+            map Change
+                (at [ fieldName ] (map2 DiffChange (field "from" dec) (field "to" dec)))
+
+        noChangeDec =
+            map NoChange (field fieldName dec)
+    in
+    oneOf [ diffDec, noChangeDec ]
+
+
+decodeDiffFieldAt : List String -> Decoder fieldType -> Decoder (Diff fieldType)
+decodeDiffFieldAt path dec =
+    let
+        diffDec =
+            map Change
+                (at path (map2 DiffChange (field "from" dec) (field "to" dec)))
+
+        noChangeDec =
+            map NoChange (at path dec)
+    in
+    oneOf [ diffDec, noChangeDec ]
 
 
 
@@ -137,7 +169,7 @@ displayValueField fieldName v =
 
 displayValue : Value -> Html msg
 displayValue =
-    encode 4 >> text
+    encode 0 >> text
 
 
 displayMaybe : (ty -> Html msg) -> Maybe ty -> Html msg
@@ -216,37 +248,40 @@ displayIdentListDiff resourceType linkFun ls =
 ------------------------------
 
 
+displayChangeElem : ChangeType -> String -> Html msg
+displayChangeElem change txt =
+    displayChangeElemWith change txt [] []
+
+
+displayChangeElemWith : ChangeType -> String -> List (Attribute msg) -> List (Html msg) -> Html msg
+displayChangeElemWith change txt style nodes =
+    case change of
+        Unchanged ->
+            li (unchangedStyle ++ style) ([ span [] [ text txt ] ] ++ nodes)
+
+        Added ->
+            li (addedStyle ++ style) ([ span [] [ text ("+ " ++ txt ++ " ") ] ] ++ nodes)
+
+        Deleted ->
+            li (deletedStyle ++ style) ([ span [] [ text ("- " ++ txt ++ " ") ] ] ++ nodes)
+
+
 displaySimpleTarget : ContextPath -> SimpleTarget -> ChangeType -> Html msg
 displaySimpleTarget contextPath target change =
-    let
-        displayNonGroup nonGroup =
-            case change of
-                Unchanged ->
-                    li unchangedStyle
-                        [ span [] [ text (" " ++ nonGroup ++ " ") ] ]
+    case target.targetType of
+        "target" ->
+            displayChangeElemWith change "" [] [ targetLink contextPath target ]
 
-                Added ->
-                    li addedStyle
-                        [ span [] [ text ("+ " ++ nonGroup ++ " ") ] ]
-
-                Deleted ->
-                    li deletedStyle
-                        [ span [] [ text ("- " ++ nonGroup ++ " ") ] ]
-    in
-    case target of
-        Group group ->
-            displayResourceIdent "Group" (groupLink contextPath) change group
-
-        NonGroup nonGroup ->
-            displayNonGroup nonGroup
+        _ ->
+            displayChangeElemWith change "  Group  " [] [ targetLink contextPath target ]
 
 
 displayExclusionTarget : ContextPath -> TargetExclusion -> ChangeType -> Html msg
 displayExclusionTarget contextPath exclusion change =
     li []
-        ([ span [] [ text "Include" ] ]
+        ([ displayChangeElem change "Include" ]
             ++ displayCompositionTarget contextPath exclusion.include change
-            ++ [ span [] [ text "Exclude" ] ]
+            ++ [ displayChangeElem change "Exclude" ]
             ++ displayCompositionTarget contextPath exclusion.exclude change
         )
 
@@ -255,17 +290,19 @@ displayCompositionTarget : ContextPath -> TargetComposition -> ChangeType -> Lis
 displayCompositionTarget contextPath composition change =
     case composition of
         Or targetList ->
-            [ li [ style "list-style-type" "none", style "padding-left" "10px" ]
-                [ span [] [ text "Nodes that belong to any of the following groups :" ]
-                , ul [ style "padding-left" "10px" ] (displayTargetList contextPath targetList change)
-                ]
+            [ displayChangeElemWith
+                change
+                "Nodes that belong to any of the following groups :"
+                [ style "padding-left" "10px" ]
+                [ ul [ style "padding-left" "10px" ] (displayTargetList contextPath targetList change) ]
             ]
 
         And targetList ->
-            [ li [ style "list-style-type" "none", style "padding-left" "10px" ]
-                [ span [] [ text "  Nodes that belong to all of the following groups :" ]
-                , ul [ style "padding-left" "10px" ] (displayTargetList contextPath targetList change)
-                ]
+            [ displayChangeElemWith
+                change
+                "Nodes that belong to all of the following groups :"
+                [ style "padding-left" "10px" ]
+                [ ul [ style "padding-left" "10px" ] (displayTargetList contextPath targetList change) ]
             ]
 
 

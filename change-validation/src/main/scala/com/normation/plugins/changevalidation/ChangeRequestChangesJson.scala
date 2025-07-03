@@ -60,12 +60,16 @@ import com.normation.rudder.domain.nodes.AddNodeGroupDiff
 import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
 import com.normation.rudder.domain.nodes.ModifyToNodeGroupDiff
 import com.normation.rudder.domain.nodes.NodeGroupId
+import com.normation.rudder.domain.nodes.NodeGroupUid
 import com.normation.rudder.domain.policies
 import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.DeleteGlobalParameterDiff
 import com.normation.rudder.domain.properties.ModifyToGlobalParameterDiff
 import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.rule.category.RuleCategory
+import com.normation.rudder.rule.category.RuleCategoryId
+import com.normation.rudder.rule.category.RuleCategoryService
 import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.modification.DiffService
 import com.normation.utils.DateFormaterService
@@ -133,7 +137,10 @@ object ChangeRequestChangesJson {
       diffService:          DiffService,
       nodeGroups:           MapView[NodeGroupId, String],
       directives:           MapView[DirectiveId, Directive],
-      nodes:                MapView[NodeId, String]
+      nodes:                MapView[NodeId, String],
+      allTargets:           MapView[RuleTarget, FullRuleTargetInfo],
+      ruleCategoryService:  RuleCategoryService,
+      rootCategory:         RuleCategory
   ): PureResult[ChangeRequestChangesJson] = {
     cr match {
       case cr: ConfigurationChangeRequest =>
@@ -148,6 +155,23 @@ object ChangeRequestChangesJson {
   }
 }
 
+/**
+ * Json format that contains the same information as ConfigurationChangeRequestJson, as well as additional
+ * information that is needed by the Elm app that displays a given change request's list of changes, i.e. :
+ * 
+ *    - the parameters of a given directive change, in string format;
+ *    - an (id, name) pair for each directive of a given rule change;
+ *    - an (id, name) pair for each node target of a given rule change;
+ *    - an (id, name) pair for each node of a given group change.
+ *    
+ * This additional info is used in order to display the links in the "diff" tab and the "history" table of a given
+ * change request's page.
+ * 
+ * @param directives List of directive changes
+ * @param rules List of rule changes
+ * @param groups List of group changes
+ * @param parameters List of parameter changes ; does not contain additional information
+ */
 final case class ConfigurationChangesJson(
     directives: Chunk[ExtendedDirectiveChangeJson],
     rules:      Chunk[ExtendedRuleChangeJson],
@@ -162,7 +186,10 @@ object ConfigurationChangesJson {
       diffService:          DiffService,
       nodeGroups:           MapView[NodeGroupId, String],
       directives:           MapView[DirectiveId, Directive],
-      nodes:                MapView[NodeId, String]
+      nodes:                MapView[NodeId, String],
+      allTargets:           MapView[RuleTarget, FullRuleTargetInfo],
+      ruleCategoryService:  RuleCategoryService,
+      rootCategory:         RuleCategory
   ): PartialTransformer[ConfigurationChangeRequest, ConfigurationChangesJson] = {
     PartialTransformer
       .define[ConfigurationChangeRequest, ConfigurationChangesJson]
@@ -198,7 +225,7 @@ object ConfigurationChangesJson {
           Result.traverse[Chunk[ExtendedRuleChangeJson], (RuleId, RuleChanges), ExtendedRuleChangeJson](
             cr.rules.iterator,
             {
-              case (directiveId, changes) =>
+              case (ruleId, changes) =>
                 changes.changes
                   .transformIntoPartial[RuleChangeActionJson]
                   .map(ExtendedRuleChangeJson.toExtended)
@@ -369,7 +396,8 @@ final case class RuleChangeDefaultJson(
     action:         ActionChangeJson,
     change:         RuleChangeJson,
     ruleTargetInfo: Chunk[RuleTargetExtended],
-    directiveInfo:  Chunk[DirectiveIdent]
+    directiveInfo:  Chunk[DirectiveIdent],
+    categoryName:   String
 ) extends ExtendedRuleChangeJson
 
 final case class RuleChangeDiffJson(
@@ -382,15 +410,21 @@ final case class RuleChangeDiffJson(
 object ExtendedRuleChangeJson {
 
   def toExtended(r: RuleChangeActionJson)(implicit
-      nodeGroups: MapView[NodeGroupId, String],
-      directives: MapView[DirectiveId, Directive]
+      nodeGroups:          MapView[NodeGroupId, String],
+      directives:          MapView[DirectiveId, Directive],
+      allTargets:          MapView[RuleTarget, FullRuleTargetInfo],
+      ruleCategoryService: RuleCategoryService,
+      rootCategory:        RuleCategory
   ): ExtendedRuleChangeJson = {
 
     implicit def toDirectiveIdent(s: Iterable[DirectiveId]): Chunk[DirectiveIdent] = {
       Chunk.from(s.map(_.transformInto[DirectiveIdent]))
     }
 
-    implicit def toRuleTargetExtended(s: Iterable[RuleTarget]): Chunk[RuleTargetExtended] = {
+    implicit def toRuleTargetExtended(s: Iterable[RuleTarget])(implicit
+        allTargets:          MapView[RuleTarget, FullRuleTargetInfo],
+        ruleCategoryService: RuleCategoryService
+    ): Chunk[RuleTargetExtended] = {
       Chunk.from(s.map(_.transformInto[RuleTargetExtended]))
     }
 
@@ -400,14 +434,16 @@ object ExtendedRuleChangeJson {
           r.action,
           c,
           c.rule.targets.map(_.toRuleTarget),
-          c.rule.directives.map(id => DirectiveId(DirectiveUid(id)))
+          c.rule.directives.map(id => DirectiveId(DirectiveUid(id))),
+          ruleCategoryService.shortFqdn(rootCategory, RuleCategoryId(c.rule.categoryId)).getOrElse(c.rule.categoryId)
         )
       case d: RuleChangeJson.RuleDeleteChangeJson =>
         RuleChangeDefaultJson(
           r.action,
           d,
           d.rule.targets.map(_.toRuleTarget),
-          d.rule.directives.map(id => DirectiveId(DirectiveUid(id)))
+          d.rule.directives.map(id => DirectiveId(DirectiveUid(id))),
+          ruleCategoryService.shortFqdn(rootCategory, RuleCategoryId(d.rule.categoryId)).getOrElse(d.rule.categoryId)
         )
       case m: RuleChangeJson.RuleModifyChangeJson =>
         RuleChangeDiffJson(
@@ -430,23 +466,23 @@ object ExtendedRuleChangeJson {
   implicit val compositionTargetEncoder: JsonEncoder[CompositionRuleTargetExtended] =
     DeriveJsonEncoder.gen[CompositionRuleTargetExtended]
   implicit val simpleTargetEncoder:      JsonEncoder[SimpleRuleTargetExtended]      = DeriveJsonEncoder.gen[SimpleRuleTargetExtended]
+  implicit val idEncoder:                JsonEncoder[NodeGroupUid]                  = JsonEncoder[String].contramap[NodeGroupUid](_.value)
 }
 
 @jsonDiscriminator("type") sealed trait RuleTargetExtended {}
 @jsonDiscriminator("type") sealed trait CompositionRuleTargetExtended extends RuleTargetExtended {}
-@jsonDiscriminator("type") sealed trait SimpleRuleTargetExtended      extends RuleTargetExtended {}
 
-final case class GroupTargetExtended(
-    id:   NodeGroupId,
-    name: String
-) extends SimpleRuleTargetExtended
+@jsonDiscriminator("type") final case class SimpleRuleTargetExtended(
+    id:         NodeGroupUid,
+    name:       String,
+    targetType: String
+) extends RuleTargetExtended
 
-object GroupTargetExtended {
-  implicit val idEncoder: JsonEncoder[NodeGroupId]         = JsonEncoder[String].contramap[NodeGroupId](_.serialize)
-  implicit val encoder:   JsonEncoder[GroupTargetExtended] = DeriveJsonEncoder.gen[GroupTargetExtended]
+object SimpleRuleTargetExtended {
+  implicit val simpleTargetEncoder: JsonEncoder[SimpleRuleTargetExtended] = DeriveJsonEncoder.gen[SimpleRuleTargetExtended]
+  implicit val idEncoder:           JsonEncoder[NodeGroupUid]             = JsonEncoder[String].contramap[NodeGroupUid](_.value)
 }
 
-final case class NonGroupTargetExtended(nonGroupTarget: String) extends SimpleRuleTargetExtended
 final case class ComposedTarget(
     @jsonField("include") includedTarget: CompositionRuleTargetExtended,
     @jsonField("exclude") excludedTarget: CompositionRuleTargetExtended
@@ -458,13 +494,15 @@ final case class AndComposition(and: Chunk[RuleTargetExtended]) extends Composit
 object RuleTargetExtended {
 
   implicit private def composedTransformer(implicit
-      nodeGroups: MapView[NodeGroupId, String]
+      nodeGroups: MapView[NodeGroupId, String],
+      allTargets: MapView[RuleTarget, FullRuleTargetInfo]
   ): Transformer[TargetExclusion, ComposedTarget] = {
     Transformer.derive[TargetExclusion, ComposedTarget]
   }
 
   implicit private def compositionTransformer(implicit
-      nodeGroups: MapView[NodeGroupId, String]
+      nodeGroups: MapView[NodeGroupId, String],
+      allTargets: MapView[RuleTarget, FullRuleTargetInfo]
   ): Transformer[TargetComposition, CompositionRuleTargetExtended] = {
     Transformer
       .define[TargetComposition, CompositionRuleTargetExtended]
@@ -474,7 +512,8 @@ object RuleTargetExtended {
   }
 
   implicit private def orTransformer(implicit
-      nodeGroups: MapView[NodeGroupId, String]
+      nodeGroups: MapView[NodeGroupId, String],
+      allTargets: MapView[RuleTarget, FullRuleTargetInfo]
   ): Transformer[TargetUnion, OrComposition] = {
     Transformer
       .define[TargetUnion, OrComposition]
@@ -483,7 +522,8 @@ object RuleTargetExtended {
   }
 
   implicit private def andTransformer(implicit
-      nodeGroups: MapView[NodeGroupId, String]
+      nodeGroups: MapView[NodeGroupId, String],
+      allTargets: MapView[RuleTarget, FullRuleTargetInfo]
   ): Transformer[TargetIntersection, AndComposition] = {
     Transformer
       .define[TargetIntersection, AndComposition]
@@ -493,23 +533,29 @@ object RuleTargetExtended {
 
   implicit private def groupTransformer(implicit
       nodeGroups: MapView[NodeGroupId, String]
-  ): Transformer[GroupTarget, GroupTargetExtended] = {
+  ): Transformer[GroupTarget, SimpleRuleTargetExtended] = {
     Transformer
-      .define[GroupTarget, GroupTargetExtended]
-      .withFieldRenamed(_.groupId, _.id)
+      .define[GroupTarget, SimpleRuleTargetExtended]
+      .withFieldComputed(_.id, _.groupId.uid)
       .withFieldComputed(_.name, id => nodeGroups.getOrElse(id.groupId, "unknown"))
+      .withFieldConst(_.targetType, "groupId")
       .buildTransformer
   }
 
-  implicit private def nonGroupTransformer: Transformer[NonGroupRuleTarget, NonGroupTargetExtended] = {
+  implicit private def nonGroupTransformer(implicit
+      allTargets: MapView[RuleTarget, FullRuleTargetInfo]
+  ): Transformer[NonGroupRuleTarget, SimpleRuleTargetExtended] = {
     Transformer
-      .define[NonGroupRuleTarget, NonGroupTargetExtended]
-      .withFieldRenamed(_.target, _.nonGroupTarget)
+      .define[NonGroupRuleTarget, SimpleRuleTargetExtended]
+      .withFieldComputed(_.id, target => NodeGroupUid(target.target))
+      .withFieldComputed(_.name, target => allTargets.get(target).map(_.name).getOrElse("unknown"))
+      .withFieldConst(_.targetType, "target")
       .buildTransformer
   }
 
   implicit def transformer(implicit
-      nodeGroups: MapView[NodeGroupId, String]
+      nodeGroups: MapView[NodeGroupId, String],
+      allTargets: MapView[RuleTarget, FullRuleTargetInfo]
   ): Transformer[RuleTarget, RuleTargetExtended] = {
 
     Transformer
@@ -519,8 +565,8 @@ object RuleTargetExtended {
         case c: TargetComposition => c.transformInto[CompositionRuleTargetExtended]
       }
       .withSealedSubtypeHandled[SimpleTarget] {
-        case g: policies.GroupTarget => g.transformInto[GroupTargetExtended]
-        case n: NonGroupRuleTarget   => n.transformInto[NonGroupTargetExtended]
+        case g: policies.GroupTarget => g.transformInto[SimpleRuleTargetExtended]
+        case n: NonGroupRuleTarget   => n.transformInto[SimpleRuleTargetExtended]
       }
       .buildTransformer
   }

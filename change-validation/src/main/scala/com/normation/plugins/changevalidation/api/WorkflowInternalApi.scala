@@ -68,6 +68,8 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rule.category.RoRuleCategoryRepository
+import com.normation.rudder.rule.category.RuleCategoryService
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
@@ -139,7 +141,9 @@ class WorkflowInternalApiImpl(
     workflowEventLogService:      WorkflowEventLogService,
     nodeFactRepository:           NodeFactRepository,
     directiveRepository:          RoDirectiveRepository,
-    nodeGroupRepository:          RoNodeGroupRepository
+    nodeGroupRepository:          RoNodeGroupRepository,
+    ruleCategoryService:          RuleCategoryService,
+    ruleCategoryRepository:       RoRuleCategoryRepository
 ) extends LiftApiModuleProvider[WorkflowInternalApi] {
 
   import com.normation.plugins.changevalidation.api.WorkflowInternalApi as API
@@ -349,16 +353,27 @@ class WorkflowInternalApiImpl(
     ): LiftResponse = {
 
       implicit val qc: QueryContext = authzToken.qc
-      // val userRights = Seq("deployer", "validator")
 
       withChangeRequestContext(sid, params, schema, "find")((changeRequest, status, techniqueByDirective) => {
         for {
-          nodeGroups  <- getNodeGroupNames
-          directives  <- getDirectives
-          nodes       <- getNodeNames
-          changesJson <- ChangeRequestChangesJson
-                           .from(changeRequest)(techniqueByDirective, diffService, nodeGroups, directives, nodes)
-                           .toIO
+          nodeGroups   <- getNodeGroupNames
+          directives   <- getDirectives
+          nodes        <- getNodeNames
+          groupLib     <- nodeGroupRepository.getFullGroupLibrary()
+          allTargets    = groupLib.allTargets.view
+          rootCategory <- ruleCategoryRepository.getRootCategory()
+          changesJson  <- ChangeRequestChangesJson
+                            .from(changeRequest)(
+                              techniqueByDirective,
+                              diffService,
+                              nodeGroups,
+                              directives,
+                              nodes,
+                              allTargets,
+                              ruleCategoryService,
+                              rootCategory
+                            )
+                            .toIO
         } yield {
           changesJson
         }
