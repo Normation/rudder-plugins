@@ -323,7 +323,20 @@ object ChangeValidationConf extends RudderPluginModule {
     )
     val api4 = new WorkflowInternalApiImpl(
       roWorkflowRepository,
-      RudderConfig.userService
+      RudderConfig.userService,
+      RudderConfig.diffService,
+      RudderConfig.techniqueRepository,
+      RudderConfig.workflowLevelService.getWorkflowService(),
+      roChangeRequestRepository,
+      RudderConfig.eventLogDetailsService,
+      RudderConfig.changeRequestEventLogService,
+      commitAndDeployChangeRequest,
+      RudderConfig.workflowEventLogService,
+      RudderConfig.nodeFactRepository,
+      RudderConfig.roDirectiveRepository,
+      RudderConfig.roNodeGroupRepository,
+      RudderConfig.ruleCategoryService,
+      RudderConfig.roRuleCategoryRepository
     )
     new LiftApiModuleProvider[EndpointSchema] {
       override def schemas: ApiModuleProvider[EndpointSchema] = new ApiModuleProvider[EndpointSchema] {

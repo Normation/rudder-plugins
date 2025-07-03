@@ -51,6 +51,7 @@ import com.normation.rudder.domain.workflows.ChangeRequestInfo
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.rudder.services.modification.DiffServiceImpl
 import java.nio.file.Files
 import org.junit.runner.RunWith
 import zio.Scope
@@ -92,7 +93,20 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
   val modules = List(
     new WorkflowInternalApiImpl(
       mockServices.workflowRepository,
-      restTestSetUp.userService
+      restTestSetUp.userService,
+      new DiffServiceImpl,
+      restTestSetUp.mockTechniques.techniqueRepo,
+      restTestSetUp.workflowLevelService.getWorkflowService(),
+      mockServices.changeRequestRepository,
+      restTestSetUp.eventLogDetailsService,
+      mockServices.changeRequestEventLogService,
+      mockServices.commitAndDeployChangeRequest,
+      mockServices.workflowEventLogService,
+      restTestSetUp.mockCompliance.nodeFactRepo,
+      restTestSetUp.mockDirectives.directiveRepo,
+      restTestSetUp.mockNodeGroups.groupsRepo,
+      restTestSetUp.ruleCategoryService,
+      restTestSetUp.mockRules.ruleCategoryRepo
     )
   )
 
