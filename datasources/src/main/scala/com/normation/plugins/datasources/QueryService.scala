@@ -54,7 +54,7 @@ import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import org.joda.time.DateTime
+import java.time.Instant
 import zio.*
 import zio.syntax.*
 
@@ -127,7 +127,7 @@ object QueryService {
               newNode   = nodeInfo.copy(properties = Chunk.fromIterable(newProps))
               res      <- repository
                             .save(newNode)(
-                              ChangeContext(cause.modId, cause.actor, DateTime.now(), cause.reason, None, NodeSecurityContext.All)
+                              ChangeContext(cause.modId, cause.actor, Instant.now(), cause.reason, None, NodeSecurityContext.All)
                             )
                             .chainError(
                               s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"

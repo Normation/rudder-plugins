@@ -15,9 +15,9 @@ import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.utils.StringUuidGenerator
 import enumeratum.*
+import java.time.Instant
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import org.joda.time.DateTime
 import sourcecode.Line
 
 sealed trait ScaleOutRelayApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
@@ -72,7 +72,7 @@ class ScaleOutRelayApiImpl(
       implicit val cc = ChangeContext(
         ModificationId(uuidGen.newUuid),
         authz.qc.actor,
-        new DateTime(),
+        Instant.now(),
         params.reason.orElse(Some(s"Promote node ${nodeId} to relay")),
         Some(req.remoteAddr),
         authz.qc.nodePerms
@@ -98,7 +98,7 @@ class ScaleOutRelayApiImpl(
       implicit val cc = ChangeContext(
         ModificationId(uuidGen.newUuid),
         authz.qc.actor,
-        new DateTime(),
+        Instant.now(),
         params.reason.orElse(Some(s"Demote relay ${nodeId}")),
         Some(req.remoteAddr),
         authz.qc.nodePerms
