@@ -19,7 +19,7 @@ cd "$(dirname "$0")"
 
 if [ "$RELEASE" = true ]; then
   # Ensure clean state for release
-  rm -rf node_modules
+  rm -rf node_modules elm/elm-stuff
 fi
 
 # We need the gulpfile in current working directory, and to remove the old one (.js) if it is present
@@ -30,6 +30,9 @@ cp ../../../plugins-common/gulpfile.mjs .
 
 # Ensure correct versions
 npm_config_loglevel=error npm ci --no-audit
+
+# Elm git library : needs an `elm/elm-git.json`, if absent Elm project will just fail at compilation
+npm run elm-git-install
 
 if [ "$RELEASE" = true ]; then
   npx gulp --production

@@ -44,34 +44,13 @@ import com.normation.cfclerk.domain.TechniqueName
 import com.normation.cfclerk.domain.TechniqueVersion
 import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveCreateChangeJson
+import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveDeleteChangeJson
+import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveModifyChangeJson
 import com.normation.rudder.apidata.JsonResponseObjects.*
 import com.normation.rudder.apidata.implicits.*
-import com.normation.rudder.domain.nodes.AddNodeGroupDiff
-import com.normation.rudder.domain.nodes.ChangeRequestNodeGroupDiff
-import com.normation.rudder.domain.nodes.DeleteNodeGroupDiff
-import com.normation.rudder.domain.nodes.ModifyNodeGroupDiff
-import com.normation.rudder.domain.nodes.ModifyToNodeGroupDiff
-import com.normation.rudder.domain.nodes.NodeGroup
-import com.normation.rudder.domain.nodes.NodeGroupCategoryId
-import com.normation.rudder.domain.nodes.NodeGroupId
-import com.normation.rudder.domain.policies.AddDirectiveDiff
-import com.normation.rudder.domain.policies.AddRuleDiff
-import com.normation.rudder.domain.policies.ChangeRequestDirectiveDiff
-import com.normation.rudder.domain.policies.ChangeRequestRuleDiff
-import com.normation.rudder.domain.policies.DeleteDirectiveDiff
-import com.normation.rudder.domain.policies.DeleteRuleDiff
-import com.normation.rudder.domain.policies.Directive
-import com.normation.rudder.domain.policies.DirectiveId
-import com.normation.rudder.domain.policies.GroupTarget
-import com.normation.rudder.domain.policies.ModifyDirectiveDiff
-import com.normation.rudder.domain.policies.ModifyRuleDiff
-import com.normation.rudder.domain.policies.ModifyToDirectiveDiff
-import com.normation.rudder.domain.policies.ModifyToRuleDiff
-import com.normation.rudder.domain.policies.Rule
-import com.normation.rudder.domain.policies.RuleId
-import com.normation.rudder.domain.policies.RuleTarget
-import com.normation.rudder.domain.policies.SectionVal
-import com.normation.rudder.domain.policies.SimpleDiff
+import com.normation.rudder.domain.nodes.*
+import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
 import com.normation.rudder.domain.properties.ChangeRequestGlobalParameterDiff
 import com.normation.rudder.domain.properties.DeleteGlobalParameterDiff
@@ -83,19 +62,8 @@ import com.normation.rudder.domain.properties.ModifyGlobalParameterDiff
 import com.normation.rudder.domain.properties.ModifyToGlobalParameterDiff
 import com.normation.rudder.domain.properties.PropertyProvider
 import com.normation.rudder.domain.queries.Query
-import com.normation.rudder.domain.workflows.ChangeRequest
-import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.domain.workflows.ChangeRequestInfo
-import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
-import com.normation.rudder.domain.workflows.DirectiveChange
-import com.normation.rudder.domain.workflows.DirectiveChanges
-import com.normation.rudder.domain.workflows.GlobalParameterChange
-import com.normation.rudder.domain.workflows.GlobalParameterChanges
-import com.normation.rudder.domain.workflows.NodeGroupChange
-import com.normation.rudder.domain.workflows.NodeGroupChanges
-import com.normation.rudder.domain.workflows.RuleChange
-import com.normation.rudder.domain.workflows.RuleChanges
-import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.rule.category.RuleCategoryId
 import com.normation.rudder.services.modification.DiffService
 import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.PartialTransformer
@@ -328,19 +296,24 @@ object DirectiveChangeJson {
       @jsonField("longDescription") modLongDescription:   SimpleDiffOrValueJson[String],
       techniqueName:                                      TechniqueName,
       @jsonField("techniqueVersion") modTechniqueVersion: SimpleDiffOrValueJson[TechniqueVersion],
-      @jsonField("parameters") modParameters:             SimpleDiffOrValueJson[SectionValJson],
+      @jsonField("parameters") modParameters:             SimpleDiffOrValueJson[SectionVal],
       @jsonField("priority") modPriority:                 SimpleDiffOrValueJson[Int],
       @jsonField("enabled") modIsActivated:               SimpleDiffOrValueJson[Boolean],
-      system:                                             Boolean
+      system:                                             Boolean,
+      @jsonField("policyMode") modPolicyMode:             SimpleDiffOrValueJson[Option[PolicyMode]]
   )
 
   object ModifyDirectiveJson {
     // encoders in this nested scope need to be lazy
-    implicit lazy val directiveIdEncoder:      JsonEncoder[DirectiveId]         = JsonEncoder[String].contramap[DirectiveId](_.serialize)
-    implicit lazy val techniqueNameEncoder:    JsonEncoder[TechniqueName]       = JsonEncoder[String].contramap[TechniqueName](_.value)
-    implicit lazy val techniqueVersionEncoder: JsonEncoder[TechniqueVersion]    =
+    implicit lazy val directiveIdEncoder:      JsonEncoder[DirectiveId]      = JsonEncoder[String].contramap[DirectiveId](_.serialize)
+    implicit lazy val techniqueNameEncoder:    JsonEncoder[TechniqueName]    = JsonEncoder[String].contramap[TechniqueName](_.value)
+    implicit lazy val techniqueVersionEncoder: JsonEncoder[TechniqueVersion] =
       JsonEncoder[String].contramap[TechniqueVersion](_.serialize)
-    implicit lazy val encoder:                 JsonEncoder[ModifyDirectiveJson] =
+
+    implicit lazy val sectionValEncoder: JsonEncoder[SectionVal]          =
+      JsonEncoder[SectionValJson].contramap[SectionVal](_.transformInto[SectionValJson])
+    implicit lazy val policyModeEncoder: JsonEncoder[PolicyMode]          = JsonEncoder[String].contramap[PolicyMode](_.name)
+    implicit lazy val encoder:           JsonEncoder[ModifyDirectiveJson] =
       DeriveJsonEncoder.gen[ModifyDirectiveJson]
 
     def from(
@@ -349,7 +322,6 @@ object DirectiveChangeJson {
         technique:          Technique,
         initialRootSection: SectionSpec
     ): Either[String, ModifyDirectiveJson] = {
-      import io.scalaland.chimney.dsl.*
       // This is in a try/catch because directiveValToSectionVal may fail
       Try(
         ModifyDirectiveJson(
@@ -361,14 +333,13 @@ object DirectiveChangeJson {
           SimpleDiffOrValueJson.withDefault(diff.modTechniqueVersion, initialState.techniqueVersion),
           SimpleDiffOrValueJson
             .withDefault(
-              diff.modParameters.map(_.transformInto[SimpleDiff[SectionValJson]]),
-              SectionVal
-                .directiveValToSectionVal(initialRootSection, initialState.parameters)
-                .transformInto[SectionValJson]
+              diff.modParameters,
+              SectionVal.directiveValToSectionVal(initialRootSection, initialState.parameters)
             ),
           SimpleDiffOrValueJson.withDefault(diff.modPriority, initialState.priority),
           SimpleDiffOrValueJson.withDefault(diff.modIsActivated, initialState.isEnabled),
-          initialState.isSystem
+          initialState.isSystem,
+          SimpleDiffOrValueJson.withDefault(diff.modPolicyMode, initialState.policyMode)
         )
       ).toEither.left.map(e => s"Error in directive sections : ${e.getMessage}")
     }
@@ -491,13 +462,16 @@ object RuleChangeJson {
       @jsonField("longDescription") modLongDescription:   SimpleDiffOrValueJson[String],
       @jsonField("directives") modDirectiveIds:           SimpleDiffOrValueJson[Set[DirectiveId]],
       @jsonField("targets") modTarget:                    SimpleDiffOrValueJson[Set[RuleTarget]],
-      @jsonField("enabled") modIsActivatedStatus:         SimpleDiffOrValueJson[Boolean]
+      @jsonField("enabled") modIsActivatedStatus:         SimpleDiffOrValueJson[Boolean],
+      @jsonField("system") modIsSystem:                   SimpleDiffOrValueJson[Boolean],
+      @jsonField("categoryId") modCategoryId:             SimpleDiffOrValueJson[RuleCategoryId]
   )
 
   object ModifyRuleJson {
     implicit lazy val ruleIdEncoder:      JsonEncoder[RuleId]         = JsonEncoder[String].contramap[RuleId](_.serialize)
     implicit lazy val directiveIdEncoder: JsonEncoder[DirectiveId]    = JsonEncoder[String].contramap[DirectiveId](_.serialize)
     implicit lazy val ruleTargetEncoder:  JsonEncoder[RuleTarget]     = JsonEncoder[String].contramap[RuleTarget](_.target)
+    implicit lazy val categoryEncoder:    JsonEncoder[RuleCategoryId] = JsonEncoder[String].contramap[RuleCategoryId](_.value)
     implicit lazy val encoder:            JsonEncoder[ModifyRuleJson] =
       DeriveJsonEncoder.gen[ModifyRuleJson]
 
@@ -512,7 +486,9 @@ object RuleChangeJson {
         SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modLongDescription, initialState.longDescription),
         SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modDirectiveIds, initialState.directiveIds),
         SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modTarget, initialState.targets),
-        SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modIsActivatedStatus, initialState.isEnabledStatus)
+        SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modIsActivatedStatus, initialState.isEnabledStatus),
+        SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modIsSystem, initialState.isSystem),
+        SimpleDiffOrValueJson.withDefault(modifyRuleDiff.modCategory, initialState.categoryId)
       )
     }
   }
@@ -696,12 +672,12 @@ object GroupChangeJson {
       @jsonField("properties") modProperties:   SimpleDiffOrValueJson[GroupPropertiesJson],
       @jsonField("nodeIds") modNodeList:        SimpleDiffOrValueJson[Set[NodeId]],
       @jsonField("dynamic") modIsDynamic:       SimpleDiffOrValueJson[Boolean],
-      @jsonField("enabled") modIsActivated:     SimpleDiffOrValueJson[Boolean]
+      @jsonField("enabled") modIsActivated:     SimpleDiffOrValueJson[Boolean],
+      @jsonField("system") modIsSystem:         SimpleDiffOrValueJson[Boolean]
   )
 
   object ModifyGroupJson {
     implicit lazy val nodeIdEncoder: JsonEncoder[NodeId]          = JsonEncoder[String].contramap[NodeId](_.value)
-    implicit lazy val queryEncoder:  JsonEncoder[Query]           = JsonEncoder[String].contramap[Query](_.toString)
     implicit lazy val encoder:       JsonEncoder[ModifyGroupJson] =
       DeriveJsonEncoder.gen[ModifyGroupJson]
 
@@ -721,7 +697,8 @@ object GroupChangeJson {
         ),
         SimpleDiffOrValueJson.withDefault(modifyGroupDiff.modNodeList, initialState.serverList),
         SimpleDiffOrValueJson.withDefault(modifyGroupDiff.modIsDynamic, initialState.isDynamic),
-        SimpleDiffOrValueJson.withDefault(modifyGroupDiff.modIsActivated, initialState.isEnabled)
+        SimpleDiffOrValueJson.withDefault(modifyGroupDiff.modIsActivated, initialState.isEnabled),
+        SimpleDiffOrValueJson.withDefault(modifyGroupDiff.modIsSystem, initialState.isSystem)
       )
     }
   }

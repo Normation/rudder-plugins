@@ -1,4 +1,7 @@
 {
+  "scripts" : {
+    "elm-git-install" : "cd elm && elm-git-install"
+  },
   "devDependencies": {
     "better-npm-audit": "^3.7.3",
     "del": "^8.0.0",
@@ -12,6 +15,7 @@
     "through2": "^4.0.2"
   },
   "dependencies": {
+    "elm-git-install": "^0.1.4",
     "elm-review": "^2.13.2",
     "gulp-sass": "^6.0.1",
     "gulp-sourcemaps": "^3.0.0",
