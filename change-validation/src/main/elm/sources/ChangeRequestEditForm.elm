@@ -1,50 +1,28 @@
-module ChangeRequestEditForm exposing (..)
+module ChangeRequestEditForm exposing (Model, Msg, initModel, update, updateChangeRequestDetails, view)
+
+import ErrorMessages exposing (getErrorMessage)
+import Html exposing (Html, a, div, form, h2, h3, input, label, span, text, textarea)
+import Html.Attributes exposing (class, disabled, for, href, id, maxlength, name, readonly, required, style, type_, value)
+import Html.Events exposing (onClick, onInput)
+import Http exposing (Error, expectJson, header, jsonBody, request)
+import Json.Encode as Encode
+import Ports exposing (errorNotification, successNotification)
+import RudderDataTypes exposing (ChangeRequestFormDetails, ViewState(..), decodeFormDetails)
+import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, getContextPath)
+
+
 
 ------------------------------
 -- Init and main --
 ------------------------------
 
-import Browser
-import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, a, div, form, h2, h3, input, label, span, text, textarea)
-import Html.Attributes exposing (class, disabled, for, href, id, maxlength, name, readonly, required, style, type_, value)
-import Html.Events exposing (onClick, onInput)
-import Http exposing (Error, emptyBody, expectJson, header, jsonBody, request)
-import Json.Decode exposing (Decoder, andThen, at, fail, field, index, int, map4, string, succeed)
-import Json.Encode as Encode
-import Ports exposing (errorNotification, readUrl, successNotification)
 
-
-getApiUrl : Model -> String -> String
-getApiUrl m url =
-    m.contextPath ++ "/secure/api/" ++ url
-
-
-changeRequestsPageUrl : Model -> String
-changeRequestsPageUrl m =
-    m.contextPath ++ "/secure/configurationManager/changes/changeRequests"
-
-
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
-
-
-init : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
-init flags =
-    let
-        initModel =
-            Model
-                flags.contextPath
-                ChangeRequestIdNotSet
-                flags.hasWriteRights
-                NoView
-    in
-    ( initModel, Cmd.none )
+initModel : { contextPath : String, hasWriteRights : Bool } -> Model
+initModel flags =
+    Model
+        (getContextPath flags.contextPath)
+        flags.hasWriteRights
+        NoView
 
 
 
@@ -53,41 +31,25 @@ init flags =
 ------------------------------
 
 
+type alias Form =
+    { initValues : ChangeRequestFormDetails
+    , formValues : ChangeRequestFormDetails
+    }
+
+
 type alias Model =
-    { contextPath : String
-    , changeRequest : ChangeRequestDetailsOpt
+    { contextPath : ContextPath
     , hasWriteRights : Bool
-    , viewState : ViewState
+    , viewState : ViewState Form
     }
 
 
 type Msg
-    = GetChangeRequestDetails (Result Error ChangeRequestDetails)
-    | SetChangeRequestDetails (Result Error ChangeRequestDetails)
-    | GetChangeRequestIdFromUrl String
+    = SetChangeRequestDetails (Result Error ChangeRequestFormDetails)
       -- Form input
     | FormInputName String
     | FormInputDescription String
     | FormSubmit
-
-
-type alias ChangeRequestDetails =
-    { title : String
-    , state : String
-    , id : Int
-    , description : String
-    }
-
-
-type ChangeRequestDetailsOpt
-    = Success ChangeRequestDetails
-    | ChangeRequestIdNotSet
-
-
-type ViewState
-    = NoView
-    | ViewError String
-    | Form { initValues : ChangeRequestDetails, formValues : ChangeRequestDetails }
 
 
 
@@ -96,33 +58,16 @@ type ViewState
 ------------------------------
 
 
-getChangeRequestDetails : Model -> Int -> Cmd Msg
-getChangeRequestDetails model crId =
-    let
-        req =
-            request
-                { method = "GET"
-                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model ("changeRequests/" ++ String.fromInt crId)
-                , body = emptyBody
-                , expect = expectJson GetChangeRequestDetails decodeChangeRequestDetails
-                , timeout = Nothing
-                , tracker = Nothing
-                }
-    in
-    req
-
-
-updateChangeRequestDetails : Model -> ChangeRequestDetails -> Cmd Msg
-updateChangeRequestDetails model changeRequestDetails =
+saveChangeRequestDetails : Model -> ChangeRequestFormDetails -> Cmd Msg
+saveChangeRequestDetails model changeRequestDetails =
     let
         req =
             request
                 { method = "POST"
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model ("changeRequests/" ++ String.fromInt changeRequestDetails.id)
-                , body = encodeChangeRequestDetails changeRequestDetails |> jsonBody
-                , expect = expectJson SetChangeRequestDetails decodeChangeRequestDetails
+                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt changeRequestDetails.id)
+                , body = encodeFormDetails changeRequestDetails |> jsonBody
+                , expect = expectJson SetChangeRequestDetails decodeFormDetails
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -136,53 +81,8 @@ updateChangeRequestDetails model changeRequestDetails =
 ------------------------------
 
 
-decodeChangeRequestStatus : Decoder String
-decodeChangeRequestStatus =
-    string
-        |> andThen
-            (\str ->
-                case str of
-                    "Open" ->
-                        succeed str
-
-                    "Closed" ->
-                        succeed str
-
-                    "Pending validation" ->
-                        succeed str
-
-                    "Pending deployment" ->
-                        succeed str
-
-                    "Cancelled" ->
-                        succeed str
-
-                    "Deployed" ->
-                        succeed str
-
-                    _ ->
-                        fail "Invalid change request status"
-            )
-
-
-decodeChangeRequestDetails : Decoder ChangeRequestDetails
-decodeChangeRequestDetails =
-    at [ "data" ]
-        (field "changeRequests"
-            (index 0
-                (map4
-                    ChangeRequestDetails
-                    (field "displayName" string)
-                    (field "status" decodeChangeRequestStatus)
-                    (field "id" int)
-                    (field "description" string)
-                )
-            )
-        )
-
-
-encodeChangeRequestDetails : ChangeRequestDetails -> Encode.Value
-encodeChangeRequestDetails changeRequestDetails =
+encodeFormDetails : ChangeRequestFormDetails -> Encode.Value
+encodeFormDetails changeRequestDetails =
     Encode.object
         [ ( "description", Encode.string changeRequestDetails.description )
         , ( "name", Encode.string changeRequestDetails.title )
@@ -195,39 +95,18 @@ encodeChangeRequestDetails changeRequestDetails =
 ------------------------------
 
 
+updateChangeRequestDetails : ChangeRequestFormDetails -> Model -> Model
+updateChangeRequestDetails cr model =
+    { model | viewState = initForm cr }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GetChangeRequestDetails result ->
-            case result of
-                Ok changeRequestDetails ->
-                    ( { model | changeRequest = Success changeRequestDetails, viewState = initForm changeRequestDetails }, Cmd.none )
-
-                Err err ->
-                    let
-                        errMsg =
-                            getErrorMessage err
-                    in
-                    ( { model | viewState = ViewError errMsg }
-                    , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
-                    )
-
-        GetChangeRequestIdFromUrl crIdStr ->
-            case String.toInt crIdStr of
-                Just crId ->
-                    ( model, getChangeRequestDetails model crId )
-
-                Nothing ->
-                    let
-                        errMsg =
-                            crIdStr ++ " is not a valid change request id"
-                    in
-                    ( { model | viewState = ViewError errMsg }, errorNotification errMsg )
-
         SetChangeRequestDetails result ->
             case result of
                 Ok changeRequestDetails ->
-                    ( { model | changeRequest = Success changeRequestDetails, viewState = initForm changeRequestDetails }
+                    ( { model | viewState = initForm changeRequestDetails }
                     , successNotification "Successfully updated change request details"
                     )
 
@@ -246,9 +125,9 @@ update msg model =
 
         FormSubmit ->
             case model.viewState of
-                Form { initValues, formValues } ->
+                Success { initValues, formValues } ->
                     if canSaveChanges initValues formValues then
-                        ( model, updateChangeRequestDetails model formValues )
+                        ( model, saveChangeRequestDetails model formValues )
 
                     else
                         ( model, Cmd.none )
@@ -257,41 +136,41 @@ update msg model =
                     ( model, Cmd.none )
 
 
-initForm : ChangeRequestDetails -> ViewState
+initForm : ChangeRequestFormDetails -> ViewState Form
 initForm cr =
-    Form { initValues = cr, formValues = cr }
+    Success { initValues = cr, formValues = cr }
 
 
-updateForm : (ViewState -> ViewState) -> Model -> Model
+updateForm : (ViewState Form -> ViewState Form) -> Model -> Model
 updateForm f model =
     { model | viewState = f model.viewState }
 
 
-setDescription : String -> ViewState -> ViewState
+setDescription : String -> ViewState Form -> ViewState Form
 setDescription newDescription viewState =
     case viewState of
-        Form ({ formValues } as formState) ->
-            Form { formState | formValues = { formValues | description = newDescription } }
+        Success ({ formValues } as formState) ->
+            Success { formState | formValues = { formValues | description = newDescription } }
 
         _ ->
             viewState
 
 
-setName : String -> ViewState -> ViewState
+setName : String -> ViewState Form -> ViewState Form
 setName newName viewState =
     case viewState of
-        Form formState ->
+        Success formState ->
             let
                 formVal =
                     formState.formValues
             in
-            Form { formState | formValues = { formVal | title = newName } }
+            Success { formState | formValues = { formVal | title = newName } }
 
         _ ->
             viewState
 
 
-formModified : ChangeRequestDetails -> ChangeRequestDetails -> Bool
+formModified : ChangeRequestFormDetails -> ChangeRequestFormDetails -> Bool
 formModified initCR formCR =
     not (initCR.title == formCR.title) || not (initCR.description == formCR.description)
 
@@ -299,7 +178,7 @@ formModified initCR formCR =
 {-| In order to save the changes in the change request form, the form must have been modified
 _and_ the change request title mustn't be empty |
 -}
-canSaveChanges : ChangeRequestDetails -> ChangeRequestDetails -> Bool
+canSaveChanges : ChangeRequestFormDetails -> ChangeRequestFormDetails -> Bool
 canSaveChanges initCR formCR =
     formModified initCR formCR && not (String.isEmpty formCR.title)
 
@@ -313,7 +192,7 @@ canSaveChanges initCR formCR =
 view : Model -> Html Msg
 view model =
     case model.viewState of
-        Form formState ->
+        Success formState ->
             let
                 canEdit =
                     model.hasWriteRights
@@ -444,7 +323,7 @@ editCRDescription crDescription writeRights =
         ]
 
 
-saveButton : ChangeRequestDetails -> ChangeRequestDetails -> Bool -> Html Msg
+saveButton : ChangeRequestFormDetails -> ChangeRequestFormDetails -> Bool -> Html Msg
 saveButton modelCR formCR writeRights =
     if writeRights then
         let
@@ -474,16 +353,5 @@ errorView model errMsg =
         ]
         [ h2 [] [ text "Change request id was not found" ]
         , h3 [] [ text errMsg ]
-        , a [ href (changeRequestsPageUrl model) ] [ text "Back to change requests page" ]
+        , a [ href (changeRequestsPageUrl model.contextPath) ] [ text "Back to change requests page" ]
         ]
-
-
-
-------------------------------
--- SUBSCRIPTIONS
-------------------------------
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    readUrl (\id -> GetChangeRequestIdFromUrl id)

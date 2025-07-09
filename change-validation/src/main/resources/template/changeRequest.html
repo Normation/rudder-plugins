@@ -4,119 +4,81 @@
 	<title>Rudder - Change Validation</title>
 	<link rel="stylesheet" type="text/css" href="/toserve/changevalidation/change-validation.css" media="screen" data-lift="with-cached-resource">
 	<script src="/toserve/changevalidation/change-validation.js" data-lift="with-cached-resource"></script>
-    <script src="/toserve/changevalidation/rudder-changerequesteditform.js" data-lift="with-cached-resource"></script>
-    <script src="/toserve/changevalidation/rudder-changerequestchangesform.js" data-lift="with-cached-resource"></script>
+    <script src="/toserve/changevalidation/rudder-changerequestdetails.js" data-lift="with-cached-resource"></script>
 </head_merge>
 
 <div class="rudder-template">
-  <div class="one-col">
-    <div id="changeRequestHeader" class="main-header">
-      <div class="lift:ChangeRequestDetails.header"></div>
-    </div>
-    <div class="one-col-main">
-      <div class="template-main">
-        <div class="main-container">
-          <div class="main-details">
+  <div id="changeRequestDetails">hello</div>
 
-            <div id="change-request-edit-form" ></div>
+  <script data-lift="with-nonce">
+    var hasWriteRights = false;
+  </script>
+  <lift:authz role="deployer_write">
+    <script data-lift="with-nonce">
+      hasWriteRights = true;
+    </script>
+  </lift:authz>
+  <lift:authz role="deployer_edit">
+    <script data-lift="with-nonce">
+      hasWriteRights = true;
+    </script>
+  </lift:authz>
+  <lift:authz role="validator_write">
+    <script data-lift="with-nonce">
+      hasWriteRights = true;
+    </script>
+  </lift:authz>
+  <lift:authz role="validator_edit">
+    <script data-lift="with-nonce">
+      hasWriteRights = true;
+    </script>
+  </lift:authz>
 
-            <div id="warnOnUnmergeable">
-              <div class="lift:ChangeRequestDetails.warnUnmergeable"></div>
-            </div>
+  <script data-lift="with-nonce">
+    $(document).ready(function () {
+      var main = document.getElementById("changeRequestDetails");
+      var initValues = {
+        contextPath: contextPath,
+        hasWriteRights : hasWriteRights
+      };
 
-            <div id="changeRequestChanges"></div>
+      var app = Elm.ChangeRequestDetails.init({node: main, flags: initValues});
+      app.ports.errorNotification.subscribe(function (str) {
+        createErrorNotification(str)
+      });
+      app.ports.successNotification.subscribe(function(str) {
+        createSuccessNotification(str)
+      });
 
-              <script data-lift="with-nonce">
-                  var hasWriteRights = false;
-              </script>
-              <lift:authz role="deployer_write">
-                  <script data-lift="with-nonce">
-                      hasWriteRights = true;
-                  </script>
-              </lift:authz>
-              <lift:authz role="deployer_edit">
-                  <script data-lift="with-nonce">
-                      hasWriteRights = true;
-                  </script>
-              </lift:authz>
-              <lift:authz role="validator_write">
-                  <script data-lift="with-nonce">
-                      hasWriteRights = true;
-                  </script>
-              </lift:authz>
-              <lift:authz role="validator_edit">
-                  <script data-lift="with-nonce">
-                      hasWriteRights = true;
-                  </script>
-              </lift:authz>
+      var path = window.location.pathname.split("/")
+      if (path.length > 2) {
+        var id = path[path.length -1];
+        app.ports.readUrl.send(id);
+      }
+    });
+  </script>
+</div>
 
-            <script data-lift="with-nonce">
-            $(document).ready(function () {
-              var main = document.getElementById("change-request-edit-form");
-              var ch = document.getElementById("changeRequestChanges");
-              var initValues = {
-                contextPath: contextPath,
-                hasWriteRights : hasWriteRights
-              };
-              var app = Elm.ChangeRequestEditForm.init({node: main, flags: initValues});
-              app.ports.errorNotification.subscribe(function (str) {
-                createErrorNotification(str)
-              });
-              app.ports.successNotification.subscribe(function(str) {
-                createSuccessNotification(str)
-              });
-
-              var app2 = Elm.ChangeRequestChangesForm.init({node: ch, flags: initValues});
-              app2.ports.errorNotification.subscribe(function (str) {
-                createErrorNotification(str)
-              });
-
-              var path = window.location.pathname.split("/")
-              if (path.length > 2) {
-                var id = path[path.length -1];
-                app.ports.readUrl.send(id);
-                app2.ports.readUrl.send(id);
-              }
-            });
-            </script>
-
-            <!--
-            <div id="changeRequestDetails">
-              <div class="lift:ChangeRequestDetails.details"></div>
-            </div>
-            -->
-
-            <!--
-            <div class="lift:ChangeRequestDetails.changes"></div>
-            -->
-
-          </div>
+<div>
+  <div id="successWorkflow" class="modal fade" data-bs-keyboard="true" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Success</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div>
-    <div id="successWorkflow" class="modal fade" data-bs-keyboard="true" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Success</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <h5 class="text-center">
-                        Change request state has been changed to <span id="newStatus">next status</span>
-                    </h5>
-                    <div id="successDialogContent"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                </div>
-            </div><!-- /.modal-content -->
-        </div><!-- /.modal-dialog -->
-    </div><!-- /.modal -->
-  </div>
+        <div class="modal-body">
+          <h5 class="text-center">
+            Change request state has been changed to <span id="newStatus">next status</span>
+          </h5>
+          <div id="successDialogContent"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-bs-dismiss="modal" aria-label="Close">Close</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
 </div>
 </lift:surround>
 

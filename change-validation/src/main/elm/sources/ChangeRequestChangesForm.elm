@@ -1,16 +1,15 @@
-module ChangeRequestChangesForm exposing (init)
+module ChangeRequestChangesForm exposing (Model, Msg, initModel, update, updateChangeRequestDetails, view)
 
-import Browser
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Attribute, Html, button, div, h4, li, pre, table, text, ul)
 import Html.Attributes exposing (attribute, class, id, style, tabindex, type_)
 import Html.Events exposing (onClick)
 import Http exposing (Error, emptyBody, expectJson, header, request)
-import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, list, map, map2, map3, map4, map6, maybe, string, succeed, value)
+import Json.Decode exposing (Decoder, Value, andThen, at, bool, fail, field, index, int, list, map, map2, map3, map4, maybe, string, succeed, value)
 import Json.Decode.Pipeline exposing (optionalAt, required, requiredAt)
 import List.Nonempty as NonEmptyList
 import Ordering
-import Ports exposing (errorNotification, readUrl)
+import Ports exposing (errorNotification)
 import RudderDataTable exposing (Column, ColumnName(..))
 import RudderDataTypes exposing (..)
 import RudderDiff exposing (..)
@@ -24,17 +23,8 @@ import RudderTree exposing (..)
 ------------------------------
 
 
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
-
-
-init : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
-init ({ contextPath } as flags) =
+initModel : { contextPath : String, hasWriteRights : Bool } -> Model
+initModel ({ contextPath } as flags) =
     let
         columns =
             NonEmptyList.Nonempty (Column (ColumnName "Action") (\{ action } -> displayEventAction (getContextPath contextPath) action) Nothing (Ordering.byFieldWith Ordering.natural (.action >> eventActionText)))
@@ -56,16 +46,15 @@ init ({ contextPath } as flags) =
                 )
                 []
 
-        initModel =
+        model =
             Model
                 (getContextPath flags.contextPath)
-                NotSet
-                NotSet
+                NoView
                 NoView
                 table
                 RudderTree.init
     in
-    ( initModel, Cmd.none )
+    model
 
 
 
@@ -76,61 +65,18 @@ init ({ contextPath } as flags) =
 
 type alias Model =
     { contextPath : ContextPath
-    , changeRequest : DetailsOpt ChangeRequestMainDetails
-    , changes : DetailsOpt Changes
-    , viewState : ViewState
+    , changesView : ViewState Changes
+    , changeRequestView : ViewState ChangeRequestMainDetails
     , changesTableModel : RudderDataTable.Model EventLog Msg
     , tree : RudderTree.Model
     }
 
 
 type Msg
-    = GetChangeRequestIdFromUrl String
-    | GetChangeRequestMainDetails (Result Error ChangeRequestMainDetails)
-    | GetChangeRequestChanges (Result Error Changes)
+    = GetChangeRequestChanges (Result Error Changes)
     | CallApi (Model -> Cmd Msg)
     | ChangesTableMsg (RudderDataTable.Msg Msg)
     | TreeMsg RudderTree.Msg
-
-
-type ViewState
-    = NoView
-    | ViewError String
-
-
-type ResourceType
-    = DirectiveRes
-    | NodeGroupRes
-    | RuleRes
-    | GlobalParameterRes
-
-
-type alias ResourceChange =
-    { resourceType : ResourceType
-    , resourceName : String
-    , resourceId : String
-    , action : String
-    }
-
-
-type Event
-    = ChangeLogEvent String
-    | ResourceChangeEvent ResourceChange
-
-
-type alias EventLog =
-    { action : Event
-    , actor : String
-    , date : String
-    , reason : Maybe String
-    }
-
-
-type alias ChangeRequestMainDetails =
-    { changeRequest : ChangeRequestDetails
-    , isPending : Bool
-    , eventLogs : List EventLog
-    }
 
 
 type alias Diff ty =
@@ -263,29 +209,6 @@ type alias Changes =
     }
 
 
-type alias ChangeRequestDetails =
-    { title : String
-    , state : String
-    , id : Int
-    , description : String
-    , isMergeable : Maybe Bool
-    , changesSummary : ChangesSummary
-    }
-
-
-type alias ChangesSummary =
-    { directives : List String
-    , rules : List String
-    , groups : List String
-    , parameters : List String
-    }
-
-
-type DetailsOpt data
-    = Success data
-    | NotSet
-
-
 type alias TableRow =
     { action : Html (RudderDataTable.Msg Msg)
     , actor : String
@@ -328,56 +251,33 @@ buildChangesTree changes =
     RudderTree.Model (Root [ makeTree "Changes" [ directives, rules, groups, params ] ])
 
 
+updateChangeRequestDetails : ChangeRequestMainDetails -> Model -> Model
+updateChangeRequestDetails cr model =
+    let
+        updatedTable =
+            RudderDataTable.updateData cr.eventLogs model.changesTableModel
+    in
+    { model
+        | changeRequestView = Success cr
+        , changesTableModel = updatedTable
+        , tree = buildChangesTree cr.changeRequest.changesSummary
+    }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GetChangeRequestIdFromUrl crIdStr ->
-            case String.toInt crIdStr of
-                Just crId ->
-                    ( model, getChangeRequestMainDetails model crId )
-
-                Nothing ->
-                    let
-                        errMsg =
-                            crIdStr ++ " is not a valid change request id"
-                    in
-                    ( { model | viewState = ViewError errMsg }, Cmd.none )
-
-        GetChangeRequestMainDetails result ->
-            case result of
-                Ok cr ->
-                    let
-                        updatedTable =
-                            RudderDataTable.updateData cr.eventLogs model.changesTableModel
-                    in
-                    ( { model
-                        | changeRequest = Success cr
-                        , changesTableModel = updatedTable
-                        , tree = buildChangesTree cr.changeRequest.changesSummary
-                      }
-                    , Cmd.none
-                    )
-
-                Err err ->
-                    let
-                        errMsg =
-                            getErrorMessage err
-                    in
-                    ( { model | changeRequest = NotSet, viewState = ViewError errMsg }
-                    , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
-                    )
-
         GetChangeRequestChanges result ->
             case result of
                 Ok changes ->
-                    ( { model | changes = Success changes }, Cmd.none )
+                    ( { model | changesView = Success changes }, Cmd.none )
 
                 Err err ->
                     let
                         errMsg =
                             getErrorMessage err
                     in
-                    ( { model | changes = NotSet, viewState = ViewError errMsg }
+                    ( { model | changesView = ViewError errMsg }
                     , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
                     )
 
@@ -405,23 +305,6 @@ update msg model =
 ------------------------------
 
 
-getChangeRequestMainDetails : Model -> Int -> Cmd Msg
-getChangeRequestMainDetails model crId =
-    let
-        req =
-            request
-                { method = "GET"
-                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model.contextPath ("changevalidation/workflow/changeRequestMainDetails/" ++ String.fromInt crId)
-                , body = emptyBody
-                , expect = expectJson GetChangeRequestMainDetails decodeChangeRequestMainDetails
-                , timeout = Nothing
-                , tracker = Nothing
-                }
-    in
-    req
-
-
 getChangeRequestChanges : Int -> Model -> Cmd Msg
 getChangeRequestChanges crId model =
     request
@@ -439,96 +322,6 @@ getChangeRequestChanges crId model =
 ------------------------------
 -- JSON DECODERS
 ------------------------------
-
-
-decodeChangeRequestMainDetails : Decoder ChangeRequestMainDetails
-decodeChangeRequestMainDetails =
-    at [ "data" ]
-        (field "workflow"
-            (index 0
-                (map3 ChangeRequestMainDetails
-                    (field "changeRequest" decodeChangeRequestDetails)
-                    (field "isPending" bool)
-                    (field "eventLogs" (list decodeEventLog))
-                )
-            )
-        )
-
-
-decodeEventLog : Decoder EventLog
-decodeEventLog =
-    map4
-        EventLog
-        (field "action" decodeEvent)
-        (field "actor" string)
-        (field "date" string)
-        (maybe (field "reason" string))
-
-
-decodeEvent : Decoder Event
-decodeEvent =
-    field "type" string
-        |> andThen
-            (\eventType ->
-                case eventType of
-                    "ChangeLogEvent" ->
-                        map ChangeLogEvent (field "action" string)
-
-                    "ResourceChangeEvent" ->
-                        map ResourceChangeEvent
-                            (map4 ResourceChange
-                                (field "resourceType" decodeResourceType)
-                                (field "resourceName" string)
-                                (field "resourceId" string)
-                                (field "action" decodeAction)
-                            )
-
-                    _ ->
-                        fail "Invalid event log type"
-            )
-
-
-decodeAction : Decoder String
-decodeAction =
-    string
-        |> andThen
-            (\s ->
-                case s of
-                    "create" ->
-                        succeed "Create"
-
-                    "delete" ->
-                        succeed "Delete"
-
-                    "modify" ->
-                        succeed "Modify"
-
-                    _ ->
-                        fail "Invalid action"
-            )
-
-
-decodeResourceType : Decoder ResourceType
-decodeResourceType =
-    string
-        |> andThen
-            (\s ->
-                case s of
-                    "directive" ->
-                        succeed DirectiveRes
-
-                    "node group" ->
-                        succeed NodeGroupRes
-
-                    "rule" ->
-                        succeed RuleRes
-
-                    "global parameter" ->
-                        succeed GlobalParameterRes
-
-                    _ ->
-                        fail "Invalid resource type"
-            )
 
 
 decodeDirectiveDiff : Decoder (ResourceDiff Directive DirectiveDiff)
@@ -637,13 +430,6 @@ decodeRuleDiff =
             )
 
 
-decodeResourceIdent : Decoder ResourceIdent
-decodeResourceIdent =
-    succeed ResourceIdent
-        |> required "id" string
-        |> required "name" string
-
-
 decodeGroupDiff : Decoder (ResourceDiff NodeGroup NodeGroupDiff)
 decodeGroupDiff =
     let
@@ -744,54 +530,6 @@ decodeChanges =
         )
 
 
-decodeChangeRequestDetails : Decoder ChangeRequestDetails
-decodeChangeRequestDetails =
-    let
-        decodeChangeRequestStatus : Decoder String
-        decodeChangeRequestStatus =
-            string
-                |> andThen
-                    (\str ->
-                        case str of
-                            "Open" ->
-                                succeed str
-
-                            "Closed" ->
-                                succeed str
-
-                            "Pending validation" ->
-                                succeed str
-
-                            "Pending deployment" ->
-                                succeed str
-
-                            "Cancelled" ->
-                                succeed str
-
-                            "Deployed" ->
-                                succeed str
-
-                            _ ->
-                                fail "Invalid change request status"
-                    )
-    in
-    map6
-        ChangeRequestDetails
-        (field "displayName" string)
-        (field "status" decodeChangeRequestStatus)
-        (field "id" int)
-        (field "description" string)
-        (maybe (field "isMergeable" bool))
-        (field "changesSummary"
-            (map4 ChangesSummary
-                (field "directives" (list string))
-                (field "rules" (list string))
-                (field "groups" (list string))
-                (field "parameters" (list string))
-            )
-        )
-
-
 
 ------------------------------
 -- VIEW
@@ -803,8 +541,8 @@ view model =
     let
         getDiff : List (Attribute Msg)
         getDiff =
-            case ( model.changeRequest, model.changes ) of
-                ( Success cr, NotSet ) ->
+            case ( model.changeRequestView, model.changesView ) of
+                ( Success cr, NoView ) ->
                     [ onClick (CallApi (getChangeRequestChanges cr.changeRequest.id)) ]
 
                 ( _, _ ) ->
@@ -882,7 +620,7 @@ viewChangesTable table =
 
 diff : Model -> Html Msg
 diff model =
-    case model.changes of
+    case model.changesView of
         Success data ->
             let
                 defaultOrDiff f1 f2 contextPath resource =
@@ -913,7 +651,7 @@ diff model =
             in
             ul [] changes
 
-        NotSet ->
+        _ ->
             text ""
 
 
@@ -1089,14 +827,3 @@ eventActionText e =
 
                 GlobalParameterRes ->
                     action ++ " global parameter " ++ resourceName
-
-
-
-------------------------------
--- SUBSCRIPTIONS
-------------------------------
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    readUrl (\id -> GetChangeRequestIdFromUrl id)
