@@ -65,9 +65,9 @@ import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.syntax.*
+import java.time.Instant
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import org.joda.time.DateTime
 import zio.Chunk
 import zio.syntax.*
 
@@ -335,7 +335,7 @@ class DataSourceApiImpl(
             newProps <- CompareProperties.updateProperties(node.properties.toList, Some(newProp :: Nil)).toIO
             newNode   = node.copy(properties = Chunk.fromIterable(newProps))
             _        <- nodeFactRepo
-                          .save(newNode)(ChangeContext(cause.modId, cause.actor, DateTime.now, cause.reason, None, nodePerms))
+                          .save(newNode)(ChangeContext(cause.modId, cause.actor, Instant.now(), cause.reason, None, nodePerms))
                           .chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
           } yield {
             NodeUpdateResult.Updated(newNode.id)

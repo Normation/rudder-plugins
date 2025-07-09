@@ -100,7 +100,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
       eventsMap:        Map[ChangeRequestId, EventLog]
   ) extends JsTableLine {
     val date =
-      eventsMap.get(changeRequest.id).map(event => DateFormaterService.serialize(event.creationDate)).getOrElse("Unknown")
+      eventsMap.get(changeRequest.id).map(event => DateFormaterService.serializeInstant(event.creationDate)).getOrElse("Unknown")
 
     override def json(freshName: () => String): JsObj = toJson
 

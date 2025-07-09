@@ -758,13 +758,23 @@ class ChangeRequestChangesForm(
       case _: ModifyChangeRequest => "Change request details modified"
       case _: DeleteChangeRequest => "Change request deleted"
     })
-    displayEvent(action, crEvent.principal, crEvent.creationDate, crEvent.eventDetails.reason.getOrElse(""))
+    displayEvent(
+      action,
+      crEvent.principal,
+      DateFormaterService.toDateTime(crEvent.creationDate),
+      crEvent.eventDetails.reason.getOrElse("")
+    )
   }
 
   def displayWorkflowEvent(wfEvent: WorkflowStepChanged) = {
     val step   = eventLogDetailsService.getWorkflotStepChange(wfEvent.details)
     val action = step.map(step => Text(s"Status changed from ${step.from} to ${step.to}")).getOrElse(Text("State changed"))
-    displayEvent(action, wfEvent.principal, wfEvent.creationDate, wfEvent.eventDetails.reason.getOrElse(""))
+    displayEvent(
+      action,
+      wfEvent.principal,
+      DateFormaterService.toDateTime(wfEvent.creationDate),
+      wfEvent.eventDetails.reason.getOrElse("")
+    )
   }
 
   def displayRuleChange(ruleChange: RuleChange) = {
