@@ -220,7 +220,8 @@ class WorkflowInternalApiImpl(
     ): LiftResponse = {
 
       implicit val qc: QueryContext = authzToken.qc
-      val userRights = Seq("deployer", "validator")
+      val username = userService.getCurrentUser.actor.name
+      // val userRights = Seq("deployer", "validator")
 
       (if (checkWorkflow) {
          for {
@@ -237,12 +238,21 @@ class WorkflowInternalApiImpl(
            isMergeable    = commitRepository.isMergeable(changeRequest)
            simpleCrJson   = SimpleChangeRequestJson.from(changeRequest, status, isMergeable)
            isPending      = workflowService.isPending(status)
-           nextSteps      = workflowService
-                              .findNextSteps(userRights, status, changeRequest.owner == userService.getCurrentUser.actor.name)
+           isCreator      = changeRequest.owner == username
+           backStatus     = workflowService.findBackStatus(status)
+           nextStatus     = workflowService.findNextStatus(status)
            crEventLogs   <- changeRequestEventLogService.getChangeRequestHistory(changeRequest.id)
            wfEventLogs   <- workflowEventLogService.getChangeRequestHistory(changeRequest.id)
          } yield {
-           ChangeRequestMainDetailsJson.from(changeRequest, simpleCrJson, isPending, wfEventLogs, crEventLogs)(
+           ChangeRequestMainDetailsJson.from(
+             changeRequest,
+             simpleCrJson,
+             isPending,
+             wfEventLogs,
+             crEventLogs,
+             backStatus,
+             nextStatus
+           )(
              eventLogDetailsService
            )
          }

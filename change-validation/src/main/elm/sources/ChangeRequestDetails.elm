@@ -4,12 +4,12 @@ import Browser
 import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, div, p, span, text)
-import Html.Attributes exposing (class, id)
+import Html exposing (Html, a, button, div, h1, p, span, text)
+import Html.Attributes exposing (attribute, class, href, id, style, tabindex)
 import Http exposing (Error, emptyBody, expectJson, header, request)
 import Ports exposing (errorNotification, readUrl)
-import RudderDataTypes exposing (ChangeRequestDetails, ChangeRequestMainDetails, ViewState(..), decodeChangeRequestMainDetails)
-import RudderLinkUtil exposing (ContextPath, getApiUrl, getContextPath)
+import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails)
+import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, getContextPath)
 
 
 
@@ -161,8 +161,7 @@ view model =
     case model.viewState of
         Success changeRequest ->
             div [ class "one-col" ]
-                [ div [ id "changeRequestHeader", class "main-header" ]
-                    [ bannerView changeRequest ]
+                [ bannerView model.contextPath changeRequest
                 , div [ class "one-col-main" ]
                     [ div [ class "template-main" ]
                         [ div [ class "main-container" ]
@@ -180,10 +179,103 @@ view model =
             text ""
 
 
-bannerView : ChangeRequestMainDetails -> Html Msg
-bannerView changeRequest =
-    div [ class "change-request-details" ]
-        [ text "todo banner" ]
+eventLogToString : String -> String -> String -> String
+eventLogToString action date actor =
+    action ++ " on " ++ date ++ " by " ++ actor
+
+
+bannerView : ContextPath -> ChangeRequestMainDetails -> Html Msg
+bannerView contextPath cr =
+    let
+        lastLog =
+            cr.eventLogs
+                |> List.filterMap
+                    (\log ->
+                        case log.action of
+                            ChangeLogEvent action ->
+                                Just ( action, log.date, log.actor )
+
+                            _ ->
+                                Nothing
+                    )
+                |> List.sortBy (\( _, date, _ ) -> date)
+                |> List.reverse
+                |> List.head
+                |> Maybe.map (\( action, date, actor ) -> eventLogToString action date actor)
+                |> Maybe.withDefault ("Error: no action was recorded for change request with id" ++ String.fromInt cr.changeRequest.id)
+    in
+    div [ class "main-header", id "changeRequestHeader" ]
+        [ div [ class "header-title" ]
+            [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]
+            , div [ class "flex-container" ]
+                [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
+                , actionButtons cr.prevStatus cr.nextStatus
+                ]
+            ]
+        , div
+            [ class "header-description" ]
+            [ p [ id "CRLastAction" ] [ text lastLog ]
+            ]
+        , a [ href (changeRequestsPageUrl contextPath), id "backButton" ]
+            [ span [ class "fa fa-arrow-left" ] []
+            , text " Back to change request list "
+            ]
+        ]
+
+
+actionButtons : Maybe BackStatus -> Maybe NextStatus -> Html Msg
+actionButtons backStatus nextStatus =
+    let
+        getBackAction back =
+            case back of
+                Cancelled ->
+                    "Decline"
+
+        getNextAction next =
+            case next of
+                PendingDeployment ->
+                    "Validate"
+
+                Deployed ->
+                    "Deploy"
+
+        buttons =
+            case ( backStatus, nextStatus ) of
+                ( Just back, Just next ) ->
+                    [ button
+                        [ id "backStep", class "btn btn-danger" ]
+                        [ text (getBackAction back) ]
+                    , button
+                        [ id "nextStep", style "float" "right", class "btn btn-success" ]
+                        [ text (getNextAction next) ]
+                    ]
+
+                ( Just back, Nothing ) ->
+                    [ button
+                        [ id "backStep", class "btn btn-danger" ]
+                        [ text (getBackAction back) ]
+                    ]
+
+                ( Nothing, Just next ) ->
+                    [ button
+                        [ id "nextStep", style "float" "right", class "btn btn-success" ]
+                        [ text (getNextAction next) ]
+                    ]
+
+                ( Nothing, Nothing ) ->
+                    []
+    in
+    div [ id "actionBtns" ]
+        [ div [ class "header-buttons", id "workflowActionButtons" ] buttons
+        , div
+            [ attribute "data-bs-backdrop" "false"
+            , tabindex -1
+            , attribute "data-bs-keyboard" "true"
+            , class "modal fade"
+            , id "popupContent"
+            ]
+            []
+        ]
 
 
 warnOnUnmergeable : ChangeRequestDetails -> Html Msg

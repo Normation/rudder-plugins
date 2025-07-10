@@ -1,6 +1,6 @@
-module RudderDataTypes exposing (ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangesSummary, Event(..), EventLog, ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
+module RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
 
-import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map3, map4, map6, maybe, string, succeed)
+import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map4, map5, map6, maybe, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, required)
 
 
@@ -47,10 +47,21 @@ type TargetList
     = TargetList (List Target)
 
 
+type BackStatus
+    = Cancelled
+
+
+type NextStatus
+    = PendingDeployment
+    | Deployed
+
+
 type alias ChangeRequestMainDetails =
     { changeRequest : ChangeRequestDetails
     , isPending : Bool
     , eventLogs : List EventLog
+    , prevStatus : Maybe BackStatus
+    , nextStatus : Maybe NextStatus
     }
 
 
@@ -310,13 +321,44 @@ decodeChangeRequestDetails =
 
 decodeChangeRequestMainDetails : Decoder ChangeRequestMainDetails
 decodeChangeRequestMainDetails =
-    at [ "data" ]
+    let
+        decodePrevStatus =
+            string
+                |> andThen
+                    (\s ->
+                        case s of
+                            "Cancelled" ->
+                                succeed Cancelled
+
+                            _ ->
+                                fail "Invalid back status"
+                    )
+
+        decodeNextStatus =
+            string
+                |> andThen
+                    (\s ->
+                        case s of
+                            "Pending deployment" ->
+                                succeed PendingDeployment
+
+                            "Deployed" ->
+                                succeed Deployed
+
+                            _ ->
+                                fail "Invalid next status"
+                    )
+    in
+    at
+        [ "data" ]
         (field "workflow"
             (index 0
-                (map3 ChangeRequestMainDetails
+                (map5 ChangeRequestMainDetails
                     (field "changeRequest" decodeChangeRequestDetails)
                     (field "isPending" bool)
                     (field "eventLogs" (list decodeEventLog))
+                    (field "backStatus" (maybe decodePrevStatus))
+                    (field "nextStatus" (maybe decodeNextStatus))
                 )
             )
         )
