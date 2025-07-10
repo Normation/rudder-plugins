@@ -1,7 +1,7 @@
 {
     "git-dependencies": {
         "direct": {
-            "git@github.com:Normation/rudder-elm-library.git": "0.1.1"
+            "https://github.com/Normation/rudder-elm-library.git": "0.1.1"
         },
         "indirect": {}
     }
