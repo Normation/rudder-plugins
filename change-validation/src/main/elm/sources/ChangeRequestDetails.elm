@@ -5,7 +5,7 @@ import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, a, button, div, h1, p, span, text)
-import Html.Attributes exposing (attribute, class, href, id, style, tabindex)
+import Html.Attributes exposing (attribute, class, disabled, href, id, style, tabindex)
 import Http exposing (Error, emptyBody, expectJson, header, request)
 import Ports exposing (errorNotification, readUrl)
 import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails)
@@ -27,15 +27,16 @@ main =
         }
 
 
-init : { contextPath : String, hasWriteRights : Bool } -> ( Model, Cmd Msg )
+init : { contextPath : String, hasValidatorWriteRights : Bool, hasDeployerWriteRights : Bool } -> ( Model, Cmd Msg )
 init flags =
     let
         initModel =
             Model
                 (getContextPath flags.contextPath)
-                flags.hasWriteRights
+                flags.hasValidatorWriteRights
+                flags.hasDeployerWriteRights
                 (EditForm.initModel flags)
-                (ChangesForm.initModel flags)
+                (ChangesForm.initModel { contextPath = flags.contextPath })
                 NoView
     in
     ( initModel, Cmd.none )
@@ -49,7 +50,8 @@ init flags =
 
 type alias Model =
     { contextPath : ContextPath
-    , hasWriteRights : Bool
+    , hasValidatorWriteRights : Bool
+    , hasDeployerWriteRights : Bool
     , editForm : EditForm.Model
     , changesForm : ChangesForm.Model
     , viewState : ViewState ChangeRequestMainDetails
@@ -161,7 +163,7 @@ view model =
     case model.viewState of
         Success changeRequest ->
             div [ class "one-col" ]
-                [ bannerView model.contextPath changeRequest
+                [ bannerView model changeRequest
                 , div [ class "one-col-main" ]
                     [ div [ class "template-main" ]
                         [ div [ class "main-container" ]
@@ -184,9 +186,20 @@ eventLogToString action date actor =
     action ++ " on " ++ date ++ " by " ++ actor
 
 
-bannerView : ContextPath -> ChangeRequestMainDetails -> Html Msg
-bannerView contextPath cr =
+bannerView : Model -> ChangeRequestMainDetails -> Html Msg
+bannerView model cr =
     let
+        canChangeStep =
+            case cr.changeRequest.state of
+                "Pending validation" ->
+                    model.hasValidatorWriteRights
+
+                "Pending deployment" ->
+                    model.hasDeployerWriteRights
+
+                _ ->
+                    False
+
         lastLog =
             cr.eventLogs
                 |> List.filterMap
@@ -209,23 +222,30 @@ bannerView contextPath cr =
             [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]
             , div [ class "flex-container" ]
                 [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                , actionButtons cr.prevStatus cr.nextStatus
+                , actionButtons canChangeStep cr.prevStatus cr.nextStatus
                 ]
             ]
         , div
             [ class "header-description" ]
             [ p [ id "CRLastAction" ] [ text lastLog ]
             ]
-        , a [ href (changeRequestsPageUrl contextPath), id "backButton" ]
+        , a [ href (changeRequestsPageUrl model.contextPath), id "backButton" ]
             [ span [ class "fa fa-arrow-left" ] []
             , text " Back to change request list "
             ]
         ]
 
 
-actionButtons : Maybe BackStatus -> Maybe NextStatus -> Html Msg
-actionButtons backStatus nextStatus =
+actionButtons : Bool -> Maybe BackStatus -> Maybe NextStatus -> Html Msg
+actionButtons canChangeStep backStatus nextStatus =
     let
+        canChangeStepAttr =
+            if canChangeStep then
+                []
+
+            else
+                [ disabled True ]
+
         getBackAction back =
             case back of
                 Cancelled ->
@@ -243,22 +263,22 @@ actionButtons backStatus nextStatus =
             case ( backStatus, nextStatus ) of
                 ( Just back, Just next ) ->
                     [ button
-                        [ id "backStep", class "btn btn-danger" ]
+                        ([ id "backStep", class "btn btn-danger" ] ++ canChangeStepAttr)
                         [ text (getBackAction back) ]
                     , button
-                        [ id "nextStep", style "float" "right", class "btn btn-success" ]
+                        ([ id "nextStep", style "float" "right", class "btn btn-success" ] ++ canChangeStepAttr)
                         [ text (getNextAction next) ]
                     ]
 
                 ( Just back, Nothing ) ->
                     [ button
-                        [ id "backStep", class "btn btn-danger" ]
+                        ([ id "backStep", class "btn btn-danger" ] ++ canChangeStepAttr)
                         [ text (getBackAction back) ]
                     ]
 
                 ( Nothing, Just next ) ->
                     [ button
-                        [ id "nextStep", style "float" "right", class "btn btn-success" ]
+                        ([ id "nextStep", style "float" "right", class "btn btn-success" ] ++ canChangeStepAttr)
                         [ text (getNextAction next) ]
                     ]
 

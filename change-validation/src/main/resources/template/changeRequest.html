@@ -11,26 +11,27 @@
   <div id="changeRequestDetails">hello</div>
 
   <script data-lift="with-nonce">
-    var hasWriteRights = false;
+    var hasValidatorWriteRights = false;
+    var hasDeployerWriteRights = false;
   </script>
   <lift:authz role="deployer_write">
     <script data-lift="with-nonce">
-      hasWriteRights = true;
+      hasDeployerWriteRights = true;
     </script>
   </lift:authz>
   <lift:authz role="deployer_edit">
     <script data-lift="with-nonce">
-      hasWriteRights = true;
+      hasDeployerWriteRights = true;
     </script>
   </lift:authz>
   <lift:authz role="validator_write">
     <script data-lift="with-nonce">
-      hasWriteRights = true;
+      hasValidatorWriteRights = true;
     </script>
   </lift:authz>
   <lift:authz role="validator_edit">
     <script data-lift="with-nonce">
-      hasWriteRights = true;
+      hasValidatorWriteRights = true;
     </script>
   </lift:authz>
 
@@ -39,7 +40,8 @@
       var main = document.getElementById("changeRequestDetails");
       var initValues = {
         contextPath: contextPath,
-        hasWriteRights : hasWriteRights
+        hasValidatorWriteRights : hasValidatorWriteRights,
+        hasDeployerWriteRights : hasDeployerWriteRights
       };
 
       var app = Elm.ChangeRequestDetails.init({node: main, flags: initValues});

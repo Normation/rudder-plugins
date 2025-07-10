@@ -17,11 +17,12 @@ import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, g
 ------------------------------
 
 
-initModel : { contextPath : String, hasWriteRights : Bool } -> Model
+initModel : { contextPath : String, hasValidatorWriteRights : Bool, hasDeployerWriteRights : Bool } -> Model
 initModel flags =
     Model
         (getContextPath flags.contextPath)
-        flags.hasWriteRights
+        flags.hasValidatorWriteRights
+        flags.hasDeployerWriteRights
         NoView
 
 
@@ -39,7 +40,8 @@ type alias Form =
 
 type alias Model =
     { contextPath : ContextPath
-    , hasWriteRights : Bool
+    , hasValidatorWriteRights : Bool
+    , hasDeployerWriteRights : Bool
     , viewState : ViewState Form
     }
 
@@ -194,8 +196,19 @@ view model =
     case model.viewState of
         Success formState ->
             let
+                status =
+                    formState.initValues.state
+
                 canEdit =
-                    model.hasWriteRights
+                    case status of
+                        "Pending validation" ->
+                            model.hasValidatorWriteRights
+
+                        "Pending deployment" ->
+                            model.hasDeployerWriteRights
+
+                        _ ->
+                            False
             in
             div
                 [ id "change-request-edit-form" ]
@@ -207,7 +220,7 @@ view model =
                         , div
                             []
                             [ label [] [ text "State" ]
-                            , roInputField formState.initValues.state
+                            , roInputField status
                             ]
                         , div []
                             [ label [] [ text "ID" ]

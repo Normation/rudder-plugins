@@ -23,8 +23,8 @@ import RudderTree exposing (..)
 ------------------------------
 
 
-initModel : { contextPath : String, hasWriteRights : Bool } -> Model
-initModel ({ contextPath } as flags) =
+initModel : { contextPath : String } -> Model
+initModel { contextPath } =
     let
         columns =
             NonEmptyList.Nonempty (Column (ColumnName "Action") (\{ action } -> displayEventAction (getContextPath contextPath) action) Nothing (Ordering.byFieldWith Ordering.natural (.action >> eventActionText)))
@@ -48,7 +48,7 @@ initModel ({ contextPath } as flags) =
 
         model =
             Model
-                (getContextPath flags.contextPath)
+                (getContextPath contextPath)
                 NoView
                 NoView
                 table
