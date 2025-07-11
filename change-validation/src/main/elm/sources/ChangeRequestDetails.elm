@@ -3,16 +3,21 @@ module ChangeRequestDetails exposing (init)
 import Browser
 import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
-import ErrorMessages exposing (getErrorMessage)
+import ErrorMessages exposing (decodeErrorDetails)
 import Html exposing (Attribute, Html, a, b, button, div, form, h1, h4, h5, input, label, p, span, text, textarea)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, style, tabindex, type_, value)
-import Html.Events exposing (onClick)
-import Http exposing (Error, emptyBody, expectJson, header, jsonBody, request)
-import Json.Decode exposing (Decoder, Value, succeed)
+import Html.Events exposing (onClick, onInput)
+import Html.Lazy exposing (lazy)
+import Http exposing (Error, emptyBody, header, request)
+import Http.Detailed as Detailed
+import Json.Decode exposing (Decoder, Value, at, bool, field, index, int, map2)
+import List
 import List.Extra
 import Ports exposing (errorNotification, readUrl, successNotification)
-import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails, encodeNextStatus)
+import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails)
 import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, getContextPath)
+import String
+import Url.Builder
 
 
 
@@ -42,8 +47,9 @@ init flags =
                 (ChangesForm.initModel { contextPath = flags.contextPath })
                 NoView
                 NoView
+                (ChangeMessageSettings False False)
     in
-    ( initModel, Cmd.none )
+    ( initModel, getChangeMessageSettings initModel )
 
 
 
@@ -63,6 +69,12 @@ type alias ChangeStepForm =
     }
 
 
+type alias ChangeMessageSettings =
+    { changeMessageEnabled : Bool
+    , changeMessageMandatory : Bool
+    }
+
+
 type alias Model =
     { contextPath : ContextPath
     , hasValidatorWriteRights : Bool
@@ -71,19 +83,21 @@ type alias Model =
     , changesForm : ChangesForm.Model
     , viewState : ViewState ChangeRequestMainDetails
     , changeStepPopup : ViewState ChangeStepForm
+    , changeMessageSettings : ChangeMessageSettings
     }
 
 
 type Msg
     = GetChangeRequestIdFromUrl String
-    | GetChangeRequestMainDetails (Result Error ChangeRequestMainDetails)
+    | GetChangeRequestMainDetails (Result (Detailed.Error String) ( Http.Metadata, ChangeRequestMainDetails ))
     | EditFormMsg EditForm.Msg
     | ChangesFormMsg ChangesForm.Msg
     | OpenChangeStepPopup StepChange
     | CloseChangeStepPopup
     | FormInputReasonsField String
-    | ChangeRequestStepChange (Result Error Int)
-    | SubmitChangeStepForm (Model -> Cmd Msg)
+    | ChangeRequestStepChange (Result (Detailed.Error String) ( Http.Metadata, Int ))
+    | SubmitChangeStepForm Int StepChange
+    | GetChangeMessageSettings (Result (Detailed.Error String) ( Http.Metadata, ChangeMessageSettings ))
 
 
 
@@ -101,7 +115,7 @@ getChangeRequestMainDetails model crId =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getApiUrl model.contextPath ("changevalidation/workflow/changeRequestMainDetails/" ++ String.fromInt crId)
                 , body = emptyBody
-                , expect = expectJson GetChangeRequestMainDetails decodeChangeRequestMainDetails
+                , expect = Detailed.expectJson GetChangeRequestMainDetails decodeChangeRequestMainDetails
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -109,16 +123,28 @@ getChangeRequestMainDetails model crId =
     req
 
 
-acceptChangeRequest : Int -> NextStatus -> Model -> Cmd Msg
-acceptChangeRequest crId nextStatus model =
+acceptChangeRequest : Int -> Maybe String -> NextStatus -> Model -> Cmd Msg
+acceptChangeRequest crId reasonOpt nextStatus model =
     let
+        reasonParam =
+            case reasonOpt of
+                Just reasonField ->
+                    [ Url.Builder.string "reason" reasonField ]
+
+                Nothing ->
+                    []
+
+        params =
+            Url.Builder.toQuery
+                ([ Url.Builder.string "status" (stepChangeToString (NextStep nextStatus)) ] ++ reasonParam)
+
         req =
             request
                 { method = "POST"
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt crId ++ "/accept")
-                , body = jsonBody (encodeNextStatus nextStatus)
-                , expect = expectJson ChangeRequestStepChange (succeed crId)
+                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt crId ++ "/accept") ++ params
+                , body = emptyBody
+                , expect = Detailed.expectJson ChangeRequestStepChange decodeChangeRequestId
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -126,21 +152,71 @@ acceptChangeRequest crId nextStatus model =
     req
 
 
-declineChangeRequest : Int -> Model -> Cmd Msg
-declineChangeRequest crId model =
+declineChangeRequest : Int -> Maybe String -> Model -> Cmd Msg
+declineChangeRequest crId reasonOpt model =
     let
+        params =
+            case reasonOpt of
+                Just reasonField ->
+                    Url.Builder.toQuery [ Url.Builder.string "reason" reasonField ]
+
+                Nothing ->
+                    ""
+
         req =
             request
                 { method = "DELETE"
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
-                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt crId)
+                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt crId) ++ params
                 , body = emptyBody
-                , expect = expectJson ChangeRequestStepChange (succeed crId)
+                , expect = Detailed.expectJson ChangeRequestStepChange decodeChangeRequestId
                 , timeout = Nothing
                 , tracker = Nothing
                 }
     in
     req
+
+
+getChangeMessageSettings : Model -> Cmd Msg
+getChangeMessageSettings model =
+    let
+        req =
+            request
+                { method = "GET"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getApiUrl model.contextPath "settings"
+                , body = emptyBody
+                , expect = Detailed.expectJson GetChangeMessageSettings decodeWorkflowSettings
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+
+------------------------------
+-- JSON DECODERS
+------------------------------
+
+
+decodeWorkflowSettings : Decoder ChangeMessageSettings
+decodeWorkflowSettings =
+    at [ "data" ]
+        (field "settings"
+            (map2 ChangeMessageSettings
+                (field "enable_change_message" bool)
+                (field "mandatory_change_message" bool)
+            )
+        )
+
+
+decodeChangeRequestId : Decoder Int
+decodeChangeRequestId =
+    at [ "data" ]
+        (field "changeRequests"
+            (index 0 (field "id" int))
+        )
 
 
 
@@ -166,7 +242,7 @@ update msg model =
 
         GetChangeRequestMainDetails result ->
             case result of
-                Ok cr ->
+                Ok ( _, cr ) ->
                     let
                         formDetails =
                             { title = cr.changeRequest.title
@@ -184,13 +260,7 @@ update msg model =
                     )
 
                 Err error ->
-                    let
-                        errMsg =
-                            getErrorMessage error
-                    in
-                    ( { model | viewState = ViewError errMsg }
-                    , errorNotification ("Error while trying to fetch change request details: " ++ errMsg)
-                    )
+                    processApiError " trying to fetch change request details " error model
 
         EditFormMsg editFormMsg ->
             let
@@ -214,7 +284,7 @@ update msg model =
 
         ChangeRequestStepChange result ->
             case result of
-                Ok crId ->
+                Ok ( _, crId ) ->
                     ( model
                     , Cmd.batch
                         [ successNotification "Change request step successfully changed"
@@ -223,19 +293,34 @@ update msg model =
                     )
 
                 Err error ->
-                    let
-                        errMsg =
-                            getErrorMessage error
-                    in
-                    ( model
-                    , errorNotification ("Error while trying to change step of change request: " ++ errMsg)
-                    )
+                    processApiError " trying to change step of change request " error model
 
         FormInputReasonsField newReason ->
             ( model |> updateChangeStepForm (setReasonsField newReason), Cmd.none )
 
-        SubmitChangeStepForm apiCall ->
-            ( { model | changeStepPopup = NoView }, Cmd.batch [ apiCall model ] )
+        SubmitChangeStepForm crId (NextStep next) ->
+            case model.changeStepPopup of
+                Success changeStepForm ->
+                    ( { model | changeStepPopup = NoView }, acceptChangeRequest crId (Just changeStepForm.reasonsField) next model )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        SubmitChangeStepForm crId (BackStep _) ->
+            case model.changeStepPopup of
+                Success changeStepForm ->
+                    ( { model | changeStepPopup = NoView }, declineChangeRequest crId (Just changeStepForm.reasonsField) model )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        GetChangeMessageSettings result ->
+            case result of
+                Ok ( _, settings ) ->
+                    ( { model | changeMessageSettings = settings }, Cmd.none )
+
+                Err error ->
+                    processApiError " getting change message settings " error model
 
 
 updateChangeStepForm : (ViewState ChangeStepForm -> ViewState ChangeStepForm) -> Model -> Model
@@ -331,7 +416,7 @@ bannerView model cr =
             [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]
             , div [ class "flex-container" ]
                 [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                , actionButtons model.changeStepPopup cr.changeRequest.id canChangeStep cr.prevStatus cr.nextStatus
+                , actionButtons model.changeStepPopup cr.changeRequest.id model.changeMessageSettings canChangeStep cr.prevStatus cr.nextStatus
                 ]
             ]
         , div
@@ -345,8 +430,8 @@ bannerView model cr =
         ]
 
 
-actionButtons : ViewState ChangeStepForm -> Int -> Bool -> Maybe BackStatus -> Maybe NextStatus -> Html Msg
-actionButtons changeStepForm crId canChangeStep backStatus nextStatus =
+actionButtons : ViewState ChangeStepForm -> Int -> ChangeMessageSettings -> Bool -> Maybe BackStatus -> Maybe NextStatus -> Html Msg
+actionButtons changeStepForm crId changeMessageSettings canChangeStep backStatus nextStatus =
     let
         canChangeStepAttr =
             if canChangeStep then
@@ -403,7 +488,7 @@ actionButtons changeStepForm crId canChangeStep backStatus nextStatus =
     in
     div [ id "actionBtns" ]
         [ div [ class "header-buttons", id "workflowActionButtons" ] buttons
-        , changeStepPopupView changeStepForm crId
+        , changeStepPopupView changeStepForm changeMessageSettings.changeMessageEnabled crId
         ]
 
 
@@ -434,8 +519,8 @@ warnOnUnmergeableView changeRequest =
         text ""
 
 
-changeStepPopupView : ViewState ChangeStepForm -> Int -> Html Msg
-changeStepPopupView changeStepFormState crId =
+changeStepPopupView : ViewState ChangeStepForm -> Bool -> Int -> Html Msg
+changeStepPopupView changeStepFormState changeMessageEnabled crId =
     let
         visiblePopupAttr =
             [ attribute "data-bs-backdrop" "false"
@@ -459,6 +544,29 @@ changeStepPopupView changeStepFormState crId =
             , attribute "aria-hidden" "true"
             ]
 
+        reasonField =
+            div [ id "reason", class "mt-3" ]
+                [ h4
+                    [ class "col-lg-12 col-sm-12 col-xs-12 audit-title" ]
+                    [ text "Change Audit Log" ]
+                , div
+                    [ class "row wbBaseField form-group " ]
+                    [ label
+                        [ class "col-xl-3 col-md-12 col-sm-12 wbBaseFieldLabel" ]
+                        [ span [ class "fw-normal" ] [ text "Change audit message" ] ]
+                    , div
+                        [ class "col-xl-9 col-md-12 col-sm-12" ]
+                        [ textarea
+                            [ style "height" "8em"
+                            , placeholder "Please enter a reason explaining this change."
+                            , class "rudderBaseFieldClassName form-control vresize col-xl-12 col-md-12"
+                            , onInput FormInputReasonsField
+                            ]
+                            []
+                        ]
+                    ]
+                ]
+
         popupBody stepStr action btnClass btnClickCmd =
             [ div [ id "changeStatePopup" ]
                 [ div [ class "modal-dialog" ]
@@ -479,40 +587,27 @@ changeStepPopupView changeStepFormState crId =
                         , div [ id "form" ]
                             [ form []
                                 [ div [ class "modal-body" ]
-                                    [ div [ id "intro" ]
+                                    ([ div [ id "intro" ]
                                         [ h5
                                             [ class "text-center" ]
                                             [ text (" The change request will be sent to the '" ++ stepStr ++ "' status ") ]
                                         ]
-                                    , div [ id "formError" ] []
-                                    , div
+                                     , div [ id "formError" ] []
+                                     , div
                                         [ class "mt-3 from-group" ]
                                         [ label [] [ b [] [ text "Next state " ] ]
                                         , span
                                             [ class "well" ]
                                             [ text ("  " ++ stepStr ++ "  ") ]
                                         ]
-                                    , div [ id "reason", class "mt-3" ]
-                                        [ h4
-                                            [ class "col-lg-12 col-sm-12 col-xs-12 audit-title" ]
-                                            [ text "Change Audit Log" ]
-                                        , div
-                                            [ class "row wbBaseField form-group " ]
-                                            [ label
-                                                [ class "col-xl-3 col-md-12 col-sm-12 wbBaseFieldLabel" ]
-                                                [ span [ class "fw-normal" ] [ text "Change audit message" ] ]
-                                            , div
-                                                [ class "col-xl-9 col-md-12 col-sm-12" ]
-                                                [ textarea
-                                                    [ style "height" "8em"
-                                                    , placeholder "Please enter a reason explaining this change."
-                                                    , class "rudderBaseFieldClassName form-control vresize col-xl-12 col-md-12"
-                                                    ]
-                                                    []
-                                                ]
-                                            ]
-                                        ]
-                                    ]
+                                     ]
+                                        ++ (if changeMessageEnabled then
+                                                [ reasonField ]
+
+                                            else
+                                                []
+                                           )
+                                    )
                                 , div
                                     [ class "modal-footer" ]
                                     [ button
@@ -547,13 +642,16 @@ changeStepPopupView changeStepFormState crId =
                 action =
                     stepChangeAction changeStepForm.step
 
-                ( btnClass, btnClickCmd ) =
+                btnClickCmd =
+                    SubmitChangeStepForm crId changeStepForm.step
+
+                btnClass =
                     case changeStepForm.step of
                         BackStep _ ->
-                            ( backStepBtnClass, SubmitChangeStepForm (declineChangeRequest crId) )
+                            backStepBtnClass
 
-                        NextStep next ->
-                            ( nextStepBtnClass, SubmitChangeStepForm (acceptChangeRequest crId next) )
+                        NextStep _ ->
+                            nextStepBtnClass
             in
             div visiblePopupAttr (popupBody stepStr action btnClass btnClickCmd)
 
@@ -599,6 +697,33 @@ stepChangeAction stepChange =
 
                 Deployed ->
                     "Deploy"
+
+
+processApiError : String -> Detailed.Error String -> Model -> ( Model, Cmd Msg )
+processApiError apiName err model =
+    let
+        message =
+            case err of
+                Detailed.BadUrl url ->
+                    "The URL " ++ url ++ " was invalid"
+
+                Detailed.Timeout ->
+                    "Unable to reach the server, try again"
+
+                Detailed.NetworkError ->
+                    "Unable to reach the server, check your network connection"
+
+                Detailed.BadStatus metadata body ->
+                    let
+                        ( title, errors ) =
+                            decodeErrorDetails body
+                    in
+                    title ++ "\n" ++ errors
+
+                Detailed.BadBody metadata body msg ->
+                    msg
+    in
+    ( model, errorNotification ("Error when " ++ apiName ++ ", details: \n" ++ message) )
 
 
 

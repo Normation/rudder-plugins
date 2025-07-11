@@ -1,8 +1,7 @@
-module RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList, encodeNextStatus)
+module RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
 
 import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map4, map5, map6, maybe, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, required)
-import Json.Encode as Encode
 
 
 
@@ -324,16 +323,7 @@ decodeChangeRequestMainDetails : Decoder ChangeRequestMainDetails
 decodeChangeRequestMainDetails =
     let
         decodePrevStatus =
-            string
-                |> andThen
-                    (\s ->
-                        case s of
-                            "Cancelled" ->
-                                succeed Cancelled
-
-                            _ ->
-                                fail "Invalid back status"
-                    )
+            succeed Cancelled
 
         decodeNextStatus =
             string
@@ -358,8 +348,8 @@ decodeChangeRequestMainDetails =
                     (field "changeRequest" decodeChangeRequestDetails)
                     (field "isPending" bool)
                     (field "eventLogs" (list decodeEventLog))
-                    (field "backStatus" (maybe decodePrevStatus))
-                    (field "nextStatus" (maybe decodeNextStatus))
+                    (maybe (field "backStatus" decodePrevStatus))
+                    (maybe (field "nextStatus" decodeNextStatus))
                 )
             )
         )
@@ -379,19 +369,3 @@ decodeFormDetails =
                 )
             )
         )
-
-
-
-------------------------------
--- JSON ENCODERS
-------------------------------
-
-
-encodeNextStatus : NextStatus -> Encode.Value
-encodeNextStatus nextStatus =
-    case nextStatus of
-        PendingDeployment ->
-            Encode.object [ ( "status", Encode.string "pending deployment" ) ]
-
-        Deployed ->
-            Encode.object [ ( "status", Encode.string "deployed" ) ]
