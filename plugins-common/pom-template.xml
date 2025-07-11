@@ -265,7 +265,6 @@
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-parser_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
     <dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><scope>provided</scope><version>${caffeine-version}</version></dependency>
     <dependency><groupId>com.github.pathikrit</groupId><artifactId>better-files_3</artifactId><scope>provided</scope><version>${better-files-version}</version></dependency>
-    <dependency><groupId>com.github.scopt</groupId><artifactId>scopt_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.github.seancfoley</groupId><artifactId>ipaddress</artifactId><scope>provided</scope><version>${ipaddress-version}</version></dependency>
     <dependency><groupId>com.google.code.findbugs</groupId><artifactId>jsr305</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.googlecode.javaewah</groupId><artifactId>JavaEWAH</artifactId><scope>provided</scope></dependency>
@@ -285,14 +284,14 @@
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-rest</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-templates</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.softwaremill.magnolia1_3</groupId><artifactId>magnolia_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.softwaremill.magnolia1_3</groupId><artifactId>magnolia_3</artifactId><scope>provided</scope><version>${magnolia-version}</version></dependency>
     <dependency><groupId>com.softwaremill.quicklens</groupId><artifactId>quicklens_3</artifactId><scope>provided</scope><version>${quicklens-version}</version></dependency>
     <dependency><groupId>com.thoughtworks.paranamer</groupId><artifactId>paranamer</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope><version>${config-version}</version></dependency>
     <dependency><groupId>com.unboundid</groupId><artifactId>unboundid-ldapsdk</artifactId><scope>provided</scope><version>${unboundid-version}</version></dependency>
     <dependency><groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><scope>provided</scope><version>${hikaricp-version}</version></dependency>
     <dependency><groupId>com.zaxxer</groupId><artifactId>nuprocess</artifactId><scope>provided</scope><version>${nuprocess-version}</version></dependency>
-    <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect_3</artifactId><scope>provided</scope><version>${izumi-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>izumi-reflect-thirdparty-boopickle-shaded_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio_3</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-concurrent_3</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
@@ -324,11 +323,11 @@
     <dependency><groupId>net.minidev</groupId><artifactId>json-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>nu.validator</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><scope>provided</scope><version>${commons-csv-version}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-core</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet5</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
-    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-text</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><scope>provided</scope><version>${commons-lang-version}</version></dependency>
+    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-text</artifactId><scope>provided</scope><version>${commons-text-version}</version></dependency>
     <dependency><groupId>org.apfloat</groupId><artifactId>apfloat</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcpkix-jdk18on</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
     <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><scope>provided</scope><version>${bouncycastle-version}</version></dependency>
@@ -398,7 +397,7 @@
     <dependency><groupId>org.typelevel</groupId><artifactId>cats-kernel_3</artifactId><scope>provided</scope><version>${cats-version}</version></dependency>
     <dependency><groupId>org.typelevel</groupId><artifactId>cats-mtl_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.typelevel</groupId><artifactId>literally_3</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.yaml</groupId><artifactId>snakeyaml</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.yaml</groupId><artifactId>snakeyaml</artifactId><scope>provided</scope><version>${snakeyaml-version}</version></dependency>
     <dependency><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>xml-apis</groupId><artifactId>xml-apis</artifactId><scope>provided</scope></dependency>
   </dependencies>
