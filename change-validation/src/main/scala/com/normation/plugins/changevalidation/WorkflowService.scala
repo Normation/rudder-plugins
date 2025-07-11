@@ -103,6 +103,10 @@ class EitherWorkflowService(cond: () => IOResult[Boolean], whenTrue: WorkflowSer
   override def isPending(currentStep: WorkflowNodeId):                                                      Boolean                                        =
     current.isPending(currentStep)
   override def needExternalValidation():                                                                    Boolean                                        = current.needExternalValidation()
+  override def findBackStatus(currentStep: WorkflowNodeId):                                                 Option[WorkflowNodeId]                         =
+    current.findBackStatus(currentStep)
+  override def findNextStatus(currentStep: WorkflowNodeId):                                                 Option[WorkflowNodeId]                         =
+    current.findNextStatus(currentStep)
 }
 
 object TwoValidationStepsWorkflowServiceImpl {
@@ -451,4 +455,20 @@ class TwoValidationStepsWorkflowServiceImpl(
 
   // this THE workflow that needs external validation.
   override def needExternalValidation(): Boolean = true
+
+  override def findBackStatus(currentStep: WorkflowNodeId): Option[WorkflowNodeId] = {
+    currentStep match {
+      case Validation.id => Some(Cancelled.id)
+      case Deployment.id => Some(Cancelled.id)
+      case _             => None
+    }
+  }
+
+  override def findNextStatus(currentStep: WorkflowNodeId): Option[WorkflowNodeId] = {
+    currentStep match {
+      case Validation.id => Some(Deployment.id)
+      case Deployment.id => Some(Deployed.id)
+      case _             => None
+    }
+  }
 }

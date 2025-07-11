@@ -1,8 +1,8 @@
-module RudderLinkUtil exposing (ContextPath, directiveLink, directiveLinkWithId, getApiUrl, getContextPath, groupLink, groupLinkWithId, nodeLinkWithId, paramLink, ruleLink, ruleLinkWithId, targetLinkWithId)
+module RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, directiveLink, directiveLinkWithId, getApiUrl, getContextPath, groupLink, groupLinkWithId, nodeLinkWithId, paramLink, ruleLink, ruleLinkWithId, targetLinkWithId)
 
 import Html exposing (Html, a, span, text)
 import Html.Attributes exposing (href)
-import RudderDataTypes exposing (SimpleTarget)
+import RudderDataTypes exposing (SimpleTarget, TargetType(..))
 
 
 type ContextPath
@@ -17,6 +17,11 @@ getContextPath =
 getApiUrl : ContextPath -> String -> String
 getApiUrl (ContextPath contextPath) url =
     contextPath ++ "/secure/api/" ++ url
+
+
+changeRequestsPageUrl : ContextPath -> String
+changeRequestsPageUrl (ContextPath contextPath) =
+    contextPath ++ "/secure/configurationManager/changes/changeRequests"
 
 
 directiveLink : ContextPath -> String -> String -> Html msg
@@ -58,10 +63,10 @@ targetLinkWithId (ContextPath contextPath) target =
     let
         targetType =
             case target.targetType of
-                RudderDataTypes.Group ->
+                Group ->
                     "groupId"
 
-                RudderDataTypes.NonGroup ->
+                NonGroup ->
                     "target"
     in
     span []
