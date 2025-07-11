@@ -103,7 +103,7 @@ class EitherWorkflowService(cond: () => IOResult[Boolean], whenTrue: WorkflowSer
   override def isPending(currentStep: WorkflowNodeId):                                                      Boolean                                        =
     current.isPending(currentStep)
   override def needExternalValidation():                                                                    Boolean                                        = current.needExternalValidation()
-  override def findBackStatus(currentStep: WorkflowNodeId):                                             Option[WorkflowNodeId]                         =
+  override def findBackStatus(currentStep: WorkflowNodeId):                                                 Option[WorkflowNodeId]                         =
     current.findBackStatus(currentStep)
   override def findNextStatus(currentStep: WorkflowNodeId):                                                 Option[WorkflowNodeId]                         =
     current.findNextStatus(currentStep)
@@ -458,21 +458,17 @@ class TwoValidationStepsWorkflowServiceImpl(
 
   override def findBackStatus(currentStep: WorkflowNodeId): Option[WorkflowNodeId] = {
     currentStep match {
-      case Validation.id     => Some(Cancelled.id)
-      case Deployment.id     => Some(Cancelled.id)
-      case Deployed.id       => None
-      case Cancelled.id      => None
-      case WorkflowNodeId(_) => None
+      case Validation.id => Some(Cancelled.id)
+      case Deployment.id => Some(Cancelled.id)
+      case _             => None
     }
   }
 
   override def findNextStatus(currentStep: WorkflowNodeId): Option[WorkflowNodeId] = {
     currentStep match {
-      case Validation.id     => Some(Deployment.id)
-      case Deployment.id     => Some(Deployed.id)
-      case Deployed.id       => None
-      case Cancelled.id      => None
-      case WorkflowNodeId(_) => None
+      case Validation.id => Some(Deployment.id)
+      case Deployment.id => Some(Deployed.id)
+      case _             => None
     }
   }
 }
