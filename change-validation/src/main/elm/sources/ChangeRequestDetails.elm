@@ -4,11 +4,14 @@ import Browser
 import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, a, button, div, h1, p, span, text)
-import Html.Attributes exposing (attribute, class, disabled, href, id, style, tabindex)
-import Http exposing (Error, emptyBody, expectJson, header, request)
-import Ports exposing (errorNotification, readUrl)
-import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails)
+import Html exposing (Attribute, Html, a, b, button, div, form, h1, h4, h5, input, label, p, span, text, textarea)
+import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, style, tabindex, type_, value)
+import Html.Events exposing (onClick)
+import Http exposing (Error, emptyBody, expectJson, header, jsonBody, request)
+import Json.Decode exposing (Decoder, Value, succeed)
+import List.Extra
+import Ports exposing (errorNotification, readUrl, successNotification)
+import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails, encodeNextStatus)
 import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, getContextPath)
 
 
@@ -38,6 +41,7 @@ init flags =
                 (EditForm.initModel flags)
                 (ChangesForm.initModel { contextPath = flags.contextPath })
                 NoView
+                NoView
     in
     ( initModel, Cmd.none )
 
@@ -48,6 +52,17 @@ init flags =
 ------------------------------
 
 
+type StepChange
+    = BackStep BackStatus
+    | NextStep NextStatus
+
+
+type alias ChangeStepForm =
+    { step : StepChange
+    , reasonsField : String
+    }
+
+
 type alias Model =
     { contextPath : ContextPath
     , hasValidatorWriteRights : Bool
@@ -55,6 +70,7 @@ type alias Model =
     , editForm : EditForm.Model
     , changesForm : ChangesForm.Model
     , viewState : ViewState ChangeRequestMainDetails
+    , changeStepPopup : ViewState ChangeStepForm
     }
 
 
@@ -63,6 +79,11 @@ type Msg
     | GetChangeRequestMainDetails (Result Error ChangeRequestMainDetails)
     | EditFormMsg EditForm.Msg
     | ChangesFormMsg ChangesForm.Msg
+    | OpenChangeStepPopup StepChange
+    | CloseChangeStepPopup
+    | FormInputReasonsField String
+    | ChangeRequestStepChange (Result Error Int)
+    | SubmitChangeStepForm (Model -> Cmd Msg)
 
 
 
@@ -81,6 +102,40 @@ getChangeRequestMainDetails model crId =
                 , url = getApiUrl model.contextPath ("changevalidation/workflow/changeRequestMainDetails/" ++ String.fromInt crId)
                 , body = emptyBody
                 , expect = expectJson GetChangeRequestMainDetails decodeChangeRequestMainDetails
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+acceptChangeRequest : Int -> NextStatus -> Model -> Cmd Msg
+acceptChangeRequest crId nextStatus model =
+    let
+        req =
+            request
+                { method = "POST"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt crId ++ "/accept")
+                , body = jsonBody (encodeNextStatus nextStatus)
+                , expect = expectJson ChangeRequestStepChange (succeed crId)
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+    in
+    req
+
+
+declineChangeRequest : Int -> Model -> Cmd Msg
+declineChangeRequest crId model =
+    let
+        req =
+            request
+                { method = "DELETE"
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
+                , url = getApiUrl model.contextPath ("changeRequests/" ++ String.fromInt crId)
+                , body = emptyBody
+                , expect = expectJson ChangeRequestStepChange (succeed crId)
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -151,11 +206,67 @@ update msg model =
             in
             ( { model | changesForm = cfModel }, Cmd.map ChangesFormMsg cfCmd )
 
+        OpenChangeStepPopup stepType ->
+            ( { model | changeStepPopup = Success { step = stepType, reasonsField = "" } }, Cmd.none )
+
+        CloseChangeStepPopup ->
+            ( { model | changeStepPopup = NoView }, Cmd.none )
+
+        ChangeRequestStepChange result ->
+            case result of
+                Ok crId ->
+                    ( model
+                    , Cmd.batch
+                        [ successNotification "Change request step successfully changed"
+                        , getChangeRequestMainDetails model crId
+                        ]
+                    )
+
+                Err error ->
+                    let
+                        errMsg =
+                            getErrorMessage error
+                    in
+                    ( model
+                    , errorNotification ("Error while trying to change step of change request: " ++ errMsg)
+                    )
+
+        FormInputReasonsField newReason ->
+            ( model |> updateChangeStepForm (setReasonsField newReason), Cmd.none )
+
+        SubmitChangeStepForm apiCall ->
+            ( { model | changeStepPopup = NoView }, Cmd.batch [ apiCall model ] )
+
+
+updateChangeStepForm : (ViewState ChangeStepForm -> ViewState ChangeStepForm) -> Model -> Model
+updateChangeStepForm f model =
+    { model | changeStepPopup = f model.changeStepPopup }
+
+
+setReasonsField : String -> ViewState ChangeStepForm -> ViewState ChangeStepForm
+setReasonsField newReason changeStepFormState =
+    case changeStepFormState of
+        Success changeStepForm ->
+            Success { changeStepForm | reasonsField = newReason }
+
+        _ ->
+            changeStepFormState
+
 
 
 ------------------------------
 -- VIEW
 ------------------------------
+
+
+nextStepBtnClass : String
+nextStepBtnClass =
+    "btn btn-success"
+
+
+backStepBtnClass : String
+backStepBtnClass =
+    "btn btn-danger"
 
 
 view : Model -> Html Msg
@@ -169,7 +280,7 @@ view model =
                         [ div [ class "main-container" ]
                             [ div [ class "main-details" ]
                                 [ Html.map EditFormMsg (EditForm.view model.editForm)
-                                , warnOnUnmergeable changeRequest.changeRequest
+                                , warnOnUnmergeableView changeRequest.changeRequest
                                 , Html.map ChangesFormMsg (ChangesForm.view model.changesForm)
                                 ]
                             ]
@@ -211,9 +322,7 @@ bannerView model cr =
                             _ ->
                                 Nothing
                     )
-                |> List.sortBy (\( _, date, _ ) -> date)
-                |> List.reverse
-                |> List.head
+                |> List.Extra.maximumBy (\( _, date, _ ) -> date)
                 |> Maybe.map (\( action, date, actor ) -> eventLogToString action date actor)
                 |> Maybe.withDefault ("Error: no action was recorded for change request with id" ++ String.fromInt cr.changeRequest.id)
     in
@@ -222,7 +331,7 @@ bannerView model cr =
             [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]
             , div [ class "flex-container" ]
                 [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                , actionButtons canChangeStep cr.prevStatus cr.nextStatus
+                , actionButtons model.changeStepPopup cr.changeRequest.id canChangeStep cr.prevStatus cr.nextStatus
                 ]
             ]
         , div
@@ -236,8 +345,8 @@ bannerView model cr =
         ]
 
 
-actionButtons : Bool -> Maybe BackStatus -> Maybe NextStatus -> Html Msg
-actionButtons canChangeStep backStatus nextStatus =
+actionButtons : ViewState ChangeStepForm -> Int -> Bool -> Maybe BackStatus -> Maybe NextStatus -> Html Msg
+actionButtons changeStepForm crId canChangeStep backStatus nextStatus =
     let
         canChangeStepAttr =
             if canChangeStep then
@@ -246,60 +355,60 @@ actionButtons canChangeStep backStatus nextStatus =
             else
                 [ disabled True ]
 
-        getBackAction back =
+        backStepButton back =
             case back of
                 Cancelled ->
-                    "Decline"
+                    button
+                        ([ id "backStep"
+                         , class backStepBtnClass
+                         , onClick (OpenChangeStepPopup (BackStep back))
+                         ]
+                            ++ canChangeStepAttr
+                        )
+                        [ text "Decline" ]
 
-        getNextAction next =
-            case next of
-                PendingDeployment ->
-                    "Validate"
+        nextStepButton next =
+            let
+                action =
+                    case next of
+                        PendingDeployment ->
+                            "Validate"
 
-                Deployed ->
-                    "Deploy"
+                        Deployed ->
+                            "Deploy"
+            in
+            button
+                ([ id "nextStep"
+                 , style "float" "right"
+                 , class "btn btn-success"
+                 , onClick (OpenChangeStepPopup (NextStep next))
+                 ]
+                    ++ canChangeStepAttr
+                )
+                [ text action ]
 
         buttons =
             case ( backStatus, nextStatus ) of
                 ( Just back, Just next ) ->
-                    [ button
-                        ([ id "backStep", class "btn btn-danger" ] ++ canChangeStepAttr)
-                        [ text (getBackAction back) ]
-                    , button
-                        ([ id "nextStep", style "float" "right", class "btn btn-success" ] ++ canChangeStepAttr)
-                        [ text (getNextAction next) ]
-                    ]
+                    [ backStepButton back, nextStepButton next ]
 
                 ( Just back, Nothing ) ->
-                    [ button
-                        ([ id "backStep", class "btn btn-danger" ] ++ canChangeStepAttr)
-                        [ text (getBackAction back) ]
-                    ]
+                    [ backStepButton back ]
 
                 ( Nothing, Just next ) ->
-                    [ button
-                        ([ id "nextStep", style "float" "right", class "btn btn-success" ] ++ canChangeStepAttr)
-                        [ text (getNextAction next) ]
-                    ]
+                    [ nextStepButton next ]
 
                 ( Nothing, Nothing ) ->
                     []
     in
     div [ id "actionBtns" ]
         [ div [ class "header-buttons", id "workflowActionButtons" ] buttons
-        , div
-            [ attribute "data-bs-backdrop" "false"
-            , tabindex -1
-            , attribute "data-bs-keyboard" "true"
-            , class "modal fade"
-            , id "popupContent"
-            ]
-            []
+        , changeStepPopupView changeStepForm crId
         ]
 
 
-warnOnUnmergeable : ChangeRequestDetails -> Html Msg
-warnOnUnmergeable changeRequest =
+warnOnUnmergeableView : ChangeRequestDetails -> Html Msg
+warnOnUnmergeableView changeRequest =
     let
         isPending cr =
             cr.state == "Pending validation" || cr.state == "Pending deployment"
@@ -323,6 +432,173 @@ warnOnUnmergeable changeRequest =
 
     else
         text ""
+
+
+changeStepPopupView : ViewState ChangeStepForm -> Int -> Html Msg
+changeStepPopupView changeStepFormState crId =
+    let
+        visiblePopupAttr =
+            [ attribute "data-bs-backdrop" "false"
+            , tabindex -1
+            , attribute "data-bs-keyboard" "true"
+            , class "modal fade show"
+            , id "popupContent"
+            , style "display" "block"
+            , style "padding-left" "0px"
+            , attribute "aria-modal" "true"
+            , attribute "role" "dialog"
+            ]
+
+        hiddenPopupAttr =
+            [ attribute "data-bs-backdrop" "false"
+            , tabindex -1
+            , attribute "data-bs-keyboard" "true"
+            , class "modal fade"
+            , id "popupContent"
+            , style "display" "none"
+            , attribute "aria-hidden" "true"
+            ]
+
+        popupBody stepStr action btnClass btnClickCmd =
+            [ div [ id "changeStatePopup" ]
+                [ div [ class "modal-dialog" ]
+                    [ div [ class "modal-content" ]
+                        [ div [ class "modal-header" ]
+                            [ h5
+                                [ class "modal-title" ]
+                                [ text "Change Request state" ]
+                            , button
+                                [ attribute "aria-label" "Close"
+                                , attribute "data-bs-dismiss" "modal"
+                                , class "btn-close"
+                                , type_ "button"
+                                , onClick CloseChangeStepPopup
+                                ]
+                                []
+                            ]
+                        , div [ id "form" ]
+                            [ form []
+                                [ div [ class "modal-body" ]
+                                    [ div [ id "intro" ]
+                                        [ h5
+                                            [ class "text-center" ]
+                                            [ text (" The change request will be sent to the '" ++ stepStr ++ "' status ") ]
+                                        ]
+                                    , div [ id "formError" ] []
+                                    , div
+                                        [ class "mt-3 from-group" ]
+                                        [ label [] [ b [] [ text "Next state " ] ]
+                                        , span
+                                            [ class "well" ]
+                                            [ text ("  " ++ stepStr ++ "  ") ]
+                                        ]
+                                    , div [ id "reason", class "mt-3" ]
+                                        [ h4
+                                            [ class "col-lg-12 col-sm-12 col-xs-12 audit-title" ]
+                                            [ text "Change Audit Log" ]
+                                        , div
+                                            [ class "row wbBaseField form-group " ]
+                                            [ label
+                                                [ class "col-xl-3 col-md-12 col-sm-12 wbBaseFieldLabel" ]
+                                                [ span [ class "fw-normal" ] [ text "Change audit message" ] ]
+                                            , div
+                                                [ class "col-xl-9 col-md-12 col-sm-12" ]
+                                                [ textarea
+                                                    [ style "height" "8em"
+                                                    , placeholder "Please enter a reason explaining this change."
+                                                    , class "rudderBaseFieldClassName form-control vresize col-xl-12 col-md-12"
+                                                    ]
+                                                    []
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                , div
+                                    [ class "modal-footer" ]
+                                    [ button
+                                        [ attribute "aria-label" "Close"
+                                        , attribute "data-bs-dismiss" "modal"
+                                        , class "btn btn-default"
+                                        , type_ "button"
+                                        , onClick CloseChangeStepPopup
+                                        ]
+                                        [ text "Cancel" ]
+                                    , input
+                                        [ id "confirm"
+                                        , class btnClass
+                                        , value action
+                                        , onClick btnClickCmd
+                                        ]
+                                        []
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+    in
+    case changeStepFormState of
+        Success changeStepForm ->
+            let
+                stepStr =
+                    stepChangeToString changeStepForm.step
+
+                action =
+                    stepChangeAction changeStepForm.step
+
+                ( btnClass, btnClickCmd ) =
+                    case changeStepForm.step of
+                        BackStep _ ->
+                            ( backStepBtnClass, SubmitChangeStepForm (declineChangeRequest crId) )
+
+                        NextStep next ->
+                            ( nextStepBtnClass, SubmitChangeStepForm (acceptChangeRequest crId next) )
+            in
+            div visiblePopupAttr (popupBody stepStr action btnClass btnClickCmd)
+
+        _ ->
+            div hiddenPopupAttr (popupBody "" "" "" CloseChangeStepPopup)
+
+
+
+------------------------------
+-- UTIL
+------------------------------
+
+
+stepChangeToString : StepChange -> String
+stepChangeToString stepChange =
+    case stepChange of
+        BackStep backStatus ->
+            case backStatus of
+                Cancelled ->
+                    "Cancelled"
+
+        NextStep nextStatus ->
+            case nextStatus of
+                PendingDeployment ->
+                    "Pending deployment"
+
+                Deployed ->
+                    "Deployed"
+
+
+stepChangeAction : StepChange -> String
+stepChangeAction stepChange =
+    case stepChange of
+        BackStep backStatus ->
+            case backStatus of
+                Cancelled ->
+                    "Decline"
+
+        NextStep nextStatus ->
+            case nextStatus of
+                PendingDeployment ->
+                    "Validate"
+
+                Deployed ->
+                    "Deploy"
 
 
 
