@@ -4,18 +4,19 @@ import Browser
 import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (decodeErrorDetails)
-import Html exposing (Attribute, Html, a, b, button, div, form, h1, h2, h3, h4, h5, label, p, span, text, textarea)
-import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, style, tabindex, type_, value)
+import Html exposing (Attribute, Html, a, b, button, div, form, h1, h2, h3, h4, h5, label, option, p, select, span, text, textarea)
+import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, selected, style, tabindex, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error, emptyBody, header, request)
 import Http.Detailed as Detailed
 import Json.Decode exposing (Decoder, Value, at, bool, field, index, int, map2)
 import List
-import List.Extra
+import List.Extra exposing (uniqueBy)
 import Ports exposing (errorNotification, readUrl, successNotification)
-import RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, Event(..), EventLog, NextStatus(..), ViewState(..), decodeChangeRequestMainDetails)
+import RudderDataTypes exposing (AllNextSteps, AllStepChanges(..), BackStatus(..), ChangeRequestDetails, ChangeRequestMainDetails, ChangeRequestMainDetailsMetadata, Event(..), EventLog, NextStatus(..), StepChange(..), ViewState(..), decodeChangeRequestMainDetails)
 import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, getContextPath)
 import String
+import String.Extra
 import Url.Builder
 
 
@@ -57,13 +58,8 @@ init flags =
 ------------------------------
 
 
-type StepChange
-    = BackStep BackStatus
-    | NextStep NextStatus
-
-
 type alias ChangeStepForm =
-    { step : StepChange
+    { step : AllStepChanges
     , reasonsField : String
     }
 
@@ -88,15 +84,17 @@ type alias Model =
 
 type Msg
     = GetChangeRequestIdFromUrl String
-    | GetChangeRequestMainDetails (Result (Detailed.Error String) ( Http.Metadata, ChangeRequestMainDetails ))
+    | GetChangeRequestMainDetails (Result (Detailed.Error String) ( Http.Metadata, ChangeRequestMainDetailsMetadata ))
     | EditFormMsg EditForm.Msg
     | ChangesFormMsg ChangesForm.Msg
-    | OpenChangeStepPopup StepChange
+    | OpenChangeStepPopup AllStepChanges
     | CloseChangeStepPopup
     | FormInputReasonsField String
     | ChangeRequestStepChange (Result (Detailed.Error String) ( Http.Metadata, Int ))
     | SubmitChangeStepForm Int StepChange
     | GetChangeMessageSettings (Result (Detailed.Error String) ( Http.Metadata, ChangeMessageSettings ))
+    | ChangeSelectedNextStep NextStatus
+    | Ignore
 
 
 
@@ -135,7 +133,7 @@ acceptChangeRequest crId reasonOpt nextStatus model =
 
         params =
             Url.Builder.toQuery
-                ([ Url.Builder.string "status" (stepChangeToString (NextStep nextStatus)) ] ++ reasonParam)
+                ([ Url.Builder.string "status" (stepChangeToString (Next nextStatus)) ] ++ reasonParam)
 
         req =
             request
@@ -243,6 +241,35 @@ update msg model =
             case result of
                 Ok ( _, cr ) ->
                     let
+                        isReachableStatus =
+                            \status ->
+                                ((status == PendingDeployment) && model.hasValidatorWriteRights)
+                                    || ((status == Deployed) && model.hasDeployerWriteRights)
+
+                        reachable =
+                            cr.allNextSteps
+                                |> List.filter isReachableStatus
+                                |> uniqueBy (Next >> stepChangeToString)
+
+                        next =
+                            case List.head reachable of
+                                Just selected ->
+                                    Just
+                                        { reachableNextSteps = reachable
+                                        , selected = selected
+                                        }
+
+                                Nothing ->
+                                    Nothing
+
+                        crDetails =
+                            { changeRequest = cr.changeRequest
+                            , isPending = cr.isPending
+                            , eventLogs = cr.eventLogs
+                            , prevStatus = cr.prevStatus
+                            , reachableNextSteps = next
+                            }
+
                         formDetails =
                             { title = cr.changeRequest.title
                             , id = cr.changeRequest.id
@@ -251,8 +278,8 @@ update msg model =
                             }
                     in
                     ( { model
-                        | viewState = Success cr
-                        , changesForm = model.changesForm |> ChangesForm.updateChangeRequestDetails cr
+                        | viewState = Success crDetails
+                        , changesForm = model.changesForm |> ChangesForm.updateChangeRequestDetails crDetails
                         , editForm = model.editForm |> EditForm.updateChangeRequestDetails formDetails
                       }
                     , Cmd.none
@@ -305,7 +332,7 @@ update msg model =
         FormInputReasonsField newReason ->
             ( model |> updateChangeStepForm (setReasonsField newReason), Cmd.none )
 
-        SubmitChangeStepForm crId (NextStep next) ->
+        SubmitChangeStepForm crId (Next next) ->
             case model.changeStepPopup of
                 Success changeStepForm ->
                     ( { model | changeStepPopup = NoView }, acceptChangeRequest crId (Just changeStepForm.reasonsField) next model )
@@ -313,7 +340,7 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        SubmitChangeStepForm crId (BackStep _) ->
+        SubmitChangeStepForm crId (Back _) ->
             case model.changeStepPopup of
                 Success changeStepForm ->
                     ( { model | changeStepPopup = NoView }, declineChangeRequest crId (Just changeStepForm.reasonsField) model )
@@ -333,6 +360,12 @@ update msg model =
                     in
                     ( { model | viewState = ViewError errMsg }, Cmd.none )
 
+        ChangeSelectedNextStep nextStatus ->
+            ( model |> updateChangeStepForm (setSelectedNextStep nextStatus), Cmd.none )
+
+        Ignore ->
+            ( model, Cmd.none )
+
 
 updateChangeStepForm : (ViewState ChangeStepForm -> ViewState ChangeStepForm) -> Model -> Model
 updateChangeStepForm f model =
@@ -344,6 +377,25 @@ setReasonsField newReason changeStepFormState =
     case changeStepFormState of
         Success changeStepForm ->
             Success { changeStepForm | reasonsField = newReason }
+
+        _ ->
+            changeStepFormState
+
+
+setSelectedNextStep : NextStatus -> ViewState ChangeStepForm -> ViewState ChangeStepForm
+setSelectedNextStep nextStatus changeStepFormState =
+    case changeStepFormState of
+        Success changeStepForm ->
+            case changeStepForm.step of
+                BackSteps _ ->
+                    changeStepFormState
+
+                NextSteps next ->
+                    if List.member nextStatus next.reachableNextSteps then
+                        Success { changeStepForm | step = NextSteps { next | selected = nextStatus } }
+
+                    else
+                        changeStepFormState
 
         _ ->
             changeStepFormState
@@ -436,7 +488,7 @@ bannerView model cr =
             [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]
             , div [ class "flex-container" ]
                 [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                , actionButtons model.changeStepPopup cr.changeRequest.id model.changeMessageSettings canChangeStep cr.prevStatus cr.nextStatus
+                , actionButtons model cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps
                 ]
             ]
         , div
@@ -450,32 +502,27 @@ bannerView model cr =
         ]
 
 
-actionButtons : ViewState ChangeStepForm -> Int -> ChangeMessageSettings -> Bool -> Maybe BackStatus -> Maybe NextStatus -> Html Msg
-actionButtons changeStepForm crId changeMessageSettings canChangeStep backStatus nextStatus =
+actionButtons : Model -> Int -> Bool -> Maybe BackStatus -> Maybe AllNextSteps -> Html Msg
+actionButtons model crId canChangeStep backStatus allNextSteps =
     let
         canChangeStepAttr =
-            if canChangeStep then
-                []
-
-            else
-                [ disabled True ]
+            disabled (not canChangeStep)
 
         backStepButton back =
             case back of
                 Cancelled ->
                     button
-                        ([ id "backStep"
-                         , class backStepBtnClass
-                         , onClick (OpenChangeStepPopup (BackStep back))
-                         ]
-                            ++ canChangeStepAttr
-                        )
+                        [ id "backStep"
+                        , class backStepBtnClass
+                        , canChangeStepAttr
+                        , onClick (OpenChangeStepPopup (BackSteps back))
+                        ]
                         [ text "Decline" ]
 
         nextStepButton next =
             let
                 action =
-                    case next of
+                    case next.selected of
                         PendingDeployment ->
                             "Validate"
 
@@ -483,17 +530,16 @@ actionButtons changeStepForm crId changeMessageSettings canChangeStep backStatus
                             "Deploy"
             in
             button
-                ([ id "nextStep"
-                 , style "float" "right"
-                 , class "btn btn-success"
-                 , onClick (OpenChangeStepPopup (NextStep next))
-                 ]
-                    ++ canChangeStepAttr
-                )
+                [ id "nextStep"
+                , style "float" "right"
+                , class "btn btn-success"
+                , canChangeStepAttr
+                , onClick (OpenChangeStepPopup (NextSteps next))
+                ]
                 [ text action ]
 
         buttons =
-            case ( backStatus, nextStatus ) of
+            case ( backStatus, allNextSteps ) of
                 ( Just back, Just next ) ->
                     [ backStepButton back, nextStepButton next ]
 
@@ -508,7 +554,7 @@ actionButtons changeStepForm crId changeMessageSettings canChangeStep backStatus
     in
     div [ id "actionBtns" ]
         [ div [ class "header-buttons", id "workflowActionButtons" ] buttons
-        , changeStepPopupView changeStepForm changeMessageSettings.changeMessageEnabled crId
+        , changeStepPopupView model.changeStepPopup model.changeMessageSettings.changeMessageEnabled crId
         ]
 
 
@@ -577,7 +623,7 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
                     ]
                 ]
 
-        popupBody stepStr action btnClass btnClickCmd =
+        popupBody action intro btnClass btnClickCmd statusSelector =
             [ div [ id "changeStatePopup" ]
                 [ div [ class "modal-dialog" ]
                     [ div [ class "modal-content" ]
@@ -599,15 +645,13 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
                                     ([ div [ id "intro" ]
                                         [ h5
                                             [ class "text-center" ]
-                                            [ text (" The change request will be sent to the '" ++ stepStr ++ "' status ") ]
+                                            [ text intro ]
                                         ]
                                      , div [ id "formError" ] []
                                      , div
                                         [ class "mt-3 from-group" ]
                                         [ label [] [ b [] [ text "Next state " ] ]
-                                        , span
-                                            [ class "well" ]
-                                            [ text ("  " ++ stepStr ++ "  ") ]
+                                        , statusSelector
                                         ]
                                      ]
                                         ++ (if changeMessageEnabled then
@@ -646,24 +690,29 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
     case changeStepFormState of
         Success changeStepForm ->
             let
-                stepStr =
-                    stepChangeToString changeStepForm.step
+                selectedStatus =
+                    selectedStep changeStepForm.step
 
                 action =
-                    stepChangeAction changeStepForm.step
+                    stepChangeAction selectedStatus
 
                 btnClickCmd =
-                    SubmitChangeStepForm crId changeStepForm.step
+                    SubmitChangeStepForm crId selectedStatus
 
-                btnClass =
+                statusSelector =
+                    statusSelect changeStepForm.step
+
+                ( btnClass, intro ) =
                     case changeStepForm.step of
-                        BackStep _ ->
-                            backStepBtnClass
+                        BackSteps b ->
+                            ( backStepBtnClass
+                            , " The change request will be sent to the '" ++ stepChangeToString (Back b) ++ "' status "
+                            )
 
-                        NextStep _ ->
-                            nextStepBtnClass
+                        NextSteps _ ->
+                            ( nextStepBtnClass, " Please choose the next state of this change request " )
             in
-            div visiblePopupAttr (popupBody stepStr action btnClass btnClickCmd)
+            div visiblePopupAttr (popupBody action intro btnClass btnClickCmd statusSelector)
 
         _ ->
             text ""
@@ -690,12 +739,12 @@ errorView model errMsg =
 stepChangeToString : StepChange -> String
 stepChangeToString stepChange =
     case stepChange of
-        BackStep backStatus ->
+        Back backStatus ->
             case backStatus of
                 Cancelled ->
                     "Cancelled"
 
-        NextStep nextStatus ->
+        Next nextStatus ->
             case nextStatus of
                 PendingDeployment ->
                     "Pending deployment"
@@ -707,18 +756,72 @@ stepChangeToString stepChange =
 stepChangeAction : StepChange -> String
 stepChangeAction stepChange =
     case stepChange of
-        BackStep backStatus ->
+        Back backStatus ->
             case backStatus of
                 Cancelled ->
                     "Decline"
 
-        NextStep nextStatus ->
+        Next nextStatus ->
             case nextStatus of
                 PendingDeployment ->
                     "Validate"
 
                 Deployed ->
                     "Deploy"
+
+
+selectedStep : AllStepChanges -> StepChange
+selectedStep allStepChanges =
+    case allStepChanges of
+        BackSteps backStatus ->
+            Back backStatus
+
+        NextSteps allNextSteps ->
+            Next allNextSteps.selected
+
+
+statusSelect : AllStepChanges -> Html Msg
+statusSelect allStepChanges =
+    case allStepChanges of
+        BackSteps backStatus ->
+            span
+                [ class "well" ]
+                [ text <| String.Extra.surround "   " (stepChangeToString (Back backStatus)) ]
+
+        NextSteps allNextSteps ->
+            let
+                options =
+                    allNextSteps.reachableNextSteps
+                        |> List.map
+                            (\status ->
+                                let
+                                    stepStr =
+                                        stepChangeToString (Next status)
+                                in
+                                option
+                                    [ selected (status == allNextSteps.selected)
+                                    , value stepStr
+                                    ]
+                                    [ text stepStr ]
+                            )
+            in
+            select
+                [ id "next"
+                , class "form-select mb-3"
+                , onInput
+                    (\val ->
+                        case val of
+                            "Pending deployment" ->
+                                ChangeSelectedNextStep PendingDeployment
+
+                            "Deployed" ->
+                                ChangeSelectedNextStep Deployed
+
+                            _ ->
+                                Ignore
+                    )
+                ]
+                options
 
 
 processApiErrorMsg : String -> Detailed.Error String -> String

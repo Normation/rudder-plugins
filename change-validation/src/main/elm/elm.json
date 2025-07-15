@@ -16,6 +16,7 @@
             "elm/regex": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/list-extra": "8.7.0",
+            "elm-community/string-extra": "4.0.1",
             "elm-explorations/test": "2.2.0",
             "jzxhuang/http-extras": "2.1.0",
             "matthewsj/elm-ordering": "2.0.0",

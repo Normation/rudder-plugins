@@ -81,6 +81,7 @@ import enumeratum.Enum
 import enumeratum.EnumEntry
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
+import scala.annotation.tailrec
 import scala.collection.MapView
 import sourcecode.Line
 import zio.ZIO
@@ -210,6 +211,30 @@ class WorkflowInternalApiImpl(
 
     override val schema: WorkflowInternalApi.ChangeRequestMainDetails.type = API.ChangeRequestMainDetails
 
+    private def findAllNextSteps(nextStatus: Option[WorkflowNodeId]): Seq[WorkflowNodeId] = {
+
+      /**
+       * This function returns the full list of "next steps" that can be reached from a given workflow status.
+       *
+       * The supported states in change-validation and the "steps" between these states (either "next steps" or
+       * "back steps") represent a finite state machine.
+       *
+       * A given status cannot appear in its own list of "next steps", i.e. it is not possible
+       * to backtrack to a status that a given change request has already been in before.
+       */
+      @tailrec
+      def findAllNextStepsAux(curStatus: Option[WorkflowNodeId], acc: Seq[WorkflowNodeId]): Seq[WorkflowNodeId] = {
+        curStatus match {
+          case Some(cur) =>
+            val next = workflowService.findNextStatus(cur)
+            findAllNextStepsAux(next, acc :+ cur)
+          case None      => acc
+        }
+      }
+
+      findAllNextStepsAux(nextStatus, Seq.empty)
+    }
+
     def process(
         version:    ApiVersion,
         path:       ApiPath,
@@ -238,6 +263,7 @@ class WorkflowInternalApiImpl(
            isPending      = workflowService.isPending(status)
            backStatus     = workflowService.findBackStatus(status)
            nextStatus     = workflowService.findNextStatus(status)
+           allNextSteps   = findAllNextSteps(nextStatus)
            crEventLogs   <- changeRequestEventLogService.getChangeRequestHistory(changeRequest.id)
            wfEventLogs   <- workflowEventLogService.getChangeRequestHistory(changeRequest.id)
          } yield {
@@ -248,7 +274,7 @@ class WorkflowInternalApiImpl(
              wfEventLogs,
              crEventLogs,
              backStatus,
-             nextStatus
+             allNextSteps
            )(
              eventLogDetailsService
            )
