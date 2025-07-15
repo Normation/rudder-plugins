@@ -1,14 +1,14 @@
 module ChangeRequestEditForm exposing (Model, Msg, initModel, update, updateChangeRequestDetails, view)
 
 import ErrorMessages exposing (getErrorMessage)
-import Html exposing (Html, a, div, form, h2, h3, input, label, span, text, textarea)
-import Html.Attributes exposing (class, disabled, for, href, id, maxlength, name, readonly, required, style, type_, value)
+import Html exposing (Html, div, form, input, label, span, text, textarea)
+import Html.Attributes exposing (class, disabled, for, id, maxlength, name, readonly, required, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error, expectJson, header, jsonBody, request)
 import Json.Encode as Encode
 import Ports exposing (errorNotification, successNotification)
 import RudderDataTypes exposing (ChangeRequestFormDetails, ViewState(..), decodeFormDetails)
-import RudderLinkUtil exposing (ContextPath, changeRequestsPageUrl, getApiUrl, getContextPath)
+import RudderLinkUtil exposing (ContextPath, getApiUrl, getContextPath)
 
 
 
@@ -234,11 +234,8 @@ view model =
                     ]
                 ]
 
-        NoView ->
-            errorView model "Change Request Id was not set."
-
-        ViewError errMsg ->
-            errorView model errMsg
+        _ ->
+            text ""
 
 
 roInputField : String -> Html Msg
@@ -356,15 +353,3 @@ saveButton modelCR formCR writeRights =
 
     else
         div [ id "CRSave" ] []
-
-
-errorView : Model -> String -> Html Msg
-errorView model errMsg =
-    div
-        [ style "padding" "40px"
-        , style "text-align" "center"
-        ]
-        [ h2 [] [ text "Change request id was not found" ]
-        , h3 [] [ text errMsg ]
-        , a [ href (changeRequestsPageUrl model.contextPath) ] [ text "Back to change requests page" ]
-        ]

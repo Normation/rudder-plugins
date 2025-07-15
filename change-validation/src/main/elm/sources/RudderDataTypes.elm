@@ -323,7 +323,16 @@ decodeChangeRequestMainDetails : Decoder ChangeRequestMainDetails
 decodeChangeRequestMainDetails =
     let
         decodePrevStatus =
-            succeed Cancelled
+            string
+                |> andThen
+                    (\s ->
+                        case s of
+                            "Cancelled" ->
+                                succeed Cancelled
+
+                            _ ->
+                                fail "Invalid back status"
+                    )
 
         decodeNextStatus =
             string

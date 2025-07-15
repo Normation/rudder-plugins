@@ -4,10 +4,9 @@ import Browser
 import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (decodeErrorDetails)
-import Html exposing (Attribute, Html, a, b, button, div, form, h1, h4, h5, input, label, p, span, text, textarea)
+import Html exposing (Attribute, Html, a, b, button, div, form, h1, h2, h3, h4, h5, input, label, p, span, text, textarea)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, style, tabindex, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Html.Lazy exposing (lazy)
 import Http exposing (Error, emptyBody, header, request)
 import Http.Detailed as Detailed
 import Json.Decode exposing (Decoder, Value, at, bool, field, index, int, map2)
@@ -186,7 +185,7 @@ getChangeMessageSettings model =
                 , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = getApiUrl model.contextPath "settings"
                 , body = emptyBody
-                , expect = Detailed.expectJson GetChangeMessageSettings decodeWorkflowSettings
+                , expect = Detailed.expectJson GetChangeMessageSettings decodeChangeMessageSettings
                 , timeout = Nothing
                 , tracker = Nothing
                 }
@@ -200,8 +199,8 @@ getChangeMessageSettings model =
 ------------------------------
 
 
-decodeWorkflowSettings : Decoder ChangeMessageSettings
-decodeWorkflowSettings =
+decodeChangeMessageSettings : Decoder ChangeMessageSettings
+decodeChangeMessageSettings =
     at [ "data" ]
         (field "settings"
             (map2 ChangeMessageSettings
@@ -260,7 +259,11 @@ update msg model =
                     )
 
                 Err error ->
-                    processApiError " trying to fetch change request details " error model
+                    let
+                        errMsg =
+                            processApiErrorMsg " trying to fetch change request details" error
+                    in
+                    ( { model | viewState = ViewError errMsg }, Cmd.none )
 
         EditFormMsg editFormMsg ->
             let
@@ -293,7 +296,11 @@ update msg model =
                     )
 
                 Err error ->
-                    processApiError " trying to change step of change request " error model
+                    let
+                        errMsg =
+                            processApiErrorMsg " trying to change step of change request" error
+                    in
+                    ( model, errorNotification errMsg )
 
         FormInputReasonsField newReason ->
             ( model |> updateChangeStepForm (setReasonsField newReason), Cmd.none )
@@ -320,7 +327,11 @@ update msg model =
                     ( { model | changeMessageSettings = settings }, Cmd.none )
 
                 Err error ->
-                    processApiError " getting change message settings " error model
+                    let
+                        errMsg =
+                            processApiErrorMsg " getting change message settings" error
+                    in
+                    ( { model | viewState = ViewError errMsg }, Cmd.none )
 
 
 updateChangeStepForm : (ViewState ChangeStepForm -> ViewState ChangeStepForm) -> Model -> Model
@@ -356,25 +367,34 @@ backStepBtnClass =
 
 view : Model -> Html Msg
 view model =
-    case model.viewState of
-        Success changeRequest ->
-            div [ class "one-col" ]
-                [ bannerView model changeRequest
-                , div [ class "one-col-main" ]
-                    [ div [ class "template-main" ]
-                        [ div [ class "main-container" ]
-                            [ div [ class "main-details" ]
-                                [ Html.map EditFormMsg (EditForm.view model.editForm)
-                                , warnOnUnmergeableView changeRequest.changeRequest
-                                , Html.map ChangesFormMsg (ChangesForm.view model.changesForm)
-                                ]
-                            ]
-                        ]
+    let
+        ( body, banner ) =
+            case model.viewState of
+                Success changeRequest ->
+                    ( [ Html.map EditFormMsg (EditForm.view model.editForm)
+                      , warnOnUnmergeableView changeRequest.changeRequest
+                      , Html.map ChangesFormMsg (ChangesForm.view model.changesForm)
+                      ]
+                    , bannerView model changeRequest
+                    )
+
+                NoView ->
+                    ( [ errorView model "The change request id was not set." ], text "" )
+
+                ViewError errMsg ->
+                    ( [ errorView model errMsg ], text "" )
+    in
+    div [ class "one-col" ]
+        [ banner
+        , div [ class "one-col-main" ]
+            [ div [ class "template-main" ]
+                [ div [ class "main-container" ]
+                    [ div [ class "main-details" ]
+                        body
                     ]
                 ]
-
-        _ ->
-            text ""
+            ]
+        ]
 
 
 eventLogToString : String -> String -> String -> String
@@ -506,8 +526,8 @@ warnOnUnmergeableView changeRequest =
                 , div []
                     [ p []
                         [ text
-                            ("The affected resource(s) has/have been modified since this change request was created."
-                                ++ " If you accept the change request, previous modifications will be lost."
+                            ("The affected resources have been modified since this change request was created."
+                                ++ " If you accept this change request, previous modifications will be lost."
                             )
                         ]
                     , p [] [ text "Please double-check that this is what you want before deploying this change request." ]
@@ -622,6 +642,7 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
                                         [ id "confirm"
                                         , class btnClass
                                         , value action
+                                        , type_ "button"
                                         , onClick btnClickCmd
                                         ]
                                         []
@@ -657,6 +678,18 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
 
         _ ->
             div hiddenPopupAttr (popupBody "" "" "" CloseChangeStepPopup)
+
+
+errorView : Model -> String -> Html Msg
+errorView model errMsg =
+    div
+        [ style "padding" "40px"
+        , style "text-align" "center"
+        ]
+        [ h2 [] [ text "Error" ]
+        , h3 [] [ text errMsg ]
+        , a [ href (changeRequestsPageUrl model.contextPath) ] [ text "Back to change requests page" ]
+        ]
 
 
 
@@ -699,8 +732,8 @@ stepChangeAction stepChange =
                     "Deploy"
 
 
-processApiError : String -> Detailed.Error String -> Model -> ( Model, Cmd Msg )
-processApiError apiName err model =
+processApiErrorMsg : String -> Detailed.Error String -> String
+processApiErrorMsg apiName err =
     let
         message =
             case err of
@@ -713,17 +746,17 @@ processApiError apiName err model =
                 Detailed.NetworkError ->
                     "Unable to reach the server, check your network connection"
 
-                Detailed.BadStatus metadata body ->
+                Detailed.BadStatus _ body ->
                     let
                         ( title, errors ) =
                             decodeErrorDetails body
                     in
                     title ++ "\n" ++ errors
 
-                Detailed.BadBody metadata body msg ->
+                Detailed.BadBody _ _ msg ->
                     msg
     in
-    ( model, errorNotification ("Error when " ++ apiName ++ ", details: \n" ++ message) )
+    "Error while " ++ apiName ++ ", details: \n" ++ message
 
 
 
