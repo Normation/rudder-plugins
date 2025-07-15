@@ -4,7 +4,7 @@ import Browser
 import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (decodeErrorDetails)
-import Html exposing (Attribute, Html, a, b, button, div, form, h1, h2, h3, h4, h5, input, label, p, span, text, textarea)
+import Html exposing (Attribute, Html, a, b, button, div, form, h1, h2, h3, h4, h5, label, p, span, text, textarea)
 import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, style, tabindex, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error, emptyBody, header, request)
@@ -554,16 +554,6 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
             , attribute "role" "dialog"
             ]
 
-        hiddenPopupAttr =
-            [ attribute "data-bs-backdrop" "false"
-            , tabindex -1
-            , attribute "data-bs-keyboard" "true"
-            , class "modal fade"
-            , id "popupContent"
-            , style "display" "none"
-            , attribute "aria-hidden" "true"
-            ]
-
         reasonField =
             div [ id "reason", class "mt-3" ]
                 [ h4
@@ -599,7 +589,6 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
                                 [ attribute "aria-label" "Close"
                                 , attribute "data-bs-dismiss" "modal"
                                 , class "btn-close"
-                                , type_ "button"
                                 , onClick CloseChangeStepPopup
                                 ]
                                 []
@@ -638,14 +627,14 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
                                         , onClick CloseChangeStepPopup
                                         ]
                                         [ text "Cancel" ]
-                                    , input
+                                    , button
                                         [ id "confirm"
                                         , class btnClass
                                         , value action
                                         , type_ "button"
                                         , onClick btnClickCmd
                                         ]
-                                        []
+                                        [ text action ]
                                     ]
                                 ]
                             ]
@@ -677,7 +666,7 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
             div visiblePopupAttr (popupBody stepStr action btnClass btnClickCmd)
 
         _ ->
-            div hiddenPopupAttr (popupBody "" "" "" CloseChangeStepPopup)
+            text ""
 
 
 errorView : Model -> String -> Html Msg
