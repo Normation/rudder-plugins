@@ -761,14 +761,17 @@ object EventLogJson {
 final case class ChangeRequestMainDetailsJson(
     changeRequest: SimpleChangeRequestJson,
     isPending:     Boolean,
-    eventLogs:     Chunk[EventLogJson]
+    eventLogs:     Chunk[EventLogJson],
+    backStatus:    Option[WorkflowNodeId],
+    nextStatus:    Option[WorkflowNodeId]
 )
 
 object ChangeRequestMainDetailsJson {
-  implicit val encoder:         JsonEncoder[ChangeRequestMainDetailsJson] = DeriveJsonEncoder.gen[ChangeRequestMainDetailsJson]
-  implicit val actorEncoder:    JsonEncoder[EventActor]                   = EventLogJson.actorEncoder
-  implicit val dateTimeEncoder: JsonEncoder[DateTime]                     = EventLogJson.dateTimeEncoder
-  implicit val eventLogEncoder: JsonEncoder[EventLogJson]                 = DeriveJsonEncoder.gen[EventLogJson]
+  implicit val encoder:               JsonEncoder[ChangeRequestMainDetailsJson] = DeriveJsonEncoder.gen[ChangeRequestMainDetailsJson]
+  implicit val actorEncoder:          JsonEncoder[EventActor]                   = EventLogJson.actorEncoder
+  implicit val dateTimeEncoder:       JsonEncoder[DateTime]                     = EventLogJson.dateTimeEncoder
+  implicit val eventLogEncoder:       JsonEncoder[EventLogJson]                 = DeriveJsonEncoder.gen[EventLogJson]
+  implicit val workflowNodeIdEncoder: JsonEncoder[WorkflowNodeId]               = JsonEncoder[String].contramap[WorkflowNodeId](_.value)
 
   implicit def changeToEventLog[A, B, C <: ChangeItem[B]](implicit
       actionTransformer: Transformer[C, ResourceChangeEvent]
@@ -787,7 +790,9 @@ object ChangeRequestMainDetailsJson {
       simpleCrJson: SimpleChangeRequestJson,
       isPending:    Boolean,
       wfLogs:       Seq[WorkflowStepChanged],
-      crLogs:       Seq[ChangeRequestEventLog]
+      crLogs:       Seq[ChangeRequestEventLog],
+      backStatus:   Option[WorkflowNodeId],
+      nextStatus:   Option[WorkflowNodeId]
   )(implicit eventLogDetailsService: EventLogDetailsService): ChangeRequestMainDetailsJson = {
 
     val resourceChangeLogs = cr match {
@@ -812,7 +817,9 @@ object ChangeRequestMainDetailsJson {
     ChangeRequestMainDetailsJson(
       simpleCrJson,
       isPending,
-      eventLogs
+      eventLogs,
+      backStatus,
+      nextStatus
     )
   }
 }
