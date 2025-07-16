@@ -1,4 +1,4 @@
-module ChangeRequestEditForm exposing (Form, Model, Msg, initModel, update, updateChangeRequestDetails, view)
+module ChangeRequestEditForm exposing (Form, Model, Msg, Outcome(..), initModel, update, updateChangeRequestDetails, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, div, form, input, label, span, text, textarea)
@@ -54,6 +54,11 @@ type Msg
     | FormSubmit
 
 
+type Outcome
+    = OutcomeNone
+    | OutcomeFormModified Int
+
+
 
 ------------------------------
 -- API --
@@ -102,7 +107,7 @@ updateChangeRequestDetails cr model =
     { model | viewState = initForm cr }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg, Outcome )
 update msg model =
     case msg of
         SetChangeRequestDetails result ->
@@ -110,6 +115,7 @@ update msg model =
                 Ok changeRequestDetails ->
                     ( { model | viewState = initForm changeRequestDetails }
                     , successNotification "Successfully updated change request details"
+                    , OutcomeFormModified changeRequestDetails.id
                     )
 
                 Err err ->
@@ -117,25 +123,28 @@ update msg model =
                         errMsg =
                             getErrorMessage err
                     in
-                    ( model, errorNotification ("Error while trying to update change request details: " ++ errMsg) )
+                    ( model
+                    , errorNotification ("Error while trying to update change request details: " ++ errMsg)
+                    , OutcomeNone
+                    )
 
         FormInputName newName ->
-            ( model |> updateForm (setName newName), Cmd.none )
+            ( model |> updateForm (setName newName), Cmd.none, OutcomeNone )
 
         FormInputDescription newDescription ->
-            ( model |> updateForm (setDescription newDescription), Cmd.none )
+            ( model |> updateForm (setDescription newDescription), Cmd.none, OutcomeNone )
 
         FormSubmit ->
             case model.viewState of
                 Success { initValues, formValues } ->
                     if canSaveChanges initValues formValues then
-                        ( model, saveChangeRequestDetails model formValues )
+                        ( model, saveChangeRequestDetails model formValues, OutcomeNone )
 
                     else
-                        ( model, Cmd.none )
+                        ( model, Cmd.none, OutcomeNone )
 
                 _ ->
-                    ( model, Cmd.none )
+                    ( model, Cmd.none, OutcomeNone )
 
 
 initForm : ChangeRequestFormDetails -> ViewState Form
