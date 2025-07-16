@@ -1,4 +1,4 @@
-module RudderDataTypes exposing (BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
+module RudderDataTypes exposing (AllNextSteps, AllStepChanges(..), BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangeRequestMainDetailsMetadata, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, StepChange(..), Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
 
 import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map4, map5, map6, maybe, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -56,12 +56,37 @@ type NextStatus
     | Deployed
 
 
+type StepChange
+    = Back BackStatus
+    | Next NextStatus
+
+
+type AllStepChanges
+    = BackSteps BackStatus
+    | NextSteps AllNextSteps
+
+
+type alias AllNextSteps =
+    { reachableNextSteps : List NextStatus
+    , selected : NextStatus
+    }
+
+
+type alias ChangeRequestMainDetailsMetadata =
+    { changeRequest : ChangeRequestDetails
+    , isPending : Bool
+    , eventLogs : List EventLog
+    , prevStatus : Maybe BackStatus
+    , allNextSteps : List NextStatus
+    }
+
+
 type alias ChangeRequestMainDetails =
     { changeRequest : ChangeRequestDetails
     , isPending : Bool
     , eventLogs : List EventLog
     , prevStatus : Maybe BackStatus
-    , nextStatus : Maybe NextStatus
+    , reachableNextSteps : Maybe AllNextSteps
     }
 
 
@@ -319,7 +344,7 @@ decodeChangeRequestDetails =
         )
 
 
-decodeChangeRequestMainDetails : Decoder ChangeRequestMainDetails
+decodeChangeRequestMainDetails : Decoder ChangeRequestMainDetailsMetadata
 decodeChangeRequestMainDetails =
     let
         decodePrevStatus =
@@ -353,12 +378,12 @@ decodeChangeRequestMainDetails =
         [ "data" ]
         (field "workflow"
             (index 0
-                (map5 ChangeRequestMainDetails
+                (map5 ChangeRequestMainDetailsMetadata
                     (field "changeRequest" decodeChangeRequestDetails)
                     (field "isPending" bool)
                     (field "eventLogs" (list decodeEventLog))
                     (maybe (field "backStatus" decodePrevStatus))
-                    (maybe (field "nextStatus" decodeNextStatus))
+                    (field "allNextSteps" (list decodeNextStatus))
                 )
             )
         )

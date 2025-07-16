@@ -1,4 +1,4 @@
-module ChangeRequestChangesForm exposing (Model, Msg, initModel, update, updateChangeRequestDetails, view)
+module ChangeRequestChangesForm exposing (Changes, Diff, Directive, DirectiveDiff, GlobalParameter, GlobalParameterDiff, Model, Msg, NodeGroup, NodeGroupDiff, ResourceDiff, Rule, RuleDiff, initModel, update, updateChangeRequestDetails, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Attribute, Html, button, div, h4, li, pre, table, text, ul)

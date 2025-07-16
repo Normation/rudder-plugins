@@ -1,4 +1,4 @@
-module ChangeRequestEditForm exposing (Model, Msg, initModel, update, updateChangeRequestDetails, view)
+module ChangeRequestEditForm exposing (Form, Model, Msg, initModel, update, updateChangeRequestDetails, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Html, div, form, input, label, span, text, textarea)
