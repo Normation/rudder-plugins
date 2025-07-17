@@ -294,10 +294,15 @@ update msg model =
 
         EditFormMsg editFormMsg ->
             let
-                ( efModel, efCmd ) =
+                ( efModel, efCmd, efOutcome ) =
                     EditForm.update editFormMsg model.editForm
             in
-            ( { model | editForm = efModel }, Cmd.map EditFormMsg efCmd )
+            case efOutcome of
+                EditForm.OutcomeNone ->
+                    ( { model | editForm = efModel }, Cmd.map EditFormMsg efCmd )
+
+                EditForm.OutcomeFormModified crId ->
+                    ( { model | editForm = efModel }, Cmd.batch [ Cmd.map EditFormMsg efCmd, getChangeRequestMainDetails model crId ] )
 
         ChangesFormMsg changesFormMsg ->
             let
