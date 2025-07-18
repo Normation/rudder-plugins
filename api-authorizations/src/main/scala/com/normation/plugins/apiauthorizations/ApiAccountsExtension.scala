@@ -42,6 +42,7 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.rest.AllApi
 import com.normation.rudder.rest.ApiKind
+import com.normation.rudder.web.snippet.WithNonce
 import com.normation.rudder.web.snippet.administration.ApiAccounts
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers.*
@@ -95,7 +96,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
     val json       = categories.toJson
 
     // now, add declaration of a JS variable: var rudderApis = [{ ... }]
-    xml ++ Script(JsRaw(s"""var rudderApis = $json;""")) // JsRaw ok, comes from json
+    xml ++ WithNonce.scriptWithNonce(Script(JsRaw(s"""var rudderApis = $json;"""))) // JsRaw ok, comes from json
   }
 
   // change variables in api path {xxx] into *
@@ -112,7 +113,7 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
           <link rel="stylesheet" type="text/css" href="/toserve/apiauthorizations/media.css" media="screen" data-lift="with-cached-resource" />
           <script type="text/javascript" data-lift="with-cached-resource"  src="/toserve/apiauthorizations/rudder-apiauthorizations.js"></script>
         </head_merge>
-        <script>
+        <script data-lift="with-nonce">
         //<![CDATA[
           function waitForElm(selector) {
             return new Promise(resolve => {
