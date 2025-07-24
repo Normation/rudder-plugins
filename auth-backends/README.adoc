@@ -821,3 +821,12 @@ It means that the role `node_all` is not recognized. It is because it is not a x
 In this case you should create a custom role (let's say `access_to_node`) with the permission `node_all`
 that you will map to your IdP role `role-oidc-a` and modifying the parameter `mapping.entitlements` in the OIDC config file like so:
 `rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.role-oidc-a=access_to_node`
+
+
+== Proxy setting for SSO connexion
+
+You can configure Rudder to access your SSO through a proxy. You will need to edit `/etc/default/rudder-jetty` and add theses JVM options to the parameter `JAVA_OPTIONS`. Make sure to reboot `rudder-jetty` after editing: `systemctl restart rudder-jetty`
+
+----
+JAVA_OPTIONS="-Dhttp.proxyHost=<IP address> -Dhttp.proxyPort=<port number> -Dhttps.proxyHost=<IP address> -Dhttps.proxyPort=<port number>"
+----
