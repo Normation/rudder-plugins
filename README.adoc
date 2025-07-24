@@ -1054,3 +1054,13 @@ In the configuration properties for opaque bearer tokens, there is a `rudder.aut
 ----
 [timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiOpaqueToken': failure: An opaque Bearer token was received but it doesn't have a '[userNameAttributeName_value]' claim, so we don't have a token ID and the token is invalid
 ----
+`rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.role-oidc-a=access_to_node`
+
+
+== Proxy setting for SSO connexion
+
+You can configure Rudder to access your SSO through a proxy. You will need to edit `/etc/default/rudder-jetty` and add theses JVM options to the parameter `JAVA_OPTIONS`. Make sure to reboot `rudder-jetty` after editing: `systemctl restart rudder-jetty`
+
+----
+JAVA_OPTIONS="-Dhttp.proxyHost=<IP address> -Dhttp.proxyPort=<port number> -Dhttps.proxyHost=<IP address> -Dhttps.proxyPort=<port number>"
+----
