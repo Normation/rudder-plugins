@@ -43,6 +43,7 @@ import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
 import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
+import com.normation.rudder.web.snippet.TabUtils
 import net.liftweb.common.*
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.*
@@ -51,45 +52,27 @@ import scala.xml.NodeSeq
 
 class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status: PluginStatus)(implicit
     val ttag: ClassTag[ShowNodeDetailsFromNode]
-) extends PluginExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
-
-  implicit private val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
+) extends PluginExtensionPoint[ShowNodeDetailsFromNode] with TabUtils {
 
   def pluginCompose(snippet: ShowNodeDetailsFromNode): Map[String, NodeSeq => NodeSeq] = Map(
-    "popupDetails" -> addExternalReportTab(snippet) _,
-    "mainDetails"  -> addExternalReportTab(snippet) _
+    "mainDetails" -> addExternalReportTab(snippet) _
   )
 
-  /**
-   * Add a tab:
-   * - add an li in ul with id=ruleDetailsTabMenu
-   * - add the actual tab after the div with id=ruleDetailsEditTab
-   */
-  def addExternalReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq)(implicit qc: QueryContext) = {
+  override def tabMenuId: String = "NodeDetailsTabMenu"
 
-    val (tabTitle, content) = externalReport.getExternalReports(snippet.nodeId) match {
+  override def tabContentId: String = "NodeDetailsTabContent"
+
+  private val tabId = "externalReportTab"
+
+  private def addExternalReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq): NodeSeq = {
+    implicit val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
+    (externalReport.getExternalReports(snippet.nodeId) match {
       case eb: EmptyBox =>
         val e = eb ?~! "Can not display external reports for that node"
-        ("External reports", <div class="error">{e.messageChain}</div>)
+        addTab(tabId, "External reports", <div class="error">{e.messageChain}</div>)
       case Full(config) =>
-        (config.tabTitle, <div id="externalReport" class="tab-pane" role="tabpanel">{tabContent(config.reports)(myXml)}</div>)
-    }
-
-    (
-      "#NodeDetailsTabMenu *" #> { (x: NodeSeq) =>
-        x ++ (
-          <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#externalReport" type="button" role="tab" aria-controls="externalReport">{
-            tabTitle
-          }</button>
-          </li>
-        )
-      } &
-      "#node_logs" #> { (x: NodeSeq) =>
-        x ++
-        content
-      }
-    )(xml)
+        addTab(tabId, config.tabTitle, tabContent(config.reports)(myXml))
+    })(xml)
   }
 
   def tabContent(reports: Map[String, NodeExternalReport]): CssSel = {
@@ -112,8 +95,8 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
   }
 
   private def myXml = {
-    <div id="externalReportTab">
-      <p>That tab gives access to external reports configured for that node</p>
+    <div class="inner-portlet">
+      <h3>External reports configured for that node</h3>
 
       <div class="nodeReports">
         <br />
