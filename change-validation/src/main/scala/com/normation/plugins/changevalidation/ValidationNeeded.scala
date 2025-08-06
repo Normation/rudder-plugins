@@ -113,7 +113,7 @@ class NodeGroupValidationNeeded(
       start           <- com.normation.zio.currentTimeMillis
       groups          <- groupLib.getFullGroupLibrary()
       // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
-      arePolicyServer <- nodeFactRepo.getAll()(QueryContext.systemQC)
+      arePolicyServer <- nodeFactRepo.getAll()(using QueryContext.systemQC)
       supervised      <- supervisedTargets()
       targets          = Set(change.newRule) ++ change.previousRule.toSet
       res              = checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer), supervised, targets)
@@ -174,7 +174,7 @@ class NodeGroupValidationNeeded(
     for {
       start      <- com.normation.zio.currentTimeMillis
       groups     <- groupLib.getFullGroupLibrary()
-      nodeFacts  <- nodeFactRepo.getAll()(QueryContext.systemQC)
+      nodeFacts  <- nodeFactRepo.getAll()(using QueryContext.systemQC)
       supervised <- supervisedTargets()
       targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
       exists      = groups
@@ -216,7 +216,7 @@ class NodeGroupValidationNeeded(
       newRules    = change.updatedRules
       supervised <- supervisedTargets()
       groups     <- groupLib.getFullGroupLibrary()
-      nodeFacts  <- nodeFactRepo.getAll()(QueryContext.systemQC)
+      nodeFacts  <- nodeFactRepo.getAll()(using QueryContext.systemQC)
       res         =
         checkNodeTargetByRule(groups, nodeFacts.mapValues(_.rudderSettings.isPolicyServer), supervised, (rules ++ newRules).toSet)
       end        <- com.normation.zio.currentTimeMillis

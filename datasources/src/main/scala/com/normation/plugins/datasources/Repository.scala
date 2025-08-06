@@ -144,7 +144,7 @@ trait NoopDataSourceCallbacks extends DataSourceUpdateCallbacks {
 class MemoryDataSourceRepository extends DataSourceRepository {
   def print(s: String) = ZIO.consoleWith(_.printLine(s))
 
-  private[this] val sourcesRef = zio.Ref.make(Map[DataSourceId, DataSource]()).runNow
+  private val sourcesRef = zio.Ref.make(Map[DataSourceId, DataSource]()).runNow
 
   override def getAllIds: IOResult[Set[DataSourceId]] = sourcesRef.get.map(_.keySet)
 
@@ -180,7 +180,7 @@ class DataSourceRepoImpl(
    * Be careful, ALL modification to datasource must be synchronized
    */
   private[datasources] object datasources extends AnyRef {
-    private[this] val semaphore          = Semaphore.make(1).runNow
+    private val semaphore                = Semaphore.make(1).runNow
     private[datasources] val internalRef = Ref.make(Map[DataSourceId, DataSourceScheduler]()).runNow
 
     // utility methods on datasources
@@ -220,7 +220,7 @@ class DataSourceRepoImpl(
   }
 
   // get datasource scheduler which match the condition
-  private[this] def foreachDatasourceScheduler(
+  private def foreachDatasourceScheduler(
       condition: DataSource => Boolean
   )(action: DataSourceScheduler => IOResult[Unit]): IOResult[Unit] = {
     datasources
@@ -240,7 +240,7 @@ class DataSourceRepoImpl(
       .unit
   }
 
-  private[this] def updateDataSourceScheduler(source: DataSource, delay: Option[Duration]): IOResult[Unit] = {
+  private def updateDataSourceScheduler(source: DataSource, delay: Option[Duration]): IOResult[Unit] = {
     // create live instance
     val dss = new DataSourceScheduler(
       source,
@@ -375,7 +375,7 @@ class DataSourceRepoImpl(
   }
 
   // just to factorise the same code
-  private[this] def fetchAllNode(actor: EventActor, datasourceId: Option[DataSourceId]) = {
+  private def fetchAllNode(actor: EventActor, datasourceId: Option[DataSourceId]) = {
     foreachDatasourceScheduler(ds => ds.enabled && datasourceId.fold(true)(id => ds.id == id)) { dss =>
       // for that one, do a scheduler restart
       val msg = s"Refreshing data from data source ${dss.datasource.name.value} on user ${actor.name} request"
@@ -398,7 +398,7 @@ class DataSourceRepoImpl(
     fetchOneNode(actor, nodeId, Some(datasourceId))
   }
 
-  private[this] def fetchOneNode(actor: EventActor, nodeId: NodeId, datasourceId: Option[DataSourceId]) = {
+  private def fetchOneNode(actor: EventActor, nodeId: NodeId, datasourceId: Option[DataSourceId]) = {
     foreachDatasourceScheduler(ds => ds.enabled && datasourceId.fold(true)(id => ds.id == id)) { dss =>
       // for that one, no scheduler restart
       val msg =

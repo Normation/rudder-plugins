@@ -54,8 +54,8 @@ class ApiAccountsExtension(val status: PluginStatus)(implicit val ttag: ClassTag
     extends PluginExtensionPoint[ApiAccounts] with Loggable {
 
   def pluginCompose(snippet: ApiAccounts): Map[String, NodeSeq => NodeSeq] = Map(
-    "render" -> render _,
-    "body"   -> body _
+    "render" -> render,
+    "body"   -> body
   )
 
   /*

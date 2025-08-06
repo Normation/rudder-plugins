@@ -60,7 +60,7 @@ class MigrateSupervisedGroups(
     directory:        Path,
     oldFilename:      String
 ) {
-  private[this] val old = File(directory) / oldFilename
+  private val old = File(directory) / oldFilename
 
   def migrate(): IOResult[Unit] = {
     (for {
@@ -73,7 +73,7 @@ class MigrateSupervisedGroups(
                _ <-
                  ChangeValidationLoggerPure.info(s"Old file format for supervised target found: '${old}': migrating")
 
-               oldTargetStrings <- old.contentAsString(StandardCharsets.UTF_8).fromJson[OldFileFormat].toIO
+               oldTargetStrings <- old.contentAsString(using StandardCharsets.UTF_8).fromJson[OldFileFormat].toIO
                targets           = oldTargetStrings.transformInto[SupervisedSimpleTargets].supervised
                unsupervised     <-
                  groupRepository

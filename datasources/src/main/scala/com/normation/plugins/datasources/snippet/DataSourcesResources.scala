@@ -43,7 +43,7 @@ import scala.xml.NodeSeq
 
 class DataSourcesResources extends DispatchSnippet {
 
-  private[this] def link(s: String) = s"/${LiftRules.resourceServerPath}/datasources/${s}"
+  private def link(s: String) = s"/${LiftRules.resourceServerPath}/datasources/${s}"
 
   override def dispatch = {
     case "css" =>

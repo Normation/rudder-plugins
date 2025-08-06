@@ -55,7 +55,7 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
 ) extends PluginExtensionPoint[ShowNodeDetailsFromNode] with TabUtils {
 
   def pluginCompose(snippet: ShowNodeDetailsFromNode): Map[String, NodeSeq => NodeSeq] = Map(
-    "mainDetails" -> addExternalReportTab(snippet) _
+    "mainDetails" -> addExternalReportTab(snippet)
   )
 
   override def tabMenuId: String = "NodeDetailsTabMenu"

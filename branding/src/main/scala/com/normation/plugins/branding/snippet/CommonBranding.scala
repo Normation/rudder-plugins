@@ -54,7 +54,7 @@ class CommonBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Commo
     "display" -> display
   )
 
-  private[this] val confRepo = BrandingPluginConf.brandingConfService
+  private val confRepo = BrandingPluginConf.brandingConfService
 
   def display(xml: NodeSeq): NodeSeq = {
     val data                                          = confRepo.getConf.either.runNow

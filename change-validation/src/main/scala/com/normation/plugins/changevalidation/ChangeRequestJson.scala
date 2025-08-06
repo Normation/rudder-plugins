@@ -607,7 +607,7 @@ object GroupChangeJson {
   ) extends AnyVal
 
   object PropertiesJson      {
-    implicit val propertyTransformer: Transformer[GroupProperty, JRProperty]           = JRProperty.fromGroupProp _
+    implicit val propertyTransformer: Transformer[GroupProperty, JRProperty]           = JRProperty.fromGroupProp
     implicit val transformer:         Transformer[List[GroupProperty], PropertiesJson] =
       Transformer.derive[List[GroupProperty], PropertiesJson]
 
@@ -707,7 +707,7 @@ object GroupChangeJson {
     .define[NodeGroup, GroupJson]
     .enableBeanGetters
     .withFieldComputed(_.query, _.query.map(JRQuery.fromQuery(_)))
-    .withFieldComputed(_.groupClass, x => List(x.id.serialize, x.name).map(RuleTarget.toCFEngineClassName _).sorted)
+    .withFieldComputed(_.groupClass, x => List(x.id.serialize, x.name).map(RuleTarget.toCFEngineClassName).sorted)
     .withFieldComputed(_.target, x => GroupTarget(x.id))
     .buildTransformer
   implicit val createTransformer:  Transformer[AddNodeGroupDiff, GroupCreateChangeJson]    =

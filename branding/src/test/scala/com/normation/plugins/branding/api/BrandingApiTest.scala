@@ -74,7 +74,7 @@ class BrandingApiTest extends ZIOSpecDefault {
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  override def spec: Spec[TestEnvironment with Scope, Any] = {
+  override def spec: Spec[TestEnvironment & Scope, Any] = {
     (suite("All REST tests defined in files") {
 
       for {

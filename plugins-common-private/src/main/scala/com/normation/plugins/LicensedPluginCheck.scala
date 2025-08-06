@@ -103,9 +103,9 @@ trait LicensedPluginCheck extends PluginStatus {
   }
 
   // some cached information
-  private[this] var licenseModDate = Option.empty[FileTime]
-  private[this] var pubkeyModDate  = Option.empty[FileTime]
-  private[this] var infoCache: MaybeLicenseError.Maybe[(License.CheckedLicense, Version)] = Left(
+  private var licenseModDate = Option.empty[FileTime]
+  private var pubkeyModDate  = Option.empty[FileTime]
+  private var infoCache: MaybeLicenseError.Maybe[(License.CheckedLicense, Version)] = Left(
     LicenseError.IO("License not initialized yet or missing licenses related files.")
   )
 

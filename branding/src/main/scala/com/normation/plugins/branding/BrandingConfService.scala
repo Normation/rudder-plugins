@@ -72,7 +72,7 @@ object BrandingConfService {
 
 class BrandingConfService(configFilePath: String) {
 
-  private[this] lazy val cache: Ref[Either[RudderError, BrandingConf]] = (for {
+  private lazy val cache: Ref[Either[RudderError, BrandingConf]] = (for {
     v <- Ref.make[Either[RudderError, BrandingConf]](Left(Unexpected("Cache is not yet initialized")))
     c <- reloadCacheInternal(true, v).either
   } yield v).runNow
@@ -84,7 +84,7 @@ class BrandingConfService(configFilePath: String) {
       res    <- if (exists) {
                   for {
                     content <- IOResult.attempt(s"Error when trying to read file: ${configFilePath}")(
-                                 File(configFilePath).contentAsString(StandardCharsets.UTF_8)
+                                 File(configFilePath).contentAsString(using StandardCharsets.UTF_8)
                                )
                     conf    <- content
                                  .fromJson[BrandingConf]

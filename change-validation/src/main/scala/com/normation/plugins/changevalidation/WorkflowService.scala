@@ -155,7 +155,7 @@ class TwoValidationStepsWorkflowServiceImpl(
   val openSteps:   List[WorkflowNodeId] = List(Validation.id, Deployment.id)
   val stepsValue:  List[WorkflowNodeId] = steps.map(_.id)
 
-  private[this] def saveAndLogChangeRequest(diff: ChangeRequestDiff, actor: EventActor, reason: Option[String]) = {
+  private def saveAndLogChangeRequest(diff: ChangeRequestDiff, actor: EventActor, reason: Option[String]) = {
     val changeRequest = diff.changeRequest
     // We need to remap back to the original type to fetch the id of the CR created
     val save          = diff match {
@@ -213,7 +213,7 @@ class TwoValidationStepsWorkflowServiceImpl(
       case Validation.id =>
         val validatorActions = {
           (if (canValidate(isCreator, selfValidation)) {
-             Seq((Deployment.id, stepValidationToDeployment _))
+             Seq((Deployment.id, stepValidationToDeployment))
            } else Seq()) ++ deployAction(stepValidationToDeployed)
         }
         WorkflowAction("Validate", validatorActions)
@@ -304,7 +304,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
   }
 
-  private[this] def changeStep(
+  private def changeStep(
       from:            WorkflowNode,
       to:              WorkflowNode,
       changeRequestId: ChangeRequestId,
@@ -345,7 +345,7 @@ class TwoValidationStepsWorkflowServiceImpl(
    *  Send an email notification. Failing to send email does not fail the method (ie: change validation is ok, no
    *  error displayed to user) BUT of course we log.
    */
-  private[this] def sendEmail(from: WorkflowNode, to: WorkflowNode, changeRequestId: ChangeRequestId): IOResult[Unit] = {
+  private def sendEmail(from: WorkflowNode, to: WorkflowNode, changeRequestId: ChangeRequestId): IOResult[Unit] = {
     for {
       cr <- roChangeRequestRepository
               .get(changeRequestId)
@@ -380,7 +380,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
   }
 
-  private[this] def onSuccessWorkflow(
+  private def onSuccessWorkflow(
       from:            WorkflowNode,
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
@@ -394,7 +394,7 @@ class TwoValidationStepsWorkflowServiceImpl(
                  .get(changeRequestId)
                  .notOptional(s"Change request with ID '${changeRequestId.value}' was not found in database")
       saved <-
-        commit.save(cr)(ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, Instant.now(), reason, None, qc.nodePerms))
+        commit.save(cr)(using ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, Instant.now(), reason, None, qc.nodePerms))
       _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
       state <- changeStep(from, Deployed, changeRequestId, actor, reason)
     } yield {
@@ -402,7 +402,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
   }
 
-  private[this] def toFailure(
+  private def toFailure(
       from:            WorkflowNode,
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
@@ -413,7 +413,7 @@ class TwoValidationStepsWorkflowServiceImpl(
 
   // allowed workflow steps
 
-  private[this] def stepValidationToDeployment(
+  private def stepValidationToDeployment(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
@@ -421,7 +421,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     changeStep(Validation, Deployment, changeRequestId, actor, reason)
   }
 
-  private[this] def stepValidationToDeployed(
+  private def stepValidationToDeployed(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
@@ -429,7 +429,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     onSuccessWorkflow(Validation, changeRequestId, actor, reason)
   }
 
-  private[this] def stepValidationToCancelled(
+  private def stepValidationToCancelled(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
@@ -437,7 +437,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     toFailure(Validation, changeRequestId, actor, reason)
   }
 
-  private[this] def stepDeploymentToCancelled(
+  private def stepDeploymentToCancelled(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]
@@ -445,7 +445,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     toFailure(Deployment, changeRequestId, actor, reason)
   }
 
-  private[this] def stepDeploymentToDeployed(
+  private def stepDeploymentToDeployed(
       changeRequestId: ChangeRequestId,
       actor:           EventActor,
       reason:          Option[String]

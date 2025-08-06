@@ -77,9 +77,9 @@ final case class NodeExternalReports(
  */
 class ReadExternalReports(nodeFactRepo: NodeFactRepository, val reportConfigFile: String) extends Loggable {
 
-  private[this] var config: Box[ExternalReports] = null
+  private var config: Box[ExternalReports] = null
 
-  private[this] def loadConfig(): Box[ExternalReports] = tryo {
+  private def loadConfig(): Box[ExternalReports] = tryo {
 
     val configFile = new File(reportConfigFile)
 

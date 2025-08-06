@@ -85,7 +85,6 @@ import scala.annotation.tailrec
 import scala.collection.MapView
 import sourcecode.Line
 import zio.ZIO
-import zio.json.JsonEncoder
 import zio.syntax.ToZio
 
 sealed trait WorkflowInternalApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
@@ -162,7 +161,7 @@ class WorkflowInternalApiImpl(
   // Checks if external validation is needed
   def checkWorkflow: Boolean = workflowService.needExternalValidation()
 
-  private[this] def disabledWorkflowAnswer[T]: IOResult[T] = {
+  private def disabledWorkflowAnswer[T]: IOResult[T] = {
     Inconsistency("Workflows are disabled in Rudder, the internal workflow API is not available").fail
   }
 
@@ -275,7 +274,7 @@ class WorkflowInternalApiImpl(
              crEventLogs,
              backStatus,
              allNextSteps
-           )(
+           )(using
              eventLogDetailsService
            )
          }
@@ -334,7 +333,7 @@ class WorkflowInternalApiImpl(
       }
     }
 
-    private def withChangeRequestContext[T: JsonEncoder](
+    private def withChangeRequestContext[T](
         sid:          String,
         params:       DefaultParams,
         schema:       EndpointSchema,
@@ -386,7 +385,7 @@ class WorkflowInternalApiImpl(
           allTargets    = groupLib.allTargets.view
           rootCategory <- ruleCategoryRepository.getRootCategory()
           changesJson  <- ChangeRequestChangesJson
-                            .from(changeRequest)(
+                            .from(changeRequest)(using
                               techniqueByDirective,
                               diffService,
                               nodeGroups,

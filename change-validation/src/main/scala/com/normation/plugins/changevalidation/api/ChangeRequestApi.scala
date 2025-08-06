@@ -96,7 +96,6 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 import zio.*
-import zio.json.*
 import zio.syntax.*
 
 sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
@@ -197,12 +196,12 @@ class ChangeRequestApiImpl(
     ChangeRequestJson.from(cr, status, isAcceptable)
   }
 
-  private[this] def disabledWorkflowAnswer[T]: IOResult[T] = {
+  private def disabledWorkflowAnswer[T]: IOResult[T] = {
     Inconsistency("Workflow are disabled in Rudder, change request API is not available").fail
   }
 
   // While there is no authorisation on API, they got all rights.
-  private[this] def apiUserRights = Seq("deployer", "validator")
+  private def apiUserRights = Seq("deployer", "validator")
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints.map {
@@ -244,7 +243,7 @@ class ChangeRequestApiImpl(
         for {
           crsWithStatus <- readChangeRequest.getByFilter(filter)
           serialized    <- crsWithStatus.sortBy(_._1.id.value).accumulate {
-                             case (cr, status) => getDirectiveTechniques(cr).flatMap(serialize(cr, status)(_, qc).toIO)
+                             case (cr, status) => getDirectiveTechniques(cr).flatMap(serialize(cr, status)(using _, qc).toIO)
                            }
         } yield {
           serialized
@@ -277,7 +276,7 @@ class ChangeRequestApiImpl(
     ): LiftResponse = {
       implicit val qc: QueryContext = authzToken.qc
       withChangeRequestContext(sid, "find")((changeRequest, status, techniqueByDirective) =>
-        serialize(changeRequest, status)(techniqueByDirective, qc).toIO
+        serialize(changeRequest, status)(using techniqueByDirective, qc).toIO
       ).toLiftResponseOne(params, schema, Some(sid))
     }
   }
@@ -315,7 +314,7 @@ class ChangeRequestApiImpl(
       }
 
       withChangeRequestContext(id, "decline")((changeRequest, status, techniqueByDirective) =>
-        actualRefuse(changeRequest, status)(techniqueByDirective.toMap)
+        actualRefuse(changeRequest, status)(using techniqueByDirective.toMap)
       ).toLiftResponseOne(params, schema, Some(id))
     }
   }
@@ -419,7 +418,7 @@ class ChangeRequestApiImpl(
       withChangeRequestContext(id, "update")((changeRequest, status, techniqueByDirective) => {
         for {
           json   <- req.fromJson[ChangeRequestInfoJson].toIO
-          update <- updateInfo(changeRequest, status, json)(techniqueByDirective.toMap)
+          update <- updateInfo(changeRequest, status, json)(using techniqueByDirective.toMap)
         } yield {
           update
         }
@@ -427,7 +426,7 @@ class ChangeRequestApiImpl(
     }
   }
 
-  private def withChangeRequestContext[T: JsonEncoder](
+  private def withChangeRequestContext[T](
       sid:          String,
       actionDetail: String
   )(
@@ -517,7 +516,7 @@ class ChangeRequestApiImpl(
       })
   }
 
-  private[this] def extractFilters(params: Map[String, List[String]]): PureResult[ChangeRequestFilter] = {
+  private def extractFilters(params: Map[String, List[String]]): PureResult[ChangeRequestFilter] = {
     import com.normation.plugins.changevalidation.ChangeRequestFilter.*
     for {
       status     <- extractWorkflowStatus(params)

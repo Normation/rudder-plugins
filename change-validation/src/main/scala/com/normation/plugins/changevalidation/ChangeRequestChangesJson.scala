@@ -38,9 +38,7 @@
 package com.normation.plugins.changevalidation
 
 import cats.data.NonEmptyList
-import com.normation.cfclerk.domain.SectionSpec
 import com.normation.cfclerk.domain.Technique
-import com.normation.cfclerk.domain.TechniqueName
 import com.normation.errors.Accumulated
 import com.normation.errors.Inconsistency
 import com.normation.errors.PureResult
@@ -149,7 +147,7 @@ object ChangeRequestChangesJson {
   ): PureResult[ChangeRequestChangesJson] = {
     cr match {
       case cr: ConfigurationChangeRequest =>
-        cr.transformIntoPartial[ConfigurationChangesJson](ConfigurationChangesJson.transformer)
+        cr.transformIntoPartial[ConfigurationChangesJson](using ConfigurationChangesJson.transformer)
           .map(c => ChangeRequestChangesJson(Some(c)))
           .asEither
           .left
@@ -163,16 +161,16 @@ object ChangeRequestChangesJson {
 /**
  * Json format that contains the same information as ConfigurationChangeRequestJson, as well as additional
  * information that is needed by the Elm app that displays a given change request's list of changes, i.e. :
- * 
+ *
  *    - the parameter diff of a given directive change, in string format;
  *    - an (id, name) pair for each directive of a given rule change;
  *    - an (id, name) pair for each node target of a given rule change;
  *    - the category name diff of a given rule change;
  *    - an (id, name) pair for each node of a given group change.
- *    
+ *
  * This additional info is used in order to display the links in the "diff" tab and the "history" table of a given
  * change request's page.
- * 
+ *
  * @param directives List of directive changes
  * @param rules List of rule changes
  * @param groups List of group changes
@@ -296,8 +294,7 @@ object ExtendedDirectiveChangeJson {
       directive:           Directive,
       change:              DirectiveChangeActionJson
   )(implicit
-      directiveTechniques: Map[DirectiveId, Technique],
-      diffService:         DiffService
+      directiveTechniques: Map[DirectiveId, Technique]
   ): ExtendedDirectiveChangeJson = {
 
     val xmlPretty = new scala.xml.PrettyPrinter(80, 2)
@@ -425,10 +422,10 @@ object ExtendedRuleChangeJson {
           c,
           c.rule.targets
             .map(_.toRuleTarget)
-            .transformInto[Chunk[RuleTargetExtended]](iterableToChunkTransformer),
+            .transformInto[Chunk[RuleTargetExtended]](using iterableToChunkTransformer),
           c.rule.directives
             .map(id => DirectiveId(DirectiveUid(id)))
-            .transformInto[Chunk[DirectiveIdent]](iterableToChunkTransformer),
+            .transformInto[Chunk[DirectiveIdent]](using iterableToChunkTransformer),
           ruleCategoryService.shortFqdn(rootCategory, RuleCategoryId(c.rule.categoryId)).getOrElse(c.rule.categoryId)
         )
       case d: RuleChangeJson.RuleDeleteChangeJson =>
@@ -437,18 +434,18 @@ object ExtendedRuleChangeJson {
           d,
           d.rule.targets
             .map(_.toRuleTarget)
-            .transformInto[Chunk[RuleTargetExtended]](iterableToChunkTransformer),
+            .transformInto[Chunk[RuleTargetExtended]](using iterableToChunkTransformer),
           d.rule.directives
             .map(id => DirectiveId(DirectiveUid(id)))
-            .transformInto[Chunk[DirectiveIdent]](iterableToChunkTransformer),
+            .transformInto[Chunk[DirectiveIdent]](using iterableToChunkTransformer),
           ruleCategoryService.shortFqdn(rootCategory, RuleCategoryId(d.rule.categoryId)).getOrElse(d.rule.categoryId)
         )
       case m: RuleChangeJson.RuleModifyChangeJson =>
         RuleChangeDiffJson(
           r.action,
           m,
-          m.change.modTarget.map(_.transformInto[Chunk[RuleTargetExtended]](iterableToChunkTransformer)),
-          m.change.modDirectiveIds.map(_.transformInto[Chunk[DirectiveIdent]](iterableToChunkTransformer)),
+          m.change.modTarget.map(_.transformInto[Chunk[RuleTargetExtended]](using iterableToChunkTransformer)),
+          m.change.modDirectiveIds.map(_.transformInto[Chunk[DirectiveIdent]](using iterableToChunkTransformer)),
           m.change.modCategoryId
         )
     }
@@ -797,10 +794,10 @@ object ChangeRequestMainDetailsJson {
 
     val resourceChangeLogs = cr match {
       case cr: ConfigurationChangeRequest =>
-        val directives   = cr.directives.values.map(_.changes).map(_.transformInto[EventLogJson](changeToEventLog))
-        val nodeGroups   = cr.nodeGroups.values.map(_.changes).map(_.transformInto[EventLogJson](changeToEventLog))
-        val rules        = cr.rules.values.map(_.changes).map(_.transformInto[EventLogJson](changeToEventLog))
-        val globalParams = cr.globalParams.values.map(_.changes).map(_.transformInto[EventLogJson](changeToEventLog))
+        val directives   = cr.directives.values.map(_.changes).map(_.transformInto[EventLogJson](using changeToEventLog))
+        val nodeGroups   = cr.nodeGroups.values.map(_.changes).map(_.transformInto[EventLogJson](using changeToEventLog))
+        val rules        = cr.rules.values.map(_.changes).map(_.transformInto[EventLogJson](using changeToEventLog))
+        val globalParams = cr.globalParams.values.map(_.changes).map(_.transformInto[EventLogJson](using changeToEventLog))
 
         Chunk.from(directives) ++ Chunk.from(nodeGroups) ++ Chunk.from(rules) ++ Chunk.from(globalParams)
 

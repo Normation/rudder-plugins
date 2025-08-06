@@ -118,7 +118,7 @@ class ChangeValidationWorkflowLevelService(
    * return the correct workflow given the "needed" check. Also check
    * for the actual status of workflow to decide what workflow to use.
    */
-  private[this] def getWorkflow(shouldBeNeeded: IOResult[Boolean]): IOResult[WorkflowService] = {
+  private def getWorkflow(shouldBeNeeded: IOResult[Boolean]): IOResult[WorkflowService] = {
     for {
       need <- shouldBeNeeded
     } yield {

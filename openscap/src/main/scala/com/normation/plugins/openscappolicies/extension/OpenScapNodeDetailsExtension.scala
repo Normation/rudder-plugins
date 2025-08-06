@@ -68,8 +68,8 @@ class OpenScapNodeDetailsExtension(
     implicit val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
 
     Map(
-      "popupDetails" -> addOpenScapReportTab(snippet) _,
-      "mainDetails"  -> addOpenScapReportTab(snippet) _
+      "popupDetails" -> addOpenScapReportTab(snippet),
+      "mainDetails"  -> addOpenScapReportTab(snippet)
     )
   }
 
