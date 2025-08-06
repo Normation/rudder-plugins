@@ -742,7 +742,7 @@ object RudderTokenMapping {
    *   roles names (and chaos ensues if those internal name change)
    */
   def getRoles(
-      reg:           RudderOAuth2Registration with RegistrationWithRoles,
+      reg:           RudderOAuth2Registration & RegistrationWithRoles,
       principal:     String, // user name or token id
       protocolName:  String, // oauth2Api, oauth2, oidc
       default:       Set[Role]
@@ -815,7 +815,7 @@ object RudderTokenMapping {
    *   tenants names (and chaos ensues if those internal name change - even if tenants should be public names)
    */
   def getTenants(
-      reg:             RudderOAuth2Registration with RegistrationWithRoles,
+      reg:             RudderOAuth2Registration & RegistrationWithRoles,
       principal:       String, // user name or token id
       protocolName:    String, // oauth2Api, oauth2, oidc
       default:         NodeSecurityContext
@@ -929,7 +929,7 @@ object RudderTokenMapping {
       .groupBy(_.path.parts.head)
       .flatMap {
         case (_, seq) =>
-          seq.sortBy(_.path)(AclPath.orderingaAclPath).sortBy(_.path.parts.head.value)
+          seq.sortBy(_.path)(using AclPath.orderingaAclPath).sortBy(_.path.parts.head.value)
       }
       .toList
 
@@ -937,7 +937,7 @@ object RudderTokenMapping {
   }
 }
 
-trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: RudderUserDetail with U] {
+trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: RudderUserDetail & U] {
 
   def registrationRepository: RudderClientRegistrationRepository
   def protocolId:             String
@@ -996,7 +996,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
   }
 
   def buildUser(
-      optReg:         Option[RudderOAuth2Registration with RegistrationWithRoles],
+      optReg:         Option[RudderOAuth2Registration & RegistrationWithRoles],
       userRequest:    R,
       user:           U,
       roleApiMapping: RoleApiMapping,
@@ -1046,7 +1046,7 @@ class RudderOidcUserService(
     override val registrationRepository: RudderClientRegistrationRepository,
     userRepository:                      UserRepository,
     roleApiMapping:                      RoleApiMapping
-) extends OidcUserService with RudderUserServerMapping[OidcUserRequest, OidcUser, RudderUserDetail with OidcUser] {
+) extends OidcUserService with RudderUserServerMapping[OidcUserRequest, OidcUser, RudderUserDetail & OidcUser] {
   // we need to use our copy of DefaultOAuth2UserService to log/manage errors
   super.setOauth2UserService(new RudderDefaultOAuth2UserService()): @unchecked
 
@@ -1074,7 +1074,7 @@ class RudderOAuth2UserService(
     userRepository:                      UserRepository,
     roleApiMapping:                      RoleApiMapping
 ) extends OAuth2UserService[OAuth2UserRequest, OAuth2User]
-    with RudderUserServerMapping[OAuth2UserRequest, OAuth2User, RudderUserDetail with OAuth2User] {
+    with RudderUserServerMapping[OAuth2UserRequest, OAuth2User, RudderUserDetail & OAuth2User] {
   val defaultUserService = new RudderDefaultOAuth2UserService()
 
   override val protocolId   = RudderOAuth2UserService.PROTOCOL_ID
