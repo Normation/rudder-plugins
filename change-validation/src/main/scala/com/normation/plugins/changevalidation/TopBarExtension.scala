@@ -17,7 +17,7 @@ class TopBarExtension(val status: PluginStatus)(implicit val ttag: ClassTag[Comm
     extends PluginExtensionPoint[CommonLayout] with Loggable {
 
   def pluginCompose(snippet: CommonLayout): Map[String, NodeSeq => NodeSeq] = Map(
-    "display" -> render _
+    "display" -> render
   )
 
   /**

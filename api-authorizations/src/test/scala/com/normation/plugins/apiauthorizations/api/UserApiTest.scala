@@ -49,12 +49,13 @@ class UserApiTest extends ZIOSpecDefault {
   val userService: UserService = new UserService {
     // use an user that has access to the api, we do not test authorization checks in this file
     val user1 = new AuthenticatedUser {
-      val account: RudderAccount.Api = RudderAccount.Api(accounts(ApiAccountId("user1")))
-      def checkRights(auth: AuthorizationType) = true
-      def getApiAuthz: ApiAuthorization    = ApiAuthorization.RW
-      def nodePerms:   NodeSecurityContext = NodeSecurityContext.All
+      override val user:    Option[RudderAccount.User] = None
+      override val account: Option[ApiAccount]         = Some(accounts(ApiAccountId("user1")))
+      override def checkRights(auth: AuthorizationType) = true
+      override def getApiAuthz: ApiAuthorization    = ApiAuthorization.RW
+      override def nodePerms:   NodeSecurityContext = NodeSecurityContext.All
     }
-    val getCurrentUser: AuthenticatedUser = user1
+    override val getCurrentUser: AuthenticatedUser = user1
   }
 
   val modules = List(
@@ -79,7 +80,7 @@ class UserApiTest extends ZIOSpecDefault {
     .asInstanceOf[ch.qos.logback.classic.Logger]
     .setLevel(ch.qos.logback.classic.Level.OFF)
 
-  override def spec: Spec[TestEnvironment with Scope, Any] = {
+  override def spec: Spec[TestEnvironment & Scope, Any] = {
     (suite("All REST tests defined in files") {
 
       for {

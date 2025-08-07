@@ -84,7 +84,7 @@ object DatasourcesConf extends RudderPluginModule {
       Cfg.nodeFactRepository,
       Cfg.roLDAPParameterRepository,
       Cfg.interpolationCompiler,
-      regenerationHook.hook _,
+      regenerationHook.hook,
       () => Cfg.configService.rudder_global_policy_mode()
     ),
     Cfg.stringUuidGenerator,

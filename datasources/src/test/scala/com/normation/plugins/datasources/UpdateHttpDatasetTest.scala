@@ -434,7 +434,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
     def toScala = scala.concurrent.duration.FiniteDuration(d.toMillis, "millis")
   }
 
-  implicit class RunNowTimeout[A](effect: ZIO[Annotations with zio.test.Live, RudderError, A]) {
+  implicit class RunNowTimeout[A](effect: ZIO[Annotations & zio.test.Live, RudderError, A]) {
     def runTimeout(d: Duration) =
       effect.timeout(d).notOptional(s"The test timed-out after ${d}").provideLayer(zio.test.testEnvironment).runNow
   }
@@ -476,9 +476,8 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
   val fetch: GetDataset = new GetDataset(interpolation)
 
   val parameterRepo = new RoParameterRepository() {
-    def getAllGlobalParameters(): IOResult[Seq[GlobalParameter]] = Seq().succeed
-    def getAllOverridable() = Seq().succeed
-    def getGlobalParameter(parameterName: String): IOResult[Option[GlobalParameter]] = None.succeed
+    override def getAllGlobalParameters(): IOResult[Seq[GlobalParameter]] = Seq().succeed
+    override def getGlobalParameter(parameterName: String): IOResult[Option[GlobalParameter]] = None.succeed
   }
 
   def buildNodeRepo(initNodeInfo: Map[NodeId, CoreNodeFact]): (Ref[Map[NodeId, Int]], NodeFactRepository) = {
@@ -628,14 +627,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         val (updates, infos) = buildNodeRepo(NodeConfigData.allNodeFacts)
         val http             =
           new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
-        val nodeIds          = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
+        val nodeIds          = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
         val res              = updates.set(Map()) *> http.queryAll(datasource, UpdateCause(modId, actor, None))
 
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
           updates.get.runNow must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
         ) and (
           infos
-            .getAll()(QueryContext.testQC)
+            .getAll()(using QueryContext.testQC)
             .toBox
             .flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
             NodeProperty.apply("test-http-service", testArray(i)._2.forceParse, None, Some(DataSource.providerName))
@@ -658,14 +657,14 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         val (updates, infos) = buildNodeRepo(NodeConfigData.allNodeFacts)
         val http             =
           new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
-        val nodeIds          = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
+        val nodeIds          = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
         val res              = updates.set(Map()) *> http.queryAll(datasource, UpdateCause(modId, actor, None))
 
         res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
           updates.get.runNow must havePairs(nodeIds.map(x => (x, 1)).toSeq*)
         ) and (
           infos
-            .getAll()(QueryContext.testQC)
+            .getAll()(using QueryContext.testQC)
             .toBox
             .flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
             NodeProperty.apply("test-http-service", testArray(i)._3.forceParse, None, Some(DataSource.providerName))
@@ -921,17 +920,17 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       onMissing = MissingNodeBehavior.NoChange
     )
 
-    val p0 = getProps(infos.getAll()(QueryContext.testQC).runNow)
+    val p0 = getProps(infos.getAll()(using QueryContext.testQC).runNow)
 
     val (n1, n2) = (for {
       _      <- repos.save(datasource) // init
       _      <- repos.onUserAskUpdateAllNodesFor(actor, id)
       // check nodes have the property now
-      nodes1 <- infos.getAll()(QueryContext.testQC)
+      nodes1 <- infos.getAll()(using QueryContext.testQC)
       // now delete datasource
       _      <- repos.delete(datasource.id, UpdateCause(ModificationId("test"), actor, None))
       // property must be deleted now
-      nodes2 <- infos.getAll()(QueryContext.testQC)
+      nodes2 <- infos.getAll()(using QueryContext.testQC)
     } yield (nodes1, nodes2))
       .runTimeout(1.minute)
 
@@ -970,7 +969,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       // So tests don't fait if the build machine has one core
       val MAX_PARALLEL = Math.min(2, java.lang.Runtime.getRuntime.availableProcessors)
       val ds           = maxParDataSource(MAX_PARALLEL)
-      val nodeIds      = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
+      val nodeIds      = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
       // all node updated one time
       CmdbServer.reset()
       val res          = updates.set(Map()) *> http.queryAll(ds, UpdateCause(modId, actor, None))
@@ -987,7 +986,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         path = "$.hostname",
         headers = Map("nodeId" -> "${rudder.node.id}")
       )
-      val nodeIds = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
+      val nodeIds = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
       // all node updated one time
       CmdbServer.reset()
       val res     = updates.set(Map()) *> http.queryAll(ds, UpdateCause(modId, actor, None))
@@ -1006,7 +1005,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         params = Map("nodeId" -> "${rudder.node.id}"),
         headers = Map("nodeId" -> "${rudder.node.id}")
       )
-      val nodeIds = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
+      val nodeIds = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
       // all node updated one time
       CmdbServer.reset()
       val res     = updates.set(Map()) *> http.queryAll(ds, UpdateCause(modId, actor, None))
@@ -1028,7 +1027,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       )
       val nodeRegEx = "node(.*)".r
       val nodeIds   = infos
-        .getAll()(QueryContext.testQC)
+        .getAll()(using QueryContext.testQC)
         .toBox
         .openOrThrowException("test shall not throw")
         .keySet
@@ -1094,7 +1093,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
     "correctly update all nodes" in {
       // all node updated one time
-      val nodeIds = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
+      val nodeIds = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw").keySet.toSet
       val res     = updates.set(Map()) *> http.queryAll(datasource, UpdateCause(modId, actor, None))
 
       res.either.runNow must beRight(nodeUpdatedMatcher(nodeIds)) and (
@@ -1113,7 +1112,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id): NodeUpdateResult)) and (
         infos
-          .getAll()(QueryContext.testQC)
+          .getAll()(using QueryContext.testQC)
           .toBox
           .flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
           NodeProperty.apply("test-http-service", "bar".toConfigValue, None, Some(DataSource.providerName))
@@ -1133,7 +1132,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id): NodeUpdateResult)) and (
         infos
-          .getAll()(QueryContext.testQC)
+          .getAll()(using QueryContext.testQC)
           .toBox
           .flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
           NodeProperty.apply("test-http-service", "server.rudder.local".toConfigValue, None, Some(DataSource.providerName))
@@ -1152,7 +1151,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
 
       res.either.runNow must beRight(===(NodeUpdateResult.Updated(root.id): NodeUpdateResult)) and (
         infos
-          .getAll()(QueryContext.testQC)
+          .getAll()(using QueryContext.testQC)
           .toBox
           .flatMap(m => m(root.id).properties.find(_.name == "test-http-service")) mustFullEq (
           NodeProperty.apply(
@@ -1175,7 +1174,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
      * - get the props for the value and await a test on them
      *
      * In finalStatCond, the implementation ensures that all nodes are in the map, i.e
-     *   PROPS.keySet() == infos.getAll()(QueryContext.testQC).toBox.keySet()
+     *   PROPS.keySet() == infos.getAll()(using QueryContext.testQC).toBox.keySet()
      */
     type PROPS = Map[NodeId, Option[ConfigValue]]
     def test404prop(propName: String, initValue: Option[String], onMissing: MissingNodeBehavior, expectMod: Boolean)(
@@ -1193,7 +1192,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
         new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
       val datasource       = NewDataSource(propName, url = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
-      val nodes   = infos.getAll()(QueryContext.testQC).toBox.openOrThrowException("test shall not throw")
+      val nodes   = infos.getAll()(using QueryContext.testQC).toBox.openOrThrowException("test shall not throw")
       // set a value for all propName if asked
       val modId   = ModificationId("set-test-404")
       val nodeIds = nodes.keySet
@@ -1216,7 +1215,7 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
       }).runNow and ({
         // none should have "test-404"
         val props = infos
-          .getAll()(QueryContext.testQC)
+          .getAll()(using QueryContext.testQC)
           .toBox
           .openOrThrowException("test shall not throw")
           .map { case (id, n) => (id, n.properties.find(_.name == propName).map(_.value)) }

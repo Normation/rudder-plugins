@@ -72,7 +72,7 @@ import zio.Chunk
 import zio.syntax.*
 
 class DataSourceApiImpl(
-    dataSourceRepo: DataSourceRepository with DataSourceUpdateCallbacks,
+    dataSourceRepo: DataSourceRepository & DataSourceUpdateCallbacks,
     nodeFactRepo:   NodeFactRepository,
     uuidGen:        StringUuidGenerator
 ) extends LiftApiModuleProvider[API] {
@@ -174,7 +174,7 @@ class DataSourceApiImpl(
         UpdateCause(modId, authzToken.qc.actor, Some(s"API request to clear '${datasourceId}' on node '${nodeId.value}'"), false)
 
       (for {
-        nodes <- nodeFactRepo.getAll()(authzToken.qc)
+        nodes <- nodeFactRepo.getAll()(using authzToken.qc)
         _     <- nodes.values.accumulate(node => erase(cause(node.id), node, DataSourceId(datasourceId), authzToken.qc.nodePerms))
         res    = s"Data for all nodes, for data source '${datasourceId}', cleared"
       } yield res)
@@ -202,7 +202,7 @@ class DataSourceApiImpl(
       )
 
       (for {
-        node    <- nodeFactRepo.get(NodeId(nodeId))(authzToken.qc).notOptional(s"Node with ID '${nodeId}' was not found")
+        node    <- nodeFactRepo.get(NodeId(nodeId))(using authzToken.qc).notOptional(s"Node with ID '${nodeId}' was not found")
         updated <- erase(cause, node, DataSourceId(datasourceId), authzToken.qc.nodePerms)
         res      = s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"
       } yield res)
@@ -320,7 +320,7 @@ class DataSourceApiImpl(
   }
 
   /// utilities ///
-  private[this] def erase(
+  private def erase(
       cause:        UpdateCause,
       node:         CoreNodeFact,
       datasourceId: DataSourceId,
@@ -335,7 +335,7 @@ class DataSourceApiImpl(
             newProps <- CompareProperties.updateProperties(node.properties.toList, Some(newProp :: Nil)).toIO
             newNode   = node.copy(properties = Chunk.fromIterable(newProps))
             _        <- nodeFactRepo
-                          .save(newNode)(ChangeContext(cause.modId, cause.actor, Instant.now(), cause.reason, None, nodePerms))
+                          .save(newNode)(using ChangeContext(cause.modId, cause.actor, Instant.now(), cause.reason, None, nodePerms))
                           .chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
           } yield {
             NodeUpdateResult.Updated(newNode.id)

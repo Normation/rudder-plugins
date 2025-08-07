@@ -80,7 +80,7 @@ class DataSourceScheduler(
    *
    * At each tick, we fetch data.
    */
-  private[this] val semaphore = Semaphore.make(1).runNow
+  private val semaphore = Semaphore.make(1).runNow
 
   // for that datasource, this is the timer
   private[datasources] val source: UIO[Unit] = {

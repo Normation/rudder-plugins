@@ -65,7 +65,7 @@ class BrandingApi(
     modules
   }
 
-  private[this] lazy val modules = {
+  private lazy val modules = {
     GetBrandingConf ::
     UpdateBrandingConf ::
     ReloadBrandingConf ::

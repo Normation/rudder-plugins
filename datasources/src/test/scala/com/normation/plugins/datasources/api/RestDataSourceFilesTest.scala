@@ -104,7 +104,7 @@ class RestDataSourceFilesTest extends ZIOSpecDefault {
   datasourceRepo.save(datasource1).runNow
 
   // Execute API request/response test cases from .yml files
-  override def spec: Spec[TestEnvironment with Scope, Any] = {
+  override def spec: Spec[TestEnvironment & Scope, Any] = {
     (suite("All REST tests defined in files") {
 
       for {

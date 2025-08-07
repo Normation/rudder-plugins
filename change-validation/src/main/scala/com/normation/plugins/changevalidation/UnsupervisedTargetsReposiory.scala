@@ -39,7 +39,7 @@ class UnsupervisedTargetsRepository(
     directory: Path,
     filename:  String
 ) {
-  private[this] val path = File(directory) / filename
+  private val path = File(directory) / filename
 
   /*
    * Check that the directory path exists and is writable.
@@ -96,7 +96,7 @@ class UnsupervisedTargetsRepository(
     def read(): IOResult[String] = {
       IOResult
         .attempt(s"Error when reading list of group which trigger a change validation request from '${path}'")(
-          path.contentAsString(StandardCharsets.UTF_8)
+          path.contentAsString(using StandardCharsets.UTF_8)
         )
     }
 

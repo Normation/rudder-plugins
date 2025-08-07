@@ -54,8 +54,8 @@ class LoginBranding(val status: PluginStatus)(implicit val ttag: ClassTag[Login]
     "display" -> guard(display(_))
   )
 
-  private[this] val confRepo = BrandingPluginConf.brandingConfService
-  def display(xml: NodeSeq)  = {
+  private val confRepo      = BrandingPluginConf.brandingConfService
+  def display(xml: NodeSeq) = {
     val data = confRepo.getConf.either.runNow
     val bar  = data match {
       case Right(d) if (d.displayBarLogin) =>

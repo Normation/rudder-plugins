@@ -40,7 +40,6 @@ package com.normation.plugins.changevalidation
 import cats.Show
 import cats.data.NonEmptyList
 import cats.implicits.toBifunctorOps
-import cats.syntax.applicative.*
 import cats.syntax.applicativeError.*
 import cats.syntax.functor.*
 import cats.syntax.reducible.*
@@ -209,7 +208,7 @@ class RoChangeRequestJdbcRepository(
   import doobie.*
 
   // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
-  private[this] def execQuery(errMsg: String, q: Query0[ChangeRequest]): IOResult[Vector[ChangeRequest]] = {
+  private def execQuery(errMsg: String, q: Query0[ChangeRequest]): IOResult[Vector[ChangeRequest]] = {
     transactIOResult(errMsg)(xa => { q.to[Vector].transact(xa) })
   }
 
@@ -313,7 +312,7 @@ class WoChangeRequestJdbcRepository(
   import doobie.*
 
   // get the different part from a change request: name, description, content, modId
-  private[this] def getAtom(cr: ChangeRequest): (Option[String], Option[String], Elem, Option[String]) = {
+  private def getAtom(cr: ChangeRequest): (Option[String], Option[String], Elem, Option[String]) = {
     val xml   = changeRequestMapper.crcSerialiser.serialise(cr)
     val name  = cr.info.name match {
       case "" => None

@@ -76,7 +76,7 @@ class EitherRoChangeRequestRepository(
     whenFalse: RoChangeRequestRepository
 ) extends RoChangeRequestRepository {
 
-  private[this] def condApply[T](method: RoChangeRequestRepository => IOResult[T]): IOResult[T] = {
+  private def condApply[T](method: RoChangeRequestRepository => IOResult[T]): IOResult[T] = {
     cond().flatMap(if (_) method(whenTrue) else method(whenFalse))
   }
 

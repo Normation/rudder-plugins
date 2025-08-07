@@ -66,15 +66,15 @@ import zio.syntax.*
 
 class ChangeRequestManagement extends DispatchSnippet with Loggable {
 
-  private[this] val roCrRepo                     = ChangeValidationConf.roChangeRequestRepository
-  private[this] val workflowService              = RudderConfig.workflowLevelService.getWorkflowService()
-  private[this] val changeRequestEventLogService = RudderConfig.changeRequestEventLogService
-  private[this] val workflowLoggerService        = RudderConfig.workflowEventLogService
-  private[this] val changeRequestTableId         = "changeRequestTable"
-  private[this] val currentUser                  =
+  private val roCrRepo                     = ChangeValidationConf.roChangeRequestRepository
+  private val workflowService              = RudderConfig.workflowLevelService.getWorkflowService()
+  private val changeRequestEventLogService = RudderConfig.changeRequestEventLogService
+  private val workflowLoggerService        = RudderConfig.workflowEventLogService
+  private val changeRequestTableId         = "changeRequestTable"
+  private val currentUser                  =
     CurrentUser.checkRights(AuthorizationType.Validator.Read) || CurrentUser.checkRights(AuthorizationType.Deployer.Read)
 
-  private[this] val initFilter: Box[String] = S.param("filter").map(_.replace("_", " "))
+  private val initFilter: Box[String] = S.param("filter").map(_.replace("_", " "))
 
   def dispatch = {
     case "filter"  =>
@@ -160,7 +160,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
   /**
    * Get all events, merge them via a mutMap (we only want to keep the most recent event)
    */
-  private[this] def getLastEventsMap: UIO[Map[ChangeRequestId, EventLog]] = {
+  private def getLastEventsMap: UIO[Map[ChangeRequestId, EventLog]] = {
 
     for {
       crEventsMap       <- changeRequestEventLogService.getLastCREvents
@@ -185,8 +185,8 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
         (crId, event) <- workflowEventsMap
       } {
         eventMap.get(crId) match {
-          case Some(currentEvent) if (currentEvent.creationDate isAfter event.creationDate) =>
-          case _                                                                            => eventMap.update(crId, event)
+          case Some(currentEvent) if (currentEvent.creationDate.isAfter(event.creationDate)) =>
+          case _                                                                             => eventMap.update(crId, event)
         }
       }
 

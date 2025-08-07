@@ -115,7 +115,7 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
   val transformations: Map[String, String => String] = Map()
 
-  override def spec: Spec[TestEnvironment with Scope, Any] = {
+  override def spec: Spec[TestEnvironment & Scope, Any] = {
     suite("All REST tests defined in files") {
 
       for {

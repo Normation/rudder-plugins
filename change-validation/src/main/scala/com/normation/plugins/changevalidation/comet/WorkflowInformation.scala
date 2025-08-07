@@ -54,12 +54,12 @@ import scala.xml.*
  */
 class WorkflowInformation extends CometActor with CometListener with Loggable {
 
-  private[this] val asyncWorkflow = RudderConfig.asyncWorkflowInfo
+  private val asyncWorkflow = RudderConfig.asyncWorkflowInfo
 
-  private[this] var workflowEnabledPrev = getWorkflowEnabled()
-  private[this] var shouldLoadScript    = workflowEnabledPrev
+  private var workflowEnabledPrev = getWorkflowEnabled()
+  private var shouldLoadScript    = workflowEnabledPrev
 
-  private[this] def getWorkflowEnabled() = {
+  private def getWorkflowEnabled() = {
     RudderConfig.configService.rudder_workflow_enabled().orElseSucceed(false).runNow
   }
 

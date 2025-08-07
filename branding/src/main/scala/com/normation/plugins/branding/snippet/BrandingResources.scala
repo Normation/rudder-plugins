@@ -47,7 +47,7 @@ import scala.xml.NodeSeq
 
 class BrandingResources(val status: PluginStatus)(implicit val ttag: ClassTag[Settings]) extends PluginExtensionPoint[Settings] {
 
-  private[this] def link(s: String) = s"/${LiftRules.resourceServerPath}/branding/${s}"
+  private def link(s: String) = s"/${LiftRules.resourceServerPath}/branding/${s}"
 
   private def template: NodeSeq = ChooseTemplate("template" :: "brandingManagement" :: Nil, "component-body")
 

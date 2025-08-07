@@ -71,7 +71,7 @@ class OpenScapReportReader(
 
   val logger = OpenscapPoliciesLogger
 
-  private[this] def computePathFromNodeId(nodeId: NodeId): String = {
+  private def computePathFromNodeId(nodeId: NodeId): String = {
     (openScapReportPath / nodeId.value / OPENSCAP_REPORT_FILENAME).pathAsString
   }
 
@@ -153,7 +153,7 @@ class OpenScapReportReader(
   def getOpenScapReportContent(nodeId: NodeId, hostname: String, file: File): IOResult[OpenScapReport] = {
     for {
       content <- IOResult.attempt(s"Error when retrieving content of report file ${file.name}")(
-                   file.contentAsString(StandardCharsets.UTF_8)
+                   file.contentAsString(using StandardCharsets.UTF_8)
                  )
     } yield OpenScapReport(nodeId, hostname, content)
   }
