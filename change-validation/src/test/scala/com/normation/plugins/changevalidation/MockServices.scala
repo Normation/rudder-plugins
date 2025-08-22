@@ -300,11 +300,11 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
 
   object userService extends UserService {
     val user = new AuthenticatedUser {
-      override val user:      Option[RudderAccount.User] = Some(RudderAccount.User("admin", UserPassword.fromSecret("admin")))
-      override def account:   Option[ApiAccount]         = None
-      override def nodePerms: NodeSecurityContext        = NodeSecurityContext.All
-      override def checkRights(auth: AuthorizationType) = true
-      override def getApiAuthz: ApiAuthorization = ApiAuthorization.RW
+      override val user:        Option[RudderAccount.User]   = Some(RudderAccount.User("admin", UserPassword.fromSecret("admin")))
+      override def account:     Option[ApiAccount]           = None
+      override def nodePerms:   NodeSecurityContext          = NodeSecurityContext.All
+      override val checkRights: AuthorizationType => Boolean = _ => true
+      override def getApiAuthz: ApiAuthorization             = ApiAuthorization.RW
 
     }
     override val getCurrentUser: AuthenticatedUser = user

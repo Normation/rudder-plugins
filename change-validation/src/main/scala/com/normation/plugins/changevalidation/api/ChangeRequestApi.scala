@@ -90,7 +90,6 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
-import com.normation.rudder.users.UserService
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -173,8 +172,7 @@ class ChangeRequestApiImpl(
     readWorkflow:         RoWorkflowRepository,
     workflowLevelService: WorkflowLevelService,
     commitRepository:     CommitAndDeployChangeRequestService,
-    userPropertyService:  UserPropertyService,
-    userService:          UserService
+    userPropertyService:  UserPropertyService
 ) extends LiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
 
@@ -200,9 +198,6 @@ class ChangeRequestApiImpl(
     Inconsistency("Workflow are disabled in Rudder, change request API is not available").fail
   }
 
-  // While there is no authorisation on API, they got all rights.
-  private def apiUserRights = Seq("deployer", "validator")
-
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints.map {
       case API.ListChangeRequests     => ListChangeRequests
@@ -213,20 +208,21 @@ class ChangeRequestApiImpl(
     }
   }
 
-  def checkUserAction(workflowNodeId: WorkflowNodeId, target: WorkflowNodeId): PureResult[String] = {
+  def checkUserAction(
+      workflowNodeId: WorkflowNodeId,
+      target:         WorkflowNodeId
+  )(implicit checkRights: AuthorizationType => Boolean): PureResult[String] = {
+    val hasValidatorWriteRights = checkRights(AuthorizationType.Validator.Edit) || checkRights(AuthorizationType.Validator.Write)
+    val hasDeployerWriteRights  = checkRights(AuthorizationType.Deployer.Edit) || checkRights(AuthorizationType.Deployer.Write)
     if (workflowNodeId == Validation.id) {
-      if (!userService.getCurrentUser.checkRights(AuthorizationType.Validator.Write)) {
+      if (!hasValidatorWriteRights) {
         Left(Inconsistency(s"User is not authorized to update a 'pending validation' change"))
-      } else if (target == Deployed.id && !userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Write)) {
+      } else if (target == Deployed.id && !hasDeployerWriteRights) {
         Left(Inconsistency(s"User is not authorized to update a 'pending validation' change to 'deployed' state"))
       } else {
         Right("user is authorized to do step")
       }
-    } else if (
-      workflowNodeId == Deployment.id && !userService.getCurrentUser.checkRights(
-        AuthorizationType.Deployer.Write
-      )
-    ) {
+    } else if (workflowNodeId == Deployment.id && !hasDeployerWriteRights) {
       Left(Inconsistency("User is not authorized to update a 'pending deployment' change"))
     } else {
       Right("user is authorized to do step")
@@ -292,13 +288,14 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val qc: QueryContext = authzToken.qc
+      implicit val qc:          QueryContext                 = authzToken.qc
+      implicit val checkRights: AuthorizationType => Boolean = authzToken.checkRights
       // we need to check rights for validator/deployer here, API level is not sufficient.
       def actualRefuse(changeRequest: ChangeRequest, step: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(apiUserRights, step, false).succeed
+          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(step).succeed
           optStep     = backSteps.find(_._1 == WorkflowNodeId("Cancelled"))
           stepFunc   <-
             optStep.notOptional(
@@ -306,7 +303,7 @@ class ChangeRequestApiImpl(
             )
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
-          result     <- func(changeRequest.id, authzToken.qc.actor, reason)
+          result     <- func(changeRequest.id, authzToken.actor, reason)
           serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
@@ -330,12 +327,13 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val qc: QueryContext = authzToken.qc
+      implicit val qc:          QueryContext                 = authzToken.qc
+      implicit val checkRights: AuthorizationType => Boolean = authzToken.checkRights
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(apiUserRights, step, false).succeed
+          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(step).succeed
           optStep     = nextSteps.actions.find(_._1 == targetStep)
           stepFunc   <-
             optStep.notOptional(
@@ -343,7 +341,7 @@ class ChangeRequestApiImpl(
             )
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
-          result     <- func(changeRequest.id, authzToken.qc.actor, reason)
+          result     <- func(changeRequest.id, authzToken.actor, reason)
           serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
@@ -355,7 +353,10 @@ class ChangeRequestApiImpl(
         res        <- {
           withChangeRequestContext(id, "accept") { (changeRequest, currentState, techniqueByDirective) =>
             implicit val directiveCtx: Map[DirectiveId, Technique] = techniqueByDirective
-            checkUserAction(currentState, targetStep).toIO *>
+            checkUserAction(
+              currentState,
+              targetStep
+            ).toIO *>
             (currentState match {
               case Deployment.id | Validation.id =>
                 actualAccept(changeRequest, currentState, targetStep)
