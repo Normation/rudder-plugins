@@ -76,7 +76,6 @@ import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowService
-import com.normation.rudder.users.UserService
 import enumeratum.Enum
 import enumeratum.EnumEntry
 import net.liftweb.http.LiftResponse
@@ -130,7 +129,6 @@ object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModul
 
 class WorkflowInternalApiImpl(
     readWorkflow:                 RoWorkflowRepository,
-    userService:                  UserService,
     diffService:                  DiffService,
     readTechnique:                TechniqueRepository,
     workflowService:              WorkflowService,
@@ -177,10 +175,8 @@ class WorkflowInternalApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
 
-      val user = userService.getCurrentUser
-
-      val isValidator = user.checkRights(AuthorizationType.Validator.Read)
-      val isDeployer  = user.checkRights(AuthorizationType.Deployer.Read)
+      val isValidator = authzToken.user.checkRights(AuthorizationType.Validator.Read)
+      val isDeployer  = authzToken.user.checkRights(AuthorizationType.Deployer.Read)
 
       val filter = {
         if (isValidator && isDeployer) {

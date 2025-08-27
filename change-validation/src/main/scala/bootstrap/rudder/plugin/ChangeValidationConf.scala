@@ -323,7 +323,6 @@ object ChangeValidationConf extends RudderPluginModule {
     )
     val api4 = new WorkflowInternalApiImpl(
       roWorkflowRepository,
-      RudderConfig.userService,
       RudderConfig.diffService,
       RudderConfig.techniqueRepository,
       RudderConfig.workflowLevelService.getWorkflowService(),

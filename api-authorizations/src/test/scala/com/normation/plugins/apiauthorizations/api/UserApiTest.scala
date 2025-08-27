@@ -4,6 +4,7 @@ import better.files.*
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
 import com.normation.rudder.AuthorizationType
+import com.normation.rudder.Rights
 import com.normation.rudder.api.*
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RestTestSetUp
@@ -49,13 +50,13 @@ class UserApiTest extends ZIOSpecDefault {
   val userService: UserService = new UserService {
     // use an user that has access to the api, we do not test authorization checks in this file
     val user1 = new AuthenticatedUser {
-      override val user:    Option[RudderAccount.User] = None
-      override val account: Option[ApiAccount]         = Some(accounts(ApiAccountId("user1")))
+      override val account: RudderAccount = RudderAccount.Api(accounts(ApiAccountId("user1")))
       override def checkRights(auth: AuthorizationType) = true
-      override def getApiAuthz: ApiAuthorization    = ApiAuthorization.RW
-      override def nodePerms:   NodeSecurityContext = NodeSecurityContext.All
+      override def authz:     Rights              = Rights.AnyRights
+      override def apiAuthz:  ApiAuthorization    = ApiAuthorization.RW
+      override def nodePerms: NodeSecurityContext = NodeSecurityContext.All
     }
-    override val getCurrentUser: AuthenticatedUser = user1
+    override val getCurrentUser: Option[AuthenticatedUser] = Some(user1)
   }
 
   val modules = List(
