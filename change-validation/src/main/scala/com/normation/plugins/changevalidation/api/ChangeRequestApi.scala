@@ -213,17 +213,17 @@ class ChangeRequestApiImpl(
     }
   }
 
-  def checkUserAction(workflowNodeId: WorkflowNodeId, target: WorkflowNodeId): PureResult[String] = {
+  def checkUserAction(workflowNodeId: WorkflowNodeId, target: WorkflowNodeId)(implicit authz: AuthzToken): PureResult[String] = {
     if (workflowNodeId == Validation.id) {
-      if (!userService.getCurrentUser.checkRights(AuthorizationType.Validator.Write)) {
+      if (!authz.checkRights(AuthorizationType.Validator.Write)) {
         Left(Inconsistency(s"User is not authorized to update a 'pending validation' change"))
-      } else if (target == Deployed.id && !userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Write)) {
+      } else if (target == Deployed.id && !authz.checkRights(AuthorizationType.Deployer.Write)) {
         Left(Inconsistency(s"User is not authorized to update a 'pending validation' change to 'deployed' state"))
       } else {
         Right("user is authorized to do step")
       }
     } else if (
-      workflowNodeId == Deployment.id && !userService.getCurrentUser.checkRights(
+      workflowNodeId == Deployment.id && !authz.checkRights(
         AuthorizationType.Deployer.Write
       )
     ) {
@@ -330,7 +330,8 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val qc: QueryContext = authzToken.qc
+      implicit val authz: AuthzToken   = authzToken
+      implicit val qc:    QueryContext = authzToken.qc
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {

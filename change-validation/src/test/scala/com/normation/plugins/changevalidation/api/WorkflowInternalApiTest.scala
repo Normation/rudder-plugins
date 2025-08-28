@@ -93,7 +93,6 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
   val modules = List(
     new WorkflowInternalApiImpl(
       mockServices.workflowRepository,
-      restTestSetUp.userService,
       new DiffServiceImpl,
       restTestSetUp.mockTechniques.techniqueRepo,
       restTestSetUp.workflowLevelService.getWorkflowService(),

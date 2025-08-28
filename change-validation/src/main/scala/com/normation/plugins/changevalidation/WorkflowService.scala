@@ -333,12 +333,12 @@ class TwoValidationStepsWorkflowServiceImpl(
    */
   private def canValidate(isCreator: Boolean, selfValidation: () => IOResult[Boolean]): Boolean = {
     val correctActor = selfValidation().orElseSucceed(false).runNow || !isCreator
-    correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Validator.Edit)
+    correctActor && userService.getCurrentUser.map(_.checkRights(AuthorizationType.Validator.Edit)).getOrElse(false)
   }
 
   private def canDeploy(isCreator: Boolean, selfDeployment: () => IOResult[Boolean]): Boolean = {
     val correctActor = selfDeployment().orElseSucceed(false).runNow || !isCreator
-    correctActor && userService.getCurrentUser.checkRights(AuthorizationType.Deployer.Edit)
+    correctActor && userService.getCurrentUser.map(_.checkRights(AuthorizationType.Deployer.Edit)).getOrElse(false)
   }
 
   /**

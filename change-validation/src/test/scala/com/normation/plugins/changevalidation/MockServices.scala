@@ -44,7 +44,7 @@ import com.normation.eventlog.EventLog
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.api.ApiAccount
+import com.normation.rudder.Rights
 import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.config.StatelessUserPropertyService
 import com.normation.rudder.config.UserPropertyService
@@ -299,14 +299,14 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
   )
 
   object userService extends UserService {
-    val user = new AuthenticatedUser {
-      override val user:      Option[RudderAccount.User] = Some(RudderAccount.User("admin", UserPassword.fromSecret("admin")))
-      override def account:   Option[ApiAccount]         = None
-      override def nodePerms: NodeSecurityContext        = NodeSecurityContext.All
-      override def checkRights(auth: AuthorizationType) = true
-      override def getApiAuthz: ApiAuthorization = ApiAuthorization.RW
+    val user:                    AuthenticatedUser         = new AuthenticatedUser {
+      override val account:   RudderAccount       = RudderAccount.User("admin", UserPassword.fromSecret("admin"))
+      override val authz:     Rights              = Rights.AnyRights
+      override val apiAuthz:  ApiAuthorization    = ApiAuthorization.RW
+      override val nodePerms: NodeSecurityContext = NodeSecurityContext.All
 
+      override def checkRights(auth: AuthorizationType): Boolean = true
     }
-    override val getCurrentUser: AuthenticatedUser = user
+    override val getCurrentUser: Option[AuthenticatedUser] = Some(user)
   }
 }
