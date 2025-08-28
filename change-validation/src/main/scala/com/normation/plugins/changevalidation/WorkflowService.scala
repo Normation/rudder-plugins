@@ -57,6 +57,7 @@ import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
+import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
 import com.normation.zio.UnsafeRun
@@ -84,16 +85,12 @@ class EitherWorkflowService(cond: () => IOResult[Boolean], whenTrue: WorkflowSer
     current.closedSteps
   override def stepsValue:                                                                                  List[WorkflowNodeId]                           =
     current.stepsValue
-  override def findNextSteps(currentUserRights: Seq[String], currentStep: WorkflowNodeId, isCreator: Boolean)(implicit
-      qc: QueryContext
-  ): WorkflowAction =
-    current.findNextSteps(currentUserRights, currentStep, isCreator)
-  override def findBackSteps(
-      currentUserRights: Seq[String],
-      currentStep:       WorkflowNodeId,
-      isCreator:         Boolean
+  override def findNextSteps(currentStep: WorkflowNodeId)(implicit auth: AuthenticatedUser):                WorkflowAction                                 =
+    current.findNextSteps(currentStep)
+  override def findBackSteps(currentStep: WorkflowNodeId)(implicit
+      auth: AuthenticatedUser
   ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId])] =
-    current.findBackSteps(currentUserRights, currentStep, isCreator)
+    current.findBackSteps(currentStep)
   override def findStep(changeRequestId: ChangeRequestId):                                                  IOResult[WorkflowNodeId]                       =
     current.findStep(changeRequestId)
   override def getAllChangeRequestsStep():                                                                  IOResult[Map[ChangeRequestId, WorkflowNodeId]] =
@@ -197,14 +194,11 @@ class TwoValidationStepsWorkflowServiceImpl(
    * Find available next steps for the current user.
    * The given rights are expected to be the string representation of atomic permissions.
    */
-  def findNextSteps(
-      currentUserRights: Seq[String],
-      currentStep:       WorkflowNodeId,
-      isCreator:         Boolean
-  )(implicit qc: QueryContext): WorkflowAction = {
+  def findNextSteps(currentStep: WorkflowNodeId)(implicit auth: AuthenticatedUser): WorkflowAction = {
+    implicit val qc: QueryContext = auth.qc
 
     def deployAction(action: (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId]) = {
-      if (canDeploy(isCreator, selfDeployment))
+      if (canDeploy)
         Seq((Deployed.id, action))
       else Seq()
     }
@@ -212,7 +206,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     currentStep match {
       case Validation.id =>
         val validatorActions = {
-          (if (canValidate(isCreator, selfValidation)) {
+          (if (canValidate) {
              Seq((Deployment.id, stepValidationToDeployment))
            } else Seq()) ++ deployAction(stepValidationToDeployed)
         }
@@ -231,18 +225,16 @@ class TwoValidationStepsWorkflowServiceImpl(
     }
   }
 
-  def findBackSteps(
-      currentUserRights: Seq[String],
-      currentStep:       WorkflowNodeId,
-      isCreator:         Boolean
+  def findBackSteps(currentStep: WorkflowNodeId)(implicit
+      auth: AuthenticatedUser
   ): Seq[(WorkflowNodeId, (ChangeRequestId, EventActor, Option[String]) => IOResult[WorkflowNodeId])] = {
     currentStep match {
       case Validation.id     =>
-        if (canValidate(isCreator, selfValidation))
+        if (canValidate)
           Seq((Cancelled.id, stepValidationToCancelled))
         else Seq()
       case Deployment.id     =>
-        if (canDeploy(isCreator, selfDeployment))
+        if (canDeploy)
           Seq((Cancelled.id, stepDeploymentToCancelled))
         else Seq()
       case Deployed.id       => Seq()
@@ -331,14 +323,12 @@ class TwoValidationStepsWorkflowServiceImpl(
    * - check for current user rights.
    *   WARNING: WE ARE SIDE STEPPING authz check until https://issues.rudder.io/issues/22595 is solved
    */
-  private def canValidate(isCreator: Boolean, selfValidation: () => IOResult[Boolean]): Boolean = {
-    val correctActor = selfValidation().orElseSucceed(false).runNow || !isCreator
-    correctActor && userService.getCurrentUser.map(_.checkRights(AuthorizationType.Validator.Edit)).getOrElse(false)
+  private def canValidate(implicit auth: AuthenticatedUser): Boolean = {
+    auth.checkRights(AuthorizationType.Validator.Edit)
   }
 
-  private def canDeploy(isCreator: Boolean, selfDeployment: () => IOResult[Boolean]): Boolean = {
-    val correctActor = selfDeployment().orElseSucceed(false).runNow || !isCreator
-    correctActor && userService.getCurrentUser.map(_.checkRights(AuthorizationType.Deployer.Edit)).getOrElse(false)
+  private def canDeploy(implicit auth: AuthenticatedUser): Boolean = {
+    auth.checkRights(AuthorizationType.Deployer.Edit)
   }
 
   /**

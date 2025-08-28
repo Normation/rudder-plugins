@@ -90,6 +90,7 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
+import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.UserService
 import enumeratum.*
 import net.liftweb.http.LiftResponse
@@ -200,9 +201,6 @@ class ChangeRequestApiImpl(
     Inconsistency("Workflow are disabled in Rudder, change request API is not available").fail
   }
 
-  // While there is no authorisation on API, they got all rights.
-  private def apiUserRights = Seq("deployer", "validator")
-
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints.map {
       case API.ListChangeRequests     => ListChangeRequests
@@ -292,13 +290,14 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val qc: QueryContext = authzToken.qc
+      implicit val auth: AuthenticatedUser = authzToken.user
+      implicit val qc:   QueryContext      = authzToken.qc
       // we need to check rights for validator/deployer here, API level is not sufficient.
       def actualRefuse(changeRequest: ChangeRequest, step: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(apiUserRights, step, false).succeed
+          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(step).succeed
           optStep     = backSteps.find(_._1 == WorkflowNodeId("Cancelled"))
           stepFunc   <-
             optStep.notOptional(
@@ -330,13 +329,14 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val authz: AuthzToken   = authzToken
-      implicit val qc:    QueryContext = authzToken.qc
+      implicit val authz: AuthzToken        = authzToken
+      implicit val auth:  AuthenticatedUser = authzToken.user
+      implicit val qc:    QueryContext      = authzToken.qc
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(apiUserRights, step, false).succeed
+          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(step).succeed
           optStep     = nextSteps.actions.find(_._1 == targetStep)
           stepFunc   <-
             optStep.notOptional(
