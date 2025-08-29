@@ -92,7 +92,6 @@ import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.users.AuthenticatedUser
-import com.normation.rudder.users.UserService
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -409,7 +408,7 @@ class ChangeRequestApiImpl(
           workflowLevelService.getWorkflowService() match {
             case ws: TwoValidationStepsWorkflowServiceImpl =>
               for {
-                updated    <- ws.updateChangeRequestInfo(changeRequest, newInfo, userService.getCurrentUser.actor, None)
+                updated    <- ws.updateChangeRequestInfo(changeRequest, newInfo, qc.actor, None)
                 serialized <- serialize(updated, status).toIO
               } yield {
                 serialized
