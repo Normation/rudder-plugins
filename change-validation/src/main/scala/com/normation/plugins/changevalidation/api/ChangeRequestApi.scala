@@ -53,6 +53,7 @@ import com.normation.plugins.changevalidation.ChangeRequestInfoJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
+import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.*
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
 import com.normation.rudder.AuthorizationType
@@ -90,7 +91,7 @@ import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
-import com.normation.rudder.users.UserService
+import com.normation.rudder.users.AuthenticatedUser
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -173,8 +174,7 @@ class ChangeRequestApiImpl(
     readWorkflow:         RoWorkflowRepository,
     workflowLevelService: WorkflowLevelService,
     commitRepository:     CommitAndDeployChangeRequestService,
-    userPropertyService:  UserPropertyService,
-    userService:          UserService
+    userPropertyService:  UserPropertyService
 ) extends LiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
 
@@ -199,9 +199,6 @@ class ChangeRequestApiImpl(
   private def disabledWorkflowAnswer[T]: IOResult[T] = {
     Inconsistency("Workflow are disabled in Rudder, change request API is not available").fail
   }
-
-  // While there is no authorisation on API, they got all rights.
-  private def apiUserRights = Seq("deployer", "validator")
 
   def getLiftEndpoints(): List[LiftApiModule] = {
     API.endpoints.map {
@@ -292,13 +289,14 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val qc: QueryContext = authzToken.qc
+      implicit val auth: AuthenticatedUser = authzToken.user
+      implicit val qc:   QueryContext      = authzToken.qc
       // we need to check rights for validator/deployer here, API level is not sufficient.
       def actualRefuse(changeRequest: ChangeRequest, step: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(apiUserRights, step, false).succeed
+          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(step).succeed
           optStep     = backSteps.find(_._1 == WorkflowNodeId("Cancelled"))
           stepFunc   <-
             optStep.notOptional(
@@ -330,13 +328,14 @@ class ChangeRequestApiImpl(
         params:     DefaultParams,
         authzToken: AuthzToken
     ): LiftResponse = {
-      implicit val authz: AuthzToken   = authzToken
-      implicit val qc:    QueryContext = authzToken.qc
+      implicit val authz: AuthzToken        = authzToken
+      implicit val auth:  AuthenticatedUser = authzToken.user
+      implicit val qc:    QueryContext      = authzToken.qc
       def actualAccept(changeRequest: ChangeRequest, step: WorkflowNodeId, targetStep: WorkflowNodeId)(implicit
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(apiUserRights, step, false).succeed
+          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(step).succeed
           optStep     = nextSteps.actions.find(_._1 == targetStep)
           stepFunc   <-
             optStep.notOptional(
@@ -406,12 +405,17 @@ class ChangeRequestApiImpl(
           val message = s"Could not update ChangeRequest ${id} details cause is: No changes to save."
           Inconsistency(message).fail
         } else {
-          val newCR = ChangeRequest.updateInfo(changeRequest, newInfo)
-          for {
-            updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None)
-            serialized <- serialize(updated, status).toIO
-          } yield {
-            serialized
+          workflowLevelService.getWorkflowService() match {
+            case ws: TwoValidationStepsWorkflowServiceImpl =>
+              for {
+                updated    <- ws.updateChangeRequestInfo(changeRequest, newInfo, qc.actor, None)
+                serialized <- serialize(updated, status).toIO
+              } yield {
+                serialized
+              }
+            case _ =>
+              val message = "The current workflow kind does not support this option. Perhaps the workflow plugin is not enabled?"
+              Inconsistency(message).fail
           }
         }
       }

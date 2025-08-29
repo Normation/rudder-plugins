@@ -607,8 +607,7 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
       mockServices.workflowRepository,
       restTestSetUp.workflowLevelService,
       mockServices.commitAndDeployChangeRequest,
-      mockServices.userPropertyService,
-      mockServices.userService
+      mockServices.userPropertyService
     )
   )
 
