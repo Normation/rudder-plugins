@@ -71,10 +71,12 @@ import com.normation.rudder.rule.category.RuleCategoryService
 import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.modification.DiffService
 import com.normation.utils.DateFormaterService
+import com.normation.utils.DateFormaterService.json.*
 import io.scalaland.chimney.PartialTransformer
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.partial.Result
 import io.scalaland.chimney.syntax.*
+import java.time.Instant
 import org.joda.time.DateTime
 import scala.collection.MapView
 import zio.Chunk
@@ -703,7 +705,7 @@ final case class EventLogJson(
     action: Action,
     actor:  EventActor,
     reason: Option[String],
-    date:   DateTime
+    date:   Instant
 )
 
 object EventLogJson {
@@ -778,7 +780,7 @@ object ChangeRequestMainDetailsJson {
       .withFieldComputed(_.action, _.firstChange.transformInto[ResourceChangeEvent])
       .withFieldComputed(_.actor, _.firstChange.actor)
       .withFieldComputed(_.reason, _.firstChange.reason)
-      .withFieldComputed(_.date, _.firstChange.creationDate)
+      .withFieldRenamed(_.firstChange.creationDate, _.date)
       .buildTransformer
   }
 

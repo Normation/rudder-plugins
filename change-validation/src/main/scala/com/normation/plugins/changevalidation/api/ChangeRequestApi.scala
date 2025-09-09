@@ -53,6 +53,7 @@ import com.normation.plugins.changevalidation.ChangeRequestInfoJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
+import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.*
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
 import com.normation.rudder.AuthorizationType
@@ -91,7 +92,6 @@ import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.users.AuthenticatedUser
-import com.normation.rudder.users.UserService
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
@@ -406,12 +406,17 @@ class ChangeRequestApiImpl(
           val message = s"Could not update ChangeRequest ${id} details cause is: No changes to save."
           Inconsistency(message).fail
         } else {
-          val newCR = ChangeRequest.updateInfo(changeRequest, newInfo)
-          for {
-            updated    <- writeChangeRequest.updateChangeRequest(newCR, authzToken.qc.actor, None)
-            serialized <- serialize(updated, status).toIO
-          } yield {
-            serialized
+          workflowLevelService.getWorkflowService() match {
+            case ws: TwoValidationStepsWorkflowServiceImpl =>
+              for {
+                updated    <- ws.updateChangeRequestInfo(changeRequest, newInfo, qc.actor, None)
+                serialized <- serialize(updated, status).toIO
+              } yield {
+                serialized
+              }
+            case _ =>
+              val message = "The current workflow kind does not support this option. Perhaps the workflow plugin is not enabled?"
+              Inconsistency(message).fail
           }
         }
       }
