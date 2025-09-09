@@ -174,8 +174,7 @@ class ChangeRequestApiImpl(
     readWorkflow:         RoWorkflowRepository,
     workflowLevelService: WorkflowLevelService,
     commitRepository:     CommitAndDeployChangeRequestService,
-    userPropertyService:  UserPropertyService,
-    userService:          UserService
+    userPropertyService:  UserPropertyService
 ) extends LiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
 
