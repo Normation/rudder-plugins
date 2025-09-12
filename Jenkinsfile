@@ -187,8 +187,6 @@ pipeline {
         }
 
         stage('Build plugins') {
-            // only publish nightly on dev branches
-            when { anyOf { branch 'master'; branch 'branches/rudder/*'; branch '*-next' }; }
 
             agent {
                 dockerfile {
@@ -222,7 +220,7 @@ pipeline {
                                             options: [artifactsPublisher(disabled: true)]
                                           ) {
                                             sh script: "export PATH=$MVN_CMD_DIR:$PATH && make ${(p == "cis" || p == "openscap")  ? "" : "licensed"}", label: "build ${p} plugin"
-                                            if (changeRequest()) {
+                                            if (!env.CHANGE_URL) {
                                                 archiveArtifacts artifacts: '**/*.rpkg', fingerprint: true, onlyIfSuccessful: false, allowEmptyArchive: true
                                                 sshPublisher(publishers: [sshPublisherDesc(configName: 'publisher-01', transfers: [sshTransfer(execCommand: "/usr/local/bin/add_to_repo -r -t rpkg -v ${env.RUDDER_VERSION}-nightly -d /home/publisher/tmp/${p}-${env.RUDDER_VERSION}", remoteDirectory: "${p}-${env.RUDDER_VERSION}", sourceFiles: '**/*.rpkg')], verbose:true)])
                                             }
