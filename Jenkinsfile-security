@@ -24,6 +24,9 @@ pipeline {
                     args '-u 0:0 -v /srv/cache/maven:/root/.m2'
                 }
             }
+            environment {
+                NVD_API_KEY = credentials('NVD_API_KEY')
+            }
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                     dir('plugins-common') {
@@ -64,7 +67,7 @@ pipeline {
                                 try {
                                     dir("${it}") {
                                         sh script: 'make generate-pom', label: 'generate pom.xml'
-                                        sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                        sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DnvdApiKey=$NVD_API_KEY -DossindexAnalyzerEnabled=false -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
                                         script {
                                             if (fileExists('src/main/package.json')) {
                                                 dir("src/main") {
