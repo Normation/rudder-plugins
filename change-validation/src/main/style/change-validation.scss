@@ -1,0 +1,463 @@
+/*
+*************************************************************************************
+* Copyright 2025 Normation SAS
+*************************************************************************************
+*
+* This file is part of Rudder.
+*
+* Rudder is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* In accordance with the terms of section 7 (7. Additional Terms.) of
+* the GNU General Public License version 3, the copyright holders add
+* the following Additional permissions:
+* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+* Public License version 3, when you create a Related Module, this
+* Related Module is not considered as a part of the work and may be
+* distributed under the license agreement of your choice.
+* A "Related Module" means a set of sources files including their
+* documentation that, without modification of the Source Code, enables
+* supplementary functions or services in addition to those offered by
+* the Software.
+*
+* Rudder is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+
+*
+*************************************************************************************
+*/
+/* === OVERRIDE RUDDER TEMPLATE === */
+.rudder-template.change-validation > .one-col{
+  flex: 1;
+
+  .template-main{
+    flex-basis : initial !important;
+    flex: auto !important;
+  }
+  .template-sidebar.sidebar-left{
+    box-shadow : none !important;
+    flex-basis : initial !important;
+    flex: initial !important;
+  }
+}
+
+#actualFilter > form {
+  display: flex;
+  align-items: center;
+
+  select.form-control{
+    width: auto;
+    display: inline-block;
+    margin: 0px 0px 20px 10px;
+    min-width: 185px;
+    font-size: 14px;
+
+    &[multiple]{
+      height: auto;
+
+      option{
+        padding: 2px 0;
+      }
+    }
+
+    & + .btn {
+      &.btn-expand{
+        height: 34px;
+        width: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 4px;
+
+        &:after {
+          font-family: "Font Awesome 5 Free";
+          -webkit-font-smoothing: antialiased;
+          display: inline-block;
+          font-style: normal;
+          font-variant: normal;
+          text-rendering: auto;
+          line-height: 1;
+          font-weight: 900;
+          color: #738195;
+        }
+      }
+      &.btn-less:after {
+        content: "\f068";
+      }
+      &.btn-more:after {
+        content: "\f067";
+      }
+    }
+  }
+  label {
+    padding: 6px 0;
+    margin-bottom: 0;
+  }
+}
+
+#detailsForm form{
+  margin: 0 -15px;
+}
+
+#changesContainer{
+  border: 2px solid #E5E5E5;
+  margin-top: 20px;
+  display: flex;
+
+  & > div:first-child{
+    width: 250px;
+
+    &:last-child{
+      flex: 1;
+      border-left: 2px solid #E5E5E5;
+      padding: 0 15px;
+    }
+  }
+}
+
+#diff {
+  padding: 10px;
+}
+
+.evlogviewpad > li {
+  margin-bottom: 4px;
+}
+
+.modal .modal-dialog {
+  margin-top: 110px;
+}
+
+.dataTable tr > td.link a {
+  text-decoration: none !important;
+  display: block;
+  position:relative;
+
+  i.fa{
+    float:right;
+    position:relative;
+    visibility:hidden;
+    color:#555;
+    top:1px;
+  }
+  svg{
+    width: 20px;
+    position: absolute;
+    right:2px;
+    top: -3px;
+    fill: #555;
+    visibility: hidden;
+  }
+
+  &:hover{
+    i.fa, svg {
+      visibility: visible;
+      animation: bounceH .8s ease infinite;
+    }
+  }
+}
+
+#backButton{
+  box-shadow:none !important;
+}
+
+#plugin-main .inner-portlet {
+  padding: 5px 15px 40px 15px;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 14px;
+}
+body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
+  width: calc(100% - 50px);
+}
+
+#CRLastAction {
+  font-size: 15px;
+  margin-bottom:5px;
+  font-style:italic;
+  color: #777;
+}
+#backButton > span{
+  margin-right: 5px;
+  position: relative;
+}
+#backButton:hover{
+  color: #23527c;
+}
+#backButton:hover > span{
+  -webkit-animation: bounceH .8s ease infinite;
+  -moz-animation:    bounceH .8s ease infinite;
+  -o-animation:      bounceH .8s ease infinite;
+  animation:         bounceH .8s ease infinite;
+}
+
+#changeRequestHeader .header-title > div > #CRStatus {
+  background-color: #eef1f9;
+  min-width: 160px;
+  min-height: 50px;
+  color: #36474e;
+  float: right;
+  font-weight: bold;
+  cursor: default;
+  position: relative;
+  margin-top: -15px;
+  margin-right: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#changeRequestHeader .header-title > div > #CRStatus:before {
+  position: absolute;
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 80px solid transparent;
+  border-right: 80px solid transparent;
+  border-top: 20px solid #eef1f9;
+  left: 0;
+  bottom: -20px;
+}
+#CRSave{
+  margin-top: 10px;
+}
+#changeRequestDetails .alert.alert-danger {
+  margin-bottom: 0px;
+}
+
+/********************************
+*         Validated User        *
+*********************************/
+
+.box-header {
+  border-top-left-radius  : 4px;
+  border-top-right-radius : 4px;
+  padding                 : 4px;
+  margin                  : 0px;
+  text-align              : center;
+  background-color        : #eee;
+  border-width            : 1px;
+  border-style            : solid;
+  border-color            : #d0d0d0;
+  border-bottom           : 0;
+}
+
+.box-footer {
+  border-bottom-left-radius  : 4px;
+  border-bottom-right-radius : 4px;
+  padding-left               : 5px;
+  padding-right              : 5px;
+  padding-top                : 0;
+  margin                     : 0px;
+  border-width               : 1px;
+  border-style               : solid;
+  border-color               : #d0d0d0;
+  border-top                 : 0;
+  padding-bottom             : 0;
+}
+
+.box-users-container {
+  height   : 275px;
+  width    : 270px;
+  position : relative;
+}
+
+.footer-infos {
+  opacity        : 0.6;
+  filter         : Alpha(opacity=60);
+  font-size      : 12px;
+  vertical-align : middle
+}
+
+#nb-selected {
+  float      : right;
+  margin-top : 4px;
+}
+
+.all-items {
+  float        : left;
+  margin-right : 5px;
+  margin-top   : 0px;
+}
+
+#nb-items {
+  float      : left;
+  margin-top : 4px;
+}
+
+.action-button-container {
+  float       : right;
+  padding-top : 15px;
+}
+
+.btn-action-workflow {
+  height : 35px;
+  width  : 70px;
+}
+
+#delete-user {
+  float      : right;
+  margin-top : 15px;
+}
+
+#save-workflow {
+  margin-left : 5px;
+}
+
+#cancel-workflow {
+  margin-right :5px;
+}
+
+.box-users-content {
+  border-width : 1px;
+  border-style : solid;
+  border-color : #d0d0d0;
+  overflow-y   : auto;
+  height       : 250px;
+  text-align   : left;
+}
+
+.li-box-content-user {
+  margin-left : 15px;
+}
+
+.box-input-element[type='checkbox'] {
+  margin-right : 8px;
+}
+
+.center-box-element {
+  vertical-align : middle;
+  display        : inline-block;
+}
+
+.input-icon {
+  margin-left : 20px;
+  cursor: help;
+  color: #999;
+
+}
+
+.input-icon:hover {
+    transition-duration: .2s;
+    color: #555;
+}
+
+.users-clickable {
+  cursor : pointer;
+}
+
+.users {
+  cursor: default;
+}
+
+#normal-user {
+  background-color : #f2f8ff;
+}
+
+#moved-user {
+  background-color : #d1f8c9;
+}
+
+#not-in-file-user {
+  background-color : #faeae9;
+}
+
+#normal-user:hover  {
+  background-color : #9bd0dd;
+}
+
+.normal-checked {
+  background-color : #9bd0dd;
+}
+
+#moved-user:hover {
+  background-color : #bae69d;
+}
+
+.moved-checked {
+  background-color : #9ae37f;
+}
+
+#not-in-file-user:hover {
+  background-color : #e8929a;
+}
+
+.not-in-file-checked  {
+  background-color : #e8929a;
+}
+
+.arrows-validation {
+  margin : 70px;
+}
+
+#normal-user:focus {
+  color: red;
+}
+
+.circle-edit {
+  width            : 36px;
+  height           : 36px;
+  border-radius    : 80px;
+  background-color : #3c8dbc;
+  text-align       : center;
+  overflow         : hidden;
+  padding          : 3px;
+  position         : absolute;
+  display          : flex;
+  justify-content  : center;
+  align-items      : center;
+  bottom           : -15px;
+  right            : -15px;
+  box-shadow       : 0 3px 5px 0 rgba(0,0,0,0.2);
+}
+
+.circle-edit:hover {
+  animation : shadow-pulse-big 1s infinite;
+  cursor    : pointer;
+}
+
+.edit-icon-validated-user {
+  display        : inline-block;
+  font-size      : 18px;
+  color          : white;
+  text-align     : center;
+  vertical-align : bottom;
+}
+
+.empty-validated-user {
+  color          : #cdcdcd;
+  font-size      : 40px;
+  display        : inline-block;
+  text-align     : center;
+  vertical-align : bottom;
+  margin-top     : 50px;
+}
+
+.empty-box-msg {
+  font-family : var(--font-sans);
+  font-size   : 20px;
+  margin-top: 16px;
+}
+
+// KEYFRAMES
+@keyframes bounceH {
+  0%   {transform: translateX(0);}
+  50%  {transform: translateX(-4px);}
+  100% {transform: translateX(0);}
+}
+
+@keyframes shadow-pulse-big
+{
+  0% {
+    box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 15px rgba(0, 0, 0, 0);
+  }
+}

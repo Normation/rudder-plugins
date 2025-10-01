@@ -1,0 +1,266 @@
+/*
+*************************************************************************************
+* Copyright 2025 Normation SAS
+*************************************************************************************
+*
+* This file is part of Rudder.
+*
+* Rudder is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* In accordance with the terms of section 7 (7. Additional Terms.) of
+* the GNU General Public License version 3, the copyright holders add
+* the following Additional permissions:
+* Notwithstanding to the terms of section 5 (5. Conveying Modified Source
+* Versions) and 6 (6. Conveying Non-Source Forms.) of the GNU General
+* Public License version 3, when you create a Related Module, this
+* Related Module is not considered as a part of the work and may be
+* distributed under the license agreement of your choice.
+* A "Related Module" means a set of sources files including their
+* documentation that, without modification of the Source Code, enables
+* supplementary functions or services in addition to those offered by
+* the Software.
+*
+* Rudder is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Rudder.  If not, see <http://www.gnu.org/licenses/>.
+
+*
+*************************************************************************************
+*/
+
+ul.clipboard-list > li {
+  padding: 6px 12px;
+  border: 1px solid #d0d0d0;
+  border-bottom: none;
+
+  &:hover {
+    background-color: #f2f8ff;
+  }
+  &:first-child{
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+  &:last-child{
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom: 1px solid #d0d0d0;
+  }
+}
+
+#supervised-targets-app {
+
+  .card-footer{
+    margin-bottom: 20px;
+    border: 1px solid #dddddd;
+    border-top: none;
+    background-color: #fff;
+    float: left;
+    width: 100%;
+    padding: 10px;
+
+    .btn{
+      min-width: 95px;
+    }
+  }
+
+  .card-body{
+    & > .card-title {
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      border-bottom : 1px solid #ededed;
+
+      a {
+        display: block;
+        position: relative;
+        padding: 10px 15px 10px 42px;
+        color: #36474E;
+        transition-duration: .2s;
+
+        &:hover{
+          color: #337ab7;
+        }
+      }
+    }
+  }
+
+  .card {
+    background-color: #fdfdfd;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+
+    .card:last-of-type > .card-body > .card-title{
+      border-bottom: none;
+
+      & + .panel-collapse{
+        border-top : 1px solid #ededed;
+      }
+    }
+    .card .card-body > .card-title a,
+    .list-group .list-group-item .node-name {
+      .fa{
+        color: #bbb !important;
+        position: absolute;
+        top: 15px;
+        left: 15px;
+      }
+
+      &:before {
+        content: "";
+        position: absolute;
+        top: 18px;
+        left: -21px;
+        width: 21px;
+        border-top: 1px solid #ddd;
+      }
+    }
+
+    .card,
+    .list-group{
+      padding-left: 42px;
+      margin-bottom: 0;
+      position: relative;
+
+      &:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        border-left: 1px solid #ddd;
+        left: 21px;
+      }
+    }
+
+    .card{
+      border: none;
+      box-shadow: none;
+
+      .card-title{
+        border-left: 1px solid #ededed;
+      }
+
+      &:last-child .card-title{
+        border-bottom: none;
+      }
+    }
+
+    .list-group{
+      border-top: none;
+    }
+
+    & + .card > .card-body > .card-title {
+      border-top: 1px solid #ededed;
+    }
+
+    /* This unsets the list-group-flush for an isolated category */
+    & > .card-body > * > .card + .list-group-flush > .list-group-item:first-child {
+      border-top: 1px solid #ededed;
+    }
+  }
+
+  .node-check input{
+    display: none;
+
+    &[type=checkbox]:checked + .fa {
+      visibility: visible;
+      animation: opacity-1 .1s linear forwards;
+    }
+  }
+
+  .toolbar {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 15px;
+    border-top: 1px solid #e2e2e2;
+    background-color: #fff;
+    width: calc(100% - 230px);
+    transition-duration: .3s;
+    transition-timing-function: ease-in-out;
+  }
+
+  .panel-group .panel-group .list-group .list-group-item:last-child .node {
+    border-bottom: 1px solid #ededed;
+  }
+
+  .list-group{
+    .list-group-item{
+      padding: 0;
+      border-left: 1px solid #ededed;
+      border-color: #ededed;
+
+      label.node{
+        display: block;
+        position: relative;
+        margin-bottom: 0;
+        cursor: pointer;
+        padding-right: 50px;
+        background-color: #fff;
+        transition-duration: .2s;
+
+        &:hover{
+          background-color: #f7f7f7;
+
+          .node-name{
+            color: #337ab7;
+          }
+        }
+      }
+
+      .node-name,
+      .node-desc{
+        background-color: #fff;
+        border-right: 1px solid #ededed;
+      }
+
+      .node-name{
+        padding: 6px 15px 2px 42px;
+        position: relative;
+        font-size: 16px;
+        color: #36474E;
+        transition-duration: .2s;
+        display: flex;
+        align-items: center;
+      }
+
+      .node-desc{
+        padding: 2px 15px 6px 42px;
+        font-size: 12px;
+        color: #999;
+        font-weight: normal;
+      }
+
+      .node-check{
+        position: absolute;
+        top: calc(50% - 10px);
+        right: 15px;
+        display: inline-block;
+        height: 20px;
+        width: 20px;
+        border: 2px solid rgb(198, 200, 201);
+        text-align: center;
+        line-height: 39px;
+        margin-bottom: 0;
+        background-color: #fff;
+        border-radius: 3px;
+
+        .fa{
+          font-size: 12px;
+          top: -10px;
+          position: relative;
+          visibility : hidden;
+          animation  : opacity-0 .1s linear forwards;
+          color      : #222D32;
+        }
+      }
+    }
+  }
+}
