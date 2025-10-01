@@ -86,16 +86,20 @@ class WorkflowInformation extends CometActor with CometListener with Loggable {
     </li>
      */
 
-    val xml = {
-      <li id="workflow-app" class="nav-item dropdown notifications-menu">
-        <a href="#" class="dropdown-toggle placeholder-glow" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-          <span>CR</span>
-          <span id="number" class="badge rudder-badge placeholder">-</span>
-        </a>
-      </li>
+    if (getWorkflowEnabled()) {
+      val xml = {
+        <li id="workflow-app" class="nav-item dropdown notifications-menu">
+          <a href="#" class="dropdown-toggle placeholder-glow" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+            <span>CR</span>
+            <span id="number" class="badge rudder-badge placeholder">-</span>
+          </a>
+        </li>
+      }
+      loadScript()
+      new RenderOut(xml)
+    } else {
+      new RenderOut(NodeSeq.Empty)
     }
-    loadScript()
-    new RenderOut(xml)
   }
 
   override def lowPriority = {
