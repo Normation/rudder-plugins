@@ -54,7 +54,6 @@ import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
 import net.liftweb.common.Box
 import net.liftweb.common.Full
-import scala.collection.MapView
 
 object bddMock {
   val USER_AUTH_NEEDED = Map(
@@ -118,7 +117,7 @@ class NodeGroupValidationNeeded(
       supervised      <- supervisedTargets()
     } yield {
       val targets = Set(change.newRule) ++ change.previousRule.toSet
-      checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer), supervised, targets)
+      checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer).toMap, supervised, targets)
     }).toBox
     ChangeValidationLogger.Metrics.debug(
       s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}] change requestion need for validation in ${System
@@ -133,7 +132,7 @@ class NodeGroupValidationNeeded(
    */
   def checkNodeTargetByRule(
       groups:          FullNodeGroupCategory,
-      arePolicyServer: MapView[NodeId, Boolean],
+      arePolicyServer: Map[NodeId, Boolean],
       monitored:       Set[SimpleTarget],
       rules:           Set[Rule]
   ): Boolean = {
@@ -178,7 +177,7 @@ class NodeGroupValidationNeeded(
     } yield {
       val targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
       val exists      = groups
-        .getNodeIds(supervised.map(identity), nodeFacts.mapValues(_.rudderSettings.isPolicyServer))
+        .getNodeIds(supervised.map(identity), nodeFacts.mapValues(_.rudderSettings.isPolicyServer).toMap)
         .find(nodeId => targetNodes.contains(nodeId))
 
       // we want to let the log knows why the change request need validation
@@ -211,7 +210,7 @@ class NodeGroupValidationNeeded(
       groups     <- groupLib.getFullGroupLibrary()
       nodeFacts  <- nodeFactRepo.getAll()(QueryContext.systemQC)
     } yield {
-      checkNodeTargetByRule(groups, nodeFacts.mapValues(_.rudderSettings.isPolicyServer), supervised, (rules ++ newRules).toSet)
+      checkNodeTargetByRule(groups, nodeFacts.mapValues(_.rudderSettings.isPolicyServer).toMap, supervised, (rules ++ newRules).toSet)
     }).toBox
     ChangeValidationLogger.Metrics.debug(
       s"Check directive '${change.newDirective.name}' [${change.newDirective.id.uid.serialize}] change requestion need for validation in ${System
