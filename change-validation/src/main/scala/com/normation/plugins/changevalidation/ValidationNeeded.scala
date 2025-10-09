@@ -51,7 +51,6 @@ import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
-import scala.collection.MapView
 import zio.ZIO
 import zio.syntax.ToZio
 
@@ -135,7 +134,7 @@ class NodeGroupValidationNeeded(
    */
   def checkNodeTargetByRule(
       groups:          FullNodeGroupCategory,
-      arePolicyServer: MapView[NodeId, Boolean],
+      arePolicyServer: Map[NodeId, Boolean],
       monitored:       Set[SimpleTarget],
       rules:           Set[Rule]
   ): Boolean = {
