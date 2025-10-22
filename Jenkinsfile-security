@@ -1,5 +1,5 @@
 
-def version = "9.0"
+def version = "9.1"
 def changeUrl = env.CHANGE_URL
 def job = ""
 def errors = []
