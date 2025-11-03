@@ -255,8 +255,6 @@
     <dependency><groupId>antlr</groupId><artifactId>antlr</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
-    <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_3</artifactId><scope>provided</scope><version>${fs2-version}</version></dependency>
-    <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_3</artifactId><scope>provided</scope><version>${fs2-version}</version></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum_3</artifactId><scope>provided</scope><version>${enumeratum-version}</version></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum-macros_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_3</artifactId><scope>provided</scope><version>${ip4s-version}</version></dependency>
@@ -308,7 +306,7 @@
     <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-observation</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>io.scalaland</groupId><artifactId>chimney_3</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
     <dependency><groupId>io.scalaland</groupId><artifactId>chimney-cats_3</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
-    <dependency><groupId>io.scalaland</groupId><artifactId>chimney-macro-commons_3</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
+    <dependency><groupId>io.scalaland</groupId><artifactId>chimney-macro-commons_3</artifactId><scope>provided</scope><version>${chimney-macro-version}</version></dependency>
     <dependency><groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId><version>${servlet-version}</version><scope>provided</scope></dependency>
     <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope><version>${jodatime-version}</version></dependency>
     <dependency><groupId>net.java.dev.jna</groupId><artifactId>jna</artifactId><scope>provided</scope></dependency>
