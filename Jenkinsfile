@@ -1,6 +1,6 @@
 
 def failedBuild = false
-def minor_version = "9.1"
+def minor_version = "9.2"
 def version = "${minor_version}"
 def changeUrl = env.CHANGE_URL
 def slackResponse = null
