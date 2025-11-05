@@ -41,7 +41,6 @@ import cats.implicits.*
 import com.normation.errors.*
 import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.rudder.domain.properties.GenericProperty.*
-import com.normation.rudder.repository.json.JsonExtractorUtils
 import com.normation.rudder.rest.RudderJsonRequest.*
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValue
@@ -50,9 +49,6 @@ import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.dsl.PatcherConfiguration
 import io.scalaland.chimney.syntax.*
 import java.util.concurrent.TimeUnit
-import net.liftweb.common.Box
-import net.liftweb.common.Failure
-import net.liftweb.common.Full
 import net.liftweb.http.Req
 import scala.concurrent.duration.FiniteDuration
 import scala.math.BigDecimal
@@ -505,13 +501,8 @@ object DataSourceExtractor {
 
   /**
     * API of extractor for patched JSON : extract field updates, all fields are thus optional
-    * We need extraction when knowning the concrete type param of the data source extractor, because we need derivation
     */
-  object OptionalJson extends JsonExtractorUtils[Option] {
-    def monad = implicitly
-    override def emptyValue[T](id: String): Box[Option[T]] = Full(None)
-    def getOrElse[T](value:        Option[T], default: T) = value.getOrElse(default)
-
+  object OptionalJson {
     def extractNewDataSource(req: Req): PureResult[DataSource] = {
       if (req.json_?) {
         req
@@ -560,19 +551,12 @@ object DataSourceExtractor {
                }
       } yield res
     }
-
   }
-
-  type Id[X] = X
 
   /**
    * API of extractor for complete JSON : extract all fields, all fields are thus mandatory
    */
-  object CompleteJson extends JsonExtractorUtils[Id] {
-    def monad = implicitly
-    def emptyValue[T](id:   String): Box[Id[T]] = Failure(s"parameter '${id}' cannot be empty")
-    def getOrElse[T](value: T, default: T) = value
-
+  object CompleteJson {
     // Extract all fields of a DataSource from the JSON
     def extractDataSource(json: String): Either[String, DataSource] = {
       json.fromJson[FullDataSource].map(_.transformInto[DataSource])
