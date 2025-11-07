@@ -127,7 +127,6 @@ object TestingZioHttpServer {
               *> ZIO.never
             )
             .provideSomeLayer(ServerChannelFactory.auto ++ EventLoopGroup.auto(1) ++ Scope.default)
-            .exitCode
             .forkDaemon
         )
         .getOrThrowFiberFailure()
@@ -458,7 +457,6 @@ class UpdateHttpDatasetTest extends Specification with BoxSpecMatcher with Logga
             ZIO.never
           })
           .provideSomeLayer(ServerChannelFactory.auto ++ EventLoopGroup.auto(nThreads) ++ Scope.default)
-          .exitCode
       })
       .forkDaemon
   )
