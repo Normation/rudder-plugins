@@ -1,5 +1,6 @@
 {
   "GHSA-grv7-fg5c-xmjg": "Only a DoS, let's ignore it",
   "GHSA-c2qf-rxjj-qqgw": "Only a DoS, let's ignore it",
-  "GHSA-3xgq-45jj-v275": "Only a DoS, let's ignore it"
+  "GHSA-3xgq-45jj-v275": "Only a DoS, let's ignore it",
+  "GHSA-5j98-mcp5-4vw2": "glob command injection unused in gulp-elm"
 }
