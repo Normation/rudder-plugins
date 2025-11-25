@@ -38,6 +38,7 @@
 package com.normation.plugins.changevalidation
 
 import com.normation.NamedZioLogger
+import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.rudder.domain.nodes.NodeGroupUid
 import com.normation.rudder.domain.policies.DirectiveUid
@@ -85,7 +86,7 @@ object OldFileFormat {
   implicit val encoder: JsonEncoder[OldFileFormat] = DeriveJsonEncoder.gen[OldFileFormat]
 
   implicit val transformer: Transformer[OldFileFormat, SupervisedSimpleTargets] = old =>
-    SupervisedSimpleTargets(old.supervised.flatMap(s => RuleTarget.unser(s).collect { case t: SimpleTarget => t }).toSet)
+    SupervisedSimpleTargets(old.supervised.flatMap(s => RuleTarget.unser(s).toOption.collect { case t: SimpleTarget => t }).toSet)
 
 }
 
@@ -169,8 +170,13 @@ trait TargetJsonCodec {
     implicit val simpleTargetDecoder: JsonDecoder[SimpleTarget] = JsonDecoder[String].mapOrFail(s => {
       RuleTarget
         .unser(s)
-        .collect { case t: SimpleTarget => t }
-        .toRight(s"Error: the string '${s}' can not parsed as a valid rule target")
+        .flatMap {
+          case t: SimpleTarget => Right(t)
+          case _ => Left(Inconsistency(s"Rule is not a simple target: ${s}"))
+        }
+        .chainError(s"Error: the string '${s}' can not parsed as a valid rule target")
+        .left
+        .map(_.fullMsg)
     })
     DeriveJsonDecoder.gen[UnsupervisedTargetIds]
   }
@@ -180,12 +186,15 @@ trait TargetJsonCodec {
       JsonDecoder[String].mapOrFail(s => {
         RuleTarget
           .unser(s)
-          .collect { case t: SimpleTarget => t }
-          .toRight(s"Error: the string '${s}' can not parsed as a valid rule target")
+          .flatMap {
+            case t: SimpleTarget => Right(t)
+            case _ => Left(Inconsistency(s"Rule is not a simple target: ${s}"))
+          }
+          .chainError(s"Error: the string '${s}' can not parsed as a valid rule target")
           .left
           .map(err => {
-            ChangeValidationLogger.error(err)
-            err
+            ChangeValidationLogger.error(err.fullMsg)
+            err.fullMsg
           })
       })
     }
