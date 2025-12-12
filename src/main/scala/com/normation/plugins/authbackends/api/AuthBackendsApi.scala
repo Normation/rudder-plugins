@@ -52,11 +52,11 @@ import com.normation.rudder.rest.InternalApi
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion10
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.syntax.*
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
