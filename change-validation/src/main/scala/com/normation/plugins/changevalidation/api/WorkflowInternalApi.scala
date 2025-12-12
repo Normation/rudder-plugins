@@ -63,11 +63,11 @@ import com.normation.rudder.repository.RoNodeGroupRepository
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.AddPath
 import com.normation.rudder.rest.EndpointSchema.syntax.BuildPath
-import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.syntax.*
 import com.normation.rudder.rule.category.RoRuleCategoryRepository
 import com.normation.rudder.rule.category.RuleCategoryService
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService

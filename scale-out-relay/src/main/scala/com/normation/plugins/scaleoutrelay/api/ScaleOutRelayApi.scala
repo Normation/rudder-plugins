@@ -9,10 +9,10 @@ import com.normation.rudder.api.HttpAction.POST
 import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.*
-import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.syntax.*
 import com.normation.utils.StringUuidGenerator
 import enumeratum.*
 import java.time.Instant

@@ -42,11 +42,11 @@ import com.normation.plugins.branding.BrandingConfService
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.RudderJsonRequest.*
-import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.syntax.*
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
