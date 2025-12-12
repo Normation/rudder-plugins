@@ -58,11 +58,11 @@ import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.facts.nodes.NodeFactRepository
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.*
-import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.syntax.*
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.syntax.*
 import java.time.Instant

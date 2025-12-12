@@ -83,11 +83,11 @@ import com.normation.rudder.rest.RudderJsonRequest.*
 import com.normation.rudder.rest.SortIndex
 import com.normation.rudder.rest.StartsAtVersion3
 import com.normation.rudder.rest.ZeroParam
-import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.rest.syntax.*
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
