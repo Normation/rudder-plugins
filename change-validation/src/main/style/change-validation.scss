@@ -53,20 +53,7 @@
   display: flex;
   align-items: center;
 
-  select.form-control{
-    width: auto;
-    display: inline-block;
-    margin: 0px 0px 20px 10px;
-    min-width: 185px;
-    font-size: 14px;
-
-    &[multiple]{
-      height: auto;
-
-      option{
-        padding: 2px 0;
-      }
-    }
+  select {
 
     & + .btn {
       &.btn-expand{
@@ -95,6 +82,22 @@
       &.btn-more:after {
         content: "\f067";
       }
+    }
+
+    &.form-control{
+      width: auto;
+      display: inline-block;
+      min-width: 185px;
+      font-size: 14px;
+
+      &[multiple]{
+        height: auto;
+
+        option{
+          padding: 2px 0;
+        }
+      }
+
     }
   }
   label {
