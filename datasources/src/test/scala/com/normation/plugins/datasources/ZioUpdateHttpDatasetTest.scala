@@ -366,18 +366,13 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                                updates.update(m => m + (newNode.id -> (1 + m.getOrElse(newNode.id, 0))))
                              case NodeFactChangeEvent.UpdatedPending(oldNode, newNode, _) =>
                                updates.update(m => m + (newNode.id -> (1 + m.getOrElse(newNode.id, 0))))
-                             case x                                                       => effectUioUnit(println(s"*** ignoring node change event: ${x}"))
+                             case x                                                       => ZIO.unit
                            }
                          }
                        }
-      // debug precheck that logs any call to save
-      logPreSave     = { (n: NodeFact) =>
-        effectUioUnit(println(s"**** saving ${n.id.value}:${n.properties.map(p => s"${p.name} -> ${p.value.toString}; ")}"))
-      }
       repo          <- CoreNodeFactRepository.makeNoop(
                          initNodeInfo,
-                         callbacks = Chunk(updateCallback),
-                         savePreChecks = Chunk(logPreSave)
+                         callbacks = Chunk(updateCallback)
                        )
     } yield (updates, repo))
   }
@@ -522,7 +517,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
         http              = new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
         _                <- updates.set(Map())
         res              <- http.queryAll(datasource, UpdateCause(modId, actor, None))
-        u                <- updates.get
+        // let hooks happens - this is magical, it tells zio to let finish things started
+        // before that duration before continuing
+        u                <- TestClock.adjust(5.seconds) *> updates.get
         v                <- infos.getAll()
         nodeIds           = v.keySet.toSet
       } yield {
@@ -850,7 +847,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
             _       <- server.reset()
             // all node updated one time
             res1    <- updates.set(Map()) *> http.queryAll(ds, UpdateCause(modId, actor, None))
-            res2    <- updates.get
+            // let hooks happens - this is magical, it tells zio to let finish things started
+            // before that duration before continuing
+            res2    <- TestClock.adjust(5.seconds) *> updates.get
             errors  <- server.counterError.get
             success <- server.counterSuccess.get
           } yield (nodeIds, res1, res2, errors, success)).flatMap((nodeIds, res1, res2, errors, success) => {
@@ -875,7 +874,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
             _       <- server.reset()
             // all node updated one time
             res1    <- updates.set(Map()) *> http.queryAll(ds, UpdateCause(modId, actor, None))
-            res2    <- updates.get
+            // let hooks happens - this is magical, it tells zio to let finish things started
+            // before that duration before continuing
+            res2    <- TestClock.adjust(5.seconds) *> updates.get
             errors  <- server.counterError.get
             success <- server.counterSuccess.get
           } yield (nodeIds, res1, res2, errors, success)).flatMap((nodeIds, res1, res2, errors, success) => {
@@ -913,7 +914,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
               // all node updated one time
               _       <- updates.set(Map())
               res1    <- http.queryAll(ds, UpdateCause(modId, actor, None)).either
-              res2    <- updates.get // only even nodes get a result
+              // let hooks happens - this is magical, it tells zio to let finish things started
+              // before that duration before continuing
+              res2    <- TestClock.adjust(5.seconds) *> updates.get // only even nodes get a result
               errors  <- server.counterError.get
               success <- server.counterSuccess.get
             } yield (nodeIds, res1, res2, errors, success)
@@ -989,7 +992,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
             nodeIds <- infos.getAll().map(_.keySet.toSet)
             _       <- updates.set(Map())
             res1    <- http.queryAll(datasource, UpdateCause(modId, actor, None))
-            res2    <- updates.get
+            // let hooks happens - this is magical, it tells zio to let finish things started
+            // before that duration before continuing
+            res2    <- TestClock.adjust(5.seconds) *> updates.get
           } yield (nodeIds, res1, res2)).flatMap((nodeIds, res1, res2) => {
             assert(res1)(equalTo(nodeUpdatedMatcher(nodeIds))) &&
             assert(res2.toList)(hasSameElements(nodeIds.map(x => (x, 1))))
@@ -1112,7 +1117,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
         modId   = ModificationId("set-test-404")
         nodeIds = nodes.keySet
         res    <- http.queryAll(datasource, UpdateCause(modId, actor, None))
-        u      <- updates.get
+        // let hooks happens - this is magical, it tells zio to let finish things started
+        // before that duration before continuing
+        u      <- TestClock.adjust(5.seconds) *> updates.get
         props  <- infos.getAll().map(_.map { case (id, n) => (id, n.properties.find(_.name == propName).map(_.value)) }.toMap)
       } yield (nodeIds, res, u, props)).flatMap((nodeIds, res, u, props) => {
         assert(res)(
