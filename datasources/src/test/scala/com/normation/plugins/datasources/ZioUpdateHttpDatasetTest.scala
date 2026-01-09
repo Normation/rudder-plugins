@@ -370,9 +370,14 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                            }
                          }
                        }
+      // debug precheck that logs any call to save
+      logPreSave     = { (n: NodeFact) =>
+        effectUioUnit(println(s"**** saving ${n.id.value}:${n.properties.map(p => s"${p.name} -> ${p.value.toString}; ")}"))
+      }
       repo          <- CoreNodeFactRepository.makeNoop(
                          initNodeInfo,
-                         callbacks = Chunk(updateCallback)
+                         callbacks = Chunk(updateCallback),
+                         savePreChecks = Chunk(logPreSave)
                        )
     } yield (updates, repo))
   }
