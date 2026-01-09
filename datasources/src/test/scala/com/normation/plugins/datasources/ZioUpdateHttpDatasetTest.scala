@@ -366,7 +366,7 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                                updates.update(m => m + (newNode.id -> (1 + m.getOrElse(newNode.id, 0))))
                              case NodeFactChangeEvent.UpdatedPending(oldNode, newNode, _) =>
                                updates.update(m => m + (newNode.id -> (1 + m.getOrElse(newNode.id, 0))))
-                             case _                                                       => ZIO.unit
+                             case x                                                       => effectUioUnit(println(s"*** ignoring node change event: ${x}"))
                            }
                          }
                        }
@@ -502,6 +502,36 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
     ) @@ TestAspect.sequential)
 
     mainSuite.provideSomeShared[Scope](ZioCmdbServer.layer)
+  }
+
+  def testOneArrayValidation(path: String, i: Int, get: ((String, String, String)) => String) = {
+    test(s"for case: ${testArray(i)._1} -> ${get(testArray(i))}") {
+      val datasource = NewDataSource(
+        "test-http-service",
+        url = s"${REST_SERVER_URL}/testarray/$i",
+        path = path
+      )
+
+      for {
+        (updates, infos) <- buildNodeRepo(NodeConfigData.allNodeFacts)
+        http              = new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
+        _                <- updates.set(Map())
+        res              <- http.queryAll(datasource, UpdateCause(modId, actor, None))
+        u                <- updates.get
+        v                <- infos.getAll()
+        nodeIds           = v.keySet.toSet
+      } yield {
+        assert(res)(equalTo(nodeUpdatedMatcher(nodeIds)))
+        && assert(u)(hasSubset[(NodeId, Int)](nodeIds.map(x => (x, 1))))
+        && assert(v.get(root.id).flatMap(n => n.properties.find(_.name == "test-http-service")))(
+          isSome(
+            equalTo(
+              NodeProperty.apply("test-http-service", get(testArray(i)).forceParse, None, Some(DataSource.providerName))
+            )
+          )
+        )
+      }
+    }
   }
 
   def updateDatasourceSuite: Spec[Scope & ZioServerStarted, RudderError] = {
@@ -644,36 +674,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
         }
       }
     )
-  }
-
-  def testOneArrayValidation(path: String, i: Int, get: ((String, String, String)) => String) = {
-    test(s"for case: ${testArray(i)._1} -> ${testArray(i)._2}") {
-      val datasource = NewDataSource(
-        "test-http-service",
-        url = s"${REST_SERVER_URL}/testarray/$i",
-        path = path
-      )
-
-      for {
-        (updates, infos) <- buildNodeRepo(NodeConfigData.allNodeFacts)
-        http              = new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
-        res               = updates.set(Map()) *> http.queryAll(datasource, UpdateCause(modId, actor, None))
-        x                <- res
-        u                <- updates.get
-        v                <- infos.getAll()
-        nodeIds           = v.keySet.toSet
-      } yield {
-        assert(x)(equalTo(nodeUpdatedMatcher(nodeIds)))
-        && assert(u)(hasSubset[(NodeId, Int)](nodeIds.map(x => (x, 1))))
-        && assert(v.get(root.id).flatMap(n => n.properties.find(_.name == "test-http-service")))(
-          isSome(
-            equalTo(
-              NodeProperty.apply("test-http-service", get(testArray(i)).forceParse, None, Some(DataSource.providerName))
-            )
-          )
-        )
-      }
-    }
   }
 
   def updateDatasourceSuite2: Spec[Scope & ZioServerStarted, RudderError] = {
