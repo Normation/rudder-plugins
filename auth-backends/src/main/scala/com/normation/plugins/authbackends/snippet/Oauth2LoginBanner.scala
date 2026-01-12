@@ -43,6 +43,7 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.authbackends.LoginFormRendering
 import com.normation.plugins.authbackends.RudderPropertyBasedOAuth2RegistrationDefinition
 import com.normation.rudder.web.snippet.Login
+import com.normation.rudder.web.snippet.WithNonce
 import com.normation.zio.*
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*
@@ -122,12 +123,14 @@ class Oauth2LoginBanner(
           (AuthBackendsConf.loginFormRendering match {
             case LoginFormRendering.Show   => x
             case LoginFormRendering.Hide   => // indentation is strange because need to be saw as one xml
-              Script(OnLoad(JsRaw(""" $ ("#toggleLoginFormButton").click(function() {{ $("#toggleLoginForm").toggle(); }});
-                                    | let urlVars = new URLSearchParams(window.location.search);
-                                    | if(urlVars.get('login_error')) {{
-                                    |   $('#errorInfoSSO').toggle(true);
-                                    | }}
-                                    |""".stripMargin))) ++ // JsRaw ok, const
+              WithNonce.scriptWithNonce(
+                Script(OnLoad(JsRaw(""" $ ("#toggleLoginFormButton").click(function() {{ $("#toggleLoginForm").toggle(); }});
+                                      | let urlVars = new URLSearchParams(window.location.search);
+                                      | if(urlVars.get('login_error')) {{
+                                      |   $('#errorInfoSSO').toggle(true);
+                                      | }}
+                                      |""".stripMargin)))
+              ) ++ // JsRaw ok, const
               <button id="toggleLoginFormButton" class="btn btn-sm btn-light btn-outline-secondary border">show non-SSO login form
                             </button><div id="toggleLoginForm" style="display: none">{x}</div>
             case LoginFormRendering.Remove => NodeSeq.Empty
