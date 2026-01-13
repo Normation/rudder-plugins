@@ -562,9 +562,8 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
       case Some(config) =>
         val decoder   = NimbusJwtDecoder.withJwkSetUri(config.jwkSetUri).build
         val converter = new RudderJwtAuthenticationConverter(
-          jwtRegistrationRepository,
-          RudderConfig.roleApiMapping,
-          config.pivotAttributeName
+          config,
+          RudderConfig.roleApiMapping
         )
         new RudderJwtAuthenticationProvider(decoder, converter)
 
@@ -580,7 +579,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         val introspector = new NimbusOpaqueTokenIntrospector(config.introspectUri, config.clientId, config.clientSecret)
         new RudderOpaqueTokenAuthenticationProvider(
           introspector,
-          new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config.pivotAttributeName),
+          new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config),
           config.cacheRequestDuration,
           () => Instant.now()
         )
@@ -1128,7 +1127,7 @@ object BuildLogout {
   }
 }
 
-class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
+class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService with DebugOAuth2Attributes {
 
   /*
    * this is a copy of parent method with more logs/error management
@@ -1149,6 +1148,8 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
     restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler)
     restTemplate
   }
+
+  override val debugRequestKind: String = "  user info attribute values"
 
   import scala.jdk.CollectionConverters.*
 
@@ -1175,13 +1176,13 @@ class RudderDefaultOAuth2UserService extends DefaultOAuth2UserService {
     val request:               RequestEntity[?]                              = this.requestEntityConverter.convert(userRequest)
     val response:              ResponseEntity[java.util.Map[String, AnyRef]] = getResponse(userRequest, request)
 
+    val body = response.getBody.asScala
+
     AuthBackendsLogger.debug(
       s"OAuth2/OIDC user info request with scopes [${userRequest.getClientRegistration.getScopes.asScala.toList.sorted.mkString(" ")}] " +
-      s"returned attributes: ${response.getBody.asScala.keySet.toList.sorted.mkString(", ")}"
+      s"returned attributes: ${body.keySet.toList.sorted.mkString(", ")}"
     )
-    AuthBackendsLogger.trace(
-      s"  user info attribute values: ${response.getBody.asScala.toList.sortBy(_._1).map { case (k, v) => s"$k: $v" }.mkString("\n  - ", "\n  - ", "")} "
-    )
+    AuthBackendsLogger.trace(debugAttributes(body))
 
     val userAttributes: java.util.Map[String, AnyRef]   = response.getBody
     val authorities:    java.util.Set[GrantedAuthority] = new java.util.LinkedHashSet[GrantedAuthority]()
@@ -1281,10 +1282,12 @@ class RudderJwtAuthenticationProvider(jwtDecoder: JwtDecoder, converter: RudderJ
 }
 
 class RudderJwtAuthenticationConverter(
-    clientRegistrationRepository: Option[RudderJwtRegistration],
-    roleApiMapping:               RoleApiMapping,
-    pivotAttribute:               String
-) extends Converter[Jwt, AbstractAuthenticationToken] {
+    registration:   RudderJwtRegistration,
+    roleApiMapping: RoleApiMapping
+) extends Converter[Jwt, AbstractAuthenticationToken] with DebugOAuth2TokenAttributes {
+
+  override val debugTokenKind:             String                         = "JWT OAuth2/OIDC token request"
+  override val pivotAttributeRegistration: RegistrationWithPivotAttribute = registration
 
   import bootstrap.rudder.plugin.RudderJwtAuthenticationProvider.PROTOCOL_ID
   private val jwtConverter = new JwtAuthenticationConverter()
@@ -1296,70 +1299,65 @@ class RudderJwtAuthenticationConverter(
     // We only have the clientId, so we need to check them all
     val clientId = t.getToken.getClaimAsString(pivotAttribute)
 
+    AuthBackendsLogger.trace(debugAttributes(t.getTokenAttributes.asScala))
+
     if (clientId == null) { // we're in Java-land, these things can happen
       throw new InvalidBearerTokenException(
         s"A JWT Bearer token was received but it doesn't have a 'cid' claim, so we don't have a client ID and the token is invalid"
       )
     } else {
 
-      clientRegistrationRepository match {
-        case None               =>
-          throw new InvalidBearerTokenException(
-            s"A JWT Bearer token was received but we don't have any registration for the provided clientId: ${clientId}"
-          )
-        case Some(registration) =>
-          // check that audience matches the expected one if the registration enforce it
-          if (registration.audience.check && !t.getToken.getAudience.asScala.contains(registration.audience.value)) {
-            throw new InvalidBearerTokenException(
-              s"Audience is not the expected one for token, client with ID ${clientId} must target audience: ${registration.audience.value}, but got ${t.getToken.getAudience.asScala
-                  .mkString(", ")}"
-            )
-          }
+      // check that audience matches the expected one if the registration enforce it
+      if (registration.audience.check && !t.getToken.getAudience.asScala.contains(registration.audience.value)) {
+        throw new InvalidBearerTokenException(
+          s"Audience is not the expected one for token, client with ID ${clientId} must target audience: ${registration.audience.value}, but got ${t.getToken.getAudience.asScala
+              .mkString(", ")}"
+        )
+      }
 
-          def getAttr(attributeName: String) = t.getToken.getClaimAsStringList(attributeName) match {
-            case null => None
-            case x    =>
-              import scala.jdk.CollectionConverters.*
-              Some(x.asScala.toSet)
-          }
+      def getAttr(attributeName: String) = t.getToken.getClaimAsStringList(attributeName) match {
+        case null => None
+        case x    =>
+          import scala.jdk.CollectionConverters.*
+          Some(x.asScala.toSet)
+      }
 
-          val roles    = RudderTokenMapping.getRoles(registration, t.getName, PROTOCOL_ID, default = Set())(getAttr)
-          val nsc      =
-            RudderTokenMapping.getTenants(registration, t.getName, PROTOCOL_ID, default = NodeSecurityContext.None)(getAttr)
-          val apiAuthz = RudderTokenMapping.getApiAuthorization(roleApiMapping, roles)
+      val roles    = RudderTokenMapping.getRoles(registration, t.getName, PROTOCOL_ID, default = Set())(getAttr)
+      val nsc      =
+        RudderTokenMapping.getTenants(registration, t.getName, PROTOCOL_ID, default = NodeSecurityContext.None)(getAttr)
+      val apiAuthz = RudderTokenMapping.getApiAuthorization(roleApiMapping, roles)
 
-          // create RudderUserDetails from token
-          val details: RudderUserDetail = {
-            val created = new DateTime(jwt.getIssuedAt.toEpochMilli)
-            val exp     = Some(new DateTime(jwt.getExpiresAt.toEpochMilli))
+      // create RudderUserDetails from token
+      val details: RudderUserDetail = {
+        val created = new DateTime(jwt.getIssuedAt.toEpochMilli)
+        val exp     = Some(new DateTime(jwt.getExpiresAt.toEpochMilli))
 
-            RudderUserDetail(
-              RudderAccount.Api(
-                ApiAccount(
-                  ApiAccountId(jwt.getId),
-                  ApiAccountKind.PublicApi(apiAuthz, exp),
-                  ApiAccountName(jwt.getId),
-                  Some(ApiTokenHash.fromHashValue(jwt.getTokenValue)),
-                  "",
-                  isEnabled = true, // always enabled at that point, since the token is valid
-                  created,
-                  created,
-                  nsc
-                )
-              ),
-              UserStatus.Active, // always active at the point, since the token is valid
-              roles,
-              apiAuthz,
+        RudderUserDetail(
+          RudderAccount.Api(
+            ApiAccount(
+              ApiAccountId(jwt.getId),
+              ApiAccountKind.PublicApi(apiAuthz, exp),
+              ApiAccountName(jwt.getId),
+              Some(ApiTokenHash.fromHashValue(jwt.getTokenValue)),
+              "",
+              isEnabled = true, // always enabled at that point, since the token is valid
+              created,
+              created,
               nsc
             )
-          }
-
-          AuthBackendsLogger.debug(
-            s"Principal from JWT '${details.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${apiAuthz.debugString}, and tenants: ${nsc.value}"
-          )
-
-          RudderOAuth2Jwt(t, details)
+          ),
+          UserStatus.Active, // always active at the point, since the token is valid
+          roles,
+          apiAuthz,
+          nsc
+        )
       }
+
+      AuthBackendsLogger.debug(
+        s"Principal from JWT '${details.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${apiAuthz.debugString}, and tenants: ${nsc.value}"
+      )
+
+      RudderOAuth2Jwt(t, details)
     }
   }
 }
@@ -1465,16 +1463,22 @@ class RudderOpaqueTokenAuthenticationProvider(
  * logic to rudder "user details".
  */
 class RudderOpaqueTokenAuthenticationConverter(
-    roApiAccountRepository: RoApiAccountRepository,
-    pivotAttribute:         String
-) extends OpaqueTokenAuthenticationConverter {
+    roApiAccountRepository:                  RoApiAccountRepository,
+    override val pivotAttributeRegistration: RegistrationWithPivotAttribute
+) extends OpaqueTokenAuthenticationConverter with DebugOAuth2TokenAttributes {
+
+  override val debugTokenKind: String = "Opaque OAuth2/OIDC token request"
 
   override def convert(introspectedToken: String, authenticatedPrincipal: OAuth2AuthenticatedPrincipal): Authentication = {
     val t = DefaultOpaqueTokenAuthenticationConverter
       .convert(introspectedToken, authenticatedPrincipal)
 
+    val tokenAttributes = t.getTokenAttributes.asScala
+
+    AuthBackendsLogger.trace(debugAttributes(tokenAttributes))
+
     // retrieve token id
-    val tokenId = t.getTokenAttributes.asScala.get(pivotAttribute) match {
+    val tokenId = tokenAttributes.get(pivotAttribute) match {
       case Some(v) =>
         // we only understand string for that value
         v match {
@@ -1537,4 +1541,23 @@ class RudderOpaqueTokenAuthenticationConverter(
         }
     }
   }
+}
+
+trait DebugOAuth2Attributes {
+  def debugRequestKind: String
+
+  def debugAttributes(attrs: Iterable[(String, AnyRef)]): String =
+    s"${debugRequestKind}: ${debugTokenAttributes(attrs)}"
+
+  // debug each attribute in a new line
+  private def debugTokenAttributes(attrs: Iterable[(String, AnyRef)]): String =
+    attrs.toList.sortBy(_._1).map { case (k, v) => s"$k: $v" }.mkString("\n  - ", "\n  - ", "")
+}
+
+trait DebugOAuth2TokenAttributes extends DebugOAuth2Attributes {
+  def debugTokenKind:         String
+  final def debugRequestKind: String = s"${debugTokenKind} with token mapping attribute: '${pivotAttribute}' returned attributes"
+
+  def pivotAttributeRegistration: RegistrationWithPivotAttribute
+  def pivotAttribute:             String = pivotAttributeRegistration.pivotAttributeName
 }
