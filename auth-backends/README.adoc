@@ -984,15 +984,15 @@ rudder.auth.oauth2.opaque.provider.okta.uri.introspect=https://xxxx.okta.com/oau
 # An opaque access token is just used for validating the authentication. A corresponding
 # API token must exist in Rudder to define things like token authorization, tenants
 # access, etc. The mapping is done thanks to an attribute value of the token.
-# By default, and as advised in the OAuth2 standard, we use by default the value
-# for attribute `client_id` but some OIDC configuration use something else
-# (`sub`, `cid`... ) so this can be changed with that property.
+# By default, we use the value of the attribute `sub` 
+# but some OIDC configuration use something else
+# (`client_id`, `cid`... ) so this can be changed with that property.
 #
-# Optional, default "client_id".
+# Optional, default "sub".
 # The name of the attribute in the access token that should be used to map to
 # Rudder API token ID.
 #
-rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName=client_id
+rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName=sub
 
 #
 # Optionally, you can define a duration for the `validationCacheDuration` property to
