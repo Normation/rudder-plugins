@@ -26,6 +26,7 @@ test_shell_error()
       # kept as this runs on machines running rudder-dev
       shellcheck --format gcc "$file" | grep " error: " && exit 1 || true
     done
+  ci/check-package-scripts.sh
 }
 
 # fails on error and ignores other levels
