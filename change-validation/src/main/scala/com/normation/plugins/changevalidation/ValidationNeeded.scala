@@ -210,7 +210,7 @@ class NodeGroupValidationNeeded(
       start      <- com.normation.zio.currentTimeMillis
       // in a change, the old directive id and the new one is the same.
       directiveId = change.newDirective.id
-      rules      <- ruleLib.getAll(includeSytem = true).map(_.filter(r => r.directiveIds.contains(directiveId)))
+      rules      <- ruleLib.getAll(includeSystem = true).map(_.filter(r => r.directiveIds.contains(directiveId)))
       // we need to add potentially new rules applied to that directive that the previous request does not cover
       newRules    = change.updatedRules
       supervised <- supervisedTargets()

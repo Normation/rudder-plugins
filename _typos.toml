@@ -11,7 +11,6 @@ unser = "unser"
 OAUT = "OAUT"
 
 # All exceptions below should be removed when upstream will be fixed
-includeSytem = "includeSytem"
 Sytem = "Sytem"
 cssPsuedoElementExclusion = "cssPsuedoElementExclusion"
 Psuedo = "Psuedo"
