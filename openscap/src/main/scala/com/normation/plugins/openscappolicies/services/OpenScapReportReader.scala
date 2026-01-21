@@ -46,9 +46,9 @@ import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLoggerPure
 import com.normation.plugins.openscappolicies.OpenScapReport
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.FindExpectedReportRepository
 import com.normation.rudder.repository.RoDirectiveRepository
+import com.normation.rudder.tenants.QueryContext
 import java.nio.charset.StandardCharsets
 import net.liftweb.common.*
 import zio.*

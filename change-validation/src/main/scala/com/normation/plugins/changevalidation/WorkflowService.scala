@@ -48,8 +48,6 @@ import com.normation.rudder.domain.eventlog.ChangeRequestDiff
 import com.normation.rudder.domain.eventlog.DeleteChangeRequestDiff
 import com.normation.rudder.domain.eventlog.ModifyToChangeRequestDiff
 import com.normation.rudder.domain.workflows.*
-import com.normation.rudder.facts.nodes.ChangeContext
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
@@ -57,11 +55,12 @@ import com.normation.rudder.services.workflows.NoWorkflowAction
 import com.normation.rudder.services.workflows.WorkflowAction
 import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
+import com.normation.rudder.tenants.ChangeContext
+import com.normation.rudder.tenants.QueryContext
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
 import com.normation.zio.UnsafeRun
-import java.time.Instant
 import zio.*
 import zio.syntax.ToZio
 
@@ -384,7 +383,7 @@ class TwoValidationStepsWorkflowServiceImpl(
                  .get(changeRequestId)
                  .notOptional(s"Change request with ID '${changeRequestId.value}' was not found in database")
       saved <-
-        commit.save(cr)(using ChangeContext(ModificationId(uuidGen.newUuid), qc.actor, Instant.now(), reason, None, qc.nodePerms))
+        commit.save(cr)(using qc.newCC(reason))
       _     <- woChangeRequestRepository.updateChangeRequest(saved, actor, reason)
       state <- changeStep(from, Deployed, changeRequestId, actor, reason)
     } yield {

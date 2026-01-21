@@ -43,7 +43,6 @@ import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.policies.Rule
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.repository.RoNodeGroupRepository
 import com.normation.rudder.repository.RoRuleRepository
@@ -51,6 +50,7 @@ import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
+import com.normation.rudder.tenants.QueryContext
 import zio.ZIO
 import zio.syntax.ToZio
 
@@ -108,11 +108,12 @@ class NodeGroupValidationNeeded(
    * - the change must be validated.
    */
   override def forRule(actor: EventActor, change: RuleChangeRequest): IOResult[Boolean] = {
+    // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
+    implicit val qc: QueryContext = QueryContext.systemQC
     for {
       start           <- com.normation.zio.currentTimeMillis
       groups          <- groupLib.getFullGroupLibrary()
-      // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
-      arePolicyServer <- nodeFactRepo.getAll()(using QueryContext.systemQC)
+      arePolicyServer <- nodeFactRepo.getAll()
       supervised      <- supervisedTargets()
       targets          = Set(change.newRule) ++ change.previousRule.toSet
       res              = checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer).toMap, supervised, targets)
@@ -170,10 +171,12 @@ class NodeGroupValidationNeeded(
     // - the list of supervised node in the group after change,
     // => non empty means validation needed
 
+    // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
+    implicit val qc: QueryContext = QueryContext.systemQC
     for {
       start      <- com.normation.zio.currentTimeMillis
       groups     <- groupLib.getFullGroupLibrary()
-      nodeFacts  <- nodeFactRepo.getAll()(using QueryContext.systemQC)
+      nodeFacts  <- nodeFactRepo.getAll()
       supervised <- supervisedTargets()
       targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
       exists      = groups
@@ -206,6 +209,8 @@ class NodeGroupValidationNeeded(
    * A directive need a validation if any rule using it need a validation.
    */
   override def forDirective(actor: EventActor, change: DirectiveChangeRequest): IOResult[Boolean] = {
+    // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
+    implicit val qc: QueryContext = QueryContext.systemQC
     for {
       start      <- com.normation.zio.currentTimeMillis
       // in a change, the old directive id and the new one is the same.
@@ -215,7 +220,7 @@ class NodeGroupValidationNeeded(
       newRules    = change.updatedRules
       supervised <- supervisedTargets()
       groups     <- groupLib.getFullGroupLibrary()
-      nodeFacts  <- nodeFactRepo.getAll()(using QueryContext.systemQC)
+      nodeFacts  <- nodeFactRepo.getAll()
       res         = {
         checkNodeTargetByRule(
           groups,

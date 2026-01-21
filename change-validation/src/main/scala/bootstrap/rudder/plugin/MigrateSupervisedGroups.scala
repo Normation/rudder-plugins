@@ -45,6 +45,7 @@ import com.normation.plugins.changevalidation.SupervisedSimpleTargets
 import com.normation.plugins.changevalidation.UnsupervisedTargetsRepository
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.repository.RoNodeGroupRepository
+import com.normation.rudder.tenants.QueryContext
 import io.scalaland.chimney.syntax.*
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
@@ -77,7 +78,7 @@ class MigrateSupervisedGroups(
                targets           = oldTargetStrings.transformInto[SupervisedSimpleTargets].supervised
                unsupervised     <-
                  groupRepository
-                   .getFullGroupLibrary()
+                   .getFullGroupLibrary()(using QueryContext.systemQC)
                    .map(groups => UnsupervisedTargetsRepository.invertTargets(targets, groups))
                    .catchAll[Any, RudderError, Set[SimpleTarget]](_ => {
                      ChangeValidationLoggerPure

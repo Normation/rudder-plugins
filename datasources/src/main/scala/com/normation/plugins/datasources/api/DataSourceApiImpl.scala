@@ -53,19 +53,18 @@ import com.normation.plugins.datasources.api.DataSourceApi as API
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GenericProperty.*
-import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rest.syntax.*
+import com.normation.rudder.tenants.ChangeContext
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.syntax.*
-import java.time.Instant
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import zio.Chunk
@@ -175,7 +174,7 @@ class DataSourceApiImpl(
 
       (for {
         nodes <- nodeFactRepo.getAll()(using authzToken.qc)
-        _     <- nodes.values.accumulate(node => erase(cause(node.id), node, DataSourceId(datasourceId), authzToken.qc.nodePerms))
+        _     <- nodes.values.accumulate(node => erase(cause(node.id), node, DataSourceId(datasourceId), authzToken.qc.accessGrant))
         res    = s"Data for all nodes, for data source '${datasourceId}', cleared"
       } yield res)
         .chainError(s"Could not clear data source property '${datasourceId}'")
@@ -203,7 +202,7 @@ class DataSourceApiImpl(
 
       (for {
         node    <- nodeFactRepo.get(NodeId(nodeId))(using authzToken.qc).notOptional(s"Node with ID '${nodeId}' was not found")
-        updated <- erase(cause, node, DataSourceId(datasourceId), authzToken.qc.nodePerms)
+        updated <- erase(cause, node, DataSourceId(datasourceId), authzToken.qc.accessGrant)
         res      = s"Data for node '${nodeId}', for data source '${datasourceId}', cleared"
       } yield res)
         .chainError(s"Could not clear data source property '${datasourceId}'")
@@ -324,7 +323,7 @@ class DataSourceApiImpl(
       cause:        UpdateCause,
       node:         CoreNodeFact,
       datasourceId: DataSourceId,
-      nodePerms:    NodeSecurityContext
+      nodePerms:    TenantAccessGrant
   ): IOResult[NodeUpdateResult] = {
     val newProp = DataSource.nodeProperty(datasourceId.value, "".toConfigValue)
     node.properties.find(_.name == newProp.name) match {
@@ -335,7 +334,7 @@ class DataSourceApiImpl(
             newProps <- CompareProperties.updateProperties(node.properties.toList, Some(newProp :: Nil)).toIO
             newNode   = node.copy(properties = Chunk.fromIterable(newProps))
             _        <- nodeFactRepo
-                          .save(newNode)(using ChangeContext(cause.modId, cause.actor, Instant.now(), cause.reason, None, nodePerms))
+                          .save(newNode)(using ChangeContext.newFor(cause.actor, nodePerms, cause.reason).withModId(cause.modId))
                           .chainError(s"Cannot clear value for node '${node.id.value}' for property '${newProp.name}'")
           } yield {
             NodeUpdateResult.Updated(newNode.id)

@@ -45,12 +45,12 @@ import com.normation.plugins.openscappolicies.services.ReportSanitizer
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.GET
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
+import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.*
 import enumeratum.*
 import java.io.IOException

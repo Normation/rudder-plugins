@@ -6,9 +6,9 @@ import com.normation.errors.effectUioUnit
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Rights
 import com.normation.rudder.api.*
-import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.*
 import java.nio.file.Files
 import java.time.Instant
@@ -41,7 +41,7 @@ class UserApiTest extends ZIOSpecDefault {
       isEnabled = true,
       creationDate = accountCreationDate,
       lastAuthenticationDate = None,
-      NodeSecurityContext.All
+      TenantAccessGrant.All
     )
   )
 
@@ -52,9 +52,10 @@ class UserApiTest extends ZIOSpecDefault {
     val user1 = new AuthenticatedUser {
       override val account: RudderAccount = RudderAccount.Api(accounts(ApiAccountId("user1")))
       override def checkRights(auth: AuthorizationType) = true
-      override def authz:     Rights              = Rights.AnyRights
-      override def apiAuthz:  ApiAuthorization    = ApiAuthorization.RW
-      override def nodePerms: NodeSecurityContext = NodeSecurityContext.All
+      override def authz:       Rights            = Rights.AnyRights
+      override def apiAuthz:    ApiAuthorization  = ApiAuthorization.RW
+      override def accessGrant: TenantAccessGrant = TenantAccessGrant.All
+      override def actorIp:     Option[String]    = Some("192.168.0.42")
     }
     override val getCurrentUser: Option[AuthenticatedUser] = Some(user1)
   }

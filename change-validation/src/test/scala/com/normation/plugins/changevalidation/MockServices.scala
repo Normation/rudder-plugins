@@ -63,15 +63,15 @@ import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNode
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.domain.workflows.WorkflowStepChange
-import com.normation.rudder.facts.nodes.ChangeContext
-import com.normation.rudder.facts.nodes.NodeSecurityContext
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.CategoryAndNodeGroup
 import com.normation.rudder.repository.FullNodeGroupCategory
 import com.normation.rudder.repository.RoNodeGroupRepository
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
+import com.normation.rudder.tenants.ChangeContext
+import com.normation.rudder.tenants.QueryContext
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserPassword
@@ -89,23 +89,21 @@ class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String,
 
   object nodeGroupRepo extends RoNodeGroupRepository {
 
-    override def getFullGroupLibrary():                                       IOResult[FullNodeGroupCategory]                    = {
+    override def getFullGroupLibrary()(implicit qc: QueryContext): IOResult[FullNodeGroupCategory] = {
       fullNodeGroupCategory.succeed
     }
 
-    override def categoryExists(
-        id: com.normation.rudder.domain.nodes.NodeGroupCategoryId
-    ): com.normation.errors.IOResult[Boolean] = ???
+    override def categoryExists(id: NodeGroupCategoryId): IOResult[Boolean] = ???
     override def getNodeGroupOpt(id: NodeGroupId)(implicit qc: QueryContext): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] =
       ???
     override def getNodeGroupCategory(id: NodeGroupId): IOResult[NodeGroupCategory] = ???
     override def getAll(): IOResult[Seq[NodeGroup]] = ???
-    override def getAllByIds(ids: Seq[NodeGroupId]): IOResult[Seq[com.normation.rudder.domain.nodes.NodeGroup]] = ???
+    override def getAllByIds(ids: Seq[NodeGroupId]): IOResult[Seq[NodeGroup]] = ???
     override def getAllNodeIds():      IOResult[Map[NodeGroupId, Set[NodeId]]]   = ???
     override def getAllNodeIdsChunk(): IOResult[Map[NodeGroupId, Chunk[NodeId]]] = ???
-    override def getGroupsByCategory(
-        includeSystem: Boolean
-    )(implicit qc: QueryContext): IOResult[SortedMap[List[NodeGroupCategoryId], CategoryAndNodeGroup]] = ???
+    override def getGroupsByCategory(includeSystem: Boolean)(implicit
+        qc: QueryContext
+    ): IOResult[SortedMap[List[NodeGroupCategoryId], CategoryAndNodeGroup]] = ???
     override def findGroupWithAnyMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
     override def findGroupWithAllMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
     override def getRootCategory():     NodeGroupCategory                                                 = ???
@@ -300,10 +298,12 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
 
   object userService extends UserService {
     val user:                    AuthenticatedUser         = new AuthenticatedUser {
-      override val account:   RudderAccount       = RudderAccount.User("admin", UserPassword.fromSecret("admin"))
-      override val authz:     Rights              = Rights.AnyRights
-      override val apiAuthz:  ApiAuthorization    = ApiAuthorization.RW
-      override val nodePerms: NodeSecurityContext = NodeSecurityContext.All
+      override val account:     RudderAccount     = RudderAccount.User("admin", UserPassword.fromSecret("admin"))
+      override val authz:       Rights            = Rights.AnyRights
+      override val apiAuthz:    ApiAuthorization  = ApiAuthorization.RW
+      override val accessGrant: TenantAccessGrant = TenantAccessGrant.All
+
+      override def actorIp: Option[String] = Some("192.168.0.42")
 
       override def checkRights(auth: AuthorizationType): Boolean = true
     }

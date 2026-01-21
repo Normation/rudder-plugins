@@ -45,7 +45,7 @@ import com.normation.rudder.api.ApiAccountId
 import com.normation.rudder.api.ApiAccountKind
 import com.normation.rudder.api.ApiAccountName
 import com.normation.rudder.api.ApiAuthorization
-import com.normation.rudder.facts.nodes.NodeSecurityContext
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserStatus
@@ -89,13 +89,13 @@ class TestCache extends Specification {
         isEnabled = true,
         TOKEN_CREATION,
         None,
-        NodeSecurityContext.All
+        TenantAccessGrant.All
       )
     ),
     UserStatus.Active,
     Set(),
     ApiAuthorization.RW,
-    NodeSecurityContext.All
+    TenantAccessGrant.All
   )
 
   private class Count {
