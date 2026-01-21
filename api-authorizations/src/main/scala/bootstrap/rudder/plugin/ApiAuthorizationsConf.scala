@@ -42,6 +42,7 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.apiauthorizations.*
 import com.normation.rudder.rest.ApiAuthorizationLevelService
+import java.time.Clock
 
 // service that provide ACL level only if plugin is enable
 class AclLevel(status: PluginStatus) extends ApiAuthorizationLevelService {
@@ -66,7 +67,8 @@ object ApiAuthorizationsConf extends RudderPluginModule {
     RudderConfig.userRepository,
     RudderConfig.authenticationProviders,
     RudderConfig.tokenGenerator,
-    RudderConfig.stringUuidGenerator
+    RudderConfig.stringUuidGenerator,
+    Clock.systemDefaultZone()
   )
   override lazy val pluginDef: ApiAuthorizationsPluginDef = new ApiAuthorizationsPluginDef(
     ApiAuthorizationsConf.pluginStatusService

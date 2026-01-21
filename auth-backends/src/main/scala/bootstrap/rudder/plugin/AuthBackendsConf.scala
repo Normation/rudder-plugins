@@ -51,6 +51,7 @@ import com.normation.plugins.authbackends.snippet.Oauth2LoginBanner
 import com.normation.rudder.Role
 import com.normation.rudder.RudderRoles
 import com.normation.rudder.api.*
+import com.normation.rudder.api.ApiAccountExpirationPolicy.ExpireAtDate
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.domain.logger.PluginLogger
@@ -1329,19 +1330,18 @@ class RudderJwtAuthenticationConverter(
 
       // create RudderUserDetails from token
       val details: RudderUserDetail = {
-        val created = new DateTime(jwt.getIssuedAt.toEpochMilli)
-        val exp     = Some(new DateTime(jwt.getExpiresAt.toEpochMilli))
+        val created    = jwt.getIssuedAt
+        val expiration = ExpireAtDate(jwt.getExpiresAt)
 
         RudderUserDetail(
           RudderAccount.Api(
             ApiAccount(
               ApiAccountId(jwt.getId),
-              ApiAccountKind.PublicApi(apiAuthz, exp),
+              ApiAccountKind.PublicApi(apiAuthz, expiration),
               ApiAccountName(jwt.getId),
-              Some(ApiTokenHash.fromHashValue(jwt.getTokenValue)),
+              AccountToken(Some(ApiTokenHash.fromHashValue(jwt.getTokenValue)), created),
               "",
               isEnabled = true, // always enabled at that point, since the token is valid
-              created,
               created,
               nsc
             )
@@ -1514,9 +1514,9 @@ class RudderOpaqueTokenAuthenticationConverter(
 
           // we only accept public API token for that kind of authentication
           apiAccount.kind match {
-            case ApiAccountKind.PublicApi(authz, expirationDate) =>
-              expirationDate match {
-                case Some(date) if (DateTime.now().isAfter(date)) =>
+            case ApiAccountKind.PublicApi(authz, expirationPolicy) =>
+              expirationPolicy match {
+                case ExpireAtDate(date) if (Instant.now().isAfter(date)) =>
                   throw new InvalidBearerTokenException(
                     s"An opaque Bearer token was received but API token with ID ${tokenId.value} is expired in Rudder"
                   )
@@ -1533,7 +1533,7 @@ class RudderOpaqueTokenAuthenticationConverter(
               }
 
             // all other API account type leads to an error
-            case _                                               =>
+            case _                                                 =>
               throw new InvalidBearerTokenException(
                 s"An opaque Bearer token was received but No valid public API token with ID ${tokenId.value} is configured in Rudder"
               )
