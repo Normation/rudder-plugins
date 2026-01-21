@@ -29,6 +29,7 @@ class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = M
     override def getAllStandardAccounts: IOResult[Seq[ApiAccount]] = ???
     override def getByToken(token: ApiTokenHash): IOResult[Option[ApiAccount]] = ???
     override def getSystemAccount: ApiAccount = ???
+    override def isSystemToken(apiTokenHash: ApiTokenHash): Boolean = ???
   }
 
   object tokenGenerator extends TokenGenerator {

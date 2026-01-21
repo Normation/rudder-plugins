@@ -140,7 +140,7 @@ trait LicensedPluginCheck extends PluginStatus {
 
 // LicenseInformation has exactly the fields in license with different wrapper types : define transformers
 private object LicensedPluginCheck {
-  import com.normation.utils.DateFormaterService.JodaTimeToJava
+  import com.normation.utils.DateFormaterService.*
 
   // Required for min-max version which is a parsed version
   // The license defines a version with a .toString method
@@ -155,8 +155,8 @@ private object LicensedPluginCheck {
   implicit val transformerPluginLicense: Transformer[LicenseInformation, PluginLicense] = {
     Transformer
       .define[LicenseInformation, PluginLicense]
-      .withFieldComputed(_.startDate, _.startDate.value.toJava)
-      .withFieldComputed(_.endDate, _.endDate.value.toJava)
+      .withFieldComputed(_.startDate, _.startDate.value.toZonedDateTime)
+      .withFieldComputed(_.endDate, _.endDate.value.toZonedDateTime)
       .withFieldComputed(_.others, _.others.map(_.raw).toMap)
       .buildTransformer
   }

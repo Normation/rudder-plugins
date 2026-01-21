@@ -52,9 +52,11 @@ import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.syntax.*
+import java.time.Clock
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
-import org.joda.time.DateTime
 import zio.json.*
 
 class UserApiImpl(
@@ -63,7 +65,8 @@ class UserApiImpl(
     userRepository:              UserRepository,
     authBackendProvidersManager: AuthBackendProvidersManager,
     tokenGenerator:              TokenGenerator,
-    uuidGen:                     StringUuidGenerator
+    uuidGen:                     StringUuidGenerator,
+    clock:                       Clock
 ) extends LiftApiModuleProvider[UserApi] {
   api =>
 
@@ -124,17 +127,16 @@ class UserApiImpl(
     val schema: UserApi.CreateApiToken.type = UserApi.CreateApiToken
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
-      val now     = DateTime.now
+      val now     = Instant.now(clock)
       val secret  = ApiTokenSecret.generate(tokenGenerator)
       val hash    = ApiTokenHash.fromSecret(secret)
       val account = ApiAccount(
         ApiAccountId(authzToken.qc.actor.name),
         ApiAccountKind.User,
         ApiAccountName(authzToken.qc.actor.name),
-        Some(hash),
+        AccountToken(Some(hash), now),
         s"API token for user '${authzToken.qc.actor.name}'",
         isEnabled = true,
-        now,
         now,
         // set "no tenant" - they will be updated dynamically when perms are resolved for that token in AppConfigAuth
         NodeSecurityContext.None
@@ -190,10 +192,10 @@ object UserApiImpl {
       id:                              ApiAccountId,
       name:                            ApiAccountName,
       token:                           ClearTextToken,
-      tokenGenerationDate:             DateTime,
+      tokenGenerationDate:             Instant,
       kind:                            ApiAccountType,
       description:                     String,
-      creationDate:                    DateTime,
+      creationDate:                    Instant,
       @jsonField("enabled") isEnabled: Boolean,
       expirationDate:                  Option[String],
       expirationDateDefined:           Boolean,
@@ -202,12 +204,14 @@ object UserApiImpl {
   )
 
   object RestApiAccount extends ApiAccountCodecs {
+    private val expirationDateFormat = DateTimeFormatter.ofPattern(DateFormaterService.dateFormatTimePicker)
+
     implicit class ApiAccountOps(val account: ApiAccount) extends AnyVal {
       import ApiAccountKind.*
       def expirationDate: Option[String] = {
         account.kind match {
-          case PublicApi(_, expirationDate) => expirationDate.map(DateFormaterService.getDisplayDateTimePicker)
-          case User | System                => None
+          case PublicApi(_, policy) => policy.expirationDate.map(expirationDateFormat.format)
+          case User | System        => None
         }
       }
 
@@ -250,6 +254,7 @@ object UserApiImpl {
       .withFieldComputed(_.acl, _.acl)
       .withFieldComputed(_.expirationDate, _.expirationDate)
       .withFieldComputed(_.expirationDateDefined, _.expirationDateDefined)
+      .withFieldComputed(_.tokenGenerationDate, _.tokenGenerationDate)
       .withFieldComputed(
         _.authorizationType,
         _.authzType
