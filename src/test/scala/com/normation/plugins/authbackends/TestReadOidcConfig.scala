@@ -37,7 +37,7 @@
 package com.normation.plugins.authbackends
 
 import bootstrap.rudder.plugin.RudderTokenMapping
-import com.normation.rudder.facts.nodes.NodeSecurityContext
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.tenants.TenantId
 import com.normation.zio.*
 import com.typesafe.config.ConfigFactory
@@ -105,33 +105,33 @@ class TestReadOidcConfig extends Specification {
     "work for simple tenants" in {
       val tokenValues = Set("rudder_TA", "rudder_TB")
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", TenantAccessGrant.None)(_ => Some(tokenValues))
 
-      tenants === NodeSecurityContext.ByTenants(Chunk(TenantId("TA"), TenantId("TB")))
+      tenants === TenantAccessGrant.ByTenants(Chunk(TenantId("TA"), TenantId("TB")))
     }
 
     "work for no tenants" in {
       val tokenValues = Set.empty[String]
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", TenantAccessGrant.None)(_ => Some(tokenValues))
 
-      tenants === NodeSecurityContext.None
+      tenants === TenantAccessGrant.None
     }
 
     "work for none" in {
       val tokenValues = Set("rudder_none", "rudder_TA")
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", TenantAccessGrant.None)(_ => Some(tokenValues))
 
-      tenants === NodeSecurityContext.None
+      tenants === TenantAccessGrant.None
     }
 
     "work for all" in {
       val tokenValues = Set("rudder_all", "rudder_TA")
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", TenantAccessGrant.None)(_ => Some(tokenValues))
 
-      tenants === NodeSecurityContext.All
+      tenants === TenantAccessGrant.All
     }
   }
 

@@ -55,8 +55,8 @@ import com.normation.rudder.api.ApiAccountExpirationPolicy.ExpireAtDate
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import com.normation.rudder.domain.logger.PluginLogger
-import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RoleApiMapping
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.*
 import com.normation.zio.*
 import com.typesafe.config.ConfigException
@@ -647,7 +647,7 @@ case class RudderOAuth2OpaqueToken(obt: BearerTokenAuthentication, rudderUserDet
  * logged on the IdP)
  */
 final class RudderOidcDetails(oidc: OidcUser, rudder: RudderUserDetail)
-    extends RudderUserDetail(rudder.account, rudder.status, rudder.roles, rudder.apiAuthz, rudder.nodePerms) with OidcUser {
+    extends RudderUserDetail(rudder.account, rudder.status, rudder.roles, rudder.apiAuthz, rudder.accessGrant) with OidcUser {
   override def getClaims:     util.Map[String, AnyRef] = oidc.getClaims
   override def getUserInfo:   OidcUserInfo             = oidc.getUserInfo
   override def getIdToken:    OidcIdToken              = oidc.getIdToken
@@ -660,7 +660,7 @@ final class RudderOidcDetails(oidc: OidcUser, rudder: RudderUserDetail)
  * logged on the IdP)
  */
 final class RudderOauth2Details(oauth2: OAuth2User, rudder: RudderUserDetail)
-    extends RudderUserDetail(rudder.account, rudder.status, rudder.roles, rudder.apiAuthz, rudder.nodePerms) with OAuth2User {
+    extends RudderUserDetail(rudder.account, rudder.status, rudder.roles, rudder.apiAuthz, rudder.accessGrant) with OAuth2User {
   override def getAttributes: util.Map[String, AnyRef] = oauth2.getAttributes
   override def getName:       String                   = oauth2.getName
 }
@@ -818,10 +818,10 @@ object RudderTokenMapping {
       reg:             RudderOAuth2Registration & RegistrationWithRoles,
       principal:       String, // user name or token id
       protocolName:    String, // oauth2Api, oauth2, oidc
-      default:         NodeSecurityContext
+      default:         TenantAccessGrant
   )(
       getTokenTenants: String => Option[Set[String]]
-  ): NodeSecurityContext = {
+  ): TenantAccessGrant = {
     val tenants = if (reg.tenants.enabled) {
       val filteredTenants = getProvidedList(reg.tenants, principal)(getTokenTenants)
 
@@ -843,12 +843,12 @@ object RudderTokenMapping {
         }
       }
 
-      val parsedTenants = NodeSecurityContext.parseList(Some(mappedTenants)) match {
+      val parsedTenants = TenantAccessGrant.parseList(Some(mappedTenants)) match {
         case Left(err)  =>
           AuthBackendsLogger.debug(
             s"Parsing provided tenants for ${protocolName} in attribute: ${reg.tenants.attributeName} for principal ${principal} lead to an error, disabling all tenants: ${err.fullMsg}"
           )
-          NodeSecurityContext.None
+          TenantAccessGrant.None
         case Right(nsc) =>
           ApplicationLoggerPure.Auth.logEffect.info(
             s"Principal '${principal}' tenant list extended with ${protocolName} provided tenants: '${nsc.value}' (override: ${reg.tenants.overrides})"
@@ -987,9 +987,9 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
     // for now, tenants are not configurable by OIDC
     val tenants    = rudderUserDetailsService.authConfigProvider.getUserByName(user.getName) match {
       // when the user is not defined in rudder-users.xml, we give it the whole perm on nodes for compatibility
-      case Left(_)  => NodeSecurityContext.All
+      case Left(_)  => TenantAccessGrant.All
       // if the user is defined in rudder-users.xml, we get whatever is defined there.
-      case Right(u) => u.nodePerms
+      case Right(u) => u.accessGrant
     }
 
     buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails, tenants)
@@ -1002,7 +1002,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       roleApiMapping: RoleApiMapping,
       rudder:         RudderUserDetail,
       userBuilder:    (U, RudderUserDetail) => T,
-      tenants:        NodeSecurityContext
+      tenants:        TenantAccessGrant
   ): T = {
 
     val (roles, nsc) = optReg match {
@@ -1028,7 +1028,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
 
     // we derive api authz from users rights
     val apiAuthz    = RudderTokenMapping.getApiAuthorization(roleApiMapping, roles)
-    val userDetails = rudder.copy(roles = roles, apiAuthz = apiAuthz, nodePerms = nsc)
+    val userDetails = rudder.copy(roles = roles, apiAuthz = apiAuthz, accessGrant = nsc)
     AuthBackendsLogger.debug(
       s"Principal '${rudder.getUsername}' final roles: [${roles.map(_.name).mkString(", ")}], and API authz: ${apiAuthz.debugString}, and tenants: ${nsc.value}"
     )
@@ -1325,7 +1325,7 @@ class RudderJwtAuthenticationConverter(
 
       val roles    = RudderTokenMapping.getRoles(registration, t.getName, PROTOCOL_ID, default = Set())(getAttr)
       val nsc      =
-        RudderTokenMapping.getTenants(registration, t.getName, PROTOCOL_ID, default = NodeSecurityContext.None)(getAttr)
+        RudderTokenMapping.getTenants(registration, t.getName, PROTOCOL_ID, default = TenantAccessGrant.None)(getAttr)
       val apiAuthz = RudderTokenMapping.getApiAuthorization(roleApiMapping, roles)
 
       // create RudderUserDetails from token
