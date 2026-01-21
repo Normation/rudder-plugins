@@ -38,7 +38,9 @@ package com.normation.plugins.authbackends
 
 import bootstrap.rudder.plugin.RudderOAuth2OpaqueToken
 import bootstrap.rudder.plugin.RudderOpaqueTokenAuthenticationProvider
+import com.normation.rudder.api.AccountToken
 import com.normation.rudder.api.ApiAccount
+import com.normation.rudder.api.ApiAccountExpirationPolicy
 import com.normation.rudder.api.ApiAccountId
 import com.normation.rudder.api.ApiAccountKind
 import com.normation.rudder.api.ApiAccountName
@@ -49,7 +51,6 @@ import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserStatus
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
@@ -81,13 +82,12 @@ class TestCache extends Specification {
     RudderAccount.Api(
       ApiAccount(
         ApiAccountId(s),
-        ApiAccountKind.PublicApi(ApiAuthorization.RW, None),
+        ApiAccountKind.PublicApi(ApiAuthorization.RW, ApiAccountExpirationPolicy.NeverExpire),
         ApiAccountName(s),
-        None,
+        AccountToken(None, TOKEN_CREATION),
         "",
         isEnabled = true,
-        new DateTime(0),
-        new DateTime(0),
+        TOKEN_CREATION,
         NodeSecurityContext.All
       )
     ),
