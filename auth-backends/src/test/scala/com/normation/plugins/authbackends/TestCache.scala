@@ -88,6 +88,7 @@ class TestCache extends Specification {
         "",
         isEnabled = true,
         TOKEN_CREATION,
+        None,
         NodeSecurityContext.All
       )
     ),
