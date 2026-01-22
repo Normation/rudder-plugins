@@ -40,6 +40,7 @@ class UserApiTest extends ZIOSpecDefault {
       "number one user",
       isEnabled = true,
       creationDate = accountCreationDate,
+      lastAuthenticationDate = None,
       NodeSecurityContext.All
     )
   )

@@ -9,6 +9,7 @@ import com.normation.rudder.api.ApiTokenHash
 import com.normation.rudder.api.RoApiAccountRepository
 import com.normation.rudder.api.TokenGenerator
 import com.normation.rudder.api.WoApiAccountRepository
+import java.time.Instant
 import zio.syntax.*
 
 class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = Map.empty) { self =>
@@ -29,7 +30,8 @@ class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = M
     override def getAllStandardAccounts: IOResult[Seq[ApiAccount]] = ???
     override def getByToken(token: ApiTokenHash): IOResult[Option[ApiAccount]] = ???
     override def getSystemAccount: ApiAccount = ???
-    override def isSystemToken(apiTokenHash: ApiTokenHash): Boolean = ???
+    override def isSystemToken(apiTokenHash:      ApiTokenHash): Boolean = ???
+    override def updateLastAuthenticationDate(id: ApiAccountId, date: Instant): IOResult[Unit] = ???
   }
 
   object tokenGenerator extends TokenGenerator {
