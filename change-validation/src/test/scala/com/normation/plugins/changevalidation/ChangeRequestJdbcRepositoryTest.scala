@@ -163,7 +163,8 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
             Map.empty,
             "",
             "",
-            None
+            None,
+            security = None
           )
         )
       ),
@@ -179,7 +180,7 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
         actor,
         DateTime.parse("2023-01-01T00:00:00.000Z"),
         Some("nodeGroup_001 change reason"),
-        AddNodeGroupDiff(NodeGroup(groupId, "", "", List.empty, None, serverList = Set.empty, _isEnabled = true))
+        AddNodeGroupDiff(NodeGroup(groupId, "", "", List.empty, None, serverList = Set.empty, _isEnabled = true, security = None))
       ),
       List.empty
     ),
@@ -192,7 +193,7 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
         actor,
         DateTime.parse("2023-01-01T00:00:00.000Z"),
         Some("rule_001 change reason"),
-        AddRuleDiff(Rule(ruleId, "", RuleCategoryId("")))
+        AddRuleDiff(Rule(ruleId, "", RuleCategoryId(""), security = None))
       ),
       List.empty
     ),
@@ -214,7 +215,8 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
             None,
             "",
             None,
-            Visibility.default
+            Visibility.default,
+            security = None
           )
         )
       ),

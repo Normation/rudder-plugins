@@ -39,7 +39,7 @@ package com.normation.plugins.nodeexternalreports.service
 import com.normation.box.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.QueryContext
+import com.normation.rudder.tenants.QueryContext
 import com.typesafe.config.*
 import java.io.File
 import net.liftweb.common.*

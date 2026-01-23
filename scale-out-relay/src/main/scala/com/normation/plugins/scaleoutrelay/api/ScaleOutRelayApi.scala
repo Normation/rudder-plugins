@@ -1,21 +1,19 @@
 package com.normation.plugins.scaleoutrelay.api
 
-import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.api.HttpAction.POST
-import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rest.syntax.*
+import com.normation.rudder.tenants.ChangeContext
 import com.normation.utils.StringUuidGenerator
 import enumeratum.*
-import java.time.Instant
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
@@ -69,14 +67,7 @@ class ScaleOutRelayApiImpl(
         params:  DefaultParams,
         authz:   AuthzToken
     ): LiftResponse = {
-      implicit val cc = ChangeContext(
-        ModificationId(uuidGen.newUuid),
-        authz.qc.actor,
-        Instant.now(),
-        params.reason.orElse(Some(s"Promote node ${nodeId} to relay")),
-        Some(req.remoteAddr),
-        authz.qc.nodePerms
-      )
+      implicit val cc: ChangeContext = authz.qc.newCC(params.reason.orElse(Some(s"Promote node ${nodeId} to relay")))
       scaleOutRelayService
         .promoteNodeToRelay(NodeId(nodeId))
         .chainError(s"Error when trying to promote mode $nodeId")
@@ -95,14 +86,7 @@ class ScaleOutRelayApiImpl(
         params:  DefaultParams,
         authz:   AuthzToken
     ): LiftResponse = {
-      implicit val cc = ChangeContext(
-        ModificationId(uuidGen.newUuid),
-        authz.qc.actor,
-        Instant.now(),
-        params.reason.orElse(Some(s"Demote relay ${nodeId}")),
-        Some(req.remoteAddr),
-        authz.qc.nodePerms
-      )
+      implicit val cc: ChangeContext = authz.qc.newCC(params.reason.orElse(Some(s"Demote relay ${nodeId}")))
       scaleOutRelayService
         .demoteRelayToNode(NodeId(nodeId))
         .chainError(s"Error when trying to demote mode $nodeId")

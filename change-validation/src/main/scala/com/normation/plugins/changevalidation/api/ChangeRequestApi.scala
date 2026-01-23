@@ -71,7 +71,6 @@ import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNodeId
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.ApiPath
 import com.normation.rudder.rest.AuthzToken
@@ -91,6 +90,7 @@ import com.normation.rudder.rest.syntax.*
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
+import com.normation.rudder.tenants.QueryContext
 import com.normation.rudder.users.AuthenticatedUser
 import enumeratum.*
 import net.liftweb.http.LiftResponse

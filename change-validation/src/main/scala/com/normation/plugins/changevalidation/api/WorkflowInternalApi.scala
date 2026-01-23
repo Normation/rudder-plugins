@@ -57,7 +57,6 @@ import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.ConfigurationChangeRequest
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.RoDirectiveRepository
 import com.normation.rudder.repository.RoNodeGroupRepository
 import com.normation.rudder.rest.*
@@ -76,6 +75,7 @@ import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowService
+import com.normation.rudder.tenants.QueryContext
 import enumeratum.Enum
 import enumeratum.EnumEntry
 import net.liftweb.http.LiftResponse
@@ -305,7 +305,7 @@ class WorkflowInternalApiImpl(
         .map(_.toMap)
     }
 
-    private def getNodeGroupNames: IOResult[MapView[NodeGroupId, String]] = {
+    private def getNodeGroupNames(using qc: QueryContext): IOResult[MapView[NodeGroupId, String]] = {
       for {
         library <- nodeGroupRepository.getFullGroupLibrary()
       } yield {

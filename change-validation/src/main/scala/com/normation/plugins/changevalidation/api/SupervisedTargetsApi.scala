@@ -59,6 +59,7 @@ import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rest.syntax.*
+import com.normation.rudder.tenants.QueryContext
 import enumeratum.*
 import java.nio.charset.StandardCharsets
 import net.liftweb.http.LiftResponse
@@ -132,6 +133,7 @@ class SupervisedTargetsApiImpl(
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
       import com.normation.plugins.changevalidation.RudderJsonMapping.*
+      implicit val qc: QueryContext = authzToken.qc
 
       (for {
         groups       <- nodeGroupRepository.getFullGroupLibrary()
@@ -160,6 +162,7 @@ class SupervisedTargetsApiImpl(
     val schema: SupervisedTargetsApi.UpdateSupervisedTargets.type = SupervisedTargetsApi.UpdateSupervisedTargets
 
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse = {
+      implicit val qc: QueryContext = authzToken.qc
       (for {
         targets <-
           req

@@ -42,7 +42,7 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.openscappolicies.OpenScapReport
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
-import com.normation.rudder.facts.nodes.QueryContext
+import com.normation.rudder.tenants.QueryContext
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import com.normation.zio.*

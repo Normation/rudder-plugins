@@ -40,7 +40,7 @@ import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
 import com.normation.plugins.nodeexternalreports.service.ReadExternalReports
-import com.normation.rudder.facts.nodes.QueryContext
+import com.normation.rudder.tenants.QueryContext
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.components.ShowNodeDetailsFromNode
 import com.normation.rudder.web.snippet.TabUtils

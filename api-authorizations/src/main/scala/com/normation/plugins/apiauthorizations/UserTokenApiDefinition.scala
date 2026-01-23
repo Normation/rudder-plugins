@@ -41,12 +41,12 @@ import bootstrap.liftweb.AuthBackendProvidersManager
 import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.rudder.api.*
-import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.repository.ldap.JsonApiAuthz
 import com.normation.rudder.rest.*
 import com.normation.rudder.rest.data.*
 import com.normation.rudder.rest.lift.*
 import com.normation.rudder.rest.syntax.*
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.UserRepository
 import com.normation.utils.DateFormaterService
 import com.normation.utils.StringUuidGenerator
@@ -140,7 +140,7 @@ class UserApiImpl(
         now,
         lastAuthenticationDate = None,
         // set "no tenant" - they will be updated dynamically when perms are resolved for that token in AppConfigAuth
-        NodeSecurityContext.None
+        TenantAccessGrant.None
       )
 
       writeApi

@@ -8,10 +8,8 @@ import com.normation.rudder.domain.NodeDit
 import com.normation.rudder.domain.nodes.NodeGroupCategoryId
 import com.normation.rudder.domain.nodes.NodeKind
 import com.normation.rudder.domain.policies.*
-import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.EventLogRepository
 import com.normation.rudder.repository.WoDirectiveRepository
 import com.normation.rudder.repository.WoNodeGroupRepository
@@ -19,6 +17,8 @@ import com.normation.rudder.repository.WoRuleRepository
 import com.normation.rudder.services.servers.PolicyServer
 import com.normation.rudder.services.servers.PolicyServerConfigurationObjects
 import com.normation.rudder.services.servers.PolicyServerManagementService
+import com.normation.rudder.tenants.ChangeContext
+import com.normation.rudder.tenants.QueryContext
 import com.softwaremill.quicklens.*
 import zio.*
 import zio.syntax.*
@@ -58,7 +58,8 @@ class ScaleOutRelayService(
   val SYSTEM_GROUPS = "SystemGroups"
 
   def promoteNodeToRelay(nodeId: NodeId)(implicit cc: ChangeContext): IOResult[Unit] = {
-    implicit val qr: QueryContext = cc.toQuery
+    implicit val qr: QueryContext = cc.toQC
+
     for {
       _        <- ScaleOutRelayLoggerPure.debug(s"Start promotion of node '${nodeId.value}' to relay")
       nodeInfo <- nodeFactRepository
@@ -88,11 +89,9 @@ class ScaleOutRelayService(
       _ <- nodeFactRepository.save(nodeInfo)
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new special targets")
       _ <-
-        ZIO.foreach(objects.targets)(t => woLDAPNodeGroupRepository.createPolicyServerTarget(t, cc.modId, cc.actor, cc.message))
+        ZIO.foreach(objects.targets)(t => woLDAPNodeGroupRepository.createPolicyServerTarget(t))
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system groups")
-      _ <- ZIO.foreach(objects.groups) { g =>
-             woLDAPNodeGroupRepository.create(g, NodeGroupCategoryId(SYSTEM_GROUPS), cc.modId, cc.actor, cc.message)
-           }
+      _ <- ZIO.foreach(objects.groups)(g => woLDAPNodeGroupRepository.create(g, NodeGroupCategoryId(SYSTEM_GROUPS)))
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system directives")
       _ <- ZIO.foreach(objects.directives.toList) {
              case (t, d) =>
@@ -122,7 +121,7 @@ class ScaleOutRelayService(
   }
 
   def demoteRelayToNode(nodeId: NodeId)(implicit cc: ChangeContext): IOResult[Unit] = {
-    implicit val qr: QueryContext = cc.toQuery
+    implicit val qr: QueryContext = cc.toQC
     for {
       _        <- ScaleOutRelayLoggerPure.debug(s"Start demotion of relay '${nodeId.value}' to node")
       nodeInfo <- nodeFactRepository
@@ -161,7 +160,7 @@ class ScaleOutRelayService(
     })
     val groups     = objects.groups.map(g => {
       woLDAPNodeGroupRepository
-        .delete(g.id, cc.modId, cc.actor, cc.message)
+        .delete(g.id)
         .chainError(s"Demote relay failed: removing node group '${g.id.serialize}' failed")
         .unit
     })

@@ -46,15 +46,14 @@ import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
-import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.facts.nodes.NodeFactChangeEvent
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.facts.nodes.NodeSecurityContext
-import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
-import java.time.Instant
+import com.normation.rudder.tenants.ChangeContext
+import com.normation.rudder.tenants.QueryContext
+import com.normation.rudder.tenants.TenantAccessGrant
 import zio.*
 import zio.syntax.*
 
@@ -127,7 +126,7 @@ object QueryService {
               newNode   = nodeInfo.copy(properties = Chunk.fromIterable(newProps))
               res      <- repository
                             .save(newNode)(using
-                              ChangeContext(cause.modId, cause.actor, Instant.now(), cause.reason, None, NodeSecurityContext.All)
+                              ChangeContext.newFor(cause.actor, TenantAccessGrant.All, cause.reason).withModId(cause.modId)
                             )
                             .chainError(
                               s"Cannot save value for node '${nodeInfo.id.value}' for property '${property.name}'"

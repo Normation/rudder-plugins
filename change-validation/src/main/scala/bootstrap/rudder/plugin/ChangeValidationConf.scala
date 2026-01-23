@@ -88,6 +88,7 @@ import com.normation.rudder.services.workflows.NodeGroupChangeRequest
 import com.normation.rudder.services.workflows.RuleChangeRequest
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.services.workflows.WorkflowService
+import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.UnsafeRun
 import java.nio.file.Paths
 import zio.syntax.ToZio
@@ -272,7 +273,7 @@ object ChangeValidationConf extends RudderPluginModule {
   val loadSupervisedTargets = () => {
     for {
       u <- unsupervisedTargetRepo.load()
-      g <- RudderConfig.roNodeGroupRepository.getFullGroupLibrary()
+      g <- RudderConfig.roNodeGroupRepository.getFullGroupLibrary()(using QueryContext.systemQC)
     } yield UnsupervisedTargetsRepository.invertTargets(u, g)
   }
 

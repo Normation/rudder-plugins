@@ -10,7 +10,6 @@ import com.normation.ldap.ldif.LDIFNoopChangeRecord
 import com.normation.rudder.domain.nodes.*
 import com.normation.rudder.domain.policies.PolicyServerTarget
 import com.normation.rudder.domain.workflows.ChangeRequestId
-import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.repository.EventLogRepository
 import com.normation.rudder.repository.WoNodeGroupRepository
 import com.normation.rudder.services.eventlog.EventLogFactory
@@ -18,6 +17,7 @@ import com.normation.rudder.services.servers.PolicyServer
 import com.normation.rudder.services.servers.PolicyServerManagementService
 import com.normation.rudder.services.servers.PolicyServers
 import com.normation.rudder.services.servers.PolicyServersUpdateCommand
+import com.normation.rudder.tenants.ChangeContext
 import com.normation.zio.UnsafeRun
 import com.unboundid.ldap.sdk.DN
 import com.unboundid.ldif.LDIFChangeRecord
@@ -34,98 +34,59 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
 
   object woLDAPNodeGroupRepository extends WoNodeGroupRepository {
 
-    override def create(
-        group: NodeGroup,
-        into:  NodeGroupCategoryId,
-        modId: ModificationId,
-        actor: EventActor,
-        why:   Option[String]
-    ): IOResult[AddNodeGroupDiff] = {
+    override def create(group: NodeGroup, into: NodeGroupCategoryId)(implicit cc: ChangeContext): IOResult[AddNodeGroupDiff] = {
       nodeGroupsRef.update(_ + (group.id -> group)).as(AddNodeGroupDiff(group))
     }
 
-    override def createPolicyServerTarget(
-        target: PolicyServerTarget,
-        modId:  ModificationId,
-        actor:  EventActor,
-        reason: Option[String]
-    ): IOResult[LDIFChangeRecord] = {
+    override def createPolicyServerTarget(target: PolicyServerTarget)(implicit cc: ChangeContext): IOResult[LDIFChangeRecord] = {
       LDIFNoopChangeRecord(DN.NULL_DN).succeed
     }
 
-    override def delete(
-        id:             NodeGroupId,
-        modId:          ModificationId,
-        actor:          EventActor,
-        whyDescription: Option[String]
-    ): IOResult[DeleteNodeGroupDiff] = {
+    override def delete(id: NodeGroupId)(implicit cc: ChangeContext): IOResult[DeleteNodeGroupDiff] = {
       nodeGroupsRef.get
         .map(_.get(id))
         .flatMap(_.notOptional(s"Cannot delete node group $id because it was not created in mock"))
         .map(DeleteNodeGroupDiff(_))
     }
 
-    override def deletePolicyServerTarget(policyServer: PolicyServerTarget): IOResult[PolicyServerTarget] = {
+    override def deletePolicyServerTarget(
+        policyServer: PolicyServerTarget
+    )(implicit cc: ChangeContext): IOResult[PolicyServerTarget] = {
       policyServer.succeed
     }
 
-    override def update(
-        group:          NodeGroup,
-        modId:          ModificationId,
-        actor:          EventActor,
-        whyDescription: Option[String]
-    ): IOResult[Option[ModifyNodeGroupDiff]] = ???
+    override def update(group: NodeGroup)(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def updateDiffNodes(
-        group:          NodeGroupId,
-        add:            List[NodeId],
-        delete:         List[NodeId],
-        modId:          ModificationId,
-        actor:          EventActor,
-        whyDescription: Option[String]
-    ): IOResult[Option[ModifyNodeGroupDiff]] = ???
+        group:  NodeGroupId,
+        add:    List[NodeId],
+        delete: List[NodeId]
+    )(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def updateSystemGroup(
-        group:  NodeGroup,
-        modId:  ModificationId,
-        actor:  EventActor,
-        reason: Option[String]
-    ): IOResult[Option[ModifyNodeGroupDiff]] = ???
+        group: NodeGroup
+    )(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def updateDynGroupNodes(
-        group:          NodeGroup,
-        modId:          ModificationId,
-        actor:          EventActor,
-        whyDescription: Option[String]
-    ): IOResult[Option[ModifyNodeGroupDiff]] = ???
+        group: NodeGroup
+    )(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def move(
         group:       NodeGroupId,
         containerId: NodeGroupCategoryId
     )(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
-    override def addGroupCategorytoCategory(
-        that:           NodeGroupCategory,
-        into:           NodeGroupCategoryId,
-        modificationId: ModificationId,
-        actor:          EventActor,
-        reason:         Option[String]
-    ): IOResult[NodeGroupCategory] = ???
+    override def addGroupCategoryToCategory(that: NodeGroupCategory, into: NodeGroupCategoryId)(implicit
+        cc: ChangeContext
+    ): IOResult[NodeGroupCategory] = {
+      ???
+    }
     override def saveGroupCategory(
-        category:       NodeGroupCategory,
-        modificationId: ModificationId,
-        actor:          EventActor,
-        reason:         Option[String]
-    ): IOResult[NodeGroupCategory] = ???
+        category: NodeGroupCategory
+    )(implicit cc: ChangeContext): IOResult[NodeGroupCategory] = ???
     override def saveGroupCategory(
-        category:       NodeGroupCategory,
-        containerId:    NodeGroupCategoryId,
-        modificationId: ModificationId,
-        actor:          EventActor,
-        reason:         Option[String]
-    ): IOResult[NodeGroupCategory] = ???
+        category:    NodeGroupCategory,
+        containerId: NodeGroupCategoryId
+    )(implicit cc: ChangeContext): IOResult[NodeGroupCategory] = ???
     override def delete(
-        id:             NodeGroupCategoryId,
-        modificationId: ModificationId,
-        actor:          EventActor,
-        reason:         Option[String],
-        checkEmpty:     Boolean
-    ): IOResult[NodeGroupCategoryId] = ???
+        id:         NodeGroupCategoryId,
+        checkEmpty: Boolean
+    )(implicit cc: ChangeContext): IOResult[NodeGroupCategoryId] = ???
   }
 
   object policyServerManagementService extends PolicyServerManagementService {
