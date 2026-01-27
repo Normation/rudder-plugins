@@ -10,11 +10,12 @@ import Json.Decode.Pipeline exposing (optionalAt, required, requiredAt)
 import List.Nonempty as NonEmptyList
 import Ordering
 import Ports exposing (errorNotification)
-import RudderDataTable exposing (Column, ColumnName(..))
+import Rudder.Table exposing (Column, ColumnName(..), FilterOptionsType(..), SortOrder(..), buildConfig, buildCustomizations, buildOptions)
 import RudderDataTypes exposing (..)
 import RudderDiff exposing (..)
 import RudderLinkUtil exposing (ContextPath, directiveLink, directiveLinkWithId, getApiUrl, getContextPath, groupLink, groupLinkWithId, nodeLinkWithId, paramLink, ruleLink, ruleLinkWithId)
-import RudderTree exposing (..)
+import Rudder.Tree exposing (..)
+import Rudder.Filters exposing (..)
 
 
 
@@ -27,22 +28,25 @@ initModel : { contextPath : String } -> Model
 initModel { contextPath } =
     let
         columns =
-            NonEmptyList.Nonempty (Column (ColumnName "Action") (\{ action } -> displayEventAction (getContextPath contextPath) action) Nothing (Ordering.byFieldWith Ordering.natural (.action >> eventActionText)))
-                [ Column (ColumnName "Actor") (\{ actor } -> text actor) Nothing (Ordering.byField .actor)
-                , Column (ColumnName "Date") (\{ date } -> text date) Nothing (Ordering.byField .date)
-                , Column (ColumnName "Reason") (\{ reason } -> text <| Maybe.withDefault "" reason) Nothing (Ordering.byFieldWith Ordering.natural (.reason >> Maybe.withDefault ""))
+            NonEmptyList.Nonempty (Column (ColumnName "Action") (\{ action } -> displayEventAction (getContextPath contextPath) action) (Ordering.byFieldWith Ordering.natural (.action >> eventActionText)))
+                [ Column (ColumnName "Actor") (\{ actor } -> text actor) (Ordering.byField .actor)
+                , Column (ColumnName "Date") (\{ date } -> text date) (Ordering.byField .date)
+                , Column (ColumnName "Reason") (\{ reason } -> text <| Maybe.withDefault "" reason) (Ordering.byFieldWith Ordering.natural (.reason >> Maybe.withDefault ""))
                 ]
 
-        filters =
-            RudderDataTable.filterByValues (\{ action, actor, date, reason } -> [ eventActionText action, actor, date, reason |> Maybe.withDefault "" ])
-
+        filter =
+            SearchInputFilter
+                { predicate = Rudder.Filters.byValues (\{ action, actor, date, reason } -> [ eventActionText action, actor, date, reason |> Maybe.withDefault "" ])
+                , state = Rudder.Filters.empty
+                }
         table =
-            RudderDataTable.init
-                (RudderDataTable.buildConfig.newConfig columns filters
-                    |> RudderDataTable.buildConfig.withSortBy (ColumnName "Date")
-                    |> RudderDataTable.buildConfig.withSortOrder RudderDataTable.Desc
-                    |> RudderDataTable.buildConfig.withOptions
-                        (RudderDataTable.buildOptions.newOptions |> RudderDataTable.buildOptions.withFilter [])
+            Rudder.Table.init
+                (buildConfig.newConfig columns
+                    |> buildConfig.withSortBy (ColumnName "Date")
+                    |> buildConfig.withSortOrder Desc
+                    |> buildConfig.withOptions
+                        (buildOptions.newOptions
+                            |> buildOptions.withFilter filter)
                 )
                 []
 
@@ -52,7 +56,7 @@ initModel { contextPath } =
                 NoView
                 NoView
                 table
-                RudderTree.init
+                Rudder.Tree.init
     in
     model
 
@@ -67,16 +71,16 @@ type alias Model =
     { contextPath : ContextPath
     , changesView : ViewState Changes
     , changeRequestView : ViewState ChangeRequestMainDetails
-    , changesTableModel : RudderDataTable.Model EventLog Msg
-    , tree : RudderTree.Model
+    , changesTableModel : Rudder.Table.Model EventLog Msg
+    , tree : Rudder.Tree.Model
     }
 
 
 type Msg
     = GetChangeRequestChanges (Result Error Changes)
     | CallApi (Model -> Cmd Msg)
-    | ChangesTableMsg (RudderDataTable.Msg Msg)
-    | TreeMsg RudderTree.Msg
+    | ChangesTableMsg (Rudder.Table.Msg Msg)
+    | TreeMsg Rudder.Tree.Msg
 
 
 type alias Diff ty =
@@ -210,7 +214,7 @@ type alias Changes =
 
 
 type alias TableRow =
-    { action : Html (RudderDataTable.Msg Msg)
+    { action : Html (Rudder.Table.Msg Msg)
     , actor : String
     , date : String
     , reason : Maybe String
@@ -223,7 +227,7 @@ type alias TableRow =
 ------------------------------
 
 
-buildChangesTree : ChangesSummary -> RudderTree.Model
+buildChangesTree : ChangesSummary -> Rudder.Tree.Model
 buildChangesTree changes =
     let
         getLeaf resName =
@@ -248,14 +252,14 @@ buildChangesTree changes =
         params =
             List.map getLeaf changes.parameters |> makeTree "Global Parameters"
     in
-    RudderTree.Model (Root [ makeTree "Changes" [ directives, rules, groups, params ] ])
+    Rudder.Tree.Model (Root [ makeTree "Changes" [ directives, rules, groups, params ] ])
 
 
 updateChangeRequestDetails : ChangeRequestMainDetails -> Model -> Model
 updateChangeRequestDetails cr model =
     let
         updatedTable =
-            RudderDataTable.updateData cr.eventLogs model.changesTableModel
+            Rudder.Table.updateData cr.eventLogs model.changesTableModel
     in
     { model
         | changeRequestView = Success cr
@@ -284,14 +288,14 @@ update msg model =
         ChangesTableMsg tableMsg ->
             let
                 ( updatedModel, cmd, _ ) =
-                    RudderDataTable.update tableMsg model.changesTableModel
+                    Rudder.Table.update tableMsg model.changesTableModel
             in
             ( { model | changesTableModel = updatedModel }, cmd )
 
         TreeMsg treeMsg ->
             let
                 ( updatedTree, cmd ) =
-                    RudderTree.update treeMsg model.tree
+                    Rudder.Tree.update treeMsg model.tree
             in
             ( { model | tree = updatedTree }, Cmd.map TreeMsg cmd )
 
@@ -608,14 +612,14 @@ view model =
         ]
 
 
-viewChangeTree : RudderTree.Model -> Html Msg
+viewChangeTree : Rudder.Tree.Model -> Html Msg
 viewChangeTree tree =
-    Html.map TreeMsg (RudderTree.view tree)
+    Html.map TreeMsg (Rudder.Tree.view tree)
 
 
-viewChangesTable : RudderDataTable.Model EventLog Msg -> Html Msg
+viewChangesTable : Rudder.Table.Model EventLog Msg -> Html Msg
 viewChangesTable table =
-    Html.map ChangesTableMsg (RudderDataTable.view table)
+    Html.map ChangesTableMsg (Rudder.Table.view table)
 
 
 diff : Model -> Html Msg
