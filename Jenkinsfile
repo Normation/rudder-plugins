@@ -134,9 +134,8 @@ pipeline {
                     label 'generic-docker'
                     filename 'ci/plugins.Dockerfile'
                     additionalBuildArgs "--build-arg USER_ID=${env.JENKINS_UID}"
-                    // set same timezone as some tests rely on it
                     // and share maven cache
-                    args '-u 0:0 -v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/root/.elm -v /srv/cache/maven:/root/.m2'
+                    args '-u 0:0 -v /srv/cache/elm:/root/.elm -v /srv/cache/maven:/root/.m2'
                 }
             }
             steps {
@@ -192,9 +191,8 @@ pipeline {
                 dockerfile {
                     label 'generic-docker'
                     filename 'ci/plugins.Dockerfile'
-                    // set same timezone as some tests rely on it
                     // and share maven cache
-                    args '-u 0:0 -v /etc/timezone:/etc/timezone:ro -v /srv/cache/elm:/root/.elm -v /srv/cache/maven:/root/.m2'
+                    args '-u 0:0 -v /srv/cache/elm:/root/.elm -v /srv/cache/maven:/root/.m2'
                 }
             }
             steps {
