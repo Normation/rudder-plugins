@@ -41,7 +41,6 @@ import cats.data.NonEmptyList
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.services.TechniqueRepository
-import com.normation.errors.Inconsistency
 import com.normation.errors.IOResult
 import com.normation.errors.OptionToIoResult
 import com.normation.inventory.domain.NodeId
@@ -75,7 +74,7 @@ import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
-import com.normation.rudder.services.workflows.WorkflowService
+import com.normation.rudder.services.workflows.WorkflowLevelService
 import enumeratum.Enum
 import enumeratum.EnumEntry
 import net.liftweb.http.LiftResponse
@@ -131,7 +130,7 @@ class WorkflowInternalApiImpl(
     readWorkflow:                 RoWorkflowRepository,
     diffService:                  DiffService,
     readTechnique:                TechniqueRepository,
-    workflowService:              WorkflowService,
+    workflowLevelService:         WorkflowLevelService,
     roChangeRequestRepository:    RoChangeRequestRepository,
     eventLogDetailsService:       EventLogDetailsService,
     changeRequestEventLogService: ChangeRequestEventLogService,
@@ -154,13 +153,6 @@ class WorkflowInternalApiImpl(
       case API.ChangeRequestMainDetails  => ChangeRequestMainDetails
       case API.ChangeRequestChanges      => ChangeRequestChanges
     }
-  }
-
-  // Checks if external validation is needed
-  def checkWorkflow: Boolean = workflowService.needExternalValidation()
-
-  private def disabledWorkflowAnswer[T]: IOResult[T] = {
-    Inconsistency("Workflows are disabled in Rudder, the internal workflow API is not available").fail
   }
 
   object PendingChangeRequestCount extends LiftApiModule0 {
@@ -221,7 +213,7 @@ class WorkflowInternalApiImpl(
       def findAllNextStepsAux(curStatus: Option[WorkflowNodeId], acc: Seq[WorkflowNodeId]): Seq[WorkflowNodeId] = {
         curStatus match {
           case Some(cur) =>
-            val next = workflowService.findNextStatus(cur)
+            val next = workflowLevelService.getWorkflowService().findNextStatus(cur)
             findAllNextStepsAux(next, acc :+ cur)
           case None      => acc
         }
@@ -241,42 +233,39 @@ class WorkflowInternalApiImpl(
 
       implicit val qc: QueryContext = authzToken.qc
 
-      (if (checkWorkflow) {
-         for {
-           crId          <- sid.toIntOption
-                              .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
-                              .map(ChangeRequestId(_))
-           changeRequest <- roChangeRequestRepository
-                              .get(crId)
-                              .chainError(s"Could not find ChangeRequest ${sid}")
-                              .notOptional(s"Change request with id ${sid} does not exist.")
-           status        <- readWorkflow
-                              .getStateOfChangeRequest(crId)
-                              .chainError(s"Could not find ChangeRequest ${sid} status")
-           isMergeable    = commitRepository.isMergeable(changeRequest)
-           simpleCrJson   = SimpleChangeRequestJson.from(changeRequest, status, isMergeable)
-           isPending      = workflowService.isPending(status)
-           backStatus     = workflowService.findBackStatus(status)
-           nextStatus     = workflowService.findNextStatus(status)
-           allNextSteps   = findAllNextSteps(nextStatus)
-           crEventLogs   <- changeRequestEventLogService.getChangeRequestHistory(changeRequest.id)
-           wfEventLogs   <- workflowEventLogService.getChangeRequestHistory(changeRequest.id)
-         } yield {
-           ChangeRequestMainDetailsJson.from(
-             changeRequest,
-             simpleCrJson,
-             isPending,
-             wfEventLogs,
-             crEventLogs,
-             backStatus,
-             allNextSteps
-           )(using
-             eventLogDetailsService
-           )
-         }
-       } else {
-         disabledWorkflowAnswer
-       })
+      (for {
+        crId           <- sid.toIntOption
+                            .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
+                            .map(ChangeRequestId(_))
+        changeRequest  <- roChangeRequestRepository
+                            .get(crId)
+                            .chainError(s"Could not find ChangeRequest ${sid}")
+                            .notOptional(s"Change request with id ${sid} does not exist.")
+        status         <- readWorkflow
+                            .getStateOfChangeRequest(crId)
+                            .chainError(s"Could not find ChangeRequest ${sid} status")
+        isMergeable     = commitRepository.isMergeable(changeRequest)
+        simpleCrJson    = SimpleChangeRequestJson.from(changeRequest, status, isMergeable)
+        workflowService = workflowLevelService.getWorkflowService()
+        isPending       = workflowService.isPending(status)
+        backStatus      = workflowService.findBackStatus(status)
+        nextStatus      = workflowService.findNextStatus(status)
+        allNextSteps    = findAllNextSteps(nextStatus)
+        crEventLogs    <- changeRequestEventLogService.getChangeRequestHistory(changeRequest.id)
+        wfEventLogs    <- workflowEventLogService.getChangeRequestHistory(changeRequest.id)
+      } yield {
+        ChangeRequestMainDetailsJson.from(
+          changeRequest,
+          simpleCrJson,
+          isPending,
+          wfEventLogs,
+          crEventLogs,
+          backStatus,
+          allNextSteps
+        )(using
+          eventLogDetailsService
+        )
+      })
         .toLiftResponseOne(params, schema, Some(sid))
 
     }
@@ -338,27 +327,23 @@ class WorkflowInternalApiImpl(
         block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
     ): IOResult[T] = {
 
-      if (checkWorkflow) {
-        (for {
-          crId          <- sid.toIntOption
-                             .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
-                             .map(ChangeRequestId(_))
-          changeRequest <- roChangeRequestRepository
-                             .get(crId)
-                             .chainError(s"Could not find ChangeRequest ${sid}")
-                             .notOptional(s"Change request with id ${sid} does not exist.")
-          status        <- readWorkflow
-                             .getStateOfChangeRequest(crId)
-                             .chainError(s"Could not find ChangeRequest ${sid} status")
-          result        <- getDirectiveTechniques(changeRequest)
-                             .flatMap(block(changeRequest, status, _))
-        } yield {
-          result
-        })
-          .chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
-      } else {
-        disabledWorkflowAnswer
-      }
+      (for {
+        crId          <- sid.toIntOption
+                           .notOptional(s"'${sid}' is not a valid change request id (need to be an integer)")
+                           .map(ChangeRequestId(_))
+        changeRequest <- roChangeRequestRepository
+                           .get(crId)
+                           .chainError(s"Could not find ChangeRequest ${sid}")
+                           .notOptional(s"Change request with id ${sid} does not exist.")
+        status        <- readWorkflow
+                           .getStateOfChangeRequest(crId)
+                           .chainError(s"Could not find ChangeRequest ${sid} status")
+        result        <- getDirectiveTechniques(changeRequest)
+                           .flatMap(block(changeRequest, status, _))
+      } yield {
+        result
+      }).chainError(s"Could not ${actionDetail} ChangeRequest ${sid}")
+
     }
 
     def process(

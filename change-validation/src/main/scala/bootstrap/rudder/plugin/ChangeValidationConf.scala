@@ -324,7 +324,7 @@ object ChangeValidationConf extends RudderPluginModule {
       roWorkflowRepository,
       RudderConfig.diffService,
       RudderConfig.techniqueRepository,
-      RudderConfig.workflowLevelService.getWorkflowService(),
+      RudderConfig.workflowLevelService,
       roChangeRequestRepository,
       RudderConfig.eventLogDetailsService,
       RudderConfig.changeRequestEventLogService,
