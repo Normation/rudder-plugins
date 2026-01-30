@@ -145,12 +145,17 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
 
     val filter = initFilter match {
       case Full(filter) =>
-        s"$$('#${changeRequestTableId}').dataTable().fnFilter('${StringEscapeUtils.escapeEcmaScript(filter)}',1,true,false,true);"
-      case eb: EmptyBox => s"$$('#${changeRequestTableId}').dataTable().fnFilter('pending',1,true,false,true);"
+        s"$$('#${changeRequestTableId}').DataTable().column(1).search('${StringEscapeUtils.escapeEcmaScript(filter)}',true,false);"
+      case eb: EmptyBox => s"$$('#${changeRequestTableId}').DataTable().column(1).search('pending',true,false);"
     }
+
     s"""
-      var refreshCR = ${refresh.toJsCmd};
+      const refreshCR = ${refresh.toJsCmd};
       createChangeRequestTable('${changeRequestTableId}',[], '${S.contextPath}', refreshCR)
+      const refreshButton = document.querySelector('.dataTables_refresh');
+      refreshButton.style.float = 'right';
+      const searchFilter = document.querySelector('.dt-search');
+      searchFilter.style.float = 'left';
       ${filter};
       refreshCR();
     """
@@ -201,18 +206,19 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     var value        = ""
 
     val filterFunction = {
-      s"""var filter = [];
-          var selected = $$(this).find(":selected")
+      s"""let filter = [];
+          const selected = $$(this).find(":selected")
           if (selected.length > 0) {
             selected.each(function () {
               filter.push($$(this).attr("value"));
             } );
-            $$('#${changeRequestTableId}').dataTable().fnFilter(filter.join("|"),1,true,false,true);
+            $$('#${changeRequestTableId}').DataTable().column(1).search(filter.join("|"),true,false).draw();
           }
           else {
             // No filter, display nothing
-            $$('#${changeRequestTableId}').dataTable().fnFilter(".",1);
-          }"""
+            $$('#${changeRequestTableId}').DataTable().column(1).search(".").draw();
+          }
+          """
     }
     val onChange       = ("onchange" -> JsRaw(filterFunction)) // JsRaw ok, const
 
