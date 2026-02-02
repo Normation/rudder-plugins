@@ -39,6 +39,7 @@ package com.normation.plugins.$plugin_pkg$
 
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.services.servers.InstanceIdService
 import com.normation.zio._
 
 /*
@@ -48,7 +49,7 @@ import com.normation.zio._
  *
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
-final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends LicensedPluginCheck {
+final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService, instanceIdService: InstanceIdService) extends LicensedPluginCheck {
   // here are processed variables
   def pluginResourcePublickey = "\${plugin-resource-publickey}"
   def pluginResourceLicense   = "\${plugin-resource-license}"
@@ -56,5 +57,7 @@ final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extend
   def pluginId                = "\${plugin-fullname}"
 
   override def getNumberOfNodes: Int = nodeInfoService.getNumberOfManagedNodes.runNow
+
+  override def getInstanceId: String = instanceIdService.instanceId.value
 }
 

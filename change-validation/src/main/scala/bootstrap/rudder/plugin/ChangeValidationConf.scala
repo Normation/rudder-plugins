@@ -228,7 +228,7 @@ object ChangeValidationConf extends RudderPluginModule {
     "/opt/rudder/etc/plugins/change-validation.conf"
   )
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository, RudderConfig.instanceIdService)
 
   lazy val roWorkflowRepository = new RoWorkflowJdbcRepository(RudderConfig.doobie)
   lazy val woWorkflowRepository = new WoWorkflowJdbcRepository(RudderConfig.doobie)

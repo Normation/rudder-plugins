@@ -39,10 +39,11 @@ package com.normation.plugins.$plugin_pkg$
 
 import com.normation.plugins.PluginEnableImpl
 import com.normation.rudder.services.nodes.NodeInfoService
+import com.normation.rudder.services.servers.InstanceIdService
 
 /*
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService) extends PluginEnableImpl
+final class CheckRudderPluginEnableImpl(nodeInfoService: NodeInfoService, instanceIdService: InstanceIdService) extends PluginEnableImpl
 
