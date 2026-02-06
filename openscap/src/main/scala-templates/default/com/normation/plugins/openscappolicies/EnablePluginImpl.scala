@@ -39,9 +39,11 @@ package com.normation.plugins.openscappolicies
 
 import com.normation.plugins.PluginEnableImpl
 import com.normation.rudder.facts.nodes.NodeFactRepository
+import com.normation.rudder.services.servers.InstanceIdService
 
 /*
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
 
-final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extends PluginEnableImpl
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService)
+    extends PluginEnableImpl

@@ -73,6 +73,8 @@ trait LicensedPluginCheck extends PluginStatus {
 // this one is generally provided by NodeInfoService
   def getNumberOfNodes: Int
 
+  def getInstanceId: String
+
 // this one is only for evolution / future check. No need to override it for now.
   def checkAny: Option[Map[String, String] => Either[String, Unit]] = None
 
@@ -124,7 +126,8 @@ trait LicensedPluginCheck extends PluginStatus {
     (for {
       info              <- maybeLicense
       (license, version) = info
-      check             <- LicenseChecker.checkLicenseRuntime(license, DateTime.now, version, pluginId, getNumberOfNodes, checkAny)
+      check             <-
+        LicenseChecker.checkLicenseRuntime(license, DateTime.now, version, pluginId, getNumberOfNodes, getInstanceId, checkAny)
     } yield {
       check
     }) match {

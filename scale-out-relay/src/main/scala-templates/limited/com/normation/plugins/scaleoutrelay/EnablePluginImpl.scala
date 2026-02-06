@@ -39,6 +39,7 @@ package com.normation.plugins.scaleoutrelay
 
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.facts.nodes.NodeFactRepository
+import com.normation.rudder.services.servers.InstanceIdService
 import com.normation.zio.*
 /*
  * This template file will processed at build time to choose
@@ -47,7 +48,8 @@ import com.normation.zio.*
  *
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
-final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extends LicensedPluginCheck {
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService)
+    extends LicensedPluginCheck {
   // here are processed variables
   def pluginResourcePublickey = "${plugin-resource-publickey}"
   def pluginResourceLicense   = "${plugin-resource-license}"
@@ -55,4 +57,6 @@ final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository) extend
   def pluginId                = "${plugin-fullname}"
 
   override def getNumberOfNodes: Int = nodeFactRepo.getNumberOfManagedNodes().runNow
+
+  override def getInstanceId: String = instanceIdService.instanceId.value
 }

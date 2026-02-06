@@ -51,7 +51,7 @@ import com.normation.plugins.openscappolicies.services.OpenScapReportReader
  */
 object OpenscapPoliciesConf extends RudderPluginModule {
 
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository, RudderConfig.instanceIdService)
 
   lazy val pluginDef: OpenscapPoliciesPluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 

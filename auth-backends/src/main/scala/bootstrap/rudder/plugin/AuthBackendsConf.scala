@@ -149,7 +149,7 @@ object AuthBackendsConf extends RudderPluginModule {
   val DISPLAY_LOGIN_FORM_PROP = "rudder.auth.displayLoginForm"
 
   // by build convention, we have only one of that on the classpath
-  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
+  lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository, RudderConfig.instanceIdService)
 
   lazy val authBackendsProvider = new AuthBackendsProvider {
     def authenticationBackends = Set("ldap")
