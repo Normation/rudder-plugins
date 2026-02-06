@@ -48,7 +48,8 @@ import com.normation.zio.*
  *
  * The class will be loaded by ServiceLoader, it needs an empty constructor.
  */
-final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService) extends LicensedPluginCheck {
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService)
+    extends LicensedPluginCheck {
   // here are processed variables
   def pluginResourcePublickey = "${plugin-resource-publickey}"
   def pluginResourceLicense   = "${plugin-resource-license}"

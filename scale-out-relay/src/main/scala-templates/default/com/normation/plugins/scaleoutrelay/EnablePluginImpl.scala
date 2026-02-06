@@ -41,4 +41,5 @@ import com.normation.plugins.PluginEnableImpl
 import com.normation.rudder.facts.nodes.NodeFactRepository
 import com.normation.rudder.services.servers.InstanceIdService
 
-final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService) extends PluginEnableImpl
+final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService)
+    extends PluginEnableImpl
