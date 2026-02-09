@@ -95,7 +95,7 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
       mockServices.workflowRepository,
       new DiffServiceImpl,
       restTestSetUp.mockTechniques.techniqueRepo,
-      restTestSetUp.workflowLevelService.getWorkflowService(),
+      restTestSetUp.workflowLevelService,
       mockServices.changeRequestRepository,
       restTestSetUp.eventLogDetailsService,
       mockServices.changeRequestEventLogService,
