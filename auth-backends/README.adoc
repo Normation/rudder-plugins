@@ -762,6 +762,19 @@ In the log, you see (exact error code or ID may vary, check `invalid_id_token` a
 [timestamp] WARN  application - Login authentication failed for user 'unknown' from IP '127.0.0.1': [invalid_id_token] An error occurred while attempting to decode the Jwt: Couldn't retrieve remote JWK set: org.springframework.web.client.HttpClientErrorException$MethodNotAllowed: 405 Method Not Allowed: "{"errorCode":"E0000022","errorSummary":"The endpoint does not support the provided HTTP method","errorLink":"E0000022","errorId":"oae6_QrhU-UTWeykOHgyHqbuA","errorCauses":[]}"
 ----
 
+**Invalid issued at time in ID token**
+
+In the log, you see:
+
+----
+2026-02-11 14:34:47+0100 INFO  application.authentication - Rudder authentication attempt for principal 'unknown' with backend 'oidc': failure: [invalid_id_token] An error occurred while attempting to decode the Jwt: The ID Token contains invalid claims: {iat=2026-02-11T13:33:40Z}
+2026-02-01 14:34:47+0100 WARN  application.authentication - Login authentication failed for user 'unknown' from IP '127.0.0.1|X-Forwarded-For:xx.xxx.xxx.xxx, xx.xxx.xxx.xxx, xx.xxx.xxx.xxx': [invalid_id_token] An error occurred while attempting to decode the Jwt: The ID Token contains invalid claims: {iat=2026-02-11T13:33:40Z}
+----
+
+This is likely because clocks between Rudder and the auth server mismatch, the response of the invalid claims contains IAT (issued at) timestamp.
+The clocks should be synchronised or allow time offset in your authentication server if possible.
+
+
 **Bad application secret or method**
 
 In the log, you see:
