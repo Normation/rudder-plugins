@@ -92,7 +92,7 @@ object DatasourcesConf extends RudderPluginModule {
   )
 
   // add data source pre-deployment update hook
-  Cfg.deploymentService.appendPreGenCodeHook(new PromiseGenerationHooks() {
+  Cfg.policyGenerationHookService.appendPreGenCodeHook(new PromiseGenerationHooks() {
     def beforeDeploymentSync(generationTime: DateTime): Box[Unit] = {
       // that doesn't actually wait for the return. Not sure how to do it.
       dataSourceRepository.onGenerationStarted(generationTime).toBox
