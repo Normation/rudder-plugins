@@ -36,7 +36,7 @@ pipeline {
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
                             sh script: 'make generate-pom'
-                            sh script: 'mvn --update-snapshots clean install', label: "common deploy"
+                            sh script: 'mvn --update-snapshots -Djansi.passthrough=true -Dstyle.color=always clean install', label: "common deploy"
                         }
                     }
                 }
@@ -48,7 +48,7 @@ pipeline {
                         ) {
                             // we need to use $MVN_COMMAND to get the settings file path
                             sh script: 'make generate-pom'
-                            sh script: 'mvn --update-snapshots install package', label: "private common deploy"
+                            sh script: 'mvn --update-snapshots -Djansi.passthrough=true -Dstyle.color=always install package', label: "private common deploy"
                         }
                     }
                 }
@@ -67,7 +67,7 @@ pipeline {
                                 try {
                                     dir("${it}") {
                                         sh script: 'make generate-pom', label: 'generate pom.xml'
-                                        sh script: 'mvn -U -DsuppressionFiles=../dependency-check-suppression.xml -DnvdApiKey=$NVD_API_KEY -DossindexAnalyzerEnabled=false -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                        sh script: 'mvn -U -Djansi.passthrough=true -Dstyle.color=always -DsuppressionFiles=../dependency-check-suppression.xml -DnvdApiKey=$NVD_API_KEY -DossindexAnalyzerEnabled=false -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
                                         script {
                                             if (fileExists('src/main/package.json')) {
                                                 dir("src/main") {
@@ -76,7 +76,7 @@ pipeline {
                                                 }
                                             }
                                         }
-                                        sh script: 'mvn -U license:aggregate-third-party-report', label: 'list ${it} dependencies'
+                                        sh script: 'mvn -U -Djansi.passthrough=true -Dstyle.color=always license:aggregate-third-party-report', label: 'list ${it} dependencies'
                                     }
                                 } catch (exc) {
                                     // Mark the build as failure since it's actually an error

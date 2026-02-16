@@ -34,7 +34,7 @@ RUDDER_BUILD_VERSION = $(RUDDER_VERSION)-SNAPSHOT
 endif
 
 # if you want to add maven command line parameter, add them with MVN_PARAMS
-MVN_CMD = mvn $(MVN_PARAMS) --batch-mode
+MVN_CMD = mvn $(MVN_PARAMS) --batch-mode -Djansi.passthrough=true -Dstyle.color=always
 
 RANDOM := $(shell bash -c 'echo $$RANDOM')
 
