@@ -38,7 +38,6 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
-import com.normation.box.*
 import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.RudderPluginModule
@@ -50,7 +49,7 @@ import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.facts.nodes.CoreNodeFactChangeEventCallback
 import com.normation.rudder.facts.nodes.NodeFactChangeEvent
 import com.normation.rudder.services.policies.PromiseGenerationHooks
-import net.liftweb.common.Box
+import com.normation.zio.*
 import org.joda.time.DateTime
 import zio.*
 
@@ -92,12 +91,14 @@ object DatasourcesConf extends RudderPluginModule {
   )
 
   // add data source pre-deployment update hook
-  Cfg.policyGenerationHookService.appendPreGenCodeHook(new PromiseGenerationHooks() {
-    def beforeDeploymentSync(generationTime: DateTime): Box[Unit] = {
-      // that doesn't actually wait for the return. Not sure how to do it.
-      dataSourceRepository.onGenerationStarted(generationTime).toBox
-    }
-  })
+  Cfg.policyGenerationHookService
+    .appendPreGenCodeHook(new PromiseGenerationHooks() {
+      override def beforeDeploymentSync(generationTime: DateTime): IOResult[Unit] = {
+        // that doesn't actually wait for the return. Not sure how to do it.
+        dataSourceRepository.onGenerationStarted(generationTime)
+      }
+    })
+    .runNow
 
   Cfg.nodeFactRepository.registerChangeCallbackAction(
     CoreNodeFactChangeEventCallback(
