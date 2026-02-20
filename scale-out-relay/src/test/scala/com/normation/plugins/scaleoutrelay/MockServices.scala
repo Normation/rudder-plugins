@@ -4,6 +4,7 @@ import com.normation.errors.*
 import com.normation.eventlog.EventActor
 import com.normation.eventlog.EventLog
 import com.normation.eventlog.EventLogFilter
+import com.normation.eventlog.EventLogRequest
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.ldap.ldif.LDIFNoopChangeRecord
@@ -136,12 +137,13 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
     override def saveEventLog(modId: ModificationId, eventLog: EventLog): IOResult[EventLog] = ???
     override def getEventLogByCriteria(
         criteria:       Option[Fragment],
-        limit:          Option[Int],
-        orderBy:        List[Fragment],
-        extendedFilter: Option[Fragment]
+        limit:          Option[Int] = None,
+        orderBy:        List[Fragment] = Nil,
+        extendedFilter: Option[Fragment] = None
     ): IOResult[Seq[EventLog]] = ???
-    override def getEventLogById(id: Long): IOResult[EventLog] = ???
-    override def getEventLogCount(criteria:       Option[Fragment], extendedFilter: Option[Fragment]): IOResult[Long] = ???
+    override def getEventLogByCriteria(filter: Option[EventLogRequest]): IOResult[Seq[EventLog]] = ???
+    override def getEventLogById(id:              Long):                    IOResult[EventLog]                                    = ???
+    override def getEventLogCount(filter:         Option[EventLogRequest]): IOResult[Long]                                        = ???
     override def getEventLogByChangeRequest(
         changeRequest:   ChangeRequestId,
         xpath:           String,
@@ -149,6 +151,6 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
         orderBy:         Option[String],
         eventTypeFilter: List[EventLogFilter]
     ): IOResult[Vector[EventLog]] = ???
-    override def getEventLogWithChangeRequest(id: Int): IOResult[Option[(EventLog, Option[ChangeRequestId])]] = ???
+    override def getEventLogWithChangeRequest(id: Int):                     IOResult[Option[(EventLog, Option[ChangeRequestId])]] = ???
   }
 }
