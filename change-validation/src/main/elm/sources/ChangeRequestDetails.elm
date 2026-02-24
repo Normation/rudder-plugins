@@ -436,7 +436,7 @@ view model =
                     )
 
                 NoView ->
-                    ( [ errorView model "The change request id was not set." ], text "" )
+                    ( [ loadingView ], text "" )
 
                 ViewError errMsg ->
                     ( [ errorView model errMsg ], text "" )
@@ -723,18 +723,26 @@ changeStepPopupView changeStepFormState changeMessageEnabled crId =
             text ""
 
 
+loadingView : Html Msg
+loadingView =
+    simpleView
+        [ div
+            [ class "spinner-border", Html.Attributes.attribute "role" "status"]
+            [ span [class "sr-only", style "display" "none"] [text "Loading..."]]]
+
 errorView : Model -> String -> Html Msg
 errorView model errMsg =
-    div
-        [ style "padding" "40px"
-        , style "text-align" "center"
-        ]
+    simpleView
         [ h2 [] [ text "Error" ]
         , h3 [] [ text errMsg ]
         , a [ href (changeRequestsPageUrl model.contextPath) ] [ text "Back to change requests page" ]
         ]
 
-
+simpleView : List (Html Msg) -> Html Msg
+simpleView content =
+    div
+        [ class "pb-5 text-center" ]
+        content
 
 ------------------------------
 -- UTIL
