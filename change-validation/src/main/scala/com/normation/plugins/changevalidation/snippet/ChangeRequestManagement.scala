@@ -42,6 +42,7 @@ import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventLog
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.domain.workflows.*
+import com.normation.rudder.facts.nodes.QueryContext
 import com.normation.rudder.users.CurrentUser
 import com.normation.rudder.web.services.JsTableData
 import com.normation.rudder.web.services.JsTableLine
@@ -64,7 +65,7 @@ import scala.xml.Text
 import zio.UIO
 import zio.syntax.*
 
-class ChangeRequestManagement extends DispatchSnippet with Loggable {
+class ChangeRequestManagement extends SecureDispatchSnippet with Loggable {
 
   private val roCrRepo                     = ChangeValidationConf.roChangeRequestRepository
   private val workflowService              = RudderConfig.workflowLevelService.getWorkflowService()
@@ -76,7 +77,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
 
   private val initFilter: Box[String] = S.param("filter").map(_.replace("_", " "))
 
-  def dispatch = {
+  def secureDispatch = {
     case "filter"  =>
       xml => ("#actualFilter *" #> statusFilter).apply(xml)
     case "display" =>
@@ -115,8 +116,8 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     }
   }
 
-  def getLines(): UIO[JsTableData[ChangeRequestLine]] = {
-    val changeRequests = if (currentUser) roCrRepo.getAll() else roCrRepo.getByContributor(CurrentUser.actor)
+  def getLines()(using qc: QueryContext): UIO[JsTableData[ChangeRequestLine]] = {
+    val changeRequests = if (currentUser) roCrRepo.getAll() else roCrRepo.getByContributor(qc.actor)
 
     for {
       crs              <- changeRequests
@@ -138,7 +139,7 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     }
   }
 
-  def dataTableInit = {
+  def dataTableInit(using qc: QueryContext) = {
     val refresh = AnonFunc(
       SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().runNow.toJson.toJsCmd})"))
     ) // JsRaw ok, from json
