@@ -14,5 +14,9 @@
     "merge-stream": "^2.0.0",
     "sass": "^1.77.6",
     "through2": "^4.0.2"
+  },
+  "overrides": {
+    "glob": "^13.0.6",
+    "minimatch": "^10.2.4"
   }
 }
