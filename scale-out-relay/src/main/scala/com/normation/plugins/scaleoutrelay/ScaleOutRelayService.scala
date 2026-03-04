@@ -182,7 +182,8 @@ class ScaleOutRelayService(
         .ignore
     })
 
-    (nPromoted :: nBeforePromoted :: targets ::: groups ::: directives ::: rules).accumulate(identity)
+    (nPromoted :: nBeforePromoted :: targets ::: groups ::: directives ::: rules)
+      .accumulate(identity)
       .tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully demoted node '${newInfo.id}' to relay"))
   }
 
