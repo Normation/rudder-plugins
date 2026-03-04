@@ -61,7 +61,7 @@ class ScaleOutRelayService(
     implicit val qr: QueryContext = cc.toQC
 
     for {
-      _        <- ScaleOutRelayLoggerPure.debug(s"Start promotion of node '${nodeId.value}' to relay")
+      _        <- ScaleOutRelayLoggerPure.debug(s"Start of promoting node '${nodeId.value}' to relay")
       nodeInfo <- nodeFactRepository
                     .get(nodeId)
                     .notOptional(s"Node with UUID ${nodeId.value} is missing and can not be upgraded to relay")
@@ -69,6 +69,7 @@ class ScaleOutRelayService(
                     val updatedNode: CoreNodeFact = NodeToPolicyServer(nodeInfo)
                     createRelayFromNode(updatedNode)
                   }
+      _        <- ScaleOutRelayLoggerPure.debug(s"End of promoting node '${nodeId.value}' to relay")
     } yield () // policy generation will be started if needed by NodeFact event handler
   }
 
@@ -108,7 +109,7 @@ class ScaleOutRelayService(
       _ <- actionLogger.savePromoteToRelay(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
     } yield {}
 
-    promote.catchAll { err =>
+    promote.tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully promoted node '${nodeInfo.id}' to relay")).catchAll { err =>
       val msg = s"Promote node ${nodeInfo.id.value} have failed. Change were reverted. Cause was: ${err.fullMsg}"
       (for {
         _ <- ScaleOutRelayLoggerPure.debug(s"[promote ${nodeInfo.id.value}] error, start reverting")
@@ -123,7 +124,7 @@ class ScaleOutRelayService(
   def demoteRelayToNode(nodeId: NodeId)(implicit cc: ChangeContext): IOResult[Unit] = {
     implicit val qr: QueryContext = cc.toQC
     for {
-      _        <- ScaleOutRelayLoggerPure.debug(s"Start demotion of relay '${nodeId.value}' to node")
+      _        <- ScaleOutRelayLoggerPure.debug(s"Start of demoting relay '${nodeId.value}' to node")
       nodeInfo <- nodeFactRepository
                     .get(nodeId)
                     .notOptional(s"Relay with UUID ${nodeId.value} is missing and can not be demoted to node")
@@ -135,6 +136,7 @@ class ScaleOutRelayService(
                     ScaleOutRelayLoggerPure.debug(s"Node '${nodeId.value}' is already a simple node, nothing to do.") *>
                     ZIO.unit
                   }
+      _        <- ScaleOutRelayLoggerPure.debug(s"End of demoting relay '${nodeId.value}' to node")
     } yield () // policy generation will be started if needed by NodeFact event handler
 
   }
@@ -180,6 +182,7 @@ class ScaleOutRelayService(
     })
 
     (nPromoted :: nBeforePromoted :: targets ::: groups ::: directives ::: rules).accumulate(identity)
+      .tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully demoted node '${newInfo.id}' to relay"))
   }
 
   private[scaleoutrelay] def NodeToPolicyServer(nodeInf: CoreNodeFact) = {
