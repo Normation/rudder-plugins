@@ -65,14 +65,15 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
   private val tabId = "externalReportTab"
 
   private def addExternalReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq): NodeSeq = {
-    implicit val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
-    (externalReport.getExternalReports(snippet.nodeId) match {
-      case eb: EmptyBox =>
-        val e = eb ?~! "Can not display external reports for that node"
-        addTab(tabId, "External reports", <div class="error">{e.messageChain}</div>)
-      case Full(config) =>
-        addTab(tabId, config.tabTitle, tabContent(config.reports)(myXml))
-    })(xml)
+    CurrentUser.queryContext.withQCOr(xml) {
+      (externalReport.getExternalReports(snippet.nodeId) match {
+        case eb: EmptyBox =>
+          val e = eb ?~! "Can not display external reports for that node"
+          addTab(tabId, "External reports", <div class="error">{e.messageChain}</div>)
+        case Full(config) =>
+          addTab(tabId, config.tabTitle, tabContent(config.reports)(myXml))
+      })(xml)
+    }
   }
 
   def tabContent(reports: Map[String, NodeExternalReport]): CssSel = {
