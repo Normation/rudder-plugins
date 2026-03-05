@@ -65,8 +65,6 @@ class OpenScapNodeDetailsExtension(
     extends PluginExtensionPoint[ShowNodeDetailsFromNode] with Loggable {
 
   def pluginCompose(snippet: ShowNodeDetailsFromNode): Map[String, NodeSeq => NodeSeq] = {
-    implicit val qc: QueryContext = CurrentUser.queryContext // bug https://issues.rudder.io/issues/26605
-
     Map(
       "popupDetails" -> addOpenScapReportTab(snippet),
       "mainDetails"  -> addOpenScapReportTab(snippet)
@@ -77,7 +75,7 @@ class OpenScapNodeDetailsExtension(
    * Add a tab:
    * - add an li in ul with id=openScapExtensionTab
    */
-  def addOpenScapReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq)(implicit qc: QueryContext): NodeSeq = {
+  def addOpenScapReportTab(snippet: ShowNodeDetailsFromNode)(xml: NodeSeq): NodeSeq = CurrentUser.queryContext.withQCOr(xml) {
     // Actually extend
     def display(): NodeSeq = {
       val nodeId  = snippet.nodeId
