@@ -1,5 +1,6 @@
-module RudderDiff exposing (Diff(..), DiffChange, decodeDiffField, decodeDiffFieldAt, displayBoolDiff, displayBoolField, displayDiffField, displayField, displayFormDiff, displayIdentList, displayIdentListDiff, displayIntDiff, displayMaybe, displayMaybeField, displayResourceIdent, displayRuleTarget, displayRuleTargetDiff, displayStringDiff, displayStringField, displayValue, displayValueDiff, displayValueField)
+module RudderDiff exposing (Diff(..), DiffChange, decodeDiffField, decodeDiffFieldAt, displayBoolDiff, displayBoolField, displayDiffField, displayDirectiveParametersDiff, displayField, displayFormDiff, displayIdentList, displayIdentListDiff, displayIntDiff, displayMaybe, displayMaybeField, displayResourceIdent, displayRuleTarget, displayRuleTargetDiff, displayStringDiff, displayStringField, displayValue, displayValueDiff, displayValueField)
 
+import Diff
 import Html exposing (Attribute, Html, b, br, li, node, pre, span, text, ul)
 import Html.Attributes exposing (style)
 import Json.Decode exposing (Decoder, Value, at, field, map, map2, oneOf)
@@ -401,3 +402,34 @@ displayRuleTargetDiff fieldName contextPath diff =
 
         Change { from, to } ->
             li [] ([ b [] [ text (fieldName ++ " : ") ] ] ++ displayTargetListDiff contextPath from to)
+
+
+displayDirectiveParametersDiff : String -> Diff String -> Html msg
+displayDirectiveParametersDiff fieldName diff =
+    case diff of
+        Change { from, to } ->
+            li []
+                [ b [] [ text (fieldName ++ " : ") ]
+                , pre [ style "white-space" "pre-line", style "word-break" "break-word", style "overflow" "auto" ]
+                    (Diff.diffLines from to
+                        |> List.map
+                            (\c ->
+                                case c of
+                                    Diff.Added a ->
+                                        node "ins" [] [ text "+ ", text a ]
+
+                                    Diff.Removed a ->
+                                        node "del" [] [ text "- ", text a ]
+
+                                    Diff.NoChange a ->
+                                        text a
+                            )
+                        |> List.intersperse (br [] [])
+                    )
+                ]
+
+        NoChange param ->
+            li []
+                [ b [] [ text (fieldName ++ " : ") ]
+                , pre [] [ text param ]
+                ]
