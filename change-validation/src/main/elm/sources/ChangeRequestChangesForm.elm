@@ -695,7 +695,7 @@ displayDirectiveDiff contextPath directive =
         , displayBoolField "System" directive.system
         , displayStringDiff "Long description" directive.longDescription
         , displayDiffField (displayMaybe text) "Policy Mode" directive.policyMode
-        , displayDiffField (\param -> pre [] [ text param ]) "Parameters" directive.parameters
+        , displayDirectiveParametersDiff  "Parameters" directive.parameters
         ]
 
 

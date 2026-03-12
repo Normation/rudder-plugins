@@ -18,6 +18,7 @@
             "elm-community/list-extra": "8.7.0",
             "elm-community/string-extra": "4.0.1",
             "elm-explorations/test": "2.2.0",
+            "jinjor/elm-diff": "1.0.6",
             "jzxhuang/http-extras": "2.1.0",
             "matthewsj/elm-ordering": "2.0.0",
             "mgold/elm-nonempty-list": "4.2.0"
