@@ -20,6 +20,8 @@ cd "$(dirname "$0")"
 if [ "$RELEASE" = true ]; then
   # Ensure clean state for release
   rm -rf node_modules elm/elm-stuff
+  echo "nodejs: $(node --version)"
+  echo "npm: $(npm --version)"
 fi
 
 # We need the gulpfile in current working directory, and to remove the old one (.js) if it is present
