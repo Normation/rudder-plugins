@@ -7,6 +7,7 @@
         ]]></notes>
         <packageUrl regex="true">^pkg:maven/xerces/xercesImpl@.*$</packageUrl>
    	<cpe>cpe:/a:apache:xerces2_java</cpe>
+        <cve>CVE-2022-23437</cve>
     </suppress>
 <!-- YUI embedded in liftweb is not used -->
 <suppress>
@@ -33,6 +34,16 @@
    <cve>CVE-2019-11358</cve>
    <cve>CVE-2020-11022</cve>
    <cve>CVE-2020-11023</cve>
+</suppress>
+<!-- ext-core-debug embedded in liftweb is not used -->
+<suppress>
+   <notes><![CDATA[
+   file name: lift-webkit_2.13-4.x.jar: ext-core-debug.js
+   ]]></notes>
+   <packageUrl regex="true">^pkg:javascript/ExtJS@3\.1\.0</packageUrl>
+   <cve>CVE-2007-2285</cve>
+   <cve>CVE-2010-4207</cve>
+   <cve>CVE-2007-5881</cve>
 </suppress>
 <!-- jquery embedded in scala-compiler is not used -->
 <suppress>
@@ -141,5 +152,12 @@
    ]]></notes>
    <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-oauth2\-core@.*$</packageUrl>
    <cve>CVE-2022-31690</cve>
+</suppress>
+<suppress>
+   <notes><![CDATA[
+   file name: commons-fileupload2-core-2.0.0-M4.jar
+   ]]></notes>
+   <packageUrl regex="true">^pkg:maven/org\.apache\.commons/commons\-fileupload2\-.*@.*$</packageUrl>
+   <cve>CVE-2025-48976</cve>
 </suppress>
 </suppressions>
