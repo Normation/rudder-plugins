@@ -144,7 +144,8 @@ class ChangeRequestManagement extends DispatchSnippet with Loggable {
     ) // JsRaw ok, from json
 
     val filter = initFilter match {
-      case Full(filter) =>
+      case Full("index") => s"$$('#${changeRequestTableId}').dataTable().fnFilter('pending',1,true,false,true);"
+      case Full(filter)  =>
         s"$$('#${changeRequestTableId}').dataTable().fnFilter('${StringEscapeUtils.escapeEcmaScript(filter)}',1,true,false,true);"
       case eb: EmptyBox => s"$$('#${changeRequestTableId}').dataTable().fnFilter('pending',1,true,false,true);"
     }
