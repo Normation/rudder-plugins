@@ -145,7 +145,8 @@ class ChangeRequestManagement extends SecureDispatchSnippet with Loggable {
     ) // JsRaw ok, from json
 
     val filter = initFilter match {
-      case Full(filter) =>
+      case Full("index") => s"$$('#${changeRequestTableId}').DataTable().column(1).search('pending',true,false);"
+      case Full(filter)  =>
         s"$$('#${changeRequestTableId}').DataTable().column(1).search('${StringEscapeUtils.escapeEcmaScript(filter)}',true,false);"
       case eb: EmptyBox => s"$$('#${changeRequestTableId}').DataTable().column(1).search('pending',true,false);"
     }
