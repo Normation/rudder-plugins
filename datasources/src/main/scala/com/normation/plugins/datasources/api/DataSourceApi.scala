@@ -37,6 +37,7 @@
 
 package com.normation.plugins.datasources.api
 
+import bootstrap.rudder.plugin.DatasourcesConf
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.HttpAction.*
 import com.normation.rudder.rest.*
@@ -44,8 +45,11 @@ import com.normation.rudder.rest.EndpointSchema.syntax.*
 import enumeratum.*
 import sourcecode.Line
 
-sealed trait DataSourceApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
-object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[DataSourceApi] {
+sealed trait DataSourceApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
+  override def isEnabled: Boolean = DatasourcesConf.pluginStatusService.isEnabled()
+}
+
+object DataSourceApi extends Enum[DataSourceApi] with ApiModuleProvider[DataSourceApi] {
 
   /* Avoiding POST unreachable endpoint:
    * (note: datasource must not have id "reload")

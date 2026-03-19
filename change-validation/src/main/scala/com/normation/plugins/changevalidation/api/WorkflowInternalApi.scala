@@ -37,6 +37,7 @@
 
 package com.normation.plugins.changevalidation.api
 
+import bootstrap.rudder.plugin.ChangeValidationConf
 import cats.data.NonEmptyList
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
@@ -85,8 +86,11 @@ import sourcecode.Line
 import zio.ZIO
 import zio.syntax.ToZio
 
-sealed trait WorkflowInternalApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
-object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModuleProvider[WorkflowInternalApi] {
+sealed trait WorkflowInternalApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex {
+  override def isEnabled: Boolean = ChangeValidationConf.pluginStatusService.isEnabled()
+}
+
+object WorkflowInternalApi extends Enum[WorkflowInternalApi] with ApiModuleProvider[WorkflowInternalApi] {
 
   case object PendingChangeRequestCount extends WorkflowInternalApi with ZeroParam with StartsAtVersion21 with SortIndex {
     val z: Int = implicitly[Line].value

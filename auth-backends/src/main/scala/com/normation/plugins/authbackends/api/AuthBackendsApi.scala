@@ -37,6 +37,7 @@
 
 package com.normation.plugins.authbackends.api
 
+import bootstrap.rudder.plugin.AuthBackendsConf
 import com.normation.errors.IOResult
 import com.normation.plugins.authbackends.AuthBackendsRepository
 import com.normation.plugins.authbackends.JsonSerialization
@@ -67,7 +68,9 @@ import sourcecode.Line
  *
  * It gives the list of currently configured authentication backends.
  */
-sealed trait AuthBackendsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
+sealed trait AuthBackendsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex {
+  override def isEnabled: Boolean = AuthBackendsConf.pluginStatusService.isEnabled()
+}
 
 object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[AuthBackendsApi] {
 

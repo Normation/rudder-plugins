@@ -37,6 +37,7 @@
 
 package com.normation.rudder.rest
 
+import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.HttpAction.*
 import enumeratum.*
@@ -47,7 +48,9 @@ import sourcecode.Line
  * package-protected `z` methods.
  */
 
-sealed trait BrandingApiSchema extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+sealed trait BrandingApiSchema extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
+  override def isEnabled: Boolean = BrandingPluginConf.pluginStatusService.isEnabled()
+}
 
 object BrandingApiEndpoints extends Enum[BrandingApiSchema] with ApiModuleProvider[BrandingApiSchema] {
   import com.normation.rudder.rest.EndpointSchema.syntax.*
