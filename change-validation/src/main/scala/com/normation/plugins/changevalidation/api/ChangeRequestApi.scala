@@ -48,6 +48,8 @@ import com.normation.errors.OptionToPureResult
 import com.normation.errors.PureResult
 import com.normation.errors.PureToIoResult
 import com.normation.errors.Unexpected
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.changevalidation.ChangeRequestFilter
 import com.normation.plugins.changevalidation.ChangeRequestInfoJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
@@ -87,7 +89,6 @@ import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.modification.DiffService
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
@@ -100,7 +101,8 @@ import zio.*
 import zio.syntax.*
 
 sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
-object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
+
+object ChangeRequestApi extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
 
   case object ListChangeRequests     extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z: Int = implicitly[Line].value
@@ -175,7 +177,8 @@ class ChangeRequestApiImpl(
     workflowLevelService: WorkflowLevelService,
     commitRepository:     CommitAndDeployChangeRequestService,
     userPropertyService:  UserPropertyService
-) extends LiftApiModuleProvider[ChangeRequestApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
 
   implicit def reasonBehavior:          ReasonBehavior = userPropertyService.reasonsFieldBehavior

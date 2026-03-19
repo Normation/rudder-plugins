@@ -37,6 +37,8 @@
 
 package com.normation.plugins.changevalidation.api
 
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.changevalidation.*
 import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.rudder.AuthorizationType
@@ -58,7 +60,6 @@ import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import enumeratum.*
 import java.nio.charset.StandardCharsets
 import net.liftweb.http.LiftResponse
@@ -73,7 +74,8 @@ import zio.ZIO
  */
 
 sealed trait SupervisedTargetsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
-object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
+
+object SupervisedTargetsApi extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
   val zz = 11
   case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z: Int = implicitly[Line].value
@@ -99,7 +101,8 @@ object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiMod
 class SupervisedTargetsApiImpl(
     unsupervisedTargetsRepos: UnsupervisedTargetsRepository,
     nodeGroupRepository:      RoNodeGroupRepository
-) extends LiftApiModuleProvider[SupervisedTargetsApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[SupervisedTargetsApi] {
 
   override def schemas: ApiModuleProvider[SupervisedTargetsApi] = SupervisedTargetsApi
 

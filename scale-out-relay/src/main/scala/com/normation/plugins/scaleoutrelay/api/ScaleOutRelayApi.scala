@@ -2,6 +2,8 @@ package com.normation.plugins.scaleoutrelay.api
 
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
@@ -12,7 +14,6 @@ import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.utils.StringUuidGenerator
 import enumeratum.*
 import java.time.Instant
@@ -47,7 +48,8 @@ object ScaleOutRelayApi extends Enum[ScaleOutRelayApi] with ApiModuleProvider[Sc
 class ScaleOutRelayApiImpl(
     scaleOutRelayService: ScaleOutRelayService,
     uuidGen:              StringUuidGenerator
-) extends LiftApiModuleProvider[ScaleOutRelayApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[ScaleOutRelayApi] {
 
   override def schemas: ApiModuleProvider[ScaleOutRelayApi] = ScaleOutRelayApi
 

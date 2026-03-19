@@ -37,18 +37,15 @@
 
 package com.normation.plugins.datasources
 
-import bootstrap.liftweb.Boot
 import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import bootstrap.rudder.plugin.DatasourcesConf
 import com.normation.plugins.*
 import com.normation.rudder.AuthorizationType.Administration
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.zio.*
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.sitemap.Loc.Template
-import net.liftweb.sitemap.Loc.TestAccess
 import net.liftweb.sitemap.LocPath.stringToLocPath
 import net.liftweb.sitemap.Menu
 
@@ -56,7 +53,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
 
   override val basePackage = "com.normation.plugins.datasources"
 
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
+  override def apis: Option[PluginLiftApiModuleProvider[? <: EndpointSchema]] = Some(DatasourcesConf.dataSourceApi9)
 
   def init = {
     // initialize datasources to start schedule
@@ -71,7 +68,7 @@ class DataSourcesPluginDef(override val status: PluginStatus) extends DefaultPlu
     (
       (Menu("150-dataSourceManagement", <span>Data sources</span>) /
       "secure" / "plugins" / "dataSourceManagement"
-      >> TestAccess(() => Boot.userIsAllowed("/secure/index", Administration.Read))
+      >> testMenuAccess(Administration.Read)
       >> Template(() =>
         ClasspathTemplates("template" :: "dataSourceManagement" :: Nil) openOr <div>Template not found</div>
       )).toMenu,

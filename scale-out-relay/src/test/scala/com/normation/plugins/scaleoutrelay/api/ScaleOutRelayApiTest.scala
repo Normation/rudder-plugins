@@ -4,6 +4,7 @@ import better.files.*
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.scaleoutrelay.DeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.MockServices
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
@@ -39,7 +40,7 @@ class ScaleOutRelayApiTest extends ZIOSpecDefault {
         }
       ),
       restTestSetUp.uuidGen
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil

@@ -38,6 +38,8 @@
 package com.normation.plugins.changevalidation.api
 
 import com.normation.eventlog.EventActor
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.changevalidation.JsonValidatedUsers
 import com.normation.plugins.changevalidation.RoValidatedUserRepository
 import com.normation.plugins.changevalidation.RudderJsonMapping.*
@@ -54,14 +56,14 @@ import com.normation.rudder.rest.implicits.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import enumeratum.*
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
 sealed trait ValidatedUserApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
-object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
+
+object ValidatedUserApi extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
 
   case object ListUsers                   extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z: Int = implicitly[Line].value
@@ -97,7 +99,8 @@ object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvi
 class ValidatedUserApiImpl(
     readValidatedUser:  RoValidatedUserRepository,
     writeValidatedUser: WoValidatedUserRepository
-) extends LiftApiModuleProvider[ValidatedUserApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[ValidatedUserApi] {
 
   import com.normation.plugins.changevalidation.api.ValidatedUserApi as API
 

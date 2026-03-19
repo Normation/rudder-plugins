@@ -45,7 +45,8 @@ import enumeratum.*
 import sourcecode.Line
 
 sealed trait DataSourceApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
-object DataSourceApi       extends Enum[DataSourceApi] with ApiModuleProvider[DataSourceApi] {
+
+object DataSourceApi extends Enum[DataSourceApi] with ApiModuleProvider[DataSourceApi] {
 
   /* Avoiding POST unreachable endpoint:
    * (note: datasource must not have id "reload")

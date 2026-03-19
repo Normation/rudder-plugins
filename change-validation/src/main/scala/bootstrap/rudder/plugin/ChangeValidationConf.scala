@@ -43,6 +43,7 @@ import bootstrap.liftweb.RudderConfig.doobie
 import bootstrap.liftweb.RudderConfig.workflowLevelService
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
+import com.normation.plugins.PluginLiftApiModuleProvider
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.changevalidation.ChangeRequestMapper
@@ -81,7 +82,6 @@ import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.rest.ApiModuleProvider
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModule
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.services.workflows.DirectiveChangeRequest
 import com.normation.rudder.services.workflows.GlobalParamChangeRequest
 import com.normation.rudder.services.workflows.NodeGroupChangeRequest
@@ -301,6 +301,7 @@ object ChangeValidationConf extends RudderPluginModule {
 
   override lazy val pluginDef: ChangeValidationPluginDef = new ChangeValidationPluginDef(pluginStatusService)
 
+  given apiStatus: PluginStatus = pluginDef.status
   lazy val api = {
     val api1 = new SupervisedTargetsApiImpl(
       unsupervisedTargetRepo,
@@ -336,7 +337,7 @@ object ChangeValidationConf extends RudderPluginModule {
       RudderConfig.ruleCategoryService,
       RudderConfig.roRuleCategoryRepository
     )
-    new LiftApiModuleProvider[EndpointSchema] {
+    new PluginLiftApiModuleProvider[EndpointSchema] {
       override def schemas: ApiModuleProvider[EndpointSchema] = new ApiModuleProvider[EndpointSchema] {
         override def endpoints: List[EndpointSchema] =
           ValidatedUserApi.endpoints ::: SupervisedTargetsApi.endpoints ::: ChangeRequestApi.endpoints ::: WorkflowInternalApi.endpoints

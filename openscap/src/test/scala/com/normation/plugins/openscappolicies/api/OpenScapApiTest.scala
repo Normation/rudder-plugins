@@ -3,6 +3,7 @@ package com.normation.plugins.openscappolicies.api
 import better.files.*
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.rudder.MockNodes
 import com.normation.rudder.api.ApiVersion
@@ -59,7 +60,7 @@ class OpenScapApiTest extends ZIOSpecDefault {
   )
 
   val modules = List(
-    new OpenScapApiImpl(openScapReportReader)
+    new OpenScapApiImpl(openScapReportReader)(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil

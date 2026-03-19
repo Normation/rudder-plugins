@@ -207,7 +207,7 @@ object AuthBackendsConf extends RudderPluginModule {
 
   lazy val api = new AuthBackendsApiImpl(
     new AuthBackendsRepositoryImpl(RudderConfig.authenticationProviders, RudderProperties.config)
-  )
+  )(using pluginStatusService)
 
   lazy val loginFormRendering: LoginFormRendering = {
     try {

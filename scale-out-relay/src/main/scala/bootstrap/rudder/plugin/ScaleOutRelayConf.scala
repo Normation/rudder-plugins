@@ -38,6 +38,7 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.scaleoutrelay.CheckRudderPluginEnableImpl
 import com.normation.plugins.scaleoutrelay.LdapDeleteNodeEntryService
@@ -49,12 +50,14 @@ import com.normation.plugins.scaleoutrelay.api.ScaleOutRelayApiImpl
 /*
  * Actual configuration of the plugin logic
  */
-object ScalaOutRelayConf extends RudderPluginModule {
+object ScaleOutRelayConf extends RudderPluginModule {
 
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository)
 
-  override lazy val pluginDef: ScalaOutRelayPluginDef = new ScalaOutRelayPluginDef(ScalaOutRelayConf.pluginStatusService)
+  override lazy val pluginDef: ScalaOutRelayPluginDef = new ScalaOutRelayPluginDef(ScaleOutRelayConf.pluginStatusService)
+
+  given apiStatus: PluginStatus = pluginDef.status
 
   lazy val api = new ScaleOutRelayApiImpl(scaleOutRelayService, RudderConfig.stringUuidGenerator)
 

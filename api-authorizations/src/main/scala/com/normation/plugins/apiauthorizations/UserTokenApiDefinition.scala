@@ -40,6 +40,8 @@ package com.normation.plugins.apiauthorizations
 import bootstrap.liftweb.AuthBackendProvidersManager
 import com.normation.errors.*
 import com.normation.eventlog.ModificationId
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.rudder.api.*
 import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.repository.ldap.JsonApiAuthz
@@ -64,7 +66,8 @@ class UserApiImpl(
     authBackendProvidersManager: AuthBackendProvidersManager,
     tokenGenerator:              TokenGenerator,
     uuidGen:                     StringUuidGenerator
-) extends LiftApiModuleProvider[UserApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[UserApi] {
   api =>
 
   import UserApiImpl.*
@@ -86,7 +89,6 @@ class UserApiImpl(
    * (so that we enforce only one token by user - that could be change in the future
    * by only enforcing the name)
    */
-
   object GetTokenFeatureStatus extends LiftApiModule0 {
     val schema: UserApi.GetTokenFeatureStatus.type = UserApi.GetTokenFeatureStatus
 

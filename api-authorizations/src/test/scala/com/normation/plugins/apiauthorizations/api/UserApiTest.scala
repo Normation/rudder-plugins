@@ -3,6 +3,7 @@ package com.normation.plugins.apiauthorizations
 import better.files.*
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.Rights
 import com.normation.rudder.api.*
@@ -67,7 +68,7 @@ class UserApiTest extends ZIOSpecDefault {
       null,
       mockServices.tokenGenerator,
       restTestSetUp.uuidGen
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions: List[ApiVersion] = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil

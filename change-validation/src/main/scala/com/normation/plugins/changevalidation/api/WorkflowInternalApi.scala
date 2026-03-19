@@ -44,6 +44,8 @@ import com.normation.cfclerk.services.TechniqueRepository
 import com.normation.errors.IOResult
 import com.normation.errors.OptionToIoResult
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.changevalidation.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.api.ApiVersion
@@ -66,7 +68,6 @@ import com.normation.rudder.rest.implicits.ToLiftResponseOne
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rule.category.RoRuleCategoryRepository
 import com.normation.rudder.rule.category.RuleCategoryService
 import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
@@ -86,7 +87,8 @@ import zio.ZIO
 import zio.syntax.ToZio
 
 sealed trait WorkflowInternalApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
-object WorkflowInternalApi       extends Enum[WorkflowInternalApi] with ApiModuleProvider[WorkflowInternalApi] {
+
+object WorkflowInternalApi extends Enum[WorkflowInternalApi] with ApiModuleProvider[WorkflowInternalApi] {
 
   case object PendingChangeRequestCount extends WorkflowInternalApi with ZeroParam with StartsAtVersion21 with SortIndex {
     val z: Int = implicitly[Line].value
@@ -141,7 +143,8 @@ class WorkflowInternalApiImpl(
     nodeGroupRepository:          RoNodeGroupRepository,
     ruleCategoryService:          RuleCategoryService,
     ruleCategoryRepository:       RoRuleCategoryRepository
-) extends LiftApiModuleProvider[WorkflowInternalApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[WorkflowInternalApi] {
 
   import com.normation.plugins.changevalidation.api.WorkflowInternalApi as API
 

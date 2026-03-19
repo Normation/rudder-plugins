@@ -41,6 +41,7 @@ import bootstrap.liftweb.ConfigResource
 import bootstrap.liftweb.MenuUtils
 import com.normation.plugins.*
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReportApi
+import com.normation.rudder.AuthorizationType
 import net.liftweb.common.Loggable
 import net.liftweb.http.ClasspathTemplates
 import net.liftweb.http.LiftRules
@@ -64,8 +65,9 @@ class NodeExternalReportsPluginDef(api: NodeExternalReportApi, override val stat
 
   override def pluginMenuEntry: List[(Menu, Option[String])] = {
     (
-      (Menu("160-nodeExternalReportInfo", <span>Node external reports</span>) / "secure" / "plugins" / "nodeexternalreports" >>
-      Template(() => {
+      (Menu("160-nodeExternalReportInfo", <span>Node external reports</span>) / "secure" / "plugins" / "nodeexternalreports"
+      >> testMenuAccess(AuthorizationType.Node.Read)
+      >> Template(() => {
         ClasspathTemplates("nodeExternalReports" :: Nil) openOr
         <div>Template not found</div>
       })).toMenu,
