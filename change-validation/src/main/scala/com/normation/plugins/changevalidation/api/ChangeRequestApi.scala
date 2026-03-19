@@ -37,6 +37,7 @@
 
 package com.normation.plugins.changevalidation.api
 
+import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.cfclerk.domain.Technique
 import com.normation.cfclerk.domain.TechniqueId
 import com.normation.cfclerk.services.TechniqueRepository
@@ -99,8 +100,11 @@ import sourcecode.Line
 import zio.*
 import zio.syntax.*
 
-sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
-object ChangeRequestApi       extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
+sealed trait ChangeRequestApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
+  override def isEnabled: Boolean = ChangeValidationConf.pluginStatusService.isEnabled()
+}
+
+object ChangeRequestApi extends Enum[ChangeRequestApi] with ApiModuleProvider[ChangeRequestApi] {
 
   case object ListChangeRequests     extends ChangeRequestApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z: Int = implicitly[Line].value

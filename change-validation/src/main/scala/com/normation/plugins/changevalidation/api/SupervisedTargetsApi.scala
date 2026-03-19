@@ -37,6 +37,7 @@
 
 package com.normation.plugins.changevalidation.api
 
+import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins.changevalidation.*
 import com.normation.plugins.changevalidation.RudderJsonMapping.*
 import com.normation.rudder.AuthorizationType
@@ -72,8 +73,11 @@ import zio.ZIO
  * supervision, and is able to save an updated list.
  */
 
-sealed trait SupervisedTargetsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
-object SupervisedTargetsApi       extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
+sealed trait SupervisedTargetsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex {
+  override def isEnabled: Boolean = ChangeValidationConf.pluginStatusService.isEnabled()
+}
+
+object SupervisedTargetsApi extends Enum[SupervisedTargetsApi] with ApiModuleProvider[SupervisedTargetsApi] {
   val zz = 11
   case object GetAllTargets           extends SupervisedTargetsApi with ZeroParam with StartsAtVersion10 {
     val z: Int = implicitly[Line].value

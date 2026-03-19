@@ -37,6 +37,7 @@
 
 package com.normation.plugins.changevalidation.api
 
+import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.eventlog.EventActor
 import com.normation.plugins.changevalidation.JsonValidatedUsers
 import com.normation.plugins.changevalidation.RoValidatedUserRepository
@@ -60,8 +61,11 @@ import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import sourcecode.Line
 
-sealed trait ValidatedUserApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
-object ValidatedUserApi       extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
+sealed trait ValidatedUserApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
+  override def isEnabled: Boolean = ChangeValidationConf.pluginStatusService.isEnabled()
+}
+
+object ValidatedUserApi extends Enum[ValidatedUserApi] with ApiModuleProvider[ValidatedUserApi] {
 
   case object ListUsers                   extends ValidatedUserApi with ZeroParam with StartsAtVersion3 with SortIndex {
     val z: Int = implicitly[Line].value

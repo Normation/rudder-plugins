@@ -37,6 +37,7 @@
 
 package com.normation.plugins.openscappolicies.api
 
+import bootstrap.rudder.plugin.OpenscapPoliciesConf
 import com.normation.errors.SystemError
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
@@ -60,7 +61,9 @@ import net.liftweb.http.Req
 import sourcecode.Line
 import zio.syntax.*
 
-sealed trait OpenScapApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex
+sealed trait OpenScapApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
+  override def isEnabled: Boolean = OpenscapPoliciesConf.pluginStatusService.isEnabled()
+}
 
 object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi] {
 

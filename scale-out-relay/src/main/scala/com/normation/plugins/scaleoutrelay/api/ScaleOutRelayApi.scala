@@ -1,5 +1,6 @@
 package com.normation.plugins.scaleoutrelay.api
 
+import bootstrap.rudder.plugin.ScaleOutRelayConf
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
@@ -22,6 +23,8 @@ import sourcecode.Line
 
 sealed trait ScaleOutRelayApi extends EnumEntry with EndpointSchema with GeneralApi with SortIndex {
   override def dataContainer: Option[String] = None
+
+  override def isEnabled: Boolean = ScaleOutRelayConf.pluginStatusService.isEnabled()
 }
 
 object ScaleOutRelayApi extends Enum[ScaleOutRelayApi] with ApiModuleProvider[ScaleOutRelayApi] {

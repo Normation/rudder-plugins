@@ -38,7 +38,7 @@
 package com.normation.plugins.scaleoutrelay
 
 import bootstrap.liftweb.ConfigResource
-import bootstrap.rudder.plugin.ScalaOutRelayConf
+import bootstrap.rudder.plugin.ScaleOutRelayConf
 import com.normation.plugins.*
 import com.normation.rudder.rest.EndpointSchema
 import com.normation.rudder.rest.lift.LiftApiModuleProvider
@@ -56,5 +56,5 @@ class ScalaOutRelayPluginDef(override val status: PluginStatus) extends DefaultP
 
   override val configFiles: Seq[ConfigResource] = Seq()
 
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(ScalaOutRelayConf.api)
+  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(ScaleOutRelayConf.api)
 }
