@@ -46,7 +46,12 @@ initModel { contextPath } =
                     |> buildConfig.withSortOrder Desc
                     |> buildConfig.withOptions
                         (buildOptions.newOptions
-                            |> buildOptions.withFilter filter)
+                            |> buildOptions.withFilter filter
+                            |> buildOptions.withCustomizations
+                                (buildCustomizations.newCustomizations
+                                    |> buildCustomizations.withOptionsHeaderAttrs [class "dataTables_wrapper_top"]
+                                    |> buildCustomizations.withTableAttrs [class "no-footer dataTable"]
+                                    ))
                 )
                 []
 
