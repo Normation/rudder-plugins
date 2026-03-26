@@ -38,6 +38,8 @@
 package com.normation.plugins.authbackends.api
 
 import com.normation.errors.IOResult
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.authbackends.AuthBackendsRepository
 import com.normation.plugins.authbackends.JsonSerialization
 import com.normation.rudder.AuthorizationType
@@ -55,7 +57,6 @@ import com.normation.rudder.rest.ZeroParam
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rest.syntax.*
 import enumeratum.*
 import net.liftweb.http.LiftResponse
@@ -70,6 +71,7 @@ import sourcecode.Line
 sealed trait AuthBackendsApi extends EnumEntry with EndpointSchema with InternalApi with SortIndex
 
 object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[AuthBackendsApi] {
+  // we must not reference AuthBackendsConf here else testing will bootstrap RudderConfig through it
 
   case object GetAuthenticationInformation extends AuthBackendsApi with ZeroParam with StartsAtVersion10 {
     val z: Int = implicitly[Line].value
@@ -86,7 +88,8 @@ object AuthBackendsApi extends Enum[AuthBackendsApi] with ApiModuleProvider[Auth
 
 class AuthBackendsApiImpl(
     authRepo: AuthBackendsRepository
-) extends LiftApiModuleProvider[AuthBackendsApi] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[AuthBackendsApi] {
   api =>
 
   def schemas: ApiModuleProvider[AuthBackendsApi] = AuthBackendsApi

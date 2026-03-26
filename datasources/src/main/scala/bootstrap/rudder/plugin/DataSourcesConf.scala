@@ -40,6 +40,7 @@ package bootstrap.rudder.plugin
 import bootstrap.liftweb.RudderConfig
 import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.datasources.*
 import com.normation.plugins.datasources.api.DataSourceApiImpl
@@ -111,6 +112,8 @@ object DatasourcesConf extends RudderPluginModule {
       }
     )
   )
+
+  given apiStatus: PluginStatus = pluginDef.status
 
   val dataSourceApi9 = new DataSourceApiImpl(
     dataSourceRepository,

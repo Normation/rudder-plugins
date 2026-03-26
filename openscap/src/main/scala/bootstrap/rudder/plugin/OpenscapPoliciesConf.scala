@@ -38,6 +38,7 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.RudderPluginModule
 import com.normation.plugins.openscappolicies.CheckRudderPluginEnableImpl
 import com.normation.plugins.openscappolicies.OpenscapPoliciesPluginDef
@@ -56,6 +57,8 @@ object OpenscapPoliciesConf extends RudderPluginModule {
   lazy val pluginDef: OpenscapPoliciesPluginDef = new OpenscapPoliciesPluginDef(OpenscapPoliciesConf.pluginStatusService)
 
   lazy val getActiveTechniqueIds = new GetActiveTechniqueIds(RudderConfig.rudderDit, RudderConfig.roLDAPConnectionProvider)
+
+  given apiStatus: PluginStatus = pluginDef.status
 
   lazy val openScapReportReader = new OpenScapReportReader(
     RudderConfig.nodeFactRepository,
