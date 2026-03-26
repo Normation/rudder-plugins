@@ -2,7 +2,7 @@ module RudderDiff exposing (Diff(..), DiffChange, decodeDiffField, decodeDiffFie
 
 import Diff
 import Html exposing (Attribute, Html, b, br, li, node, pre, span, text, ul)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (style, class)
 import Json.Decode exposing (Decoder, Value, at, field, map, map2, oneOf)
 import Json.Encode exposing (encode)
 import RudderDataTypes exposing (..)
@@ -110,7 +110,7 @@ displayFormDiff toHtml change =
             field |> toHtml
 
         Change diff ->
-            pre [ style "white-space" "pre-line", style "word-break" "break-word", style "overflow" "auto" ]
+            pre [ class "overflow-auto text-break-spaces" ]
                 [ node "del" [] [ text "- ", toHtml diff.from ]
                 , br [] []
                 , node "ins" [] [ text "+ ", toHtml diff.to ]
@@ -410,7 +410,7 @@ displayDirectiveParametersDiff fieldName diff =
         Change { from, to } ->
             li []
                 [ b [] [ text (fieldName ++ " : ") ]
-                , pre [ style "white-space" "pre-line", style "word-break" "break-word", style "overflow" "auto" ]
+                , pre [ class "overflow-auto text-break-spaces" ]
                     (Diff.diffLines from to
                         |> List.map
                             (\c ->
