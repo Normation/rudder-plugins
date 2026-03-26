@@ -4,6 +4,7 @@ package api
 import better.files.File
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
@@ -49,11 +50,8 @@ class AuthBackendsApiTest extends ZIOSpecDefault {
   val mockAuthBackendsRepository = new AuthBackendsRepository {
     override def getConfigOption(): JsonAuthConfiguration = fakeJsonAuthConfiguration
   }
-  val modules                    = List(
-    new AuthBackendsApiImpl(
-      mockAuthBackendsRepository
-    )
-  )
+
+  val modules = List(new AuthBackendsApiImpl(mockAuthBackendsRepository)(using AlwaysEnabledPluginStatus))
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
   val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)

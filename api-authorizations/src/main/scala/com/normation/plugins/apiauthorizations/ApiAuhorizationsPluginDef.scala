@@ -41,14 +41,13 @@ import bootstrap.liftweb.ConfigResource
 import bootstrap.rudder.plugin.ApiAuthorizationsConf
 import com.normation.plugins.*
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 
 class ApiAuthorizationsPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   // here, we let the "-" so that "build.conf" is looked up at the correct place.
   override val basePackage = "com.normation.plugins.apiauthorizations"
 
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(ApiAuthorizationsConf.userApi)
+  override def apis: Option[PluginLiftApiModuleProvider[? <: EndpointSchema]] = Some(ApiAuthorizationsConf.userApi)
 
   def init = {}
   def oneTimeInit: Unit = {}

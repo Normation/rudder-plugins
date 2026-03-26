@@ -40,6 +40,7 @@ package com.normation.plugins.datasources.api
 import better.files.File
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.datasources.*
 import com.normation.rudder.MockNodes
 import com.normation.rudder.rest.RestTest
@@ -64,7 +65,7 @@ class RestDataSourceFilesTest extends ZIOSpecDefault {
     datasourceRepo,
     mockNodes.nodeFactRepo,
     restTestSetUp.uuidGen
-  )
+  )(using AlwaysEnabledPluginStatus)
 
   val (rudderApi, liftRules) =
     TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, restTestSetUp.apiVersions, Some(restTestSetUp.userService))

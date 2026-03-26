@@ -60,7 +60,7 @@ object BrandingPluginConf extends RudderPluginModule {
   val brandingConfService: BrandingConfService = new BrandingConfService(BrandingConfService.defaultConfigFilePath)
   val brandingApiService:  BrandingApiService  = new BrandingApiService(brandingConfService)
   val brandingApi:         BrandingApi         =
-    new BrandingApi(brandingApiService, RudderConfig.stringUuidGenerator)
+    new BrandingApi(brandingApiService, RudderConfig.stringUuidGenerator)(using pluginStatusService)
 
   RudderConfig.rudderApi.addModules(brandingApi.getLiftEndpoints())
   RudderConfig.snippetExtensionRegister.register(new BrandingResources(pluginDef.status))

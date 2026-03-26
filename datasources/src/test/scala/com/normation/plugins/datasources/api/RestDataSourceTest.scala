@@ -38,6 +38,7 @@
 package com.normation.plugins.datasources.api
 
 import better.files.File
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.datasources.*
 import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.rudder.MockNodes
@@ -68,7 +69,7 @@ class RestDataSourceTest extends Specification {
     datasourceRepo,
     mockNodes.nodeFactRepo,
     restTestSetUp.uuidGen
-  )
+  )(using AlwaysEnabledPluginStatus)
 
   val (rudderApi, liftRules) =
     TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, restTestSetUp.apiVersions, Some(restTestSetUp.userService))

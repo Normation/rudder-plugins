@@ -41,7 +41,6 @@ import bootstrap.liftweb.ConfigResource
 import bootstrap.rudder.plugin.AuthBackendsConf
 import com.normation.plugins.*
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import net.liftweb.sitemap.Menu
 
 class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
@@ -56,7 +55,7 @@ class AuthBackendsPluginDef(override val status: PluginStatus) extends DefaultPl
   // for these properties.
   val configFiles: Seq[ConfigResource] = Seq()
 
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(AuthBackendsConf.api)
+  override def apis: Option[PluginLiftApiModuleProvider[? <: EndpointSchema]] = Some(AuthBackendsConf.api)
 
   // no menu, the doc will be directly in plugin
   override def pluginMenuEntry: List[(Menu, Option[String])] = Nil

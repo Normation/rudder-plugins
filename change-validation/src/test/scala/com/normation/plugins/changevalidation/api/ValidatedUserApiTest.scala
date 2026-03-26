@@ -4,6 +4,7 @@ import better.files.File
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
 import com.normation.eventlog.EventActor
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.changevalidation.MockValidatedUsers
 import com.normation.plugins.changevalidation.WorkflowUsers
 import com.normation.rudder.api.ApiVersion
@@ -35,7 +36,7 @@ class ValidatedUserApiTest extends ZIOSpecDefault {
     new ValidatedUserApiImpl(
       mockServices.validatedUserRepo,
       mockServices.validatedUserRepo
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
