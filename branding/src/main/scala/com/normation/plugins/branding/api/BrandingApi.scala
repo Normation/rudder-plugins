@@ -37,6 +37,8 @@
 
 package com.normation.plugins.branding.api
 
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.branding.BrandingConf
 import com.normation.plugins.branding.BrandingConfService
 import com.normation.rudder.api.ApiVersion
@@ -45,17 +47,22 @@ import com.normation.rudder.rest.RudderJsonRequest.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rest.syntax.*
 import com.normation.utils.StringUuidGenerator
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.Req
 import zio.json.*
 
+/*
+ * Branding API is not limited. We only limit the fact that the UI change.
+ * If we don't do that, we can't even access to rudder login page when the API is
+ * disabled, which is a bit too much.
+ */
 class BrandingApi(
     brandingApiService: BrandingApiService,
     uuidGen:            StringUuidGenerator
-) extends LiftApiModuleProvider[BrandingApiSchema] {
+)(using pluginStatus: PluginStatus)
+    extends PluginLiftApiModuleProvider[BrandingApiSchema] {
 
   val dataName = "branding"
 

@@ -40,6 +40,8 @@ package com.normation.plugins.datasources.api
 import com.normation.errors.*
 import com.normation.eventlog.ModificationId
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.datasources.DataSource
 import com.normation.plugins.datasources.DataSourceId
 import com.normation.plugins.datasources.DataSourceJsonCodec.*
@@ -59,7 +61,6 @@ import com.normation.rudder.rest.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.rest.syntax.*
 import com.normation.rudder.tenants.ChangeContext
 import com.normation.rudder.tenants.TenantAccessGrant
@@ -74,7 +75,8 @@ class DataSourceApiImpl(
     dataSourceRepo: DataSourceRepository & DataSourceUpdateCallbacks,
     nodeFactRepo:   NodeFactRepository,
     uuidGen:        StringUuidGenerator
-) extends LiftApiModuleProvider[API] {
+)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[API] {
   api =>
 
   val kind = "datasources"

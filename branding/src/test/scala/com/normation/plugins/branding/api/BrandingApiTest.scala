@@ -1,6 +1,7 @@
 package com.normation.plugins.branding
 
 import better.files.*
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.branding.api.BrandingApi
 import com.normation.plugins.branding.api.BrandingApiService
 import com.normation.rudder.api.ApiVersion
@@ -60,7 +61,7 @@ class BrandingApiTest extends ZIOSpecDefault {
         new BrandingConfService(brandingConfFile.pathAsString)
       ),
       new StringUuidGeneratorImpl()
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil

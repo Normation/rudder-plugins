@@ -3,6 +3,7 @@ package com.normation.plugins.changevalidation.api
 import better.files.File
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.changevalidation.MockSupervisedTargets
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
@@ -40,7 +41,7 @@ class SupervisedTargetsApiTest extends ZIOSpecDefault {
     new SupervisedTargetsApiImpl(
       mockServices.unsupervisedRepo,
       mockServices.nodeGroupRepo
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil

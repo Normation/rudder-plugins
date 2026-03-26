@@ -40,15 +40,15 @@ package com.normation.plugins.branding
 import bootstrap.liftweb.ConfigResource
 import bootstrap.rudder.plugin.BrandingPluginConf
 import com.normation.plugins.DefaultPluginDef
+import com.normation.plugins.PluginLiftApiModuleProvider
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 
 class BrandingPluginDef(override val status: PluginStatus) extends DefaultPluginDef {
 
   override val basePackage = "com.normation.plugins.branding"
 
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(BrandingPluginConf.brandingApi)
+  override def apis: Option[PluginLiftApiModuleProvider[? <: EndpointSchema]] = Some(BrandingPluginConf.brandingApi)
 
   def init = {}
 

@@ -608,7 +608,7 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
       restTestSetUp.workflowLevelService,
       mockServices.commitAndDeployChangeRequest,
       mockServices.userPropertyService
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val validationWorkflowService = new TwoValidationStepsWorkflowServiceImpl(

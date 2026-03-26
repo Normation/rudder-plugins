@@ -40,6 +40,7 @@ package com.normation.plugins.changevalidation.api
 import better.files.File
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.changevalidation.MockServices
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.Cancelled
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.Deployment
@@ -106,7 +107,7 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
       restTestSetUp.mockNodeGroups.groupsRepo,
       restTestSetUp.ruleCategoryService,
       restTestSetUp.mockRules.ruleCategoryRepo
-    )
+    )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil

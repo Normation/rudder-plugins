@@ -39,6 +39,8 @@ package com.normation.plugins.openscappolicies.api
 
 import com.normation.errors.SystemError
 import com.normation.inventory.domain.NodeId
+import com.normation.plugins.PluginLiftApiModuleProvider
+import com.normation.plugins.PluginStatus
 import com.normation.plugins.openscappolicies.OpenscapPoliciesLogger
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.plugins.openscappolicies.services.ReportSanitizer
@@ -49,7 +51,6 @@ import com.normation.rudder.rest.*
 import com.normation.rudder.rest.EndpointSchema.syntax.*
 import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.*
 import enumeratum.*
@@ -87,9 +88,8 @@ object OpenScapApi extends Enum[OpenScapApi] with ApiModuleProvider[OpenScapApi]
   def values = findValues
 }
 
-class OpenScapApiImpl(
-    openScapReportReader: OpenScapReportReader
-) extends LiftApiModuleProvider[OpenScapApi] {
+class OpenScapApiImpl(openScapReportReader: OpenScapReportReader)(using status: PluginStatus)
+    extends PluginLiftApiModuleProvider[OpenScapApi] {
   api =>
 
   val logger = OpenscapPoliciesLogger

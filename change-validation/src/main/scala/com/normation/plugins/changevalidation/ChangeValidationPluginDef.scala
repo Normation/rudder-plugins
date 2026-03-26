@@ -43,7 +43,6 @@ import bootstrap.rudder.plugin.ChangeValidationConf
 import com.normation.plugins.*
 import com.normation.rudder.AuthorizationType
 import com.normation.rudder.rest.EndpointSchema
-import com.normation.rudder.rest.lift.LiftApiModuleProvider
 import com.normation.rudder.users.CurrentUser
 import com.normation.zio.UnsafeRun
 import net.liftweb.common.Empty
@@ -87,7 +86,7 @@ class ChangeValidationPluginDef(override val status: PluginStatus) extends Defau
     ChangeValidationConf.unsupervisedTargetRepo.checkPathAndInitRepos().runNow
   }
 
-  override def apis: Option[LiftApiModuleProvider[? <: EndpointSchema]] = Some(ChangeValidationConf.api)
+  override def apis: Option[PluginLiftApiModuleProvider[? <: EndpointSchema]] = Some(ChangeValidationConf.api)
 
   def oneTimeInit: Unit = {}
 
