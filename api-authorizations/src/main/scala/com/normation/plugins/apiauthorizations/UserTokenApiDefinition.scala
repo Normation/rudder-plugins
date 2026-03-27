@@ -140,7 +140,7 @@ class UserApiImpl(
         s"API token for user '${authzToken.qc.actor.name}'",
         isEnabled = true,
         now,
-        lastAuthenticationDate = None,
+        lastAuthentication = AccountLastAuthentication.Unknown,
         // set "no tenant" - they will be updated dynamically when perms are resolved for that token in AppConfigAuth
         TenantAccessGrant.None
       )
