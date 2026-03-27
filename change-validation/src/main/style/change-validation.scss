@@ -35,6 +35,8 @@
 *************************************************************************************
 */
 /* === OVERRIDE RUDDER TEMPLATE === */
+$border-color: #D6DEEF;
+
 .rudder-template.change-validation > .one-col{
   flex: 1;
 
@@ -111,18 +113,19 @@
 }
 
 #changesContainer{
-  border: 2px solid #E5E5E5;
+  border: 2px solid $border-color;
   margin-top: 20px;
   display: flex;
 
   & > div:first-child{
     width: 250px;
+    flex: 0 0 auto;
 
-    &:last-child{
-      flex: 1;
-      border-left: 2px solid #E5E5E5;
-      padding: 0 15px;
-    }
+  }
+  & > div:last-child{
+    flex: 1;
+    border-left: 2px solid $border-color;
+    padding: 0 15px;
   }
 }
 
