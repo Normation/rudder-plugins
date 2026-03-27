@@ -38,6 +38,7 @@ package com.normation.plugins.authbackends
 
 import bootstrap.rudder.plugin.RudderOAuth2OpaqueToken
 import bootstrap.rudder.plugin.RudderOpaqueTokenAuthenticationProvider
+import com.normation.rudder.api.AccountLastAuthentication
 import com.normation.rudder.api.AccountToken
 import com.normation.rudder.api.ApiAccount
 import com.normation.rudder.api.ApiAccountExpirationPolicy
@@ -88,7 +89,7 @@ class TestCache extends Specification {
         "",
         isEnabled = true,
         TOKEN_CREATION,
-        None,
+        AccountLastAuthentication.Unknown,
         TenantAccessGrant.All
       )
     ),

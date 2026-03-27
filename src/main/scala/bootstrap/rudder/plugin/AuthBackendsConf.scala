@@ -1341,9 +1341,10 @@ class RudderJwtAuthenticationConverter(
               ApiAccountName(jwt.getId),
               AccountToken(Some(ApiTokenHash.fromHashValue(jwt.getTokenValue)), created),
               "",
-              isEnabled = true,              // always enabled at that point, since the token is valid
+              isEnabled = true,                    // always enabled at that point, since the token is valid
               created,
-              lastAuthenticationDate = None, // access for this token are already traced in logs, JWT token are also ephemeral
+              lastAuthentication =
+                AccountLastAuthentication.Unknown, // access for this token are already traced in logs, JWT token are also ephemeral
               nsc
             )
           ),
