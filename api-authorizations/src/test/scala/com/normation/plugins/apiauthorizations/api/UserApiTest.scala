@@ -41,7 +41,7 @@ class UserApiTest extends ZIOSpecDefault {
       "number one user",
       isEnabled = true,
       creationDate = accountCreationDate,
-      lastAuthenticationDate = None,
+      lastAuthentication = AccountLastAuthentication.Unknown,
       TenantAccessGrant.All
     )
   )
