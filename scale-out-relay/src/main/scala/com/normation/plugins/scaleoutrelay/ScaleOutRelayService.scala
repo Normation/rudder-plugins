@@ -191,7 +191,7 @@ class ScaleOutRelayService(
     // deletions should be done before changing node and trigger policy generation, see https://issues.rudder.io/issues/28617
     ((targets ::: groups ::: directives ::: rules) :+ nPromoted :+ nBeforePromoted)
       .accumulate(identity)
-      .tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully demoted node '${newInfo.id.value}' from relay"))
+      .tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully demoted node '${newInfo.id.value}' from relay to simple node"))
   }
 
   private[scaleoutrelay] def NodeToPolicyServer(nodeInf: CoreNodeFact) = {
