@@ -107,7 +107,7 @@ class ScaleOutRelayApiImpl(
       )
       scaleOutRelayService
         .demoteRelayToNode(NodeId(nodeId))
-        .chainError(s"Error when trying to demote mode $nodeId")
+        .chainError(s"Error when trying to demote node $nodeId")
         .as(nodeId)
         .toLiftResponseOne(params, schema, None)
     }

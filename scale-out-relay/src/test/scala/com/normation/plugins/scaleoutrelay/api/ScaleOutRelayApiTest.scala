@@ -3,12 +3,15 @@ package com.normation.plugins.scaleoutrelay.api
 import better.files.*
 import com.normation.errors.IOResult
 import com.normation.errors.effectUioUnit
+import com.normation.inventory.domain.FullInventory
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.scaleoutrelay.DeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.MockServices
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.facts.nodes.ChangeContext
+import com.normation.rudder.facts.nodes.NodeFact
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import java.nio.file.Files
@@ -26,7 +29,8 @@ class ScaleOutRelayApiTest extends ZIOSpecDefault {
   val yamlDestTmpDirectory = tmpDir / "templates"
 
   val mockServices = new MockServices(Map.empty)
-  val modules      = List(
+
+  val modules = List(
     new ScaleOutRelayApiImpl(
       new ScaleOutRelayService(
         mockServices.woLDAPNodeGroupRepository,
@@ -58,17 +62,29 @@ class ScaleOutRelayApiTest extends ZIOSpecDefault {
     (suite("All REST tests defined in files") {
 
       for {
-        s <- TraitTestApiFromYamlFiles.doTest(
-               yamlSourceDirectory,
-               yamlDestTmpDirectory,
-               liftRules,
-               Nil,
-               transformations
-             )
-        _ <- effectUioUnit(
-               if (java.lang.System.getProperty("tests.clean.tmp") != "false") IOResult.attempt(restTestSetUp.cleanup())
-               else ZIO.unit
-             )
+        node1 <- restTestSetUp.mockNodes.nodeFactStorage
+                   .getAccepted(NodeId("node1"))
+                   .notOptional("node with id 'node1' cannot be missing")
+        node3  = NodeFact.fromCompat(
+                   node1
+                     .copy(id = NodeId("node3"), rudderSettings = node1.rudderSettings.copy(policyServerId = NodeId("node-dsc")))
+                     .toNodeInfo,
+                   Right(FullInventory(node1.toFullInventory.node, None)),
+                   List(),
+                   None
+                 )
+        _     <- restTestSetUp.mockNodes.nodeFactRepo.save(node3)(using ChangeContext.newForRudder())
+        s     <- TraitTestApiFromYamlFiles.doTest(
+                   yamlSourceDirectory,
+                   yamlDestTmpDirectory,
+                   liftRules,
+                   Nil,
+                   transformations
+                 )
+        _     <- effectUioUnit(
+                   if (java.lang.System.getProperty("tests.clean.tmp") != "false") IOResult.attempt(restTestSetUp.cleanup())
+                   else ZIO.unit
+                 )
       } yield s
     })
   }

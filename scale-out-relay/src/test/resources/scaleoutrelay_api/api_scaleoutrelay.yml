@@ -55,5 +55,35 @@ response:
     {
       "action": "demoteToNode",
       "result": "error",
-      "errorDetails": "Error when trying to demote mode node_void123; cause was: Inconsistency: Relay with UUID node_void123 is missing and can not be demoted to node"
+      "errorDetails": "Error when trying to demote node node_void123; cause was: Inconsistency: Relay with UUID node_void123 is missing and can not be demoted to node"
+    }
+---
+description: Fail to demote root node
+method: POST
+url: /api/latest/scaleoutrelay/demote/root
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 500
+  type: json
+  content: >-
+    {
+      "action": "demoteToNode",
+      "result": "error",
+      "errorDetails": "Error when trying to demote node root; cause was: Inconsistency: Demoting node with id 'root' to simple node is forbidden."
+    }
+---
+description: Fail to demote a relay that is not root to a simple node when the relay is the policy server of one or more nodes
+method: POST
+url: /api/latest/scaleoutrelay/demote/node-dsc
+headers:
+  - "Content-Type: application/json"
+response:
+  code: 500
+  type: json
+  content: >-
+    {
+      "action": "demoteToNode",
+      "result": "error",
+      "errorDetails": "Error when trying to demote node node-dsc; cause was: Inconsistency: Relay 'node-dsc' cannot be demoted to simple node because it is the policy server of the following nodes : \n'node3' \nThese nodes must be assigned to a different policy server before relay 'node-dsc' can be demoted."
     }
