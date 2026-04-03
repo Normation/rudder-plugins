@@ -134,10 +134,31 @@ class ScaleOutRelayService(
       nodeInfo <- nodeFactRepository
                     .get(nodeId)
                     .notOptional(s"Relay with UUID ${nodeId.value} is missing and can not be demoted to node")
+      nodes    <- nodeFactRepository.getAll()
       _        <- if (nodeInfo.rudderSettings.isPolicyServer) {
                     val configObjects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
-                    demoteRelay(nodeInfo, configObjects).unit *>
-                    actionLogger.saveDemoteToNode(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
+                    val targets       = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id).targets
+                    val allNodes      = nodes.mapValues(_.rudderSettings.kind.isPolicyServer)
+                    val managedNodes  = {
+                      RuleTarget
+                        .getNodeIds(targets.toSet, allNodes.toMap, Map())
+                        .filterNot(_.equals(nodeInfo.id))
+                    }
+
+                    if (managedNodes.isEmpty) {
+                      demoteRelay(nodeInfo, configObjects).unit *>
+                      actionLogger.saveDemoteToNode(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
+                    } else {
+                      val targets = configObjects.targets.map(_.nodeId.value).map(id => s"'${id}'").reduce((s1, s2) => s"${s1}, ${s2}")
+                      val errMsg  = s"Relay '${nodeId.value}' cannot be demoted to simple node " +
+                        s"because it is the policy server of nodes with the following ids : \n" +
+                        s"${targets} \n" +
+                        s"These nodes must be assigned to a different policy server before Relay '${nodeId.value}' can be demoted."
+
+                      Inconsistency(errMsg).fail *>
+                      ScaleOutRelayLoggerPure.debug(errMsg)
+                    }
+
                   } else {
                     ScaleOutRelayLoggerPure.debug(s"Node '${nodeId.value}' is already a simple node, nothing to do.") *>
                     ZIO.unit
