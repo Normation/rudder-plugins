@@ -1,4 +1,4 @@
-module ChangeRequestChangesForm exposing (Changes, Diff, Directive, DirectiveDiff, GlobalParameter, GlobalParameterDiff, Model, Msg, NodeGroup, NodeGroupDiff, ResourceDiff, Rule, RuleDiff, initModel, update, updateChangeRequestDetails, view)
+module ChangeRequestChangesForm exposing (Changes, Diff, Directive, DirectiveChange, DirectiveDiff, GlobalParameter, GlobalParameterDiff, Model, Msg, NodeGroup, NodeGroupChange, NodeGroupDiff, ParameterChange, ResourceDiff, Rule, RuleChange, RuleDiff, initModel, update, updateChangeRequestDetails, view)
 
 import ErrorMessages exposing (getErrorMessage)
 import Html exposing (Attribute, Html, button, div, h4, li, pre, table, text, ul)
@@ -197,15 +197,31 @@ type alias GlobalParameterDiff =
 
 type ResourceDiff resource modifyDiff
     = Create resource
-    | Delete resource
+    | Delete ResourceLink resource
     | Modify modifyDiff
 
 
+type alias DirectiveChange =
+    ResourceDiff Directive DirectiveDiff
+
+
+type alias RuleChange =
+    ResourceDiff Rule RuleDiff
+
+
+type alias NodeGroupChange =
+    ResourceDiff NodeGroup NodeGroupDiff
+
+
+type alias ParameterChange =
+    ResourceDiff GlobalParameter GlobalParameterDiff
+
+
 type alias Changes =
-    { directives : List (ResourceDiff Directive DirectiveDiff)
-    , rules : List (ResourceDiff Rule RuleDiff)
-    , groups : List (ResourceDiff NodeGroup NodeGroupDiff)
-    , parameters : List (ResourceDiff GlobalParameter GlobalParameterDiff)
+    { directives : List DirectiveChange
+    , rules : List RuleChange
+    , groups : List NodeGroupChange
+    , parameters : List ParameterChange
     }
 
 
@@ -305,14 +321,14 @@ update msg model =
 ------------------------------
 
 
-getChangeRequestChanges : Int -> Model -> Cmd Msg
-getChangeRequestChanges crId model =
+getChangeRequestChanges : Int -> String -> Model -> Cmd Msg
+getChangeRequestChanges crId status model =
     request
         { method = "GET"
         , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
         , url = getApiUrl model.contextPath ("changevalidation/workflow/changeRequestChanges/" ++ String.fromInt crId)
         , body = emptyBody
-        , expect = expectJson GetChangeRequestChanges decodeChanges
+        , expect = expectJson GetChangeRequestChanges (decodeChanges status)
         , timeout = Nothing
         , tracker = Nothing
         }
@@ -324,8 +340,8 @@ getChangeRequestChanges crId model =
 ------------------------------
 
 
-decodeDirectiveDiff : Decoder (ResourceDiff Directive DirectiveDiff)
-decodeDirectiveDiff =
+decodeDirectiveDiff : ResourceLink -> Decoder DirectiveChange
+decodeDirectiveDiff displayDeletedResourceLink =
     let
         decodePolicyMode : Decoder String
         decodePolicyMode =
@@ -362,7 +378,7 @@ decodeDirectiveDiff =
                         map Create decodeDirective
 
                     "delete" ->
-                        map Delete decodeDirective
+                        map (Delete displayDeletedResourceLink) decodeDirective
 
                     "modify" ->
                         map Modify
@@ -385,8 +401,8 @@ decodeDirectiveDiff =
             )
 
 
-decodeRuleDiff : Decoder (ResourceDiff Rule RuleDiff)
-decodeRuleDiff =
+decodeRuleDiff : ResourceLink -> Decoder RuleChange
+decodeRuleDiff displayDeletedResourceLink =
     let
         decodeRule : Decoder Rule
         decodeRule =
@@ -409,7 +425,7 @@ decodeRuleDiff =
                         map Create decodeRule
 
                     "delete" ->
-                        map Delete decodeRule
+                        map (Delete displayDeletedResourceLink) decodeRule
 
                     "modify" ->
                         map Modify
@@ -430,8 +446,8 @@ decodeRuleDiff =
             )
 
 
-decodeGroupDiff : Decoder (ResourceDiff NodeGroup NodeGroupDiff)
-decodeGroupDiff =
+decodeGroupDiff : ResourceLink -> Decoder NodeGroupChange
+decodeGroupDiff displayDeletedResourceLink =
     let
         decodeNodeGroup : Decoder NodeGroup
         decodeNodeGroup =
@@ -454,7 +470,7 @@ decodeGroupDiff =
                         map Create decodeNodeGroup
 
                     "delete" ->
-                        map Delete decodeNodeGroup
+                        map (Delete displayDeletedResourceLink) decodeNodeGroup
 
                     "modify" ->
                         map Modify
@@ -475,8 +491,8 @@ decodeGroupDiff =
             )
 
 
-decodeParameterDiff : Decoder (ResourceDiff GlobalParameter GlobalParameterDiff)
-decodeParameterDiff =
+decodeParameterDiff : ResourceLink -> Decoder ParameterChange
+decodeParameterDiff displayDeletedResourceLink =
     let
         decodeGlobalParameter : Decoder GlobalParameter
         decodeGlobalParameter =
@@ -504,7 +520,7 @@ decodeParameterDiff =
                             map Create decodeGlobalParameter
 
                         "delete" ->
-                            map Delete decodeGlobalParameter
+                            map (Delete displayDeletedResourceLink) decodeGlobalParameter
 
                         _ ->
                             fail "Invalid action type"
@@ -512,18 +528,26 @@ decodeParameterDiff =
             )
 
 
-decodeChanges : Decoder Changes
-decodeChanges =
+decodeChanges : String -> Decoder Changes
+decodeChanges changeRequestStatus =
+    let
+        displayDeletedResourceLink =
+            if changeRequestStatus == "Deployed" then
+                NoLink
+
+            else
+                WithLink
+    in
     at [ "data" ]
         (field "workflow"
             (index 0
                 (field "changes"
                     (map4
                         Changes
-                        (field "directives" (list decodeDirectiveDiff))
-                        (field "rules" (list decodeRuleDiff))
-                        (field "groups" (list decodeGroupDiff))
-                        (field "parameters" (list decodeParameterDiff))
+                        (field "directives" (list (decodeDirectiveDiff displayDeletedResourceLink)))
+                        (field "rules" (list (decodeRuleDiff displayDeletedResourceLink)))
+                        (field "groups" (list (decodeGroupDiff displayDeletedResourceLink)))
+                        (field "parameters" (list (decodeParameterDiff displayDeletedResourceLink)))
                     )
                 )
             )
@@ -543,7 +567,7 @@ view model =
         getDiff =
             case ( model.changeRequestView, model.changesView ) of
                 ( Success cr, NoView ) ->
-                    [ onClick (CallApi (getChangeRequestChanges cr.changeRequest.id)) ]
+                    [ onClick (CallApi (getChangeRequestChanges cr.changeRequest.id cr.changeRequest.state)) ]
 
                 ( _, _ ) ->
                     []
@@ -623,28 +647,41 @@ diff model =
     case model.changesView of
         Success data ->
             let
-                defaultOrDiff f1 f2 contextPath resource =
+                displayChange displaySimple displayWithDiff resource =
+                    let
+                        contextPath =
+                            model.contextPath
+
+                        displaySimpleWithLink =
+                            displaySimple True
+
+                        displaySimpleNoLink =
+                            displaySimple False
+                    in
                     case resource of
                         Create r ->
-                            f1 contextPath r
+                            displaySimpleWithLink contextPath r
 
-                        Delete r ->
-                            f1 contextPath r
+                        Delete WithLink r ->
+                            displaySimpleWithLink contextPath r
+
+                        Delete NoLink r ->
+                            displaySimpleNoLink contextPath r
 
                         Modify r ->
-                            f2 contextPath r
+                            displayWithDiff contextPath r
 
                 directives =
-                    List.map (defaultOrDiff displayDirective displayDirectiveDiff model.contextPath) data.directives
+                    List.map (displayChange displayDirective displayDirectiveDiff) data.directives
 
                 groups =
-                    List.map (defaultOrDiff displayGroup displayGroupDiff model.contextPath) data.groups
+                    List.map (displayChange displayGroup displayGroupDiff) data.groups
 
                 rules =
-                    List.map (defaultOrDiff displayRule displayRuleDiff model.contextPath) data.rules
+                    List.map (displayChange displayRule displayRuleDiff) data.rules
 
                 params =
-                    List.map (defaultOrDiff displayParameter displayParameterDiff model.contextPath) data.parameters
+                    List.map (displayChange displayParameter displayParameterDiff) data.parameters
 
                 changes =
                     List.map (\change -> li [] [ change ]) (directives ++ groups ++ rules ++ params)
@@ -665,10 +702,12 @@ diffDefault diffVal =
             diffChange.from
 
 
-displayDirective : ContextPath -> Directive -> Html Msg
-displayDirective contextPath directive =
+displayDirective : Bool -> ContextPath -> Directive -> Html Msg
+displayDirective link contextPath directive =
     displayResourceDiff "Directive"
-        [ displayField "Directive" (directiveLinkWithId contextPath directive.id directive.displayName)
+        [ displayField "Directive"
+            (if link then (directiveLinkWithId contextPath directive.id directive.displayName)
+            else (text directive.displayName))
         , displayStringField "Name" directive.displayName
         , displayStringField "Short description" directive.shortDescription
         , displayStringField "Technique name" directive.techniqueName
@@ -699,10 +738,12 @@ displayDirectiveDiff contextPath directive =
         ]
 
 
-displayGroup : ContextPath -> NodeGroup -> Html Msg
-displayGroup contextPath group =
+displayGroup : Bool -> ContextPath -> NodeGroup -> Html Msg
+displayGroup link contextPath group =
     displayResourceDiff "Node Group"
-        [ displayField "Group" (groupLinkWithId contextPath group.id group.displayName)
+        [ displayField "Group"
+            (if link then (groupLinkWithId contextPath group.id group.displayName)
+            else (text group.displayName))
         , displayStringField "Name" group.displayName
         , displayStringField "Description" group.description
         , displayBoolField "Enabled" group.enabled
@@ -729,10 +770,12 @@ displayGroupDiff contextPath group =
         ]
 
 
-displayRule : ContextPath -> Rule -> Html Msg
-displayRule contextPath rule =
+displayRule : Bool -> ContextPath -> Rule ->Html Msg
+displayRule link contextPath rule =
     displayResourceDiff "Rule"
-        [ displayField "Rule" (ruleLinkWithId contextPath rule.id rule.displayName)
+        [ displayField "Rule"
+            (if link then (ruleLinkWithId contextPath rule.id rule.displayName)
+            else (text rule.displayName))
         , displayStringField "Name" rule.displayName
         , displayStringField "Category" rule.categoryName
         , displayStringField "Short description" rule.shortDescription
@@ -759,10 +802,12 @@ displayRuleDiff contextPath rule =
         ]
 
 
-displayParameter : ContextPath -> GlobalParameter -> Html Msg
-displayParameter contextPath param =
+displayParameter : Bool -> ContextPath -> GlobalParameter -> Html Msg
+displayParameter link contextPath param =
     displayResourceDiff "Global parameter"
-        [ displayField "Global Parameter" (paramLink contextPath param.name)
+        [ displayField "Global Parameter"
+            (if link then (paramLink contextPath param.name)
+            else (text param.name))
         , displayStringField "Name" param.name
         , displayValueField "Value" param.value
         , displayStringField "Description" param.description
@@ -794,18 +839,30 @@ displayEventAction contextPath action =
             text event
 
         ResourceChangeEvent change ->
+            let
+                displayWithLink = (change.linkToResource == WithLink)
+                simpleName = change.resourceName |> text
+            in
             case change.resourceType of
                 DirectiveRes ->
-                    Html.span [] [ text (change.action ++ " directive "), directiveLink contextPath change.resourceId change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " directive ")
+                        , if displayWithLink then (directiveLink contextPath change.resourceId change.resourceName) else simpleName]
 
                 NodeGroupRes ->
-                    Html.span [] [ text (change.action ++ " group "), groupLink contextPath change.resourceId change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " group ")
+                        , if displayWithLink then (groupLink contextPath change.resourceId change.resourceName) else simpleName ]
 
                 RuleRes ->
-                    Html.span [] [ text (change.action ++ " rule "), ruleLink contextPath change.resourceId change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " rule ")
+                        , if displayWithLink then (ruleLink contextPath change.resourceId change.resourceName) else simpleName]
 
                 GlobalParameterRes ->
-                    Html.span [] [ text (change.action ++ " parameter "), paramLink contextPath change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " parameter ")
+                        , if displayWithLink then (paramLink contextPath change.resourceName) else simpleName ]
 
 
 eventActionText : Event -> String
