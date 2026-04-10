@@ -623,28 +623,36 @@ diff model =
     case model.changesView of
         Success data ->
             let
-                defaultOrDiff f1 f2 contextPath resource =
+                displayAction noDiff withDiff contextPath resource =
                     case resource of
                         Create r ->
-                            f1 contextPath r
+                            (noDiff True) contextPath r
 
                         Delete r ->
-                            f1 contextPath r
+                            case model.changeRequestView of
+
+                                Success mainDetails ->
+                                     case (mainDetails.changeRequest.state) of
+                                         "Deployed" -> (noDiff False) contextPath r
+                                         _ -> (noDiff True) contextPath r
+
+                                _ ->
+                                    (noDiff True) contextPath r
 
                         Modify r ->
-                            f2 contextPath r
+                            withDiff contextPath r
 
                 directives =
-                    List.map (defaultOrDiff displayDirective displayDirectiveDiff model.contextPath) data.directives
+                    List.map (displayAction displayDirective displayDirectiveDiff model.contextPath) data.directives
 
                 groups =
-                    List.map (defaultOrDiff displayGroup displayGroupDiff model.contextPath) data.groups
+                    List.map (displayAction displayGroup  displayGroupDiff model.contextPath) data.groups
 
                 rules =
-                    List.map (defaultOrDiff displayRule displayRuleDiff model.contextPath) data.rules
+                    List.map (displayAction displayRule displayRuleDiff model.contextPath) data.rules
 
                 params =
-                    List.map (defaultOrDiff displayParameter displayParameterDiff model.contextPath) data.parameters
+                    List.map (displayAction displayParameter displayParameterDiff model.contextPath) data.parameters
 
                 changes =
                     List.map (\change -> li [] [ change ]) (directives ++ groups ++ rules ++ params)
@@ -665,10 +673,12 @@ diffDefault diffVal =
             diffChange.from
 
 
-displayDirective : ContextPath -> Directive -> Html Msg
-displayDirective contextPath directive =
+displayDirective : Bool -> ContextPath -> Directive -> Html Msg
+displayDirective link contextPath directive =
     displayResourceDiff "Directive"
-        [ displayField "Directive" (directiveLinkWithId contextPath directive.id directive.displayName)
+        [ displayField "Directive"
+            (if link then (directiveLinkWithId contextPath directive.id directive.displayName)
+            else (text directive.displayName))
         , displayStringField "Name" directive.displayName
         , displayStringField "Short description" directive.shortDescription
         , displayStringField "Technique name" directive.techniqueName
@@ -699,10 +709,12 @@ displayDirectiveDiff contextPath directive =
         ]
 
 
-displayGroup : ContextPath -> NodeGroup -> Html Msg
-displayGroup contextPath group =
+displayGroup : Bool -> ContextPath -> NodeGroup -> Html Msg
+displayGroup link contextPath group =
     displayResourceDiff "Node Group"
-        [ displayField "Group" (groupLinkWithId contextPath group.id group.displayName)
+        [ displayField "Group"
+            (if link then (groupLinkWithId contextPath group.id group.displayName)
+            else (text group.displayName))
         , displayStringField "Name" group.displayName
         , displayStringField "Description" group.description
         , displayBoolField "Enabled" group.enabled
@@ -729,10 +741,12 @@ displayGroupDiff contextPath group =
         ]
 
 
-displayRule : ContextPath -> Rule -> Html Msg
-displayRule contextPath rule =
+displayRule : Bool -> ContextPath -> Rule ->Html Msg
+displayRule link contextPath rule =
     displayResourceDiff "Rule"
-        [ displayField "Rule" (ruleLinkWithId contextPath rule.id rule.displayName)
+        [ displayField "Rule"
+            (if link then (ruleLinkWithId contextPath rule.id rule.displayName)
+            else (text rule.displayName))
         , displayStringField "Name" rule.displayName
         , displayStringField "Category" rule.categoryName
         , displayStringField "Short description" rule.shortDescription
@@ -759,10 +773,12 @@ displayRuleDiff contextPath rule =
         ]
 
 
-displayParameter : ContextPath -> GlobalParameter -> Html Msg
-displayParameter contextPath param =
+displayParameter : Bool -> ContextPath -> GlobalParameter -> Html Msg
+displayParameter link contextPath param =
     displayResourceDiff "Global parameter"
-        [ displayField "Global Parameter" (paramLink contextPath param.name)
+        [ displayField "Global Parameter"
+            (if link then (paramLink contextPath param.name)
+            else (text param.name))
         , displayStringField "Name" param.name
         , displayValueField "Value" param.value
         , displayStringField "Description" param.description
@@ -794,18 +810,32 @@ displayEventAction contextPath action =
             text event
 
         ResourceChangeEvent change ->
+            let displayWithLink = (case change.action of
+                    "Delete" -> False
+                    _ -> True
+                 )
+                simpleName = change.resourceName |> text
+            in
             case change.resourceType of
                 DirectiveRes ->
-                    Html.span [] [ text (change.action ++ " directive "), directiveLink contextPath change.resourceId change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " directive ")
+                        , if displayWithLink then (directiveLink contextPath change.resourceId change.resourceName) else simpleName]
 
                 NodeGroupRes ->
-                    Html.span [] [ text (change.action ++ " group "), groupLink contextPath change.resourceId change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " group ")
+                        , if displayWithLink then (groupLink contextPath change.resourceId change.resourceName) else simpleName ]
 
                 RuleRes ->
-                    Html.span [] [ text (change.action ++ " rule "), ruleLink contextPath change.resourceId change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " rule ")
+                        , if displayWithLink then (ruleLink contextPath change.resourceId change.resourceName) else simpleName]
 
                 GlobalParameterRes ->
-                    Html.span [] [ text (change.action ++ " parameter "), paramLink contextPath change.resourceName ]
+                    Html.span []
+                        [ text (change.action ++ " parameter ")
+                        , if displayWithLink then (paramLink contextPath change.resourceName) else simpleName ]
 
 
 eventActionText : Event -> String
