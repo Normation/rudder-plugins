@@ -48,6 +48,7 @@ type alias CssObj =
   { bgColor           : String
   , txtColor          : String
   , labelTxt          : String
+  , displayLabel      : Bool
   }
 
 --- UPDATE ---
