@@ -17,7 +17,7 @@
      var app          = Elm.Branding.init({ node : main, flags: flags});
      app.ports.applyCss.subscribe(function(settings) {
        $('#headerBar > .background').css('background-color', settings.bgColor).css('color', settings.txtColor);
-       $('#headerBar > .background > span').text(settings.labelTxt);
+       $('#headerBar > .background > span').text(settings.labelTxt).attr('hidden', (! settings.displayLabel));
      });
      app.ports.successNotification.subscribe(function (str) {
        createSuccessNotification(str)

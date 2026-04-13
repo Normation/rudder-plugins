@@ -179,8 +179,8 @@ barStyle bgColor txtColor =
         ]
 
 
-customBar : Settings -> String -> String -> Html msg
-customBar settings barClass labelClass =
+customBar : Settings -> String -> List (Attribute msg) -> Html msg
+customBar settings barClass labelAttr =
     let
         bgColor =
             settings.bgColorValue
@@ -192,7 +192,7 @@ customBar settings barClass labelClass =
             settings.labelTxt
     in
     div (class ("custom-bar " ++ barClass) :: barStyle bgColor txtColor)
-        [ span [ class labelClass ] [ text labelTxt ] ]
+        [ span labelAttr [ text labelTxt ] ]
 
 
 
@@ -205,13 +205,13 @@ customBarPreview settings =
         True  -> ""
         False -> "hidden"
 
-    labelClass =
+    labelAttr =
       case settings.displayLabel of
-        True  -> ""
-        False -> "hidden"
+        True  -> []
+        False -> [attribute "hidden" "true"]
   in
     div [ class "preview-window" ]
-      [ customBar settings customBarClass labelClass
+      [ customBar settings customBarClass labelAttr
       , div [ class "top-menu"  ]
         [ div []
           [ span[style "background-image" (logoUrl settings False)][]
@@ -237,7 +237,7 @@ loginPagePreview settings =
       [ div [ class "login-container" ]
         [ div [ class "logo-container" ][ div [style "background-image" (logoUrl settings True)][] ]
         , div [ class "fake-form" ]
-          [ customBar settings customBarClass ""
+          [ customBar settings customBarClass []
           , div [ class "text-motd" ] [ span [ class customMotdClass ] [ text settings.motd ] ]
           , div [ class "fake-input" ] []
           , div [ class "fake-input" ] []
