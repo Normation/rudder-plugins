@@ -109,20 +109,21 @@ class ScaleOutRelayService(
       _ <- actionLogger.savePromoteToRelay(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
     } yield {}
 
-    promote.tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully promoted node '${nodeInfo.id}' to relay")).catchAll { err =>
-      val msg = s"Promote node ${nodeInfo.id.value} have failed. Change were reverted. Cause was: ${err.fullMsg}"
-      (for {
-        _ <- ScaleOutRelayLoggerPure.debug(s"[promote ${nodeInfo.id.value}] error, start reverting")
-        _ <-
-          demoteRelay(nodeInfo, objects)
-            .tapError(err => {
-              ScaleOutRelayLoggerPure.error(
-                s"Error when reverting node promotion, this may prevent from promoting node again, so you should likely delete stale groups, directives and rules from LDAP: ${err.fullMsg}"
-              )
-            })
-            .ignore
-        _ <- ScaleOutRelayLoggerPure.error(msg)
-      } yield {}) *> Unexpected(msg).fail
+    promote.tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully promoted node '${nodeInfo.id.value}' to relay")).catchAll {
+      err =>
+        val msg = s"Promote node ${nodeInfo.id.value} have failed. Change were reverted. Cause was: ${err.fullMsg}"
+        (for {
+          _ <- ScaleOutRelayLoggerPure.debug(s"[promote ${nodeInfo.id.value}] error, start reverting")
+          _ <-
+            demoteRelay(nodeInfo, objects)
+              .tapError(err => {
+                ScaleOutRelayLoggerPure.error(
+                  s"Error when reverting node promotion, this may prevent from promoting node again, so you should likely delete stale groups, directives and rules from LDAP: ${err.fullMsg}"
+                )
+              })
+              .ignore
+          _ <- ScaleOutRelayLoggerPure.error(msg)
+        } yield {}) *> Unexpected(msg).fail
     }
   }
 
@@ -189,7 +190,7 @@ class ScaleOutRelayService(
     // deletions should be done before changing node and trigger policy generation, see https://issues.rudder.io/issues/28617
     ((targets ::: groups ::: directives ::: rules) :+ nPromoted :+ nBeforePromoted)
       .accumulate(identity)
-      .tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully demoted node '${newInfo.id}' to relay"))
+      .tap(_ => ScaleOutRelayLoggerPure.info(s"Successfully demoted node '${newInfo.id.value}' from relay to simple node"))
   }
 
   private[scaleoutrelay] def NodeToPolicyServer(nodeInf: CoreNodeFact) = {
