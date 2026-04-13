@@ -190,6 +190,7 @@ update msg model =
                         bgColor         = Color.toCssString settings.bgColorValue
                         txtColor        = Color.toCssString settings.labelColorValue
                         labelTxt        = settings.labelTxt
+                        displayLabel    = settings.displayLabel
                         wideLogoData    = case settings.wideLogo.data of
                           Just d  -> d
                           Nothing -> ""
@@ -198,7 +199,7 @@ update msg model =
                           Just d  -> d
                           Nothing -> ""
                         smallLogoEnable = settings.smallLogo.enable
-                        cssObj = CssObj bgColor txtColor labelTxt --wideLogoEnable wideLogoData smallLogoEnable smallLogoData
+                        cssObj = CssObj bgColor txtColor labelTxt displayLabel --wideLogoEnable wideLogoData smallLogoEnable smallLogoData
 
                     in
                     ( model, Cmd.batch[applyCss ( cssObj ), successNotification ""] )
