@@ -85,7 +85,7 @@ class UserInformationExtension(
           </div>
         </li>
 
-        <script>
+        <script data-lift="with-nonce">
         //<![CDATA[
           // init elm app
           $(document).ready(function(){
