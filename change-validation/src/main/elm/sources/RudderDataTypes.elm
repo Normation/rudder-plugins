@@ -1,4 +1,4 @@
-module RudderDataTypes exposing (AllNextSteps, AllStepChanges(..), BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangeRequestMainDetailsMetadata, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, StepChange(..), Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
+module RudderDataTypes exposing (AllNextSteps, AllStepChanges(..), BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangeRequestMainDetailsMetadata, ChangesSummary, Event(..), EventLog, GlobalParameterReference(..), NextStatus(..), ResourceChange, ResourceChangeLink, ResourceIdent, ResourceLink(..), ResourceReference(..), ResourceType(..), ResourceTypeWithId(..), SimpleTarget, StepChange(..), Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeResourceReference, decodeTargetList)
 
 import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map4, map5, map6, maybe, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -108,11 +108,34 @@ type alias ChangesSummary =
     }
 
 
-type ResourceType
+type ResourceTypeWithId
     = DirectiveRes
     | NodeGroupRes
     | RuleRes
+
+
+type ResourceType
+    = WithId ResourceTypeWithId
     | GlobalParameterRes
+
+
+type alias ResourceChangeLink =
+    { resourceId : String, resourceName : String }
+
+
+type ResourceReference
+    = PlainText String
+    | Link ResourceChangeLink
+
+
+type GlobalParameterReference
+    = ParamPlainText String
+    | ParamLink String
+
+
+type ResourceLink
+    = WithLink
+    | NoLink
 
 
 type alias ResourceChange =
@@ -120,6 +143,7 @@ type alias ResourceChange =
     , resourceName : String
     , resourceId : String
     , action : String
+    , linkToResource : ResourceLink
     }
 
 
@@ -154,6 +178,22 @@ type alias ChangeRequestFormDetails =
 ------------------------------
 -- JSON DECODERS
 ------------------------------
+
+
+decodeResourceReference : String -> String -> Decoder ResourceReference
+decodeResourceReference changeRequestStatus actionType =
+    case ( changeRequestStatus, actionType ) of
+        ( "Deployed", "delete" ) ->
+            succeed
+                PlainText
+                |> required "displayName" string
+
+        _ ->
+            map Link
+                (succeed ResourceChangeLink
+                    |> required "id" string
+                    |> required "displayName" string
+                )
 
 
 decodeTarget : Decoder Target
@@ -216,18 +256,18 @@ compositionDec =
     map Composition (lazy (\_ -> targetCompositionDec))
 
 
-decodeEventLog : Decoder EventLog
-decodeEventLog =
+decodeEventLog : Bool -> Decoder EventLog
+decodeEventLog changeRequestDeployed =
     map4
         EventLog
-        (field "action" decodeEvent)
+        (field "action" (decodeEvent changeRequestDeployed))
         (field "actor" string)
         (field "date" string)
         (maybe (field "reason" string))
 
 
-decodeEvent : Decoder Event
-decodeEvent =
+decodeEvent : Bool -> Decoder Event
+decodeEvent changeRequestDeployed =
     let
         decodeResourceType =
             string
@@ -235,13 +275,13 @@ decodeEvent =
                     (\s ->
                         case s of
                             "directive" ->
-                                succeed DirectiveRes
+                                succeed (WithId DirectiveRes)
 
                             "node group" ->
-                                succeed NodeGroupRes
+                                succeed (WithId NodeGroupRes)
 
                             "rule" ->
-                                succeed RuleRes
+                                succeed (WithId RuleRes)
 
                             "global parameter" ->
                                 succeed GlobalParameterRes
@@ -267,6 +307,17 @@ decodeEvent =
                             _ ->
                                 fail "Invalid action"
                     )
+
+        decodeDisplayLink =
+            decodeAction
+                |> andThen
+                    (\action ->
+                        if action == "Delete" && changeRequestDeployed then
+                            succeed NoLink
+
+                        else
+                            succeed WithLink
+                    )
     in
     field "type" string
         |> andThen
@@ -277,11 +328,12 @@ decodeEvent =
 
                     "ResourceChangeEvent" ->
                         map ResourceChangeEvent
-                            (map4 ResourceChange
+                            (map5 ResourceChange
                                 (field "resourceType" decodeResourceType)
                                 (field "resourceName" string)
                                 (field "resourceId" string)
                                 (field "action" decodeAction)
+                                (field "action" decodeDisplayLink)
                             )
 
                     _ ->
@@ -373,6 +425,13 @@ decodeChangeRequestMainDetails =
                             _ ->
                                 fail "Invalid next status"
                     )
+
+        decodeEventLogList =
+            field "changeRequest" (field "status" decodeChangeRequestStatus)
+                |> andThen
+                    (\status ->
+                        field "eventLogs" (list (decodeEventLog (status == "Deployed")))
+                    )
     in
     at
         [ "data" ]
@@ -381,7 +440,7 @@ decodeChangeRequestMainDetails =
                 (map5 ChangeRequestMainDetailsMetadata
                     (field "changeRequest" decodeChangeRequestDetails)
                     (field "isPending" bool)
-                    (field "eventLogs" (list decodeEventLog))
+                    decodeEventLogList
                     (maybe (field "backStatus" decodePrevStatus))
                     (field "allNextSteps" (list decodeNextStatus))
                 )
