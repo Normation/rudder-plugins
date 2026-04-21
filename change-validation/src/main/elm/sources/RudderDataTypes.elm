@@ -1,4 +1,4 @@
-module RudderDataTypes exposing (AllNextSteps, AllStepChanges(..), BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangeRequestMainDetailsMetadata, ChangesSummary, Event(..), EventLog, NextStatus(..), ResourceChange, ResourceIdent, ResourceType(..), SimpleTarget, StepChange(..), Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), ViewState(..), decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeTargetList)
+module RudderDataTypes exposing (Action(..), AllNextSteps, AllStepChanges(..), BackStatus(..), ChangeRequestDetails, ChangeRequestFormDetails, ChangeRequestMainDetails, ChangeRequestMainDetailsMetadata, ChangesSummary, Event(..), EventLog, LinkWithId, NextStatus(..), ResourceChange, ResourceIdent, ResourceReference(..), ResourceType(..), SimpleTarget, StepChange(..), Target(..), TargetComposition(..), TargetExclusion, TargetList(..), TargetType(..), TypedResourceReference, ViewState(..), actionToString, decodeAction, decodeChangeRequestMainDetails, decodeFormDetails, decodeResourceIdent, decodeResourceReference, decodeTargetList, resourceTypeWithIdToString)
 
 import Json.Decode exposing (Decoder, andThen, at, bool, fail, field, index, int, lazy, list, map, map2, map4, map5, map6, maybe, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -115,11 +115,30 @@ type ResourceType
     | GlobalParameterRes
 
 
-type alias ResourceChange =
+type alias LinkWithId =
+    { resourceId : String, resourceName : String }
+
+
+type ResourceReference
+    = PlainText String
+    | Link LinkWithId
+
+
+type alias TypedResourceReference =
     { resourceType : ResourceType
-    , resourceName : String
-    , resourceId : String
-    , action : String
+    , reference : ResourceReference
+    }
+
+
+type Action
+    = CreateAction
+    | DeleteAction
+    | ModifyAction
+
+
+type alias ResourceChange =
+    { typedReference : TypedResourceReference
+    , action : Action
     }
 
 
@@ -154,6 +173,40 @@ type alias ChangeRequestFormDetails =
 ------------------------------
 -- JSON DECODERS
 ------------------------------
+
+
+{-| Decoder for ResourceReferences that are found in the change request changes.
+This function's behavior is analogous to the decodeDisplayLink function.
+-}
+decodeResourceReference : String -> String -> Action -> Decoder ResourceReference
+decodeResourceReference nameFieldLabel changeRequestStatus actionType =
+    case ( changeRequestStatus, actionType ) of
+        ( "Deployed", DeleteAction ) ->
+            succeed PlainText |> required nameFieldLabel string
+
+        _ ->
+            map Link
+                (succeed LinkWithId
+                    |> required "id" string
+                    |> required nameFieldLabel string
+                )
+
+
+{-| Decoder for ResourceReferences that are found in the event logs list.
+This function's behavior is analogous to the decodeResourceReference function.
+-}
+decodeDisplayLink : String -> Action -> Decoder ResourceReference
+decodeDisplayLink changeRequestStatus actionType =
+    case ( changeRequestStatus, actionType ) of
+        ( "Deployed", DeleteAction ) ->
+            map PlainText (field "resourceName" string)
+
+        _ ->
+            map Link
+                (map2 LinkWithId
+                    (field "resourceId" string)
+                    (field "resourceName" string)
+                )
 
 
 decodeTarget : Decoder Target
@@ -216,56 +269,62 @@ compositionDec =
     map Composition (lazy (\_ -> targetCompositionDec))
 
 
-decodeEventLog : Decoder EventLog
-decodeEventLog =
+decodeEventLog : String -> Decoder EventLog
+decodeEventLog changeRequestStatus =
     map4
         EventLog
-        (field "action" decodeEvent)
+        (field "action" (decodeEvent changeRequestStatus))
         (field "actor" string)
         (field "date" string)
         (maybe (field "reason" string))
 
 
-decodeEvent : Decoder Event
-decodeEvent =
+decodeAction : Decoder Action
+decodeAction =
+    string
+        |> andThen
+            (\s ->
+                case s of
+                    "create" ->
+                        succeed CreateAction
+
+                    "delete" ->
+                        succeed DeleteAction
+
+                    "modify" ->
+                        succeed ModifyAction
+
+                    _ ->
+                        fail "Invalid action type"
+            )
+
+
+decodeEvent : String -> Decoder Event
+decodeEvent changeRequestStatus =
     let
-        decodeResourceType =
-            string
+        decodeResourceRef action =
+            field "resourceType" string
                 |> andThen
                     (\s ->
+                        let
+                            link =
+                                decodeDisplayLink changeRequestStatus action
+                        in
                         case s of
                             "directive" ->
-                                succeed DirectiveRes
+                                map2 TypedResourceReference (succeed DirectiveRes) link
 
                             "node group" ->
-                                succeed NodeGroupRes
+                                map2 TypedResourceReference (succeed NodeGroupRes) link
 
                             "rule" ->
-                                succeed RuleRes
+                                map2 TypedResourceReference (succeed RuleRes) link
 
                             "global parameter" ->
-                                succeed GlobalParameterRes
+                                map2 TypedResourceReference (succeed GlobalParameterRes) link
 
                             _ ->
                                 fail "Invalid resource type"
-                    )
-
-        decodeAction =
-            string
-                |> andThen
-                    (\s ->
-                        case s of
-                            "create" ->
-                                succeed "Create"
-
-                            "delete" ->
-                                succeed "Delete"
-
-                            "modify" ->
-                                succeed "Modify"
-
-                            _ ->
-                                fail "Invalid action"
                     )
     in
     field "type" string
@@ -276,13 +335,15 @@ decodeEvent =
                         map ChangeLogEvent (field "action" string)
 
                     "ResourceChangeEvent" ->
-                        map ResourceChangeEvent
-                            (map4 ResourceChange
-                                (field "resourceType" decodeResourceType)
-                                (field "resourceName" string)
-                                (field "resourceId" string)
-                                (field "action" decodeAction)
-                            )
+                        field "action" decodeAction
+                            |> andThen
+                                (\action ->
+                                    map ResourceChangeEvent
+                                        (map2 ResourceChange
+                                            (decodeResourceRef action)
+                                            (succeed action)
+                                        )
+                                )
 
                     _ ->
                         fail "Invalid event log type"
@@ -373,17 +434,25 @@ decodeChangeRequestMainDetails =
                             _ ->
                                 fail "Invalid next status"
                     )
+
+        decodeEventLogList : String -> Decoder (List EventLog)
+        decodeEventLogList changeRequestStatus =
+            list (decodeEventLog changeRequestStatus)
     in
     at
         [ "data" ]
         (field "workflow"
             (index 0
-                (map5 ChangeRequestMainDetailsMetadata
-                    (field "changeRequest" decodeChangeRequestDetails)
-                    (field "isPending" bool)
-                    (field "eventLogs" (list decodeEventLog))
-                    (maybe (field "backStatus" decodePrevStatus))
-                    (field "allNextSteps" (list decodeNextStatus))
+                (field "changeRequest" decodeChangeRequestDetails
+                    |> andThen
+                        (\changeRequestDetails ->
+                            map5 ChangeRequestMainDetailsMetadata
+                                (succeed changeRequestDetails)
+                                (field "isPending" bool)
+                                (field "eventLogs" (decodeEventLogList changeRequestDetails.state))
+                                (maybe (field "backStatus" decodePrevStatus))
+                                (field "allNextSteps" (list decodeNextStatus))
+                        )
                 )
             )
         )
@@ -403,3 +472,38 @@ decodeFormDetails =
                 )
             )
         )
+
+
+
+------------------------------
+-- UTIL
+------------------------------
+
+
+actionToString : Action -> String
+actionToString action =
+    case action of
+        CreateAction ->
+            "create"
+
+        DeleteAction ->
+            "delete"
+
+        ModifyAction ->
+            "modify"
+
+
+resourceTypeWithIdToString : ResourceType -> String
+resourceTypeWithIdToString resourceType =
+    case resourceType of
+        DirectiveRes ->
+            "directive"
+
+        NodeGroupRes ->
+            "group"
+
+        RuleRes ->
+            "rule"
+
+        GlobalParameterRes ->
+            "parameter"
