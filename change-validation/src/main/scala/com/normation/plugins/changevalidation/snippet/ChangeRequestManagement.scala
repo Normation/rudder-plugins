@@ -48,6 +48,8 @@ import com.normation.rudder.web.services.JsTableData
 import com.normation.rudder.web.services.JsTableLine
 import com.normation.utils.DateFormaterService
 import com.normation.zio.UnsafeRun
+import io.scalaland.chimney.*
+import io.scalaland.chimney.syntax.*
 import net.liftweb.common.Box
 import net.liftweb.common.EmptyBox
 import net.liftweb.common.Full
@@ -56,13 +58,13 @@ import net.liftweb.http.*
 import net.liftweb.http.SHtml.SelectableOption
 import net.liftweb.http.js.JE.*
 import net.liftweb.http.js.JsCmds.*
-import net.liftweb.http.js.JsObj
 import net.liftweb.util.Helpers.*
 import org.apache.commons.text.StringEscapeUtils
 import scala.xml.Elem
 import scala.xml.NodeSeq
 import scala.xml.Text
 import zio.UIO
+import zio.json.*
 import zio.syntax.*
 
 class ChangeRequestManagement extends SecureDispatchSnippet with Loggable {
@@ -85,35 +87,6 @@ class ChangeRequestManagement extends SecureDispatchSnippet with Loggable {
         xml ++
         Script(OnLoad(JsRaw(dataTableInit))) // JsRaw ok, escaped
       }
-  }
-
-  /*
-   *  { "name" : Change request name [String]
-   *   , "id" : Change request id [String]
-   *   , "step" : Change request validation step [String]
-   *   , "creator" : Name of the user that has created the change Request [String]
-   *   , "lastModification" : date of last modification [ String ]
-   *   }
-   */
-  case class ChangeRequestLine(
-      changeRequest:    ChangeRequest,
-      workflowStateMap: Map[ChangeRequestId, WorkflowNodeId],
-      eventsMap:        Map[ChangeRequestId, EventLog]
-  ) extends JsTableLine {
-    val date =
-      eventsMap.get(changeRequest.id).map(event => DateFormaterService.serializeInstant(event.creationDate)).getOrElse("Unknown")
-
-    override def json(freshName: () => String): JsObj = toJson
-
-    val toJson = {
-      JsObj(
-        "id"               -> changeRequest.id.value,
-        "name"             -> changeRequest.info.name,
-        "creator"          -> changeRequest.owner,
-        "step"             -> (workflowStateMap.get(changeRequest.id).map(_.value).getOrElse("Unknown"): String),
-        "lastModification" -> date
-      )
-    }
   }
 
   def getLines()(using qc: QueryContext): UIO[JsTableData[ChangeRequestLine]] = {
@@ -141,7 +114,7 @@ class ChangeRequestManagement extends SecureDispatchSnippet with Loggable {
 
   def dataTableInit(using qc: QueryContext) = {
     val refresh = AnonFunc(
-      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().runNow.toJson.toJsCmd})"))
+      SHtml.ajaxInvoke(() => JsRaw(s"refreshTable('${changeRequestTableId}',${getLines().runNow.toJson})"))
     ) // JsRaw ok, from json
 
     val filter = initFilter match {
@@ -294,4 +267,53 @@ class ChangeRequestManagement extends SecureDispatchSnippet with Loggable {
 
     unexpandedFilter(initFilter.getOrElse("Pending"))
   }
+}
+
+/*
+ *  { "name" : Change request name [String]
+ *   , "id" : Change request id [String]
+ *   , "step" : Change request validation step [String]
+ *   , "creator" : Name of the user that has created the change Request [String]
+ *   , "lastModification" : date of last modification [ String ]
+ *   }
+ */
+case class ChangeRequestLine(
+    changeRequest:    ChangeRequest,
+    workflowStateMap: Map[ChangeRequestId, WorkflowNodeId],
+    eventsMap:        Map[ChangeRequestId, EventLog]
+) extends JsTableLine
+
+object ChangeRequestLine {
+
+  final private case class JsonChangeRequestLine(
+      id:               Int,
+      name:             String,
+      creator:          String,
+      step:             String,
+      lastModification: String
+  ) derives JsonEncoder
+
+  private given Transformer[ChangeRequestLine, JsonChangeRequestLine] = {
+    new Transformer[ChangeRequestLine, JsonChangeRequestLine] {
+      override def transform(src: ChangeRequestLine): JsonChangeRequestLine = {
+        val date = {
+          src.eventsMap
+            .get(src.changeRequest.id)
+            .map(event => DateFormaterService.serializeInstant(event.creationDate))
+            .getOrElse(
+              "Unknown"
+            )
+        }
+        JsonChangeRequestLine(
+          src.changeRequest.id.value,
+          src.changeRequest.info.name,
+          src.changeRequest.owner,
+          (src.workflowStateMap.get(src.changeRequest.id).map(_.value).getOrElse("Unknown"): String),
+          date
+        )
+      }
+    }
+  }
+
+  given JsonEncoder[ChangeRequestLine] = JsonEncoder[JsonChangeRequestLine].contramap(_.transformInto[JsonChangeRequestLine])
 }
