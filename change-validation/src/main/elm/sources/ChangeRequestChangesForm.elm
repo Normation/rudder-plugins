@@ -733,7 +733,7 @@ displayResourceLink contextPath resourceType reference =
 displayDirective : ContextPath -> Directive -> Html Msg
 displayDirective contextPath directive =
     displayResourceDiff "Directive"
-        [ displayResourceLink contextPath GlobalParameterRes directive.reference
+        [ displayResourceLink contextPath DirectiveRes directive.reference
         , displayResourceName directive.reference
         , displayStringField "Short description" directive.shortDescription
         , displayStringField "Technique name" directive.techniqueName
