@@ -133,6 +133,7 @@ import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestOperations
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.UnknownContentTypeException
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import zio.ZIO
@@ -521,7 +522,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def authorizationRequestRepository = new HttpSessionOAuth2AuthorizationRequestRepository()
 
   @Bean def rudderAuthorizationCodeTokenResponseClient() = {
-    new DefaultAuthorizationCodeTokenResponseClient()
+    new DefaultAuthorizationCodeTokenResponseClient(): @nowarn("cat=deprecation")
   }
 
   @Bean def jwtDecoderFactory = new OidcIdTokenDecoderFactory()
@@ -576,6 +577,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   ): AuthenticationProvider = {
     opaqueTokenRegistrationRepository match {
       case Some(config) =>
+        @nowarn("cat=deprecation")
         val introspector = new NimbusOpaqueTokenIntrospector(config.introspectUri, config.clientId, config.clientSecret)
         new RudderOpaqueTokenAuthenticationProvider(
           introspector,
