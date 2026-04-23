@@ -48,7 +48,6 @@ import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveCreat
 import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveDeleteChangeJson
 import com.normation.plugins.changevalidation.DirectiveChangeJson.DirectiveModifyChangeJson
 import com.normation.rudder.apidata.JsonResponseObjects.*
-import com.normation.rudder.apidata.implicits.*
 import com.normation.rudder.domain.nodes.*
 import com.normation.rudder.domain.policies.*
 import com.normation.rudder.domain.properties.AddGlobalParameterDiff
