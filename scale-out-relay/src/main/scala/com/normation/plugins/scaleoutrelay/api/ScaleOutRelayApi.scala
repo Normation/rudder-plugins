@@ -91,7 +91,7 @@ class ScaleOutRelayApiImpl(
       implicit val cc: ChangeContext = authz.qc.newCC(params.reason.orElse(Some(s"Demote relay ${nodeId}")))
       scaleOutRelayService
         .demoteRelayToNode(NodeId(nodeId))
-        .chainError(s"Error when trying to demote mode $nodeId")
+        .chainError(s"Error when trying to demote node $nodeId")
         .as(nodeId)
         .toLiftResponseOne(params, schema, None)
     }
