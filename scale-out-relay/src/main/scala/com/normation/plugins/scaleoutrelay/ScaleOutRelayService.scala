@@ -131,13 +131,40 @@ class ScaleOutRelayService(
     implicit val qr: QueryContext = cc.toQC
     for {
       _        <- ScaleOutRelayLoggerPure.debug(s"Start of demoting relay '${nodeId.value}' to node")
+      _        <- if (nodeId == NodeId("root")) {
+                    Inconsistency("Demoting node with id 'root' to simple node is forbidden.").fail
+                  } else ().succeed
       nodeInfo <- nodeFactRepository
                     .get(nodeId)
                     .notOptional(s"Relay with UUID ${nodeId.value} is missing and can not be demoted to node")
+      nodes    <- nodeFactRepository.getAll()
       _        <- if (nodeInfo.rudderSettings.isPolicyServer) {
-                    val configObjects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
-                    demoteRelay(nodeInfo, configObjects).unit *>
-                    actionLogger.saveDemoteToNode(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
+                    val managedNodes = {
+                      Set
+                        .from(
+                          nodes
+                            .filter((_, nodeFact) => nodeFact.rudderSettings.policyServerId == nodeId)
+                            .keySet
+                        )
+                        .excl(nodeId) // node is managed by itself
+                    }
+
+                    if (managedNodes.isEmpty) {
+                      val configObjects = PolicyServerConfigurationObjects.getConfigurationObject(nodeInfo.id)
+                      demoteRelay(nodeInfo, configObjects).unit *>
+                      actionLogger.saveDemoteToNode(cc.modId, cc.actor, nodeInfo.toNodeInfo, cc.message)
+                    } else {
+                      val targets = managedNodes.map(n => s"'${n.value}'").mkString(", ")
+                      val errMsg  = s"Relay '${nodeId.value}' cannot be demoted to simple node " +
+                        s"because it is the policy server of the following nodes : \n" +
+                        s"${targets} \n" +
+                        s"These nodes must be assigned to a different policy server before relay '${nodeId.value}' can be demoted."
+
+                      ScaleOutRelayLoggerPure.debug(errMsg) *>
+                      Inconsistency(errMsg).fail
+
+                    }
+
                   } else {
                     ScaleOutRelayLoggerPure.debug(s"Node '${nodeId.value}' is already a simple node, nothing to do.") *>
                     ZIO.unit
