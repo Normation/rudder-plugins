@@ -255,8 +255,11 @@
     <dependency><groupId>antlr</groupId><artifactId>antlr</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
+    <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum_3</artifactId><scope>provided</scope><version>${enumeratum-version}</version></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum-macros_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>com.codacy</groupId><artifactId>scalaj-http_3</artifactId><scope>provided</scope><version>${scalaj-version}</version></dependency>
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_3</artifactId><scope>provided</scope><version>${ip4s-version}</version></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-atto_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
@@ -284,8 +287,7 @@
     <dependency><groupId>com.normation.rudder</groupId><artifactId>rudder-templates</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.softwaremill.magnolia1_3</groupId><artifactId>magnolia_3</artifactId><scope>provided</scope><version>${magnolia-version}</version></dependency>
     <dependency><groupId>com.softwaremill.quicklens</groupId><artifactId>quicklens_3</artifactId><scope>provided</scope><version>${quicklens-version}</version></dependency>
-    <dependency><groupId>com.thoughtworks.paranamer</groupId><artifactId>paranamer</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope><version>${config-version}</version></dependency>
+    <dependency><groupId>com.typesafe</groupId><artifactId>config</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.unboundid</groupId><artifactId>unboundid-ldapsdk</artifactId><scope>provided</scope><version>${unboundid-version}</version></dependency>
     <dependency><groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><scope>provided</scope><version>${hikaricp-version}</version></dependency>
     <dependency><groupId>com.zaxxer</groupId><artifactId>nuprocess</artifactId><scope>provided</scope><version>${nuprocess-version}</version></dependency>
@@ -301,7 +303,10 @@
     <dependency><groupId>dev.zio</groupId><artifactId>zio-managed_3</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-stacktracer_3</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
     <dependency><groupId>dev.zio</groupId><artifactId>zio-streams_3</artifactId><scope>provided</scope><version>${dev-zio-version}</version></dependency>
-    <dependency><groupId>io.github.java-diff-utils</groupId><artifactId>java-diff-utils</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.github.json4s</groupId><artifactId>json4s-ast_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.github.json4s</groupId><artifactId>json4s-core_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.github.json4s</groupId><artifactId>json4s-native_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>io.github.json4s</groupId><artifactId>json4s-native-core_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-commons</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-observation</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>io.scalaland</groupId><artifactId>chimney_3</artifactId><scope>provided</scope><version>${chimney-version}</version></dependency>
@@ -310,13 +315,11 @@
     <dependency><groupId>jakarta.servlet</groupId><artifactId>jakarta.servlet-api</artifactId><version>${servlet-version}</version><scope>provided</scope></dependency>
     <dependency><groupId>joda-time</groupId><artifactId>joda-time</artifactId><scope>provided</scope><version>${jodatime-version}</version></dependency>
     <dependency><groupId>net.java.dev.jna</groupId><artifactId>jna</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-common_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-json-ext_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-markdown_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-util_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
-    <dependency><groupId>net.liftweb</groupId><artifactId>lift-webkit_2.13</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-actor_3</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-common_3</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-markdown_3</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-util_3</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
+    <dependency><groupId>net.liftweb</groupId><artifactId>lift-webkit_3</artifactId><scope>provided</scope><version>${lift-version}</version></dependency>
     <dependency><groupId>net.minidev</groupId><artifactId>accessors-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.minidev</groupId><artifactId>json-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>nu.validator</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
@@ -324,6 +327,7 @@
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><scope>provided</scope><version>${commons-csv-version}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-core</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet5</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
+    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet6</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><scope>provided</scope><version>${commons-lang-version}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-text</artifactId><scope>provided</scope><version>${commons-text-version}</version></dependency>
     <dependency><groupId>org.apfloat</groupId><artifactId>apfloat</artifactId><scope>provided</scope></dependency>
@@ -346,25 +350,28 @@
     <dependency><groupId>org.javassist</groupId><artifactId>javassist</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.jgrapht</groupId><artifactId>jgrapht-core</artifactId><scope>provided</scope><version>${jgrapht-version}</version></dependency>
     <dependency><groupId>org.jheaps</groupId><artifactId>jheaps</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.jline</groupId><artifactId>jline</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.jline</groupId><artifactId>jline-native</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.jline</groupId><artifactId>jline-reader</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.jline</groupId><artifactId>jline-terminal</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.jline</groupId><artifactId>jline-terminal-jni</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.joda</groupId><artifactId>joda-convert</artifactId><scope>provided</scope><version>${jodaconvert-version}</version></dependency>
     <dependency><groupId>org.jspecify</groupId><artifactId>jspecify</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.mindrot</groupId><artifactId>jbcrypt</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.mozilla</groupId><artifactId>rhino</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.openjdk.jol</groupId><artifactId>jol-core</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>provided</scope><version>${postgresql-version}</version></dependency>
     <dependency><groupId>org.reflections</groupId><artifactId>reflections</artifactId><scope>provided</scope><version>${reflections-version}</version></dependency>
-    <dependency><groupId>org.scalaj</groupId><artifactId>scalaj-http_2.13</artifactId><scope>provided</scope><version>${scalaj-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala3-library_3</artifactId><scope>provided</scope><version>${scala-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-compiler</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scalap</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
-    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-reflect</artifactId><scope>provided</scope><version>${scala2-version}</version></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala3-compiler_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala3-interfaces</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala3-library_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>scala-library</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang</groupId><artifactId>tasty-core_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-asm</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-collection-compat_3</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parallel-collections_2.13</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_2.13</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_2.13</artifactId><scope>provided</scope><version>${scala-xml-version}</version></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-parser-combinators_3</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-lang.modules</groupId><artifactId>scala-xml_3</artifactId><scope>provided</scope><version>${scala-xml-version}</version></dependency>
+    <dependency><groupId>org.scala-sbt</groupId><artifactId>compiler-interface</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.scala-sbt</groupId><artifactId>util-interface</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.scodec</groupId><artifactId>scodec-bits_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.slf4j</groupId><artifactId>jcl-over-slf4j</artifactId><scope>provided</scope><version>${slf4j-version}</version></dependency>
     <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><scope>provided</scope><version>${slf4j-version}</version></dependency>
