@@ -88,7 +88,7 @@ import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationProvider
-import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler
 import org.springframework.security.oauth2.client.oidc.authentication.OidcAuthorizationCodeAuthenticationProvider
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory
@@ -121,9 +121,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.security.oauth2.server.resource.authentication.OpaqueTokenAuthenticationProvider
-import org.springframework.security.oauth2.server.resource.introspection.NimbusOpaqueTokenIntrospector
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenAuthenticationConverter
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector
+import org.springframework.security.oauth2.server.resource.introspection.SpringOpaqueTokenIntrospector
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter
 import org.springframework.security.web.DefaultSecurityFilterChain
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
@@ -523,7 +523,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
   @Bean def authorizationRequestRepository = new HttpSessionOAuth2AuthorizationRequestRepository()
 
   @Bean def rudderAuthorizationCodeTokenResponseClient() = {
-    new DefaultAuthorizationCodeTokenResponseClient(): @nowarn("cat=deprecation")
+    new RestClientAuthorizationCodeTokenResponseClient()
   }
 
   @Bean def jwtDecoderFactory = new OidcIdTokenDecoderFactory()
@@ -579,7 +579,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
     opaqueTokenRegistrationRepository match {
       case Some(config) =>
         @nowarn("cat=deprecation")
-        val introspector = new NimbusOpaqueTokenIntrospector(config.introspectUri, config.clientId, config.clientSecret)
+        val introspector = new SpringOpaqueTokenIntrospector(config.introspectUri, config.clientId, config.clientSecret)
         new RudderOpaqueTokenAuthenticationProvider(
           introspector,
           new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config),
