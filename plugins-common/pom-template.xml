@@ -326,7 +326,6 @@
     <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><scope>provided</scope><version>${commons-csv-version}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-core</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
-    <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet5</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet6</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-lang3</artifactId><scope>provided</scope><version>${commons-lang-version}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-text</artifactId><scope>provided</scope><version>${commons-text-version}</version></dependency>
@@ -411,11 +410,6 @@
   <dependencies>
     <!-- this one is needed else overridden by lift trans dep. Really. Don't remove it. -->
 
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala2-version}</version>
-    </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala3-library_3</artifactId>
