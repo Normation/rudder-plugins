@@ -10,10 +10,10 @@ import com.normation.plugins.scaleoutrelay.DeleteNodeEntryService
 import com.normation.plugins.scaleoutrelay.MockServices
 import com.normation.plugins.scaleoutrelay.ScaleOutRelayService
 import com.normation.rudder.api.ApiVersion
-import com.normation.rudder.facts.nodes.ChangeContext
 import com.normation.rudder.facts.nodes.NodeFact
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
+import com.normation.rudder.tenants.ChangeContext
 import java.nio.file.Files
 import org.junit.runner.RunWith
 import zio.*
