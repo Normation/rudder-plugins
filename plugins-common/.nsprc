@@ -6,5 +6,6 @@
   "GHSA-wf6x-7x77-mvgw": "sass prototype pollution in dev dependency: immutable",
   "GHSA-c2c7-rcm5-vvqj": "ignore cve from elm-review dependency (only dev side)",
   "GHSA-jcxm-m3jx-f287": "simple-git Affected by Command Execution via Option-Parsing Bypass",
-  "GHSA-r275-fr43-pm7q": "simple-git has blockUnsafeOperationsPlugin bypass via case-insensitive protocol.allow config key enables RCE"
+  "GHSA-r275-fr43-pm7q": "simple-git has blockUnsafeOperationsPlugin bypass via case-insensitive protocol.allow config key enables RCE",
+  "GHSA-hffm-xvc3-vprc": "simple-git is vulnerable to Remote Code Execution"
 }
