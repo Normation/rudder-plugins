@@ -33,8 +33,10 @@ cp ../../../plugins-common/gulpfile.mjs .
 # Ensure correct versions
 npm_config_loglevel=error npm ci --no-audit
 
-# Elm git library : needs an `elm/elm-git.json`, if absent Elm project will just fail at compilation
+# Elm git library : needs an `elm/elm-git.json` and npm script, if absent Elm project will just fail at compilation
+if [ -f "elm/elm-git.json" ]; then
 npm run elm-git-install
+fi
 
 if [ "$RELEASE" = true ]; then
   npx gulp --production
