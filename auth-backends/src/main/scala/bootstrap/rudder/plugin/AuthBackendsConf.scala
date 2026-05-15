@@ -64,8 +64,8 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import java.net.URI
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.util
-import org.joda.time.DateTime
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import org.springframework.context.annotation.Bean
@@ -975,7 +975,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
               user.getName,
               EventTrace(
                 RudderEventActor,
-                DateTime.now(),
+                OffsetDateTime.now(),
                 s"Provisioning is enabled for ${protocolName} '${idp}'"
               )
             ) *> ApplicationLoggerPure.Auth.info(
