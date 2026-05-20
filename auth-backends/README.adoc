@@ -701,6 +701,36 @@ rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
 rudder.auth.oauth2.provider.okta.enableProvisioning=true
 ```
 
+==== Signing/encryption of UserInfo endpoint
+
+The `/userinfo` endpoint, depending on IdP configuration and security requirements, can require some additional configuration:
+
+- the IdP response may be a signed JWT, for which the RS256 signature algorithm is supported by default,
+- the IdP could also encrypt the content of the JWT (with optionally still applying a signature algorithm), for which we need security keys to be loaded.
+
+You could find security keys from your IdP, or generate them from EC, RSA or OCT algorithms (plus some content encryption with AES GCM), and import them to configure UserInfo encryption in your IdP.
+
+Then to configure Rudder to decode the JWT with the appropriate key (the key ID should be returned by your IdP):
+
+```
+# The algorithms and encryption methods that should be matched for when searching keys from `jwkSetUri`
+# They should simply be the ones you choose to apply for encryption of the UserInfo endpoint, or the ones supported by your IdP
+rudder.auth.oauth2.provider.someidp.jwt.jwe.algorithms=RSA-OAEP,ECDH-ES
+rudder.auth.oauth2.provider.someidp.jwt.jwe.encryptionMethods=A128CBC-HS256
+
+rudder.auth.oauth2.provider.someidp.jwt.keys.key1.type=RSA
+rudder.auth.oauth2.provider.someidp.jwt.keys.key1.privateFile=/keys/key1.pem
+rudder.auth.oauth2.provider.someidp.jwt.keys.key2.type=EC
+rudder.auth.oauth2.provider.someidp.jwt.keys.key2.use=enc
+# public key file configuration can be omitted if the private file already contains all parameters (as for RSA)
+# rudder.auth.oauth2.provider.someidp.jwt.keys.key2.publicFile=/keys/key2.pub.pem
+rudder.auth.oauth2.provider.someidp.jwt.keys.key2.privateFile=/keys/key2.pem
+
+# to add support JWS algorithms other than RS256 (makes an initial request to)
+# set to true if your IdP supports some other algorithm for signature, and if you want to use it
+rudder.auth.oauth2.provider.someidp.jwt.jws.discoverAlgorithms=true
+```
+
 
 ==== Log information
 
