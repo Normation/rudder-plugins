@@ -513,7 +513,7 @@ Make sure that the parameter `rudder.auth.oauth2.provider.registrations` is set 
 You can configure an `OAuth2` or `OIDC` provider so that it informs Rudder of the roles the user need to have, and the tenants they belong to. This allows to centrally
 manage both user and authorization in the same place.
 
-This feature works with built-in roles or custom roles defined in the users definition XML file. Please see the xref:administration:users.adoc#_user_roles_and_fine_grained_authorizations[linked documentation] for more information about authorizations in Rudder.
+This feature works with **built-in roles or custom roles** defined in the users definition XML file. Please see the xref:administration:users.adoc#_user_roles_and_fine_grained_authorizations[linked documentation] for more information about authorizations in Rudder.
 
 [WARNING]
 
@@ -528,6 +528,28 @@ You need three additional properties to enable and configure that property for a
 - the second, `roles.attribute` defines the name of the OIDC token attribute which holds the list of roles,
 - the third, `roles.override` defines if the OIDC provided roles must be the only one the user get, or if they
   are merged with the `rudder-users.xml` ones.
+
+
+The same structure of properties applies to **tenants**:
+- `tenants.enabled` allows to enable the tenants mapping, provided that the multi-tenants plugin is enabled,
+- `tenants.attribute` defines the name of the OIDC token attribute which holds the list of tenants,
+- `tenants.override` defines if the OIDC provided tenants must be the only one the user get, or if they
+  are merged with the `rudder-users.xml` ones.
+
+[INFO]
+
+====
+
+xref:administration:multi-tenants.adoc[Multi-tenants plugin] documentation explains more details about tenants configuration.
+
+The special `*` and `-` can be used for tenants mapping, the following way (notice the additional quotes for reverse mapping):
+
+```
+rudder.auth.oauth2.provider.someidp.tenants.mapping.entitlements.rudder_all=*
+rudder.auth.oauth2.provider.someidp.tenants.mapping.reverseEntitlements."*"=rudder_all
+```
+
+====
 
 See the example configuration file below for details about these property values.
 
