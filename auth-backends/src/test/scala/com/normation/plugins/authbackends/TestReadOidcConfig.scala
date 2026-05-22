@@ -87,10 +87,16 @@ class TestReadOidcConfig extends Specification {
         "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
         "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
       )) and (
-        regs("someidp").tenants.mapping === Map(
-          "rudder_TA"                                                                          -> "TA",
-          "rudder_TB"                                                                          -> "TB_OVERRIDDEN",
-          "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "TA"
+        regs("someidp").tenants.mapping.toList must containTheSameElementsAs(
+          List(
+            "rudder_all"                                                                         -> "*",
+            "rudder_none"                                                                        -> "-",
+            "rudder_TA"                                                                          -> "TA",
+            "rudder_TB"                                                                          -> "TB_OVERRIDDEN",
+            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "TA",
+            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=Admin"                                   -> "*",
+            "CN=CCCC-DDDDD,OU=Groups,OU=_IT,OU=BB-DD,OU=Nobody"                                  -> "-"
+          )
         )
       )
     }
