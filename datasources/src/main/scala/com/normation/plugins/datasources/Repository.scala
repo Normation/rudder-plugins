@@ -266,15 +266,15 @@ class DataSourceRepoImpl(
   override def getAllIds: IOResult[Set[DataSourceId]] = backend.getAllIds
 
   override def getAll: IOResult[Map[DataSourceId, DataSource]] = {
-    ZIO.when(DataSourceLoggerPure.logEffect.isDebugEnabled()) {
-      for {
+    DataSourceLoggerPure.ifDebugEnabled {
+      (for {
         all <- datasources.all()
         _   <- DataSourceLoggerPure.debug(s"Live data sources: ${all.map {
                    case (_, dss) =>
                      s"'${dss.datasource.name.value}' (${dss.datasource.id.value}): ${if (dss.datasource.enabled) "enabled"
                        else "disabled"}"
                  }.mkString("; ")}")
-      } yield ()
+      } yield ()).catchAll(ex => DataSourceLoggerPure.error(s"Error when trying to log trace datasource: ${ex.fullMsg}"))
     } *> backend.getAll
   }
 
