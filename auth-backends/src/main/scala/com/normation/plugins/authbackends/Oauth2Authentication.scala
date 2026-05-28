@@ -367,15 +367,23 @@ object RudderRegistrationPropertyCommon {
     for {
       keySet <- IOResult
                   .attempt(s"Missing key '${path}' for OAUTH2 registration '${base.id}' (${registrationAttributes(key)})")(
-                    config.getConfig(path).entrySet().asScala.map(_.getKey()).toList
+                    config.getObject(path).keySet().asScala.toList
                   )
-                  .catchAll(_ =>
-                    List().succeed
-                  ) // in that case, we suppose that the key is just missing so we return a default empty value for mapping
+                  // in that case, we suppose that the key is just missing so we return a default empty value for mapping
+                  .catchAll(_ => List().succeed)
       values <- ZIO.foreach(keySet) { key =>
                   val wholeKey = path + "." + key
                   IOResult.attempt(s"Error when reading role entitlement mapping '${wholeKey}'") {
-                    (key, config.getString(wholeKey))
+                    val (k, v) = {
+                      // see https://issues.rudder.io/issues/28890:
+                      // tenants can use special config for 'reverseEntitlements."*"' (resp. '-') key, but typesafe config would keep the double quotes
+                      key match {
+                        case "\"*\"" => ("*", config.getObject(path).get("\"*\"").unwrapped().asInstanceOf[String])
+                        case "\"-\"" => ("-", config.getObject(path).get("\"-\"").unwrapped().asInstanceOf[String])
+                        case _       => (key, config.getString(wholeKey))
+                      }
+                    }
+                    (k, v)
                   }
                 }
     } yield values.toMap
