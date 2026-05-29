@@ -524,6 +524,7 @@ xref:administration:users.adoc#_rights[Unitary rights] like `node_all`, `techniq
 ====
 
 You need three additional properties to enable and configure that property for a given OIDC provider:
+
 - the first, `roles.enabled` allows to enable the feature,
 - the second, `roles.attribute` defines the name of the OIDC token attribute which holds the list of roles,
 - the third, `roles.override` defines if the OIDC provided roles must be the only one the user get, or if they
@@ -531,6 +532,7 @@ You need three additional properties to enable and configure that property for a
 
 
 The same structure of properties applies to **tenants**:
+
 - `tenants.enabled` allows to enable the tenants mapping, provided that the multi-tenants plugin is enabled,
 - `tenants.attribute` defines the name of the OIDC token attribute which holds the list of tenants,
 - `tenants.override` defines if the OIDC provided tenants must be the only one the user get, or if they
@@ -540,7 +542,7 @@ The same structure of properties applies to **tenants**:
 
 ====
 
-xref:administration:multi-tenants.adoc[Multi-tenants plugin] documentation explains more details about tenants configuration.
+xref:plugins:multi-tenants.adoc[Multi-tenants plugin] documentation explains more details about tenants configuration.
 
 The special `*` and `-` can be used for tenants mapping, the following way (notice the additional quotes for reverse mapping):
 
