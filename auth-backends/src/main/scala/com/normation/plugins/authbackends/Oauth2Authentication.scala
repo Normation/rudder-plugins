@@ -34,19 +34,45 @@
 
 package com.normation.plugins.authbackends
 
+import better.files.File
 import bootstrap.liftweb.LogoutPostAction
 import bootstrap.liftweb.UserLogout
 import bootstrap.rudder.plugin.BuildLogout
+import cats.Monoid
+import cats.Show
 import cats.data.NonEmptyList
+import cats.syntax.either.*
+import cats.syntax.semigroup.*
+import cats.syntax.show.*
+import com.nimbusds.jose.{Option as _, *}
+import com.nimbusds.jose.jwk.*
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet
+import com.nimbusds.jose.proc.*
 import com.normation.errors.*
 import com.normation.plugins.authbackends.RudderRegistrationPropertyCommon.readProviders
 import com.typesafe.config.Config
+import enumeratum.Enum
+import enumeratum.EnumEntry
+import enumeratum.EnumEntry.Lowercase
+import java.io.FileReader
+import java.security.*
+import java.security.interfaces.{ECKey as _, RSAKey as _, *}
+import java.security.spec.*
 import java.time.format.DateTimeParseException
+import java.util
 import java.util.concurrent.TimeUnit
+import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.jwt.JwtException
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
+import scala.util.chaining.*
 import zio.{Duration as _, *}
 import zio.syntax.*
 
@@ -109,6 +135,321 @@ final case class JwtAudience(
     check: Boolean,
     value: String
 )
+
+/**
+ * Validated config for JWT parsing (JWS or/and JWE) using algorithms (JWA) and keys (JWK) that we support.
+ * This will ultimately allow to configure a [[org.springframework.security.oauth2.jwt.NimbusJwtDecoder]].
+ *
+ * @param jwkSetUri always enabled since it is mandatory in ClientRegistration
+ * @param discoverJwsAlgorithms whether to make an initial query to the JWKS URI
+ *                              to support other signature algorithms than RS256 (Nimbus JWT decoder behavior).
+ * @param jweAlgorithms algorithms to attempt JWE decoding with
+ * @param jweEncryptionMethods encryption to attempt JWE decoding, along with [[jweAlgorithms]]
+ * @param keys all keys configuration that would be used for JWS/JWE
+ */
+final case class JwtConfig(
+    jwkSetUri:             String,
+    discoverJwsAlgorithms: Option[Boolean],
+    jweAlgorithms:         Set[JWEAlgorithm],
+    jweEncryptionMethods:  Set[EncryptionMethod],
+    keys:                  Map[String, JwkConfig]
+) {
+  import JwtConfig.given
+
+  val jwkSet: ImmutableJWKSet[SecurityContext] = new ImmutableJWKSet[SecurityContext](
+    JWKSet(keys.map((_, config) => config.jwk).toList.asJava)
+  )
+
+  /**
+   * By default, use all algorithms and encryption keys at "recommended" level in Nimbus,
+   * plus RSA ones because it is very common.
+   *
+   * Deprecated ones from Nimbus are not included.
+   *
+   * See [[com.nimbusds.jose.crypto.MultiDecrypter]] for more details
+   */
+  private def defaultJweKeySelectors: NonEmptyList[JWEKeySelector[SecurityContext]] = {
+    for {
+      enc <- NonEmptyList.of(
+               EncryptionMethod.A128CBC_HS256,
+               EncryptionMethod.A256CBC_HS512,
+               //
+               EncryptionMethod.A128GCM,
+               EncryptionMethod.A256GCM
+             )
+      alg <- NonEmptyList.of(
+               JWEAlgorithm.ECDH_ES,
+               JWEAlgorithm.ECDH_ES_A128KW,
+               JWEAlgorithm.ECDH_ES_A256KW,
+               //
+               JWEAlgorithm.RSA_OAEP_256,
+               JWEAlgorithm.RSA_OAEP_384,
+               JWEAlgorithm.RSA_OAEP_512
+             )
+    } yield {
+      JWEDecryptionKeySelector[SecurityContext](alg, enc, jwkSet)
+    }
+  }
+
+  val jweKeySelector: JWEKeySelector[SecurityContext] = {
+    val selectors = for {
+      alg <- jweAlgorithms
+      enc <- jweEncryptionMethods
+    } yield {
+      JWEDecryptionKeySelector[SecurityContext](alg, enc, jwkSet): JWEKeySelector[SecurityContext]
+    }
+    selectors
+      .reduceOption(_ |+| _)
+      .getOrElse(defaultJweKeySelectors.reduce)
+  }
+
+  val decoder: NimbusJwtDecoder = {
+    NimbusJwtDecoder
+      .withJwkSetUri(jwkSetUri)
+      // default to false for compatibility
+      .pipe(if (discoverJwsAlgorithms.getOrElse(false)) _.discoverJwsAlgorithms() else identity)
+      // caching of JWKS should be configurable
+      // .cache(...)
+      .jwtProcessorCustomizer(_.setJWEKeySelector(jweKeySelector))
+      .build
+  }
+
+  def debugConfiguration: String = {
+    s"keys: ${keys.toList.map(_.show).mkString("[", ",", "]")}, supported algorithms: ${jweAlgorithms.mkString("[", ",", "]")}, encryption methods: ${jweEncryptionMethods
+        .mkString("[", ",", "]")}"
+  }
+}
+
+/**
+ * Key configuration that allows converting it to a [[com.nimbusds.jose.jwk.JWK]]
+ */
+final case class JwkConfig(
+    kid:    String,
+    `type`: JwtConfig.KeyType,
+    use:    Option[
+      JwtConfig.Use
+    ], // it could be for both (so it's optional in Nimbus), it could be also be inferred from certificate (KeyUse.from)
+    config: Option[JwtConfig.ValidatedJwk]
+) {
+  def jwk: JWK = config
+    .map(_.jwk)
+    .getOrElse(
+      JWK.parse(s"""{"kid":"${kid}","kty":"${`type`}","use":${use.fold("null")(e => "\"" + e.entryName + "\"")}}""")
+    )
+}
+object JwkConfig {
+  given Show[JwkConfig] = Show.fromToString
+}
+
+/**
+ * Key configuration need specific mandatory/optional parameters depending on the algorithms.
+ * For example: private (+ public) key for asymmetric algorithms.
+ *
+ * We only define what we support in this object.
+ */
+object JwtConfig {
+  import com.nimbusds.jose.jwk.KeyType as KT
+  // no support yet for symmetric algorithms
+  type KeyType = KT.RSA.type | KT.EC.type
+
+  sealed trait Use extends EnumEntry with Lowercase
+  object Use       extends Enum[Use] {
+    case object Sig extends Use
+    case object Enc extends Use
+    override def values: IndexedSeq[Use] = findValues
+  }
+
+  sealed trait ValidatedJwk {
+    def jwk: JWK
+  }
+
+  type KeyConfig = PrivateFile | PublicPrivateFile
+  object KeyConfig {
+    import PrivateFile.given
+    import PublicPrivateFile.given
+    given Show[KeyConfig] = Show.show {
+      case f: PrivateFile       => f.show
+      case f: PublicPrivateFile => f.show
+    }
+  }
+
+  opaque type PrivateFile = File
+  object PrivateFile       {
+    def apply(f: File): PrivateFile = f
+    given Show[PrivateFile] = Show.show(f => s"PrivateFile(privateFile = ${f})")
+  }
+  final case class PublicPrivateFile(publicFile: File, privateFile: File)
+  object PublicPrivateFile {
+    given Show[PublicPrivateFile] =
+      Show.show(f => s"PublicPrivateFile(publicFile = ${f.publicFile}, privateFile = ${f.privateFile}")
+  }
+
+  // We always expect a private key, and should be able to derive the public key
+  sealed trait KeyFileConfig[T] {
+    extension (t: T) {
+      def load(): IOResult[(PublicKey, PrivateKey)]
+    }
+  }
+  object KeyFileConfig          {
+    given KeyFileConfig[PublicPrivateFile] = new KeyFileConfig[PublicPrivateFile] {
+      extension (publicPrivateFile: PublicPrivateFile) {
+        def load(): ZIO[Any, RudderError, (PublicKey, PrivateKey)] = {
+          ValidatedJwk.loadPublicKey(publicPrivateFile.publicFile) zipPar ValidatedJwk.loadPrivateKey(
+            publicPrivateFile.privateFile
+          )
+        }
+      }
+    }
+
+    given (using keyType: KeyType): KeyFileConfig[PrivateFile] = new KeyFileConfig[PrivateFile] {
+      extension (privateFile: PrivateFile) {
+        def load(): ZIO[Any, RudderError, (PublicKey, PrivateKey)] = {
+          ValidatedJwk
+            .loadPrivateKey(privateFile)
+            .flatMap(priv => {
+              IOResult.attempt(s"Error generating public key from private key file ${privateFile.pathAsString}") {
+                keyType match {
+                  case KT.RSA =>
+                    val privRSA       = priv.asInstanceOf[RSAPrivateCrtKey]
+                    val publicKeySpec = new RSAPublicKeySpec(privRSA.getModulus, privRSA.getPublicExponent)
+                    val keyFactory    = KeyFactory.getInstance("RSA")
+                    val pub           = keyFactory.generatePublic(publicKeySpec)
+                    (pub, priv)
+                  case KT.EC  =>
+                    // https://stackoverflow.com/questions/42639620/generate-ecpublickey-from-ecprivatekey
+                    // with bouncycastle utils
+                    // Nimbus always require a public key and deriving one may not always succeed, since getParams could be null
+                    val privEC     = priv.asInstanceOf[ECPrivateKey]
+                    val params     = privEC.getParams
+                    val curve      = EC5Util.convertCurve(params.getCurve)
+                    val g          = EC5Util.convertPoint(curve, params.getGenerator)
+                    val q          = g.multiply(privEC.getS).normalize
+                    val point      = new ECPoint(q.getAffineXCoord.toBigInteger, q.getAffineYCoord.toBigInteger)
+                    val pubSpec    = new ECPublicKeySpec(point, params)
+                    val keyFactory = KeyFactory.getInstance("EC")
+                    val pub        = keyFactory.generatePublic(pubSpec)
+                    (pub, priv)
+                }
+              }
+            })
+        }
+      }
+    }
+  }
+
+  // curried jwk avoids using full "jwk" in toString, equals: since it has secret data, it should not be output
+  final case class EC(keys: KeyConfig)(override val jwk: ECKey)   extends ValidatedJwk
+  final case class RSA(keys: KeyConfig)(override val jwk: RSAKey) extends ValidatedJwk
+
+  object ValidatedJwk { // validate using BouncyCastle
+    private val converter: JcaPEMKeyConverter = new JcaPEMKeyConverter().setProvider("BC")
+
+    def from(
+        kid:         String,
+        keyType:     KeyType,
+        publicFile:  Option[File],
+        privateFile: Option[File]
+    ): IOResult[Option[ValidatedJwk]] = {
+      given keyId: String = kid
+      given KeyType = keyType
+      (publicFile, privateFile) match {
+        case (None, None)                          => ZIO.none
+        case (Some(_), None)                       => Inconsistency(s"Private key file configuration is missing for JWT key ${kid}").fail
+        case (None, Some(privateFile))             =>
+          val config = PrivateFile(privateFile)
+          load(config).flatMap(from(_, _)(using config = config)).asSome
+        case (Some(publicFile), Some(privateFile)) =>
+          val config = PublicPrivateFile(publicFile, privateFile)
+          load(config).flatMap(from(_, _)(using config = config)).asSome
+      }
+    }
+
+    private def load[T <: KeyConfig: KeyFileConfig](config: T): IOResult[(PublicKey, PrivateKey)] = {
+      config.load()
+    }
+
+    private[authbackends] def from(pub: PublicKey, priv: PrivateKey)(using
+        kid:     String,
+        keyType: KeyType,
+        config:  KeyConfig
+    ): IOResult[ValidatedJwk] = {
+      IOResult.attempt(s"Invalid key matching for ${keyType} key '${kid}', please raise the issue to Rudder developer team") {
+        keyType match {
+          case KT.RSA =>
+            RSA(config)(
+              new RSAKey.Builder(pub.asInstanceOf[RSAPublicKey])
+                .privateKey(priv.asInstanceOf[RSAPrivateKey])
+                .keyID(kid)
+                .build()
+            )
+          case KT.EC  =>
+            val ecPub = pub.asInstanceOf[ECPublicKey]
+            val curve = Curve.forECParameterSpec(ecPub.getParams)
+            EC(config)(
+              new ECKey.Builder(curve, ecPub)
+                .privateKey(priv.asInstanceOf[ECPrivateKey])
+                .keyID(kid)
+                .build()
+            )
+        }
+      }
+    }
+
+    private[JwtConfig] def loadPublicKey(file: File): IOResult[PublicKey] = {
+      parseKeyFile(file).flatMap {
+        case spki: org.bouncycastle.asn1.x509.SubjectPublicKeyInfo =>
+          IOResult.attempt(converter.getPublicKey(spki))
+        case cert: org.bouncycastle.cert.X509CertificateHolder     =>
+          IOResult.attempt(converter.getPublicKey(cert.getSubjectPublicKeyInfo))
+        case other =>
+          Inconsistency(s"Unsupported public key format: ${other.getClass.getName}").fail
+      }.chainError(
+        s"Could not read public key file at ${file.pathAsString}, please ensure correct file access permissions and file content (PKCS#8 or X509 certificate)"
+      )
+    }
+
+    private[JwtConfig] def loadPrivateKey(file: File): IOResult[PrivateKey] = {
+      parseKeyFile(file).flatMap {
+        case pair:   org.bouncycastle.openssl.PEMKeyPair       =>
+          IOResult.attempt(converter.getKeyPair(pair).getPrivate)
+        case pkInfo: org.bouncycastle.asn1.pkcs.PrivateKeyInfo =>
+          IOResult.attempt(converter.getPrivateKey(pkInfo))
+        case _ =>
+          Inconsistency("Unsupported private key format").fail
+      }.chainError(
+        s"Could not read private key file at ${file.pathAsString}, please ensure correct file access permissions and file content (PKCS#8)"
+      )
+    }
+
+    private def parseKeyFile(file: File): IOResult[Object] = {
+      IOResult.attempt(s"Could not read file ${file.pathAsString}") {
+        val parser = new PEMParser(new FileReader(file.pathAsString))
+        val obj    = parser.readObject()
+        parser.close()
+        obj
+      }
+    }
+  }
+
+  final private class CombinedJWEKeySelector(
+      first:  JWEKeySelector[SecurityContext],
+      second: JWEKeySelector[SecurityContext]
+  ) extends JWEKeySelector[SecurityContext] {
+    override def selectJWEKeys(jweHeader: JWEHeader, context: SecurityContext): util.List[? <: Key] = {
+      // no thrown error because of ImmutableJWKSet
+      (first.selectJWEKeys(jweHeader, context).asScala ++ second.selectJWEKeys(jweHeader, context).asScala).asJava
+    }
+  }
+
+  private object EmptyJWEKeySelector extends JWEKeySelector[SecurityContext] {
+    override def selectJWEKeys(header: JWEHeader, context: SecurityContext): util.List[? <: Key] = util.List.of()
+  }
+
+  given Monoid[JWEKeySelector[SecurityContext]] = Monoid.instance(EmptyJWEKeySelector, CombinedJWEKeySelector(_, _))
+
+  // With only JWS support from a JWKS URI
+  def default(jwkSetUri: String): JwtConfig = JwtConfig(jwkSetUri, None, Set.empty, Set.empty, Map.empty)
+}
 
 /*
  * We have to data structures to model the configuration parameters needed for a workflow:
@@ -186,7 +527,8 @@ final case class RudderClientRegistration(
     infoMsg:           String,
     roles:             ProvidedRoles,
     provisioning:      Boolean,
-    tenants:           ProvidedTenants
+    tenants:           ProvidedTenants,
+    jwtConfig:         JwtConfig
 ) extends RudderOAuth2Registration with RegistrationWithRoles with RegistrationWithPivotAttribute {
   override def registrationId: String = registration.getRegistrationId
 
@@ -238,6 +580,14 @@ object RudderRegistrationPropertyCommon {
   val A_ROLES_MAPPING           = "roles.mapping.entitlements"          // ie: OIDC role = Rudder role
   val A_ROLES_REVERSE_MAPPING   = "roles.mapping.reverseEntitlements"   // ie: Rudder role = OIDC role (overrides mapping)
   val A_PROVISIONING            = "enableProvisioning"
+  val A_JWT_KEYS                = "jwt.keys"
+  val A_JWT_JWS_DISCOVER        = "jwt.jws.discoverAlgorithms"
+  val A_JWT_JWE_ALG             = "jwt.jwe.algorithms"
+  val A_JWT_JWE_ENC             = "jwt.jwe.encryptionMethods"
+  val A_JWT_KEY_TYPE            = "type"
+  val A_JWT_KEY_USE             = "use"
+  val A_JWT_KEY_PUBLIC_FILE     = "publicFile"
+  val A_JWT_KEY_PRIVATE_FILE    = "privateFile"
 
   val authMethods = {
     import ClientAuthenticationMethod.*
@@ -281,7 +631,15 @@ object RudderRegistrationPropertyCommon {
     A_PROVISIONING            -> "(default false) allows the automatic creation of users in Rudder in they successfully authenticate with OIDC",
     A_ROLES_MAPPING           -> s"(optional) provides a map of alias `IdP role name` -> `Rudder role name`, where each IdP role name is a sub-key of '${A_ROLES_MAPPING}'",
     A_ROLES_REVERSE_MAPPING   -> s"(optional) provides a map of alias `Rudder role name` -> `IdP role name`, where each IdP role name is a sub-key of '${A_ROLES_MAPPING}', useful when the IdP role name contains '='",
-    A_ENFORCE_ROLES_MAPPING   -> "(default true) if true, restricts roles available by the IdP to the role defined in mapping entitlement. Else the map provides alias for Rudder internal role names."
+    A_ENFORCE_ROLES_MAPPING   -> "(default true) if true, restricts roles available by the IdP to the role defined in mapping entitlement. Else the map provides alias for Rudder internal role names.",
+    A_JWT_KEYS                -> "(optional) base property for JWT keys definition. Key ID (\"kid\") are direct sub-properties, and require a key `type`",
+    A_JWT_JWS_DISCOVER        -> "(default false) whether an initial query to the JWKS URI should be made to support other signature algorithms than RS256",
+    A_JWT_JWE_ALG             -> "(optional) algorithms for JWE to attempt to match for JWK defined in configuration and JWKS URL. It could be the ones you known the keys of, or the ones matching the `userinfo_encryption_alg_values_supported` from the /.well-known/openid-configuration of your OIDC provider. If no algorithm or no encryption method is provided, then the fallback algorithms are RSA-OEAP with SHA2 hash functions (RSA-OAEP-256, RSA-OAEP-384, RSA-OAEP-512), and ECDH-ES with wrapped CEK variants (ECDH-ES, ECDH-ES+A128KW, ECDH-ES+A256KW).",
+    A_JWT_JWE_ENC             -> "(optional) encryption methods to attempt to match for JWK defined in configuration and JWKS URL. It could be the ones matching the `userinfo_encryption_enc_values_supported` from the /.well-known/openid-configuration of your OIDC provider. If no algorithm or no encryption method is provided, then the fallback encryption methods are AES_CBC_HMAC_SHA2 required variants (A128CBC-HS256, A256CBC-HS512)  and AES GCM recommended variants (A128GCM, A256GCM).",
+    A_JWT_KEY_TYPE            -> "type of supported key, available from \"kty\" (e.g. RSA, EC)",
+    A_JWT_KEY_USE             -> "(optional) use of key: `sig` for signature, `enc` for encryption, leave empty for either",
+    A_JWT_KEY_PUBLIC_FILE     -> "(optional) path of a file containing the public key to use in case the key type requires one",
+    A_JWT_KEY_PRIVATE_FILE    -> "(optional) path of a file containing the private key to use in case the key type requires one"
   )
 
   def parseAuthenticationMethod(method: String): PureResult[ClientAuthenticationMethod] = {
@@ -359,6 +717,33 @@ object RudderRegistrationPropertyCommon {
     case _      => false
   }
 
+  // Return a map with the key entries as Map key, and object for each key
+  protected[authbackends] def readMapObject[A](
+      key:        String
+  )(
+      readObject: (String, BasePath) => IOResult[A]
+  )(implicit
+      base:       BasePath,
+      config:     Config
+  ): IOResult[Map[String, A]] = {
+    val path = base.path(key)
+    import scala.jdk.CollectionConverters.*
+    for {
+      keySet <- IOResult
+                  .attempt(s"Missing key '${path}' for OAUTH2 registration '${base.id}' (${registrationAttributes(key)})")(
+                    config.getObject(path).keySet().asScala.toList
+                  )
+                  .catchAll(_ =>
+                    List().succeed
+                  ) // in that case, we suppose that the key is just missing so we return a default empty value for mapping
+      values <- ZIO.foreach(keySet) { k =>
+                  val newBasePath = BasePath(base.base, base.id + "." + key + "." + k)
+                  readObject(k, newBasePath)
+                    .map((k, _))
+                }
+    } yield values.toMap
+  }
+
   protected[authbackends] def readMap(
       key: String
   )(implicit base: BasePath, config: Config): IOResult[Map[String, String]] = {
@@ -423,6 +808,43 @@ object RudderRegistrationPropertyCommon {
         toBool(tenantsOverride),
         toBool(enforceRoleMapping),
         mapping ++ reverseMapping.map { case (a, b) => (b, a) }
+      )
+    }
+  }
+
+  protected[authbackends] def readJwt(jwkSetUri: String)(implicit base: BasePath, config: Config): IOResult[JwtConfig] = {
+    import JwtConfig.*
+    import com.nimbusds.jose.jwk.KeyType as KT
+    def readJwk(kid: String, basePath: BasePath): IOResult[JwkConfig] = {
+      given base: BasePath = basePath // override base path, since it is within the "kid"
+      for {
+        `type` <- read(A_JWT_KEY_TYPE)
+        typ    <- IOResult.attempt("Could not parse key type")(KT.parse(`type`)).flatMap[Any, RudderError, KeyType] {
+                    case k: KT.RSA.type => k.succeed
+                    case k: KT.EC.type  => k.succeed
+                    case k => Inconsistency(s"Key type ${k} unsupported").fail
+                  }
+        use    <- read(A_JWT_KEY_USE).foldZIO(_ => ZIO.none, Use.withNameInsensitiveEither(_).bimap(_.getMessage, Some(_)).toIO)
+        pub    <- read(A_JWT_KEY_PUBLIC_FILE).fold(_ => None, f => Some(File(f)))
+        priv   <- read(A_JWT_KEY_PRIVATE_FILE).fold(_ => None, f => Some(File(f)))
+        k      <- ValidatedJwk.from(kid, typ, pub, priv)
+      } yield {
+        JwkConfig(kid, typ, use, k)
+      }
+    }
+
+    for {
+      discoverJwsAlg <- read(A_JWT_JWS_DISCOVER).fold(_ => None, s => Some(toBool(s)))
+      alg            <- read(A_JWT_JWE_ALG).fold(_ => Set.empty, _.split(",").toSet.map(JWEAlgorithm.parse))
+      enc            <- read(A_JWT_JWE_ENC).fold(_ => Set.empty, _.split(",").toSet.map(EncryptionMethod.parse))
+      keys           <- readMapObject(A_JWT_KEYS)(readJwk)
+    } yield {
+      JwtConfig(
+        jwkSetUri,
+        discoverJwsAlg,
+        alg,
+        enc,
+        keys
       )
     }
   }
@@ -720,6 +1142,7 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
       roles               <- readRoles()
       tenants             <- readTenants()
       provisioningAllowed <- read(A_PROVISIONING).catchAll(_ => "false".succeed)
+      jwtConfig           <- readJwt(jwkSetUri)
     } yield {
       RudderClientRegistration(
         ClientRegistration
@@ -742,9 +1165,30 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
         infoMessage,
         roles,
         toBool(provisioningAllowed),
-        tenants
+        tenants,
+        jwtConfig
       )
     }
   }
 
+}
+
+def decodeJwt(jwtString: String)(using jwtConfig: JwtConfig): Either[JwtException, Jwt] = {
+  val res = Either.catchOnly[JwtException](jwtConfig.decoder.decode(jwtString))
+  res match {
+    case Left(err) =>
+      Option(err.getCause) match {
+        case Some(ex: BadJOSEException) =>
+          AuthBackendsLoggerPure.logEffect.warn(
+            s"Error when attempting to decode a JWT response, please ensure your JWT keys configuration are right, ${jwtConfig.debugConfiguration}.\nCause: ${ex.getMessage}"
+          )
+        case _                          =>
+          AuthBackendsLoggerPure.logEffect.debug(
+            s"Error when attempting to decode a JWT response: ${err.getMessage}"
+          )
+      }
+    case Right(e)  =>
+      AuthBackendsLoggerPure.logEffect.trace(s"Successfully decoded JWT with headers : ${e.getHeaders}")
+  }
+  res
 }
