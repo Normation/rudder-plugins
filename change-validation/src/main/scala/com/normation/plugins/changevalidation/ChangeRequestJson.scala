@@ -64,6 +64,7 @@ import com.normation.rudder.domain.queries.Query
 import com.normation.rudder.domain.workflows.*
 import com.normation.rudder.rule.category.RuleCategoryId
 import com.normation.rudder.services.modification.DiffService
+import com.normation.rudder.tenants.QueryContext
 import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.PartialTransformer
 import io.scalaland.chimney.Transformer
@@ -138,9 +139,10 @@ object ChangeRequestJson {
   }
 
   // Entrypoint to convert the whole tree of ChangeRequest + some context to a serializable object ChangeRequestJson
-  def from(cr: ChangeRequest, status: WorkflowNodeId, isAcceptable: Boolean)(implicit
+  def from(cr: ChangeRequest, status: WorkflowNodeId, isAcceptable: Boolean)(using
       techniqueByDirective: Map[DirectiveId, Technique],
-      diffService:          DiffService
+      diffService:          DiffService,
+      qc:                   QueryContext
   ): PureResult[ChangeRequestJson] = {
     val changesJson: PureResult[Option[ConfigurationChangeRequestJson]] = cr match {
       case cr: ConfigurationChangeRequest => {
@@ -344,15 +346,17 @@ object DirectiveChangeJson {
     }
   }
 
-  implicit def createTransformer(implicit
-      technique: Technique
+  implicit def createTransformer(using
+      technique: Technique,
+      qc:        QueryContext
   ): Transformer[AddDirectiveDiff, DirectiveCreateChangeJson] = {
     case AddDirectiveDiff(techniqueName, directive) =>
       DirectiveCreateChangeJson(JRDirective.fromDirective(technique, directive, None))
   }
 
   implicit def deleteTransformer(implicit
-      technique: Technique
+      technique: Technique,
+      qc:        QueryContext
   ): Transformer[DeleteDirectiveDiff, DirectiveDeleteChangeJson] = {
     case DeleteDirectiveDiff(_, directive) =>
       DirectiveDeleteChangeJson(JRDirective.fromDirective(technique, directive, None))
@@ -383,7 +387,8 @@ object DirectiveChangeJson {
   implicit def transformDirectiveDiff(implicit
       change:      DirectiveChange,
       technique:   Technique,
-      diffService: DiffService
+      diffService: DiffService,
+      qc:          QueryContext
   ): PartialTransformer[ChangeRequestDirectiveDiff, DirectiveChangeJson] = {
     PartialTransformer
       .define[ChangeRequestDirectiveDiff, DirectiveChangeJson]
@@ -413,7 +418,8 @@ object DirectiveChangeActionJson {
 
   implicit def transformer(implicit
       technique:   Technique,
-      diffService: DiffService
+      diffService: DiffService,
+      qc:          QueryContext
   ): PartialTransformer[DirectiveChange, DirectiveChangeActionJson] = {
     case (source, _) =>
       implicit val change = source
@@ -821,12 +827,17 @@ object GlobalParameterChangeJson {
     }
   }
 
-  implicit val jrGlobalParameterTransformer: Transformer[GlobalParameter, JRGlobalParameter]                         =
+  implicit def jrGlobalParameterTransformer(using qc: QueryContext): Transformer[GlobalParameter, JRGlobalParameter] =
     JRGlobalParameter.fromGlobalParameter(_, None)
-  implicit val createTransformer:            Transformer[AddGlobalParameterDiff, GlobalParameterCreateChangeJson]    =
+
+  implicit def createTransformer(using qc: QueryContext): Transformer[AddGlobalParameterDiff, GlobalParameterCreateChangeJson] =
     Transformer.derive[AddGlobalParameterDiff, GlobalParameterCreateChangeJson]
-  implicit val deleteTransformer:            Transformer[DeleteGlobalParameterDiff, GlobalParameterDeleteChangeJson] =
+
+  implicit def deleteTransformer(using
+      qc: QueryContext
+  ): Transformer[DeleteGlobalParameterDiff, GlobalParameterDeleteChangeJson] =
     Transformer.derive[DeleteGlobalParameterDiff, GlobalParameterDeleteChangeJson]
+
   implicit def modifyTransformer(implicit
       change:      GlobalParameterChange,
       diffService: DiffService
@@ -841,9 +852,10 @@ object GlobalParameterChangeJson {
       Result.fromEitherString(result)
   }
 
-  implicit def transformer(implicit
+  implicit def transformer(using
       change:      GlobalParameterChange,
-      diffService: DiffService
+      diffService: DiffService,
+      qc:          QueryContext
   ): PartialTransformer[ChangeRequestGlobalParameterDiff, GlobalParameterChangeJson] = {
     PartialTransformer
       .define[ChangeRequestGlobalParameterDiff, GlobalParameterChangeJson]
@@ -868,10 +880,11 @@ final case class GlobalParameterChangeActionJson(
 )
 
 object GlobalParameterChangeActionJson {
-  import GlobalParameterChangeJson.*
+  import com.normation.plugins.changevalidation.GlobalParameterChangeJson.*
 
-  implicit def transformer(implicit
-      diffService: DiffService
+  implicit def transformer(using
+      diffService: DiffService,
+      qc:          QueryContext
   ): PartialTransformer[GlobalParameterChange, GlobalParameterChangeActionJson] = {
     case (source, _) =>
       implicit val change = source
@@ -901,9 +914,10 @@ final case class ConfigurationChangeRequestJson(
 )
 
 object ConfigurationChangeRequestJson {
-  implicit def transformer(implicit
+  implicit def transformer(using
       techniqueByDirective: Map[DirectiveId, Technique],
-      diffService:          DiffService
+      diffService:          DiffService,
+      qc:                   QueryContext
   ): PartialTransformer[ConfigurationChangeRequest, ConfigurationChangeRequestJson] = {
     PartialTransformer
       .define[ConfigurationChangeRequest, ConfigurationChangeRequestJson]
