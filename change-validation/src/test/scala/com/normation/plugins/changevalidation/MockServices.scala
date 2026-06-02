@@ -93,27 +93,30 @@ class MockSupervisedTargets(unsupervisedDir: File, unsupervisedFilename: String,
       fullNodeGroupCategory.succeed
     }
 
-    override def categoryExists(id: NodeGroupCategoryId): IOResult[Boolean] = ???
-    override def getNodeGroupOpt(id: NodeGroupId)(implicit qc: QueryContext): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] =
+    override def categoryExists(id: NodeGroupCategoryId)(using qc: QueryContext): IOResult[Boolean] = ???
+    override def getNodeGroupOpt(id: NodeGroupId)(using qc: QueryContext): IOResult[Option[(NodeGroup, NodeGroupCategoryId)]] =
       ???
-    override def getNodeGroupCategory(id: NodeGroupId): IOResult[NodeGroupCategory] = ???
-    override def getAll(): IOResult[Seq[NodeGroup]] = ???
-    override def getAllByIds(ids: Seq[NodeGroupId]): IOResult[Seq[NodeGroup]] = ???
-    override def getAllNodeIds():      IOResult[Map[NodeGroupId, Set[NodeId]]]   = ???
-    override def getAllNodeIdsChunk(): IOResult[Map[NodeGroupId, Chunk[NodeId]]] = ???
-    override def getGroupsByCategory(includeSystem: Boolean)(implicit
+    override def getNodeGroupCategory(id:        NodeGroupId)(using qc:      QueryContext): IOResult[NodeGroupCategory] = ???
+    override def getAll()(using qc:              QueryContext): IOResult[Seq[NodeGroup]] = ???
+    override def getAllByIds(ids:                Seq[NodeGroupId])(using qc: QueryContext): IOResult[Seq[NodeGroup]]    = ???
+    override def getAllNodeIds()(using qc:       QueryContext): IOResult[Map[NodeGroupId, Set[NodeId]]] = ???
+    override def getAllNodeIdsChunk()(using qc:  QueryContext): IOResult[Map[NodeGroupId, Chunk[NodeId]]] = ???
+    override def getGroupsByCategory(includeSystem: Boolean)(using
         qc: QueryContext
     ): IOResult[SortedMap[List[NodeGroupCategoryId], CategoryAndNodeGroup]] = ???
-    override def findGroupWithAnyMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
-    override def findGroupWithAllMember(nodeIds: Seq[NodeId]): IOResult[Seq[NodeGroupId]] = ???
-    override def getRootCategory():     NodeGroupCategory                                                 = ???
-    override def getRootCategoryPure(): IOResult[NodeGroupCategory]                                       = ???
-    override def getCategoryHierarchy:  IOResult[SortedMap[List[NodeGroupCategoryId], NodeGroupCategory]] = ???
-    override def getAllGroupCategories(includeSystem: Boolean):             IOResult[Seq[NodeGroupCategory]]  = ???
-    override def getGroupCategory(id:                 NodeGroupCategoryId): IOResult[NodeGroupCategory]       = ???
-    override def getParentGroupCategory(id:           NodeGroupCategoryId): IOResult[NodeGroupCategory]       = ???
-    override def getParents_NodeGroupCategory(id:     NodeGroupCategoryId): IOResult[List[NodeGroupCategory]] = ???
-    override def getAllNonSystemCategories(): IOResult[Seq[NodeGroupCategory]] = ???
+    override def findGroupWithAnyMember(nodeIds: Seq[NodeId])(using qc:      QueryContext): IOResult[Seq[NodeGroupId]]  = ???
+    override def findGroupWithAllMember(nodeIds: Seq[NodeId])(using qc:      QueryContext): IOResult[Seq[NodeGroupId]]  = ???
+    override def getRootCategory()(using qc:     QueryContext): NodeGroupCategory = ???
+    override def getRootCategoryPure()(using qc: QueryContext): IOResult[NodeGroupCategory] = ???
+    override def getCategoryHierarchy(using qc: QueryContext): IOResult[SortedMap[List[NodeGroupCategoryId], NodeGroupCategory]] =
+      ???
+    override def getAllGroupCategories(includeSystem:  Boolean)(using qc:             QueryContext): IOResult[Seq[NodeGroupCategory]] = ???
+    override def getGroupCategory(id:                  NodeGroupCategoryId)(using qc: QueryContext): IOResult[NodeGroupCategory]      = ???
+    override def getParentGroupCategory(id:            NodeGroupCategoryId)(using qc: QueryContext): IOResult[NodeGroupCategory]      = ???
+    override def getParents_NodeGroupCategory(id: NodeGroupCategoryId)(using
+        qc: QueryContext
+    ): IOResult[List[NodeGroupCategory]] = ???
+    override def getAllNonSystemCategories()(using qc: QueryContext): IOResult[Seq[NodeGroupCategory]] = ???
   }
 
 }

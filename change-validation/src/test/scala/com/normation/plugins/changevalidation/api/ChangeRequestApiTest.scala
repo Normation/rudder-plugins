@@ -51,6 +51,7 @@ import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceI
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.*
 import com.normation.rudder.MockGlobalParam
 import com.normation.rudder.MockNodes
+import com.normation.rudder.MockTenants
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.domain.nodes.AddNodeGroupDiff
@@ -230,7 +231,8 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
   val mockDirectives  = restTestSetUp.mockDirectives
   val mockNodeGroups  = restTestSetUp.mockNodeGroups
   val mockRules       = restTestSetUp.mockRules
-  val mockGlobalParam = new MockGlobalParam()
+  val mockTenants     = new MockTenants()
+  val mockGlobalParam = new MockGlobalParam(mockTenants)
 
   val mockServices = new MockServices(
     Map(
@@ -641,7 +643,7 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, Some(mockServices.userService))
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, mockServices.userService)
 
   val transformations: Map[String, String => String] = Map()
 
@@ -659,6 +661,7 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
                yamlSourceDirectory,
                yamlDestTmpDirectory,
                liftRules,
+               mockServices.userService,
                List("api_changerequest.yml"),
                transformations
              )

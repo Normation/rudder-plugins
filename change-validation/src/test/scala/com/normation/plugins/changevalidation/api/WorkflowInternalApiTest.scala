@@ -112,7 +112,7 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
 
   val apiVersions = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
 
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, restTestSetUp.userService)
   val transformations: Map[String, String => String] = Map()
 
   override def spec: Spec[TestEnvironment & Scope, Any] = {
@@ -123,6 +123,7 @@ class WorkflowInternalApiTest extends ZIOSpecDefault {
                yamlSourceDirectory,
                yamlDestTmpDirectory,
                liftRules,
+               restTestSetUp.userService,
                List("api_workflowinternal.yml"),
                transformations
              )
