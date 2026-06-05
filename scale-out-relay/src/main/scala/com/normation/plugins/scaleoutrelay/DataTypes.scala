@@ -41,6 +41,7 @@ import com.normation.NamedZioLogger
 import com.normation.errors.PureResult
 import com.normation.plugins.PluginStatus
 import com.normation.rudder.domain.Constants
+import com.normation.rudder.facts.nodes.RudderAgent
 import com.normation.rudder.services.policies.NodeRunHook
 import com.normation.rudder.services.policies.write.AgentNodeProperties
 import com.normation.rudder.services.policies.write.AgentNodeWritableConfiguration
@@ -86,9 +87,10 @@ class ScaleOutRelayAgentSpecificGeneration(pluginInfo: PluginStatus) extends Age
   import com.normation.rudder.services.policies.write.BuildBundleSequence.InputFile
   import com.normation.rudder.services.policies.write.BuildBundleSequence.TechniqueBundles
   override def getBundleVariables(
-      inputs:   List[InputFile],
-      bundles:  List[TechniqueBundles],
-      runHooks: List[NodeRunHook]
+      agentInfo: RudderAgent,
+      inputs:    List[InputFile],
+      bundles:   List[TechniqueBundles],
+      runHooks:  List[NodeRunHook]
   ): PureResult[BundleSequenceVariables] =
     Right(CfengineBundleVariables.getBundleVariables(escape, inputs, bundles, runHooks))
 }
