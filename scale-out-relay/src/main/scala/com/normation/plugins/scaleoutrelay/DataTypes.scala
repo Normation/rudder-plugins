@@ -47,6 +47,7 @@ import com.normation.rudder.services.policies.write.AgentNodeProperties
 import com.normation.rudder.services.policies.write.AgentNodeWritableConfiguration
 import com.normation.rudder.services.policies.write.AgentSpecificFile
 import com.normation.rudder.services.policies.write.AgentSpecificGeneration
+import com.normation.rudder.services.policies.write.BuildBundleSequence.*
 import com.normation.rudder.services.policies.write.CFEngineAgentSpecificGeneration
 import com.normation.rudder.services.policies.write.CfengineBundleVariables
 import net.liftweb.common.Logger
@@ -83,14 +84,11 @@ class ScaleOutRelayAgentSpecificGeneration(pluginInfo: PluginStatus) extends Age
     CFEngineAgentSpecificGeneration.write(cfg)
   }
 
-  import com.normation.rudder.services.policies.write.BuildBundleSequence.BundleSequenceVariables
-  import com.normation.rudder.services.policies.write.BuildBundleSequence.InputFile
-  import com.normation.rudder.services.policies.write.BuildBundleSequence.TechniqueBundles
   override def getBundleVariables(
       agentInfo: RudderAgent,
       inputs:    List[InputFile],
       bundles:   List[TechniqueBundles],
       runHooks:  List[NodeRunHook]
   ): PureResult[BundleSequenceVariables] =
-    Right(CfengineBundleVariables.getBundleVariables(escape, inputs, bundles, runHooks))
+    Right(CfengineBundleVariables.getBundleVariables(agentInfo, escape, inputs, bundles, runHooks))
 }
