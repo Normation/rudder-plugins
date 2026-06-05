@@ -838,7 +838,7 @@ object RudderTokenMapping {
           case None    => t
           case Some(m) =>
             AuthBackendsLogger.debug(
-              s"Principal '${principal}': mapping IdP provided role '${t}' to Rudder role '${m}' "
+              s"Principal '${principal}': mapping IdP provided tenant '${t}' to Rudder tenant '${m}' "
             )
             m
         }
