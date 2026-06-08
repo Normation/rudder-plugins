@@ -70,6 +70,7 @@ import com.normation.rudder.rule.category.RuleCategoryId
 import com.normation.rudder.rule.category.RuleCategoryService
 import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.modification.DiffService
+import com.normation.rudder.tenants.QueryContext
 import com.normation.utils.DateFormaterService
 import com.normation.utils.DateFormaterService.json.*
 import io.scalaland.chimney.PartialTransformer
@@ -137,7 +138,7 @@ object ChangeRequestChangesJson {
       )
   }
 
-  def from(cr: ChangeRequest)(implicit
+  def from(cr: ChangeRequest)(using
       techniqueByDirective: Map[DirectiveId, Technique],
       diffService:          DiffService,
       nodeGroups:           MapView[NodeGroupId, String],
@@ -145,7 +146,8 @@ object ChangeRequestChangesJson {
       nodes:                MapView[NodeId, String],
       allTargets:           MapView[RuleTarget, FullRuleTargetInfo],
       ruleCategoryService:  RuleCategoryService,
-      rootCategory:         RuleCategory
+      rootCategory:         RuleCategory,
+      qc:                   QueryContext
   ): PureResult[ChangeRequestChangesJson] = {
     cr match {
       case cr: ConfigurationChangeRequest =>
@@ -187,7 +189,7 @@ final case class ConfigurationChangesJson(
 
 object ConfigurationChangesJson {
 
-  implicit def transformer(implicit
+  implicit def transformer(using
       techniqueByDirective: Map[DirectiveId, Technique],
       diffService:          DiffService,
       nodeGroups:           MapView[NodeGroupId, String],
@@ -195,7 +197,8 @@ object ConfigurationChangesJson {
       nodes:                MapView[NodeId, String],
       allTargets:           MapView[RuleTarget, FullRuleTargetInfo],
       ruleCategoryService:  RuleCategoryService,
-      rootCategory:         RuleCategory
+      rootCategory:         RuleCategory,
+      qc:                   QueryContext
   ): PartialTransformer[ConfigurationChangeRequest, ConfigurationChangesJson] = {
     PartialTransformer
       .define[ConfigurationChangeRequest, ConfigurationChangesJson]
