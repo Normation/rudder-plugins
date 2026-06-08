@@ -65,17 +65,17 @@ class OpenScapReportReader(
     findExpectedReportRepository: FindExpectedReportRepository,
     openScapReportDirPath:        String
 ) {
-  import OpenScapReportReader.*
+  import com.normation.plugins.openscappolicies.services.OpenScapReportReader.*
 
   val openScapReportPath = File(openScapReportDirPath)
-
-  val logger = OpenscapPoliciesLogger
 
   private def computePathFromNodeId(nodeId: NodeId): String = {
     (openScapReportPath / nodeId.value / OPENSCAP_REPORT_FILENAME).pathAsString
   }
 
   def checkifOpenScapApplied(nodeId: NodeId): Box[Boolean] = {
+    // this is tenant indep
+    given qc: QueryContext = QueryContext.systemQC
     val openScapDirectives = (for {
       // get active technique
       activeTechniqueIds <- pluginDirectiveRepository.getActiveTechniqueIdByTechniqueName(TechniqueName(OPENSCAP_TECHNIQUE_ID))
@@ -88,16 +88,16 @@ class OpenScapReportReader(
     openScapDirectives match {
       case f: Failure =>
         val errMessage = s"Could not identify the list of OpenSCAP related directives, cause is: ${f.messageChain}"
-        logger.error(errMessage)
+        OpenscapPoliciesLogger.error(errMessage)
         Failure(errMessage)
-      case Empty =>
+      case Empty                                  =>
         val errMessage = s"Could not identify the list of OpenSCAP related directives, no cause reported"
-        logger.error(errMessage)
+        OpenscapPoliciesLogger.error(errMessage)
         Failure(errMessage)
-      case Full(directives) if directives.size == 0 =>
-        logger.info("There are no OpensCAP-based directive yet")
+      case Full(directives) if directives.isEmpty =>
+        OpenscapPoliciesLogger.info("There are no OpensCAP-based directive yet")
         Full(false)
-      case Full(directives) =>
+      case Full(directives)                       =>
         val expectedOption = (for {
           expectedReports <- findExpectedReportRepository.getCurrentExpectedsReports(Set(nodeId))
           expected        <- Box(expectedReports.get(nodeId)) ?~! s"Cannot find expected reports for node id ${nodeId}"

@@ -94,12 +94,11 @@ class ScaleOutRelayService(
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system groups")
       _ <- ZIO.foreach(objects.groups)(g => woLDAPNodeGroupRepository.create(g, NodeGroupCategoryId(SYSTEM_GROUPS)))
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system directives")
-      _ <- ZIO.foreach(objects.directives.toList) {
-             case (t, d) =>
-               woDirectiveRepository.saveSystemDirective(ActiveTechniqueId(t.value), d, cc.modId, cc.actor, cc.message)
+      _ <- ZIO.foreach(objects.directives.toList) { (t, d) =>
+             woDirectiveRepository.saveSystemDirective(ActiveTechniqueId(t.value), d)
            }
       _ <- ScaleOutRelayLoggerPure.trace(s"[promote ${nodeInfo.id.value}] create new system rules")
-      _ <- ZIO.foreach(objects.rules)(r => woRuleRepository.create(r, cc.modId, cc.actor, cc.message))
+      _ <- ZIO.foreach(objects.rules)(r => woRuleRepository.create(r))
 
       // save the relay in the rudder_policy_servers entry in LDAP
       existingPolicyServers <- policyServerManagementService.getPolicyServers()
@@ -201,13 +200,13 @@ class ScaleOutRelayService(
     })
     val directives = objects.directives.toList.map(d => {
       woDirectiveRepository
-        .deleteSystemDirective(d._2.id.uid, cc.modId, cc.actor, cc.message)
+        .deleteSystemDirective(d._2.id.uid)
         .chainError(s"Demote relay failed: removing directive '${d._2.id.debugString}' failed")
         .unit
     })
     val rules      = objects.rules.map(r => {
       woRuleRepository
-        .deleteSystemRule(r.id, cc.modId, cc.actor, cc.message)
+        .deleteSystemRule(r.id)
         .tapError { err =>
           ScaleOutRelayLoggerPure.info(s"Trying to remove residual object rule ${r.id.serialize}: ${err.fullMsg}")
         }

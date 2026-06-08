@@ -305,7 +305,7 @@ class WorkflowInternalApiImpl(
       }
     }
 
-    private def getDirectives: IOResult[MapView[DirectiveId, Directive]] = {
+    private def getDirectives(using qc: QueryContext): IOResult[MapView[DirectiveId, Directive]] = {
       for {
         library <- directiveRepository.getFullDirectiveLibrary()
       } yield {
@@ -313,7 +313,7 @@ class WorkflowInternalApiImpl(
       }
     }
 
-    private def getNodeNames(implicit qc: QueryContext): IOResult[MapView[NodeId, String]] = {
+    private def getNodeNames(using qc: QueryContext): IOResult[MapView[NodeId, String]] = {
       for {
         library <- nodeFactRepository.getAll()
       } yield {

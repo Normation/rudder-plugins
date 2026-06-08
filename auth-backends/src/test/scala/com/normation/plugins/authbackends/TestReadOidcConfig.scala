@@ -36,6 +36,8 @@
  */
 package com.normation.plugins.authbackends
 
+import com.normation.rudder.tenants.TenantAccess
+
 import better.files.*
 import bootstrap.rudder.plugin.RudderTokenMapping
 import com.nimbusds.jose.EncryptionMethod
@@ -45,16 +47,20 @@ import com.nimbusds.jose.jwk.KeyType
 import com.nimbusds.jose.jwk.RSAKey
 import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.tenants.TenantId
+
 import com.normation.zio.*
 import com.typesafe.config.ConfigFactory
+
 import java.security.Security
 import org.apache.commons.io.IOUtils
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.runner.RunWith
 import org.specs2.mutable.*
 import org.specs2.runner.JUnitRunner
+
 import scala.annotation.nowarn
 import scala.concurrent.duration.*
+
 import zio.Chunk
 
 @RunWith(classOf[JUnitRunner])
@@ -272,7 +278,7 @@ class TestReadOidcConfig extends Specification {
       val tenants     =
         RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", TenantAccessGrant.None)(_ => Some(tokenValues))
 
-      tenants === TenantAccessGrant.ByTenants(Chunk(TenantId("TA"), TenantId("TB")))
+      tenants === TenantAccessGrant.ByTenants(Chunk(TenantAccess(TenantId("TA")), TenantAccess(TenantId("TB"))))
     }
 
     "work for no tenants" in {
