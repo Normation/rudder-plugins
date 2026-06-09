@@ -110,7 +110,7 @@ function scss(cb) {
     const deprecations = ['legacy-js-api', 'mixed-decls', 'color-functions', 'global-builtin', 'import'];
     src(paths.scss.src, { encoding: false })
       .pipe(sourcemaps.init())
-      .pipe(sass.sync({style: 'compressed', silenceDeprecations: deprecations}).on('error', sass.logError))
+      .pipe(sass.sync({style: 'compressed', silenceDeprecations: deprecations}))
       .pipe(sourcemaps.write())
       .pipe(dest(gestScssDest(__dirname)));
     cb();
