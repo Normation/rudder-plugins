@@ -489,13 +489,14 @@ bannerView model cr =
                 |> Maybe.withDefault ("Error: no action was recorded for change request with id" ++ String.fromInt cr.changeRequest.id)
     in
     div [ class "main-header", id "changeRequestHeader" ]
-        [ div [ class "header-title" ]
-            [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]
-            , div [ class "flex-container" ]
-                [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                , actionButtons model cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps
-                ]
-            ]
+        [ div [ class "d-table col-12" ]
+            [div [class "header-title d-table-row"]
+                [ div [class "d-table-cell"] [h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]]
+                , div [ class "flex-container" ]
+                    [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
+                    , actionButtons model cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps
+                    ]
+                ]]
         , div
             [ class "header-description" ]
             [ p [ id "CRLastAction" ] [ text lastLog ]
