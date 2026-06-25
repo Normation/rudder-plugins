@@ -582,6 +582,7 @@ class AuthBackendsSpringConfiguration extends ApplicationContextAware {
         new RudderOpaqueTokenAuthenticationProvider(
           introspector,
           new RudderOpaqueTokenAuthenticationConverter(RudderConfig.roApiAccountRepository, config),
+          RudderConfig.roApiAccountRepository,
           config.cacheRequestDuration,
           () => Instant.now()
         )
@@ -1375,10 +1376,11 @@ object RudderOpaqueTokenAuthenticationProvider {
 
 // this class is only here to allow to use our convert in place of default spring configuration
 class RudderOpaqueTokenAuthenticationProvider(
-    introspector:    OpaqueTokenIntrospector,
-    converter:       OpaqueTokenAuthenticationConverter,
-    validationCache: Option[Duration],
-    now:             () => Instant
+    introspector:           OpaqueTokenIntrospector,
+    converter:              OpaqueTokenAuthenticationConverter,
+    roApiAccountRepository: RoApiAccountRepository,
+    validationCache:        Option[Duration],
+    now:                    () => Instant
 ) extends AuthenticationProvider {
   private val opaqueTokenAuthenticationProvider = new OpaqueTokenAuthenticationProvider(introspector)
   opaqueTokenAuthenticationProvider.setAuthenticationConverter(converter)
@@ -1433,7 +1435,18 @@ class RudderOpaqueTokenAuthenticationProvider(
               case Left(ex)                                     => throw ex
               // we do have an existing authentication.
               // Expiration will be checked in convert.
-              case Right(auth @ RudderOAuth2OpaqueToken(ta, _)) =>
+              case Right(auth @ RudderOAuth2OpaqueToken(ta, u)) =>
+                // Rudder status check on API account to prevent disabled users during cache lifetime
+                u.account match {
+                  case RudderAccount.Api(account) =>
+                    roApiAccountRepository.getById(account.id).map(_.map(_.isEnabled)).runNow match {
+                      case Some(true)  => () // ok, next check
+                      case Some(false) => throw new InvalidBearerTokenException(s"Token is disabled by Rudder API account")
+                      case None        => throw new InvalidBearerTokenException(s"Token is no longer mapped to a Rudder API account")
+                    }
+                  case _                          =>
+                    throw new InvalidBearerTokenException(s"Token is not mapped to a Rudder API account")
+                }
                 ta.getCredentials match {
                   case x: OAuth2AccessToken =>
                     if (now().isAfter(x.getExpiresAt)) {
