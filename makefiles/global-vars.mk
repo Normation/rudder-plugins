@@ -36,6 +36,10 @@ endif
 # if you want to add maven command line parameter, add them with MVN_PARAMS
 MVN_CMD = mvn $(MVN_PARAMS) --batch-mode -Djansi.passthrough=true -Dstyle.color=always
 
+# sbt build (replaces maven). Invoked from the repo root (where build.sbt lives). A UTF-8 locale
+# is required (assembly fails on non-ASCII classfile names otherwise). Extra args via SBT_PARAMS.
+SBT_CMD = LANG=C.UTF-8 LC_ALL=C.UTF-8 sbt -batch $(SBT_PARAMS)
+
 RANDOM := $(shell bash -c 'echo $$RANDOM')
 
 generate-pom:
