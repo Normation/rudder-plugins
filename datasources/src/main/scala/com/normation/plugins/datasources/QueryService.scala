@@ -40,7 +40,6 @@ package com.normation.plugins.datasources
 import cats.data.NonEmptyList
 import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.NodeState
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.CompareProperties
 import com.normation.rudder.domain.properties.GlobalParameter
@@ -316,7 +315,7 @@ class HttpQueryDataSourceService(
     val timeout = datasource.requestTimeOut
 
     // filter out nodes with "disabled" state
-    val nodes = info.nodes.filter { case (k, v) => v.rudderSettings.state != NodeState.Ignored }
+    val nodes = info.nodes.filter { case (_, v) => v.rudderSettings.state.isEnabled }
 
     for {
       mode         <- globalPolicyMode()
