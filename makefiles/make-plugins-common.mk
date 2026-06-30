@@ -17,7 +17,9 @@ VERSION = $(LIB_$(LIB_TYPE)_VERSION)
 # so licensed plugin builds can resolve it (needs the private license-lib from nexus.normation.com).
 ifeq ($(LIB_TYPE),PRIVATE)
 std:
+	$(SBT_SHUTDOWN)
 	cd .. && $(SBT_CMD) -Dlimited "plugins-common-private/publishM2"
+	$(SBT_SHUTDOWN)
 else
 std:
 	@echo "plugins-common is the sbt parent settings (no artifact to install)"

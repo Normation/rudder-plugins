@@ -38,7 +38,19 @@ MVN_CMD = mvn $(MVN_PARAMS) --batch-mode -Djansi.passthrough=true -Dstyle.color=
 
 # sbt build (replaces maven). Invoked from the repo root (where build.sbt lives). A UTF-8 locale
 # is required (assembly fails on non-ASCII classfile names otherwise). Extra args via SBT_PARAMS.
+# Used as `cd .. && $(SBT_CMD) <-D opts> "<task>"`. Runs through the native client (sbtn) for fast
+# start-up — we do NOT pass --server (that would boot a full foreground JVM and defeat the quick start).
 SBT_CMD = LANG=C.UTF-8 LC_ALL=C.UTF-8 sbt -batch $(SBT_PARAMS)
+
+# Shut the sbt server down. Run as its OWN recipe line both BEFORE a build (so this invocation's -D —
+# incl. -Dlimited / -Dplugin-resource-* — take effect on a fresh server: sbt 2.0 binds -D at server
+# startup, and the sbtn quick-start client otherwise reuses a running server with stale -D) and AFTER it
+# (leave a clean state, no lingering server). Output is discarded on purpose: shutting the server down
+# makes the sbtn native client print a benign `ArrayIndexOutOfBoundsException` (a GraalVM-native-image
+# JNI race in ipcsocket while reading the socket the server is closing) — harmless noise, exit code is
+# fine, so we send it to /dev/null instead of switching off the quick-start client. `--no-server` keeps
+# it from spawning a JVM just to discover there is no server to stop (fast no-op when already clean).
+SBT_SHUTDOWN = cd .. && (LANG=C.UTF-8 LC_ALL=C.UTF-8 sbt --no-server -batch shutdown >/dev/null 2>&1 || true)
 
 RANDOM := $(shell bash -c 'echo $$RANDOM')
 
