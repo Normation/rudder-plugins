@@ -85,15 +85,20 @@ object PluginBuild {
       "rudder-release"  at "https://repository.rudder.io/maven/releases/",
       "rudder-snapshot" at "https://repository.rudder.io/maven/snapshots/"
     ),
-    // scalacOptions inherited from rudder-parent (same strict set as the webapp build)
+    // scalacOptions inherited from rudder-parent (same strict set as the webapp build). NOTE: the
+    // Maven `-Ysemanticdb` is intentionally NOT here — it is replaced by `semanticdbEnabled := true`
+    // below (sbt-managed semanticdb, which passes `-Xsemanticdb -semanticdb-target:<managed dir>`).
+    // The raw flag writes .semanticdb under the class output, which on a cold compile crashes the
+    // ExtractSemanticDB phase (NoSuchFileException) and leaks semanticdb into the assembled jars.
     ThisBuild / scalacOptions ++= Seq(
       "-release:17", "-deprecation", "-explain-types", "-feature", "-unchecked",
       "-language:existentials", "-language:higherKinds", "-language:implicitConversions",
       "-Xmax-inlines", "100",
       "-Wconf:msg=An existential type that came from a Scala-2 classfile for trait BoxTrait:s",
       "-Werror", "-Wunused:imports", "-Wunused:locals", "-Wunused:implicits", "-Wunused:privates",
-      "-Ycheck-all-patmat", "-Ysemanticdb"
+      "-Ycheck-all-patmat"
     ),
+    ThisBuild / semanticdbEnabled := true,
     ThisBuild / javacOptions ++= Seq("--release", "17", "-encoding", "UTF-8")
   )
 
@@ -127,31 +132,36 @@ object PluginBuild {
   // ---- license source-template toggle ------------------------------------------------------
   private val placeholders = Seq("plugin-resource-publickey", "plugin-resource-license", "plugin-declared-version")
 
-  /** Generate the filtered `limited` sources into sourceManaged, substituting the 4 placeholders. */
-  private def filterLimitedSources = Def.task {
-    val base    = baseDirectory.value
-    val srcDir  = base / "src" / "main" / "scala-templates" / "limited"
-    val outDir  = (Compile / sourceManaged).value / "scala-templates-limited"
-    val subst: Map[String, String] =
-      placeholders.map(k => k -> sys.props.getOrElse(k, "")).toMap +
-        ("plugin-fullname" -> pluginFullName(base))
-    IO.delete(outDir)
-    if (!srcDir.exists) Seq.empty[File]
-    else
-      (srcDir ** "*.scala").get().map { src =>
-        val rel     = srcDir.toPath.relativize(src.toPath).toString
-        val out     = outDir / rel
-        val content = subst.foldLeft(IO.read(src)) { case (c, (k, v)) => c.replace("${" + k + "}", v) }
-        IO.write(out, content)
-        out
-      }
-  }
+  // The limited license-checker source generator. It MUST be `Def.uncached` (a taskKey assigned with
+  // Def.uncached — the only form `.taskValue` accepts): it reads `sys.props` (the -Dplugin-resource-*
+  // / -Dplugin-declared-version passed by `make licensed`), which sbt 2.0 does NOT track as task
+  // inputs. If cached, a stale generation sticks across runs (e.g. empty paths from a build without
+  // the -D) -> the runtime "key file '' was not found" error. Uncached re-reads the props every build.
+  val limitedSources = taskKey[Seq[File]]("Generate the filtered `limited` license-checker sources")
 
   /** Settings selecting default vs limited sources, like the two Maven profiles. */
   def licenseSettings: Seq[Setting[?]] =
     if (licensed)
       Seq(
-        Compile / sourceGenerators += filterLimitedSources.taskValue,
+        limitedSources := Def.uncached {
+          val base   = baseDirectory.value
+          val srcDir = base / "src" / "main" / "scala-templates" / "limited"
+          val outDir = (Compile / sourceManaged).value / "scala-templates-limited"
+          val subst: Map[String, String] =
+            placeholders.map(k => k -> sys.props.getOrElse(k, "")).toMap +
+              ("plugin-fullname" -> pluginFullName(base))
+          IO.delete(outDir)
+          if (!srcDir.exists) Seq.empty[File]
+          else
+            (srcDir ** "*.scala").get().map { src =>
+              val rel     = srcDir.toPath.relativize(src.toPath).toString
+              val out     = outDir / rel
+              val content = subst.foldLeft(IO.read(src)) { case (c, (k, v)) => c.replace("${" + k + "}", v) }
+              IO.write(out, content)
+              out
+            }
+        },
+        Compile / sourceGenerators += limitedSources.taskValue,
         libraryDependencies += "com.normation.plugins" % "plugins-common-private" % privateLibVersion
       )
     else
