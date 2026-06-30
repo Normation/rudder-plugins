@@ -37,7 +37,6 @@ package com.normation.plugins.authbackends
 import bootstrap.liftweb.LogoutPostAction
 import bootstrap.liftweb.UserLogout
 import bootstrap.rudder.plugin.BuildLogout
-import cats.data.NonEmptyList
 import com.normation.errors.*
 import com.normation.plugins.authbackends.RudderRegistrationPropertyCommon.readProviders
 import com.typesafe.config.Config
@@ -322,27 +321,21 @@ object RudderRegistrationPropertyCommon {
    * It is not documented anymore and will only support an handful of early adopters.
    * Compatibility can be removed at some point in the future (timeline: rudder 7.2)
    */
-  def parseScope(scopes: String): IOResult[List[String]] = {
+  def parseScope(scopes: String): PureResult[List[String]] = {
     // it seems that only the given list of email, phone etc is supported, even if the speak of "case sensitive", let be
     // a bit more broad, the protocol lib will check more thoroughly.
-    val ascii                 = """\w""".r
+    val ascii                 = """^\w+$""".r
     def checkScope(s: String) = {
-      if (ascii.matches(s))
-        Inconsistency(s"Only ascii [a-zA-Z0-9_] is authorized in scope definition but '${s}' doesn't matches it").fail
-      else s.succeed
+      if (!ascii.matches(s))
+        Left(Inconsistency(s"Only ascii [a-zA-Z0-9_] is authorized in scope definition but '${s}' doesn't matches it"))
+      else Right(s)
     }
     val s                     = (
       if (scopes.contains(",")) scopes.split(",")
       else scopes.split("""\s+""")
     ).toList.map(_.trim)
 
-    ZIO.partition(s)(checkScope).flatMap {
-      case (errs, oks) =>
-        errs.toList match {
-          case Nil       => oks.toList.succeed
-          case h :: tail => Accumulated(NonEmptyList.of(h, tail*)).fail
-        }
-    }
+    s.accumulatePure(checkScope)
   }
 
   // utility method that read key in config and fails with an error message if
@@ -354,9 +347,23 @@ object RudderRegistrationPropertyCommon {
     )
   }
 
-  protected[authbackends] def toBool(s: String) = s.toLowerCase match {
-    case "true" => true
-    case _      => false
+  protected[authbackends] def readBool(
+      key: String
+  )(default: => Boolean)(implicit base: BasePath, config: Config): IOResult[Boolean] = {
+    read(key).foldZIO(
+      _ => default.succeed, // Missing key
+      s => {
+        s.toLowerCase match {
+          case "true"  => true.succeed
+          case "false" => false.succeed
+          case s       =>
+            val path = base.path(key)
+            AuthBackendsLoggerPure
+              .error(s"Unknown configuration value for ${path}: expected true or false, but got ${s}. Defaulting to ${default}")
+              .as(default)
+        }
+      }
+    )
   }
 
   protected[authbackends] def readMap(
@@ -391,18 +398,18 @@ object RudderRegistrationPropertyCommon {
 
   protected[authbackends] def readRoles()(implicit base: BasePath, config: Config): IOResult[ProvidedRoles] = {
     for {
-      rolesEnabled       <- read(A_ROLES_ENABLED).catchAll(_ => "false".succeed)
+      rolesEnabled       <- readBool(A_ROLES_ENABLED)(false)
       rolesAttr          <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
-      rolesOverride      <- read(A_ROLES_OVERRIDE).catchAll(_ => "false".succeed)
-      enforceRoleMapping <- read(A_ENFORCE_ROLES_MAPPING).catchAll(_ => "true".succeed)
+      rolesOverride      <- readBool(A_ROLES_OVERRIDE)(false)
+      enforceRoleMapping <- readBool(A_ENFORCE_ROLES_MAPPING)(true)
       mapping            <- readMap(A_ROLES_MAPPING)
       reverseMapping     <- readMap(A_ROLES_REVERSE_MAPPING)
     } yield {
       ProvidedRoles(
-        toBool(rolesEnabled),
+        rolesEnabled,
         rolesAttr,
-        toBool(rolesOverride),
-        toBool(enforceRoleMapping),
+        rolesOverride,
+        enforceRoleMapping,
         mapping ++ reverseMapping.map { case (a, b) => (b, a) }
       )
     }
@@ -410,18 +417,18 @@ object RudderRegistrationPropertyCommon {
 
   protected[authbackends] def readTenants()(implicit base: BasePath, config: Config): IOResult[ProvidedTenants] = {
     for {
-      tenantsEnabled       <- read(A_TENANTS_ENABLED).catchAll(_ => "false".succeed)
+      tenantsEnabled       <- readBool(A_TENANTS_ENABLED)(false)
       tenantsAttr          <- read(A_TENANTS_ATTRIBUTE).catchAll(_ => "".succeed)
-      tenantsOverride      <- read(A_TENANTS_OVERRIDE).catchAll(_ => "false".succeed)
-      enforceTenantMapping <- read(A_ENFORCE_TENANTS_MAPPING).catchAll(_ => "true".succeed)
+      tenantsOverride      <- readBool(A_TENANTS_OVERRIDE)(false)
+      enforceTenantMapping <- readBool(A_ENFORCE_TENANTS_MAPPING)(true)
       mapping              <- readMap(A_TENANTS_MAPPING)
       reverseMapping       <- readMap(A_TENANTS_REVERSE_MAPPING)
     } yield {
       ProvidedTenants(
-        toBool(tenantsEnabled),
+        tenantsEnabled,
         tenantsAttr,
-        toBool(tenantsOverride),
-        toBool(enforceTenantMapping),
+        tenantsOverride,
+        enforceTenantMapping,
         mapping ++ reverseMapping.map { case (a, b) => (b, a) }
       )
     }
@@ -539,7 +546,7 @@ class RudderPropertyBasedJwtRegistrationDefinition(val registrations: Ref[List[(
 
     for {
       jwkSetUri      <- read(A_URI_JWK_SET)
-      checkAudience  <- read(A_AUDIENCE_CHECK).catchAll(_ => "true".succeed)
+      checkAudience  <- readBool(A_AUDIENCE_CHECK)(true)
       audienceValue  <- read(A_AUDIENCE_VALUE).catchAll(_ => "io.rudder.api".succeed)
       pivotAttribute <- read(A_PIVOT_ATTRIBUTE).catchAll(_ => RudderJwtRegistration.defaultPivotAttribute.succeed)
       roles          <- readRoles()
@@ -549,7 +556,7 @@ class RudderPropertyBasedJwtRegistrationDefinition(val registrations: Ref[List[(
         id,
         jwkSetUri,
         pivotAttribute,
-        JwtAudience(toBool(checkAudience), audienceValue),
+        JwtAudience(checkAudience, audienceValue),
         roles,
         tenants
       )
@@ -709,7 +716,7 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
       authMethod          <- read(A_AUTH_METHOD).flatMap(parseAuthenticationMethod(_).toIO)
       grantTypes          <- read(A_GRANT_TYPE).flatMap(parseAuthorizationGrantType(_).toIO)
       infoMessage         <- read(A_INFO_MESSAGE)
-      scopes              <- read(A_SCOPE).flatMap(parseScope)
+      scopes              <- read(A_SCOPE).flatMap(parseScope(_).toIO)
       uriAuth             <- read(A_URI_AUTH)
       uriToken            <- read(A_URI_TOKEN)
       uriUserInfo         <- read(A_URI_USER_INFO)
@@ -719,7 +726,7 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
       logoutUriRedirect   <- read(A_URI_LOGOUT_REDIRECT).fold(_ => Option.empty[String], Some(_))
       roles               <- readRoles()
       tenants             <- readTenants()
-      provisioningAllowed <- read(A_PROVISIONING).catchAll(_ => "false".succeed)
+      provisioningAllowed <- readBool(A_PROVISIONING)(false)
     } yield {
       RudderClientRegistration(
         ClientRegistration
@@ -741,7 +748,7 @@ class RudderPropertyBasedOAuth2RegistrationDefinition(val registrations: Ref[Lis
         logoutUriRedirect,
         infoMessage,
         roles,
-        toBool(provisioningAllowed),
+        provisioningAllowed,
         tenants
       )
     }
