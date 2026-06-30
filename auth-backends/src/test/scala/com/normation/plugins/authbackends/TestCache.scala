@@ -38,18 +38,17 @@ package com.normation.plugins.authbackends
 
 import bootstrap.rudder.plugin.RudderOAuth2OpaqueToken
 import bootstrap.rudder.plugin.RudderOpaqueTokenAuthenticationProvider
+import com.normation.eventlog.*
+import com.normation.rudder.MockApiAccountService
+import com.normation.rudder.api.*
 import com.normation.rudder.api.AccountLastAuthentication
 import com.normation.rudder.api.AccountToken
-import com.normation.rudder.api.ApiAccount
 import com.normation.rudder.api.ApiAccountExpirationPolicy
-import com.normation.rudder.api.ApiAccountId
-import com.normation.rudder.api.ApiAccountKind
-import com.normation.rudder.api.ApiAccountName
-import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.RudderUserDetail
 import com.normation.rudder.users.UserStatus
+import com.normation.zio.UnsafeRun
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import org.junit.runner.RunWith
@@ -79,20 +78,22 @@ class TestCache extends Specification {
   private val TOKEN_EXP2     = Instant.ofEpochSecond(10 * 60)
   private val TOKEN_EXP3     = Instant.ofEpochSecond(20 * 60)
 
+  private def apiAccount(s: String) = {
+    ApiAccount(
+      ApiAccountId(s),
+      ApiAccountKind.PublicApi(ApiAuthorization.RW, ApiAccountExpirationPolicy.NeverExpire),
+      ApiAccountName(s),
+      AccountToken(None, TOKEN_CREATION),
+      "",
+      isEnabled = true,
+      TOKEN_CREATION,
+      AccountLastAuthentication.Unknown,
+      TenantAccessGrant.All
+    )
+  }
+
   private def rudderUserDetails(s: String) = RudderUserDetail(
-    RudderAccount.Api(
-      ApiAccount(
-        ApiAccountId(s),
-        ApiAccountKind.PublicApi(ApiAuthorization.RW, ApiAccountExpirationPolicy.NeverExpire),
-        ApiAccountName(s),
-        AccountToken(None, TOKEN_CREATION),
-        "",
-        isEnabled = true,
-        TOKEN_CREATION,
-        AccountLastAuthentication.Unknown,
-        TenantAccessGrant.All
-      )
-    ),
+    RudderAccount.Api(apiAccount(s)),
     UserStatus.Active,
     Set(),
     ApiAuthorization.RW,
@@ -144,12 +145,20 @@ class TestCache extends Specification {
     }
   }
 
+  private val apiAccountRepository = {
+    val mockService = new MockApiAccountService(null)
+    val repository  = mockService.repository
+    (repository.save(apiAccount(GOOD_TOKEN_EXP1), ModificationId("test"), EventActor("test")) *>
+    repository.save(apiAccount(GOOD_TOKEN_EXP2), ModificationId("test"), EventActor("test"))).runNow
+    repository
+  }
+
 //  private val providerCache = new RudderOpaqueTokenAuthenticationProvider(introspector, converter, Some(Duration(4, TimeUnit.MINUTES)))
 
   "when we don't have a cache" >> {
     val introspector    = new TestOpaqueTokenIntrospector
     val providerNoCache =
-      new RudderOpaqueTokenAuthenticationProvider(introspector, converter, None, () => Instant.ofEpochSecond(4 * 60))
+      new RudderOpaqueTokenAuthenticationProvider(introspector, converter, null, None, () => Instant.ofEpochSecond(4 * 60))
 
     "two times a correct value leads to 2 requests" in {
 
@@ -172,6 +181,7 @@ class TestCache extends Specification {
       new RudderOpaqueTokenAuthenticationProvider(
         introspector,
         converter,
+        apiAccountRepository,
         Some(Duration(5, TimeUnit.MINUTES)),
         () => Instant.ofEpochSecond(4 * 60)
       )
@@ -199,6 +209,7 @@ class TestCache extends Specification {
       new RudderOpaqueTokenAuthenticationProvider(
         introspector,
         converter,
+        apiAccountRepository,
         Some(Duration(5, TimeUnit.MINUTES)),
         () => Instant.ofEpochSecond(c.toLong * 60)
       )
@@ -214,6 +225,74 @@ class TestCache extends Specification {
       val res = Try(providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth))
 
       res must beAnInstanceOf[scala.util.Failure[?]]
+      introspector.count.get === 1
+    }
+  }
+
+  "when we have a cache and account is disabled" >> {
+    val introspector  = new TestOpaqueTokenIntrospector
+    val c             = 2
+    val providerCache = {
+      new RudderOpaqueTokenAuthenticationProvider(
+        introspector,
+        converter,
+        apiAccountRepository,
+        Some(Duration(5, TimeUnit.MINUTES)),
+        () => Instant.ofEpochSecond(c.toLong * 60)
+      )
+    }
+
+    "first request ok" in {
+      providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth)
+      introspector.count.get === 1
+    }
+
+    "second request ko when disabled" in {
+      apiAccountRepository
+        .save(apiAccount(GOOD_TOKEN_EXP1).copy(isEnabled = false), ModificationId("test"), EventActor("test"))
+        .runNow
+      val res = Try(providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth))
+
+      res must beAnInstanceOf[scala.util.Failure[?]]
+      introspector.count.get === 1
+    }
+
+    "third request ok when re-enabled" in {
+      apiAccountRepository.save(apiAccount(GOOD_TOKEN_EXP1), ModificationId("test"), EventActor("test")).runNow
+      providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth)
+      introspector.count.get === 1
+    }
+  }
+
+  "when we have a cache and account is removed" >> {
+    val introspector  = new TestOpaqueTokenIntrospector
+    val c             = 2
+    val providerCache = {
+      new RudderOpaqueTokenAuthenticationProvider(
+        introspector,
+        converter,
+        apiAccountRepository,
+        Some(Duration(5, TimeUnit.MINUTES)),
+        () => Instant.ofEpochSecond(c.toLong * 60)
+      )
+    }
+
+    "first request ok" in {
+      providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth)
+      introspector.count.get === 1
+    }
+
+    "second request ko when removed" in {
+      apiAccountRepository.delete(ApiAccountId(GOOD_TOKEN_EXP1), ModificationId("test"), EventActor("test")).runNow
+      val res = Try(providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth))
+
+      res must beAnInstanceOf[scala.util.Failure[?]]
+      introspector.count.get === 1
+    }
+
+    "third request ok when added back" in {
+      apiAccountRepository.save(apiAccount(GOOD_TOKEN_EXP1), ModificationId("test"), EventActor("test")).runNow
+      providerCache.authenticate(GOOD_TOKEN_EXP1.toAuth)
       introspector.count.get === 1
     }
   }

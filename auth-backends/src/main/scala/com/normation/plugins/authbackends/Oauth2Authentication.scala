@@ -265,7 +265,7 @@ object RudderRegistrationPropertyCommon {
     A_TENANTS_OVERRIDE        -> "(default false) keep user configured tenants in rudder-user.xml or override them with the one provided in the token",
     A_TENANTS_MAPPING         -> s"(optional) provides a map of alias `IdP tenant name` -> `Rudder tenant name`, where each IdP tenant name is a sub-key of '${A_TENANTS_MAPPING}'",
     A_TENANTS_REVERSE_MAPPING -> s"(optional) provides a map of alias `Rudder tenant name` -> `IdP tenant name`, where each IdP tenant name is a sub-key of '${A_TENANTS_MAPPING}', useful when the IdP tenant name contains '='",
-    A_ENFORCE_TENANTS_MAPPING -> "(default true) if true, restricts roles available by the IdP to the role defined in mapping entitlement. Else the map provides alias for Rudder internal role names.",
+    A_ENFORCE_TENANTS_MAPPING -> "(default true) if true, restricts tenants available by the IdP to the tenants defined in mapping entitlement. Else the map provides id for Rudder tenants.",
     A_URI_AUTH                -> "provider URL to contact for main authentication (see provider documentation)",
     A_URI_TOKEN               -> "provider URL to contact for token verification (see provider documentation)",
     A_URI_USER_INFO           -> "provider URL to contact to get user information (see provider documentation)",
@@ -394,7 +394,7 @@ object RudderRegistrationPropertyCommon {
       rolesEnabled       <- read(A_ROLES_ENABLED).catchAll(_ => "false".succeed)
       rolesAttr          <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
       rolesOverride      <- read(A_ROLES_OVERRIDE).catchAll(_ => "false".succeed)
-      enforceRoleMapping <- read(A_ENFORCE_ROLES_MAPPING).catchAll(_ => "false".succeed)
+      enforceRoleMapping <- read(A_ENFORCE_ROLES_MAPPING).catchAll(_ => "true".succeed)
       mapping            <- readMap(A_ROLES_MAPPING)
       reverseMapping     <- readMap(A_ROLES_REVERSE_MAPPING)
     } yield {
@@ -410,18 +410,18 @@ object RudderRegistrationPropertyCommon {
 
   protected[authbackends] def readTenants()(implicit base: BasePath, config: Config): IOResult[ProvidedTenants] = {
     for {
-      tenantsEnabled     <- read(A_TENANTS_ENABLED).catchAll(_ => "false".succeed)
-      tenantsAttr        <- read(A_TENANTS_ATTRIBUTE).catchAll(_ => "".succeed)
-      tenantsOverride    <- read(A_TENANTS_OVERRIDE).catchAll(_ => "false".succeed)
-      enforceRoleMapping <- read(A_ENFORCE_TENANTS_MAPPING).catchAll(_ => "false".succeed)
-      mapping            <- readMap(A_TENANTS_MAPPING)
-      reverseMapping     <- readMap(A_TENANTS_REVERSE_MAPPING)
+      tenantsEnabled       <- read(A_TENANTS_ENABLED).catchAll(_ => "false".succeed)
+      tenantsAttr          <- read(A_TENANTS_ATTRIBUTE).catchAll(_ => "".succeed)
+      tenantsOverride      <- read(A_TENANTS_OVERRIDE).catchAll(_ => "false".succeed)
+      enforceTenantMapping <- read(A_ENFORCE_TENANTS_MAPPING).catchAll(_ => "true".succeed)
+      mapping              <- readMap(A_TENANTS_MAPPING)
+      reverseMapping       <- readMap(A_TENANTS_REVERSE_MAPPING)
     } yield {
       ProvidedTenants(
         toBool(tenantsEnabled),
         tenantsAttr,
         toBool(tenantsOverride),
-        toBool(enforceRoleMapping),
+        toBool(enforceTenantMapping),
         mapping ++ reverseMapping.map { case (a, b) => (b, a) }
       )
     }
