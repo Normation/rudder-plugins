@@ -460,7 +460,7 @@
      <!-- Testing Liftweb -->
     <dependency>
       <groupId>net.liftweb</groupId>
-      <artifactId>lift-testkit_2.13</artifactId>
+      <artifactId>lift-testkit_3</artifactId>
       <version>${lift-version}</version>
       <scope>test</scope>
     </dependency>
