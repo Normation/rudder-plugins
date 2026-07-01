@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-su - rudder-webapp <<'EOF'
+su - rudder-webapp <<EOF
   SQL_CREDENTIALS=$(grep -c -E "^rudder.jdbc.(username|password)[ \t]*=" /opt/rudder/etc/rudder-web.properties || true)
 
   if [ -f /opt/rudder/etc/rudder-web.properties -a ${SQL_CREDENTIALS} -eq 2 ]; then
