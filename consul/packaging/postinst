@@ -1,7 +1,12 @@
 #!/bin/sh
+
+set -e
+
 mkdir -p /var/rudder/plugin-resources
-cp -a /opt/rudder/share/plugins/consul/* /var/rudder/configuration-repository/ncf/
-cd /var/rudder/configuration-repository/ncf/
-rm sample_consul.json
-git add . && git commit -m "Consul plugin installation"
+su - rudder-webapp <<EOF
+	cp -a /opt/rudder/share/plugins/consul/* /var/rudder/configuration-repository/ncf/
+	cd /var/rudder/configuration-repository/ncf/
+	rm sample_consul.json
+	git add . && git commit -m "Consul plugin installation"
+EOF
 echo 'A sample config file was provided at /opt/rudder/share/plugins/consul/sample_consul.json'
