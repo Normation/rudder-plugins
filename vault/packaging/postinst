@@ -1,7 +1,13 @@
 #!/bin/sh
+
+set -e
+
 mkdir -p /var/rudder/plugin-resources
-cp -a /opt/rudder/share/plugins/vault/* /var/rudder/configuration-repository/ncf/
-cd /var/rudder/configuration-repository/ncf/
-rm sample_vault.json
-git add . && git commit -m "Vault plugin installation"
+
+su - rudder-webapp <<EOF
+  cp -a /opt/rudder/share/plugins/vault/* /var/rudder/configuration-repository/ncf/
+  cd /var/rudder/configuration-repository/ncf/
+  rm sample_vault.json
+  git add . && git commit -m "Vault plugin installation"
+EOF
 echo 'A sample config file was provided at /opt/rudder/share/plugins/vault/sample_vault.json'

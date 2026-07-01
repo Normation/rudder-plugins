@@ -1,18 +1,21 @@
 #!/bin/bash
 set -e
-CONFIGURATION_PATH=/opt/rudder/share/plugins/openscap
 
-mkdir -p /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin
-echo "<xml>
-  <name>OpenSCAP Policies plugin</name>
-  <description>
-    Techniques from the OpenSCAP Policies plugin
-  </description>
-</xml>
-" > /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin/category.xml
+su - rudder-webapp <<EOF
+  CONFIGURATION_PATH=/opt/rudder/share/plugins/openscap
 
-cd /var/rudder/configuration-repository/techniques
-git add OpenSCAP_Policies_plugin/category.xml && git commit -m "Creating the category" --allow-empty && rudder server reload-techniques
+  mkdir -p /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin
+  echo "<xml>
+    <name>OpenSCAP Policies plugin</name>
+    <description>
+      Techniques from the OpenSCAP Policies plugin
+    </description>
+  </xml>
+  " > /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin/category.xml
 
-# Import Techniques
-curl --silent --insecure --header @/var/rudder/run/api-token-header --request POST https://localhost/rudder/api/latest/archives/import --form "archive=@${CONFIGURATION_PATH}/openscap_technique.zip"
+  cd /var/rudder/configuration-repository/techniques
+  git add OpenSCAP_Policies_plugin/category.xml && git commit -m "Creating the category" --allow-empty && rudder server reload-techniques
+
+  # Import Techniques
+  curl --silent --insecure --header @/var/rudder/run/api-token-header --request POST https://localhost/rudder/api/latest/archives/import --form "archive=@${CONFIGURATION_PATH}/openscap_technique.zip"
+EOF
