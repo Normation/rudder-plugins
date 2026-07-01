@@ -42,6 +42,7 @@ import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.datasources.*
 import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.rudder.MockNodes
+import com.normation.rudder.MockTenants
 import com.normation.rudder.domain.properties.GenericProperty.fromZioJson
 import com.normation.rudder.rest.RestTest
 import com.normation.rudder.rest.RestTestSetUp
@@ -64,7 +65,8 @@ class RestDataSourceTest extends Specification {
 
   val datasourceRepo = new MemoryDataSourceRepository with NoopDataSourceCallbacks
 
-  val mockNodes      = new MockNodes()
+  val mockTenants    = new MockTenants()
+  val mockNodes      = new MockNodes(mockTenants)
   val dataSourceApi9 = new DataSourceApiImpl(
     datasourceRepo,
     mockNodes.nodeFactRepo,
@@ -72,7 +74,7 @@ class RestDataSourceTest extends Specification {
   )(using AlwaysEnabledPluginStatus)
 
   val (rudderApi, liftRules) =
-    TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, restTestSetUp.apiVersions, Some(restTestSetUp.userService))
+    TraitTestApiFromYamlFiles.buildLiftRules(dataSourceApi9 :: Nil, restTestSetUp.apiVersions, restTestSetUp.userService)
   val restTest               = new RestTest(liftRules)
   restTestSetUp.rudderApi.addModules(dataSourceApi9.getLiftEndpoints())
 

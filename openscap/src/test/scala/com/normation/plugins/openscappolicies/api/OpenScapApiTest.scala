@@ -6,8 +6,10 @@ import com.normation.errors.effectUioUnit
 import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.openscappolicies.services.OpenScapReportReader
 import com.normation.rudder.MockNodes
+import com.normation.rudder.MockTenants
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
+import com.normation.rudder.rest.TestUserService
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import java.nio.file.Files
 import org.junit.runner.RunWith
@@ -50,7 +52,8 @@ class OpenScapApiTest extends ZIOSpecDefault {
     // create a directory instead of a file, attempting to read the content should throw an exception
     .createChild(OpenScapReportReader.OPENSCAP_REPORT_FILENAME, asDirectory = true)
 
-  val mockNodes            = new MockNodes()
+  val mockTenants          = new MockTenants()
+  val mockNodes            = new MockNodes(mockTenants)
   val openScapReportReader = new OpenScapReportReader(
     mockNodes.nodeFactRepo,
     restTestSetUp.mockDirectives.directiveRepo,
@@ -64,7 +67,8 @@ class OpenScapApiTest extends ZIOSpecDefault {
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
+  val userService            = new TestUserService
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, userService)
 
   val transformations: Map[String, String => String] = Map()
 
@@ -82,6 +86,7 @@ class OpenScapApiTest extends ZIOSpecDefault {
                yamlSourceDirectory,
                yamlDestTmpDirectory,
                liftRules,
+               userService,
                Nil,
                transformations
              )

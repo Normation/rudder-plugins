@@ -46,7 +46,7 @@ class UserApiTest extends ZIOSpecDefault {
     )
   )
 
-  val mockServices = new MockServices(newToken = "generated-test-token", accounts = accounts)
+  val mockApiAccount = new MockApiAccount(newToken = "generated-test-token", accounts = accounts)
 
   val userService: UserService = new UserService {
     // use an user that has access to the api, we do not test authorization checks in this file
@@ -63,18 +63,18 @@ class UserApiTest extends ZIOSpecDefault {
 
   val modules = List(
     new UserApiImpl(
-      mockServices.apiAccountRepository,
-      mockServices.apiAccountRepository,
+      mockApiAccount.apiAccountRepository,
+      mockApiAccount.apiAccountRepository,
       null,
       null,
-      mockServices.tokenGenerator,
+      mockApiAccount.tokenGenerator,
       restTestSetUp.uuidGen,
       java.time.Clock.fixed(fixedDate, ZoneOffset.UTC)
     )(using AlwaysEnabledPluginStatus)
   )
 
   val apiVersions: List[ApiVersion] = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, Some(userService))
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, userService)
 
   val transformations: Map[String, String => String] = Map()
 
@@ -92,6 +92,7 @@ class UserApiTest extends ZIOSpecDefault {
                yamlSourceDirectory,
                yamlDestTmpDirectory,
                liftRules,
+               userService,
                Nil,
                transformations
              )

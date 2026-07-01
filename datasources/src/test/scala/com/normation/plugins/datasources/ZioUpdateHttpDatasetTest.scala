@@ -346,8 +346,10 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
   val fetch: GetDataset = new GetDataset(interpolation)
 
   val parameterRepo = new RoParameterRepository() {
-    def getAllGlobalParameters(): IOResult[Seq[GlobalParameter]] = Seq().succeed
-    def getGlobalParameter(parameterName: String): IOResult[Option[GlobalParameter]] = None.succeed
+    override def getGlobalParameter(parameterName: String)(using qc: QueryContext): IOResult[Option[GlobalParameter]] =
+      None.succeed
+
+    override def getAllGlobalParameters()(using qc: QueryContext): IOResult[Seq[GlobalParameter]] = Seq().succeed
   }
 
   def buildNodeRepo(initNodeInfo: Map[NodeId, CoreNodeFact]): UIO[(Ref[Map[NodeId, Int]], NodeFactRepository)] = {

@@ -5,6 +5,7 @@ import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.branding.api.BrandingApi
 import com.normation.plugins.branding.api.BrandingApiService
 import com.normation.rudder.api.ApiVersion
+import com.normation.rudder.rest.TestUserService
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import com.normation.utils.StringUuidGeneratorImpl
 import java.nio.file.Files
@@ -65,7 +66,8 @@ class BrandingApiTest extends ZIOSpecDefault {
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
+  val userService            = new TestUserService
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, userService)
 
   val transformations: Map[String, String => String] = Map()
 
@@ -83,6 +85,7 @@ class BrandingApiTest extends ZIOSpecDefault {
                yamlSourceDirectory,
                yamlDestTmpDirectory,
                liftRules,
+               userService,
                Nil,
                transformations
              )
