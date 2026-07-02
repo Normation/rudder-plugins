@@ -490,8 +490,8 @@ bannerView model cr =
     in
     div [ class "main-header", id "changeRequestHeader" ]
         [ div [ class "d-table col-12" ]
-            [div [class "header-title d-table-row"]
-                [ div [class "d-table-cell w-100"] [h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]]
+            [div [class "header-title flex-nowrap"]
+                [ div [class "d-flex"] [h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]]
                 , div [ class "flex-container" ]
                     [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
                     , actionButtons model cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps
@@ -559,7 +559,7 @@ actionButtons model crId canChangeStep backStatus allNextSteps =
                     []
     in
     div [ id "actionBtns" ]
-        [ div [ class "header-buttons", id "workflowActionButtons" ] buttons
+        [ div [ class "header-buttons flex-nowrap", id "workflowActionButtons" ] buttons
         , changeStepPopupView model.changeStepPopup model.changeMessageSettings.changeMessageEnabled crId
         ]
 
