@@ -676,10 +676,10 @@ rudder.auth.oauth2.provider.keycloak.roles.override=true
 # Check the list of pre-defined roles: https://docs.rudder.io/reference/current/administration/users.html#_pre_defined_roles
 rudder.auth.oauth2.provider.keycloak.roles.mapping.entitlements.rudder_admin=administrator
 rudder.auth.oauth2.provider.keycloak.roles.mapping.entitlements.rudder_readonly=readonly
-# You can restrict the role that The IdP can assign to only role mapped to entitlements.
-# When the following properties is true, roles that don't appear in `mapping.entitlements`
-# will be filtered-out.
-rudder.auth.oauth2.provider.keycloak.roles.mapping.enforced=true
+# By default, there are restrictions to roles that The IdP can assign, to match only the role mapped in above entitlements.
+# When the following property is true, roles that don't appear in `mapping.entitlements` will be filtered-out (default).
+# When it is false, any role from the IdP is mapped to a Rudder role if the same role name exists.
+rudder.auth.oauth2.provider.keycloak.roles.mapping.restricted=true
 # In some case, you OIDC provided roles will contains illegal character that can't be use in the
 # left part of the `entitlement` key - typically an equal. You can reverse the order of mapping with
 # the `reverseEntitlements`, in which the Rudder role name is on the left and the OIDC IdP role
@@ -816,10 +816,10 @@ rudder.auth.oauth2.provider.okta.roles.override=true
 # Check the list of pre-defined roles: https://docs.rudder.io/reference/current/administration/users.html#_pre_defined_roles
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
-# You can restrict the role that The IdP can assign to only role mapped to entitlements.
-# When the following properties is true, roles that don't appear in `mapping.entitlements`
-# will be filtered-out.
-rudder.auth.oauth2.provider.okta.roles.mapping.enforced=true
+# By default, there are restrictions to roles that The IdP can assign, to match only the role mapped in above entitlements.
+# When the following property is true, roles that don't appear in `mapping.entitlements` will be filtered-out (default).
+# When it is false, any role from the IdP is mapped to a Rudder role if the same role name exists.
+rudder.auth.oauth2.provider.okta.roles.mapping.restricted=true
 # In some case, you OIDC provided roles will contains illegal character that can't be use in the
 # left part of the `entitlement` key - typically an equal. You can reverse the order of mapping with
 # the `reverseEntitlements`, in which the Rudder role name is on the left and the OIDC IdP role
@@ -1081,7 +1081,7 @@ rudder.auth.oauth2.jwt.provider.okta.uri.jwkSet=https://xxxx.okta.com/oauth2/xxx
 rudder.auth.oauth2.jwt.provider.okta.roles.enabled=true
 rudder.auth.oauth2.jwt.provider.okta.roles.attribute=customroles
 rudder.auth.oauth2.jwt.provider.okta.roles.override=true
-rudder.auth.oauth2.jwt.provider.okta.roles.mapping.enforced=true
+rudder.auth.oauth2.jwt.provider.okta.roles.mapping.restricted=true
 rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
 rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
 rudder.auth.oauth2.jwt.provider.okta.enableProvisioning=true
@@ -1090,7 +1090,7 @@ rudder.auth.oauth2.jwt.provider.okta.enableProvisioning=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.enabled=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.attribute=customroles
 rudder.auth.oauth2.jwt.provider.okta.tenants.override=true
-rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.enforced=true
+rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.restricted=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_ta=tenantA
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_tb=tenantB
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_admin=*
