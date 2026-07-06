@@ -1,9 +1,10 @@
 module JsonDecoder exposing (..)
 
 import Color exposing (Color)
-import DataTypes exposing (Settings, Rgba, Logo)
+import DataTypes exposing (Logo, Rgba, Settings)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
+
 
 decodeRgba : Decoder Rgba
 decodeRgba =
@@ -23,23 +24,25 @@ decodeApiSettings : Decoder Settings
 decodeApiSettings =
     at [ "data", "branding" ] decodeSettings
 
+
 decodeLogo : Decoder Logo
 decodeLogo =
-  succeed Logo
-    |> required "enable" bool
-    |> optional "name" (Json.Decode.map Just string) Nothing
-    |> optional "data" (Json.Decode.map Just string) Nothing
+    succeed Logo
+        |> required "enable" bool
+        |> optional "name" (Json.Decode.map Just string) Nothing
+        |> optional "data" (Json.Decode.map Just string) Nothing
+
 
 decodeSettings : Decoder Settings
 decodeSettings =
     succeed Settings
-        |> required "displayBar"       bool
-        |> required "displayLabel"     bool
-        |> required "labelText"        string
-        |> required "barColor"         decodeColor
-        |> required "labelColor"       decodeColor
-        |> required "wideLogo"         decodeLogo
-        |> required "smallLogo"        decodeLogo
-        |> required "displayBarLogin"  bool
-        |> required "displayMotd"      bool
-        |> required "motd"             string
+        |> required "displayBar" bool
+        |> required "displayLabel" bool
+        |> required "labelText" string
+        |> required "barColor" decodeColor
+        |> required "labelColor" decodeColor
+        |> required "wideLogo" decodeLogo
+        |> required "smallLogo" decodeLogo
+        |> required "displayBarLogin" bool
+        |> required "displayMotd" bool
+        |> required "motd" string

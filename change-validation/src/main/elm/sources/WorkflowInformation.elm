@@ -229,7 +229,7 @@ view model =
                     viewDropdownToggle True "-"
 
                 PendingCountWithTotal pc ->
-                    viewDropdownToggle False ( String.fromInt pc.totalCount )
+                    viewDropdownToggle False (String.fromInt pc.totalCount)
     in
     li
         [ Attr.class "nav-item dropdown notifications-menu"
@@ -242,7 +242,6 @@ view model =
             ]
             [ li [] [ viewDropDownMenu model ] ]
         ]
-
 
 
 viewDropDownMenu : Model -> Html Msg
@@ -262,7 +261,15 @@ viewDropdownToggle : Bool -> String -> Html Msg
 viewDropdownToggle isLoading displayedCount =
     a
         [ Attr.href "#"
-        , Attr.class ( "dropdown-toggle " ++ if isLoading then "placeholder-glow" else "" )
+        , Attr.class
+            ("dropdown-toggle "
+                ++ (if isLoading then
+                        "placeholder-glow"
+
+                    else
+                        ""
+                   )
+            )
         , Attr.attribute "data-bs-toggle" "dropdown"
         , Attr.attribute "role" "button"
         , Attr.attribute "aria-expanded" "false"
@@ -270,7 +277,15 @@ viewDropdownToggle isLoading displayedCount =
         [ span [] [ text "CR" ]
         , span
             [ Attr.id "number"
-            , Attr.class ( "badge rudder-badge " ++ if isLoading then "placeholder" else "" )
+            , Attr.class
+                ("badge rudder-badge "
+                    ++ (if isLoading then
+                            "placeholder"
+
+                        else
+                            ""
+                       )
+                )
             ]
             [ Html.text displayedCount ]
         ]

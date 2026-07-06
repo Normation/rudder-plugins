@@ -1,12 +1,13 @@
 port module AuthBackends exposing (AdminConfig, AuthConfig, ConfigOption, FileConfig, LdapConfig, Model, Msg(..), backendConfigOption, backendDescription, backendTitle, decodeAdminConfig, decodeApiCurrentAuthConf, decodeConfigOption, decodeCurrentAuthConf, decodeFileConfig, decodeLdapConfig, displayAdminConfig, displayAuthConfig, displayBackendId, displayFileConfig, displayLdapConfig, displayProvidConfig, getErrorMessage, getTargets, init, main, subscriptions, update, view)
 
-import Html exposing (..)
 import Browser
+import Html exposing (..)
 import Html.Attributes exposing (class)
 import Http exposing (..)
 import Json.Decode as D exposing (Decoder, succeed)
 import Json.Decode.Pipeline exposing (..)
 import String
+
 
 
 ------------------------------
@@ -131,7 +132,7 @@ getTargets model =
         req =
             request
                 { method = "GET"
-                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson GetCurrentAuthConfig decodeApiCurrentAuthConf
@@ -139,7 +140,7 @@ getTargets model =
                 , tracker = Nothing
                 }
     in
-      req
+    req
 
 
 
@@ -197,6 +198,8 @@ decodeLdapConfig =
         |> required "bindPassword" decodeConfigOption
         |> required "searchBase" decodeConfigOption
         |> required "ldapFilter" decodeConfigOption
+
+
 
 ------------------------------
 -- UPDATE --
@@ -370,6 +373,8 @@ displayLdapConfig ldap =
         , backendConfigOption ldap.searchBase
         , backendConfigOption ldap.ldapFilter
         ]
+
+
 
 ------------------------------
 -- NOTIFICATIONS --

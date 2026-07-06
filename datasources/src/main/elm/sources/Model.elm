@@ -1,30 +1,39 @@
 module Model exposing (..)
 
+
 type alias Flags =
-  { contextPath: String
-  , hasWriteRights : Bool
-  }
+    { contextPath : String
+    , hasWriteRights : Bool
+    }
 
 
-type ScheduleType = Scheduled | NotScheduled
+type ScheduleType
+    = Scheduled
+    | NotScheduled
+
 
 type alias Schedule =
-  { type_ : ScheduleType
-  , duration : Int
-  }
+    { type_ : ScheduleType
+    , duration : Int
+    }
 
-type OnMissing = Delete | Default String | NoChange
+
+type OnMissing
+    = Delete
+    | Default String
+    | NoChange
+
 
 type alias UI =
-  { newParam : Parameter
-  , newHeader : Header
-  , openParameter : Bool
-  , openAdvanced : Bool
-  , openTrigger : Bool
-  , openNode : Bool
-  , openHeader : Bool
-  , deleteModal : Maybe DataSource
-  }
+    { newParam : Parameter
+    , newHeader : Header
+    , openParameter : Bool
+    , openAdvanced : Bool
+    , openTrigger : Bool
+    , openNode : Bool
+    , openHeader : Bool
+    , deleteModal : Maybe DataSource
+    }
 
 
 type alias RunParameters =
@@ -33,28 +42,42 @@ type alias RunParameters =
     , schedule : Schedule
     }
 
-type Mode = Init | ShowDatasource DataSource (Maybe DataSource)
 
-type Type = HTTP HTTPType
+type Mode
+    = Init
+    | ShowDatasource DataSource (Maybe DataSource)
 
-type HTTPMethod = GET | POST
 
-type RequestMode = ByNode | AllNodes String String
+type Type
+    = HTTP HTTPType
+
+
+type HTTPMethod
+    = GET
+    | POST
+
+
+type RequestMode
+    = ByNode
+    | AllNodes String String
+
 
 type alias Parameter =
     { name : String
     , value : String
     }
 
+
 type alias Header =
     { name : String
     , value : String
     }
 
+
 type alias HTTPType =
     { url : String
     , method : HTTPMethod
-    , path: String
+    , path : String
     , checkSsl : Bool
     , parameters : List Parameter
     , requestTimeout : Int
@@ -63,6 +86,7 @@ type alias HTTPType =
     , maxParallelRequest : Int
     , onMissing : OnMissing
     }
+
 
 type alias DataSource =
     { id : String
@@ -82,4 +106,3 @@ type alias Model =
     , mode : Mode
     , contextPath : String
     }
-
