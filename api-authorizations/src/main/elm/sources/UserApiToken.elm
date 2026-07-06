@@ -236,7 +236,7 @@ getUserTokenFeatureStatus model =
         req =
             request
                 { method = "GET"
-                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson GetUserTokenFeatureStatus decodeTokenFeatureStatus
@@ -256,7 +256,7 @@ apiRequestTemplate msg method path model =
         req =
             request
                 { method = method
-                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson msg decodeApiUserToken
@@ -286,7 +286,7 @@ deleteUserToken model =
         req =
             request
                 { method = "DELETE"
-                , headers = [Http.header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ Http.header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson DeleteUserToken decodeDeleteToken

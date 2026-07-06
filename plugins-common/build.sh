@@ -43,3 +43,16 @@ elif [ "$WATCH" = true ]; then
 else
   npx gulp
 fi
+
+# elm-format check
+echo "> npm run elm-format-check"
+fail="$(mktemp)"
+if npm run elm-format-check > "$fail" 2>&1
+then
+  rm "$fail"
+  echo "> All Elm files are formatted \o/"
+else
+  cat "$fail" >&2
+  rm "$fail"
+  exit 1
+fi

@@ -2,7 +2,7 @@ module RudderDiff exposing (Diff(..), DiffChange, decodeDiffField, decodeDiffFie
 
 import Diff
 import Html exposing (Attribute, Html, b, br, li, node, pre, span, text, ul)
-import Html.Attributes exposing (style, class)
+import Html.Attributes exposing (class, style)
 import Json.Decode exposing (Decoder, Value, at, field, map, map2, oneOf)
 import Json.Encode exposing (encode)
 import RudderDataTypes exposing (..)
