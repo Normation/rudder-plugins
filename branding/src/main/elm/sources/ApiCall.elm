@@ -15,7 +15,7 @@ getSettings model =
         req =
             request
                 { method = "GET"
-                , headers = [header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = url
                 , body = emptyBody
                 , expect = expectJson GetSettings decodeApiSettings
@@ -23,7 +23,7 @@ getSettings model =
                 , tracker = Nothing
                 }
     in
-      req
+    req
 
 
 saveSettings : Model -> Cmd Msg
@@ -32,7 +32,7 @@ saveSettings model =
         req =
             request
                 { method = "POST"
-                , headers = [header "X-Requested-With" "XMLHttpRequest"]
+                , headers = [ header "X-Requested-With" "XMLHttpRequest" ]
                 , url = model.contextPath ++ "/secure/api/branding"
                 , body = jsonBody (encodeSettings model.settings)
                 , expect = expectJson SaveSettings decodeApiSettings
@@ -40,4 +40,4 @@ saveSettings model =
                 , tracker = Nothing
                 }
     in
-      req
+    req

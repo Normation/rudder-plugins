@@ -490,13 +490,14 @@ bannerView model cr =
     in
     div [ class "main-header", id "changeRequestHeader" ]
         [ div [ class "d-table col-12" ]
-            [div [class "header-title flex-nowrap"]
-                [ div [class "d-flex"] [h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ]]
+            [ div [ class "header-title flex-nowrap" ]
+                [ div [ class "d-flex" ] [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ] ]
                 , div [ class "flex-container" ]
                     [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
                     , actionButtons model cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps
                     ]
-                ]]
+                ]
+            ]
         , div
             [ class "header-description" ]
             [ p [ id "CRLastAction" ] [ text lastLog ]
@@ -728,13 +729,14 @@ loadingView : Html Msg
 loadingView =
     simpleView
         [ div
-            [ class "position-fixed h-100 w-100 d-flex align-items-center justify-content-center"]
+            [ class "position-fixed h-100 w-100 d-flex align-items-center justify-content-center" ]
             [ div
-                [ class "spinner-border", Html.Attributes.attribute "role" "status"]
-                [ span [class "sr-only", style "display" "none"] [text "Loading..."]
+                [ class "spinner-border", Html.Attributes.attribute "role" "status" ]
+                [ span [ class "sr-only", style "display" "none" ] [ text "Loading..." ]
                 ]
             ]
         ]
+
 
 errorView : Model -> String -> Html Msg
 errorView model errMsg =
@@ -744,11 +746,14 @@ errorView model errMsg =
         , a [ href (changeRequestsPageUrl model.contextPath) ] [ text "Back to change requests page" ]
         ]
 
+
 simpleView : List (Html Msg) -> Html Msg
 simpleView content =
     div
         [ class "pb-5 text-center" ]
         content
+
+
 
 ------------------------------
 -- UTIL
