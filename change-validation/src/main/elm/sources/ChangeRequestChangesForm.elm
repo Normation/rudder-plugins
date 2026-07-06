@@ -10,12 +10,12 @@ import Json.Decode.Pipeline exposing (optionalAt, required, requiredAt)
 import List.Nonempty as NonEmptyList
 import Ordering
 import Ports exposing (errorNotification)
+import Rudder.Filters exposing (..)
 import Rudder.Table exposing (Column, ColumnName(..), FilterOptionsType(..), SortOrder(..), buildConfig, buildCustomizations, buildOptions)
+import Rudder.Tree exposing (..)
 import RudderDataTypes exposing (..)
 import RudderDiff exposing (..)
 import RudderLinkUtil exposing (ContextPath, directiveLink, directiveLinkWithId, getApiUrl, getContextPath, groupLink, groupLinkWithId, nodeLinkWithId, paramLink, ruleLink, ruleLinkWithId)
-import Rudder.Tree exposing (..)
-import Rudder.Filters exposing (..)
 
 
 
@@ -39,6 +39,7 @@ initModel { contextPath } =
                 { predicate = Rudder.Filters.byValues (\{ action, actor, date, reason } -> [ eventActionText action, actor, date, reason |> Maybe.withDefault "" ])
                 , state = Rudder.Filters.empty
                 }
+
         table =
             Rudder.Table.init
                 (buildConfig.newConfig columns
@@ -49,9 +50,10 @@ initModel { contextPath } =
                             |> buildOptions.withFilter filter
                             |> buildOptions.withCustomizations
                                 (buildCustomizations.newCustomizations
-                                    |> buildCustomizations.withOptionsHeaderAttrs [class "dataTables_wrapper_top"]
-                                    |> buildCustomizations.withTableAttrs [class "no-footer dataTable"]
-                                    ))
+                                    |> buildCustomizations.withOptionsHeaderAttrs [ class "dataTables_wrapper_top" ]
+                                    |> buildCustomizations.withTableAttrs [ class "no-footer dataTable" ]
+                                )
+                        )
                 )
                 []
 
