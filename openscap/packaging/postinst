@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-su - rudder-webapp <<EOF
+su -s /bin/sh rudder-webapp <<EOF
   CONFIGURATION_PATH=/opt/rudder/share/plugins/openscap
 
   mkdir -p /var/rudder/configuration-repository/techniques/OpenSCAP_Policies_plugin
