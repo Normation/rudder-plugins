@@ -12,7 +12,7 @@ import com.normation.rudder.api.WoApiAccountRepository
 import java.time.Instant
 import zio.syntax.*
 
-class MockServices(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = Map.empty) { self =>
+class MockApiAccount(newToken: String, accounts: Map[ApiAccountId, ApiAccount] = Map.empty) { self =>
 
   object apiAccountRepository extends RoApiAccountRepository with WoApiAccountRepository {
     override def getById(id: ApiAccountId): IOResult[Option[ApiAccount]] = {

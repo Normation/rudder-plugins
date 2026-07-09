@@ -7,6 +7,7 @@ import com.normation.plugins.AlwaysEnabledPluginStatus
 import com.normation.plugins.changevalidation.MockSupervisedTargets
 import com.normation.rudder.api.ApiVersion
 import com.normation.rudder.rest.RestTestSetUp
+import com.normation.rudder.rest.TestUserService
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import java.nio.file.Files
 import org.junit.runner.RunWith
@@ -45,7 +46,8 @@ class SupervisedTargetsApiTest extends ZIOSpecDefault {
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
+  val userService            = new TestUserService
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, userService)
 
   val transformations: Map[String, String => String] = Map()
 
@@ -63,6 +65,7 @@ class SupervisedTargetsApiTest extends ZIOSpecDefault {
                yamlSourceDirectory,
                yamlDestTmpDirectory,
                liftRules,
+               userService,
                List("api_supervisedtargets.yml"),
                transformations
              )

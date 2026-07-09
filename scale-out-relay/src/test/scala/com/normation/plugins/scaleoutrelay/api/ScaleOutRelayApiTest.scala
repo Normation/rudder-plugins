@@ -48,7 +48,7 @@ class ScaleOutRelayApiTest extends ZIOSpecDefault {
   )
 
   val apiVersions            = ApiVersion(13, true) :: ApiVersion(14, false) :: Nil
-  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, None)
+  val (rudderApi, liftRules) = TraitTestApiFromYamlFiles.buildLiftRules(modules, apiVersions, restTestSetUp.userService)
 
   val transformations: Map[String, String => String] = Map()
 
@@ -78,6 +78,7 @@ class ScaleOutRelayApiTest extends ZIOSpecDefault {
                    yamlSourceDirectory,
                    yamlDestTmpDirectory,
                    liftRules,
+                   restTestSetUp.userService,
                    Nil,
                    transformations
                  )

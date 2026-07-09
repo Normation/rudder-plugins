@@ -47,6 +47,7 @@ import com.normation.rudder.MockNodeGroups
 import com.normation.rudder.MockNodes
 import com.normation.rudder.MockRules
 import com.normation.rudder.MockTechniques
+import com.normation.rudder.MockTenants
 import com.normation.rudder.domain.policies.ActiveTechniqueId
 import com.normation.rudder.domain.policies.GroupTarget
 import com.normation.rudder.domain.policies.SimpleTarget
@@ -66,10 +67,11 @@ import zio.syntax.ToZio
 @RunWith(classOf[JUnitRunner])
 class ValidationNeededTest extends Specification {
 
-  val mockNodes:      MockNodes      = new MockNodes()
-  val mockNodeGroups: MockNodeGroups = new MockNodeGroups(mockNodes, new MockGlobalParam())
+  val mockTenants = new MockTenants()
+  val mockNodes:      MockNodes      = new MockNodes(mockTenants)
+  val mockNodeGroups: MockNodeGroups = new MockNodeGroups(mockNodes, new MockGlobalParam(mockTenants), mockTenants)
   val actor:          EventActor     = EventActor("myActor")
-  val mockRules:      MockRules      = new MockRules()
+  val mockRules:      MockRules      = new MockRules(mockTenants)
 
   val nodeGrpValNdd = new NodeGroupValidationNeeded(
     () => Set[SimpleTarget](GroupTarget(mockNodeGroups.g0.id)).succeed,
@@ -125,9 +127,10 @@ class ValidationNeededTest extends Specification {
       }
     }
 
+    val mockTenants    = new MockTenants()
     val mockGitRepo    = new MockGitConfigRepo("")
     val mockTechniques = MockTechniques(mockGitRepo)
-    val mockDirectives = new MockDirectives(mockTechniques)
+    val mockDirectives = new MockDirectives(mockTechniques, mockTenants)
     val sectionSpec    = SectionSpec("ROOT")
     val technique      = mockDirectives.directives.commonTechnique
 

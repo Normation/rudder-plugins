@@ -341,6 +341,9 @@ class HttpQueryDataSourceService(
       globalPolicyMode: () => IOResult[GlobalPolicyMode],
       cause:            UpdateCause
   ): IOResult[Set[NodeUpdateResult]] = {
+    // datasources need all tenant access
+    given qc: QueryContext = QueryContext.systemQC
+
     for {
       nodes        <- factRepository.getAll()(using QueryContext.systemQC)
       policyServers = nodes.filter(_._2.rudderSettings.isPolicyServer)
@@ -376,6 +379,9 @@ class HttpQueryDataSourceService(
       nodeId:           NodeId,
       cause:            UpdateCause
   ): IOResult[NodeUpdateResult] = {
+    // datasources need all tenant access
+    given qc: QueryContext = QueryContext.systemQC
+
     for {
       mode         <- globalPolicyMode()
       allNodes     <- factRepository.getAll()(using QueryContext.systemQC)
