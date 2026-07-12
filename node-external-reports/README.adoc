@@ -85,7 +85,7 @@ plugin.node-external-reports.reports {
   01_security= {
     title=Security Report
     description=This report display pen test results
-    dirname=/var/reports/security
+    dirname=/var/rudder/plugins/node-external-reports/security
     filename="report-@@node@@-sec.html"
     content-type=text/html
   }
@@ -93,7 +93,7 @@ plugin.node-external-reports.reports {
   02_monitoring {
     title=Monitoring Report
     description=Monitoring information about the node
-    dirname=/var/reports/monitoring
+    dirname=/var/rudder/plugins/node-external-reports/monitoring
     filename="monitor-@@node@@.txt"
     content-type=text/plain
   }
@@ -101,17 +101,17 @@ plugin.node-external-reports.reports {
   03_compliance {
     title=Third party compliance report
     description=Compliance reports from CMDB
-    dirname=/var/reports/compliance
+    dirname=/var/rudder/plugins/node-external-reports/compliance
     filename="compliance-@@node@@.pdf"
     content-type=application/pdf
   }
 }
 ----
 
-And the content of  `/var/reports/` will looks like:
+And the content of  `/var/rudder/plugins/node-external-reports/` will looks like:
 
 ----
-/tmp/reports
+/var/rudder/plugins/node-external-reports
 ├── compliance
 │   ├── compliance-node34.china1.bigcorp.com.html
 │   │   .....
