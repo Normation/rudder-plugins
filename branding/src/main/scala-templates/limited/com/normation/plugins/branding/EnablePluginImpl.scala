@@ -40,6 +40,7 @@ package com.normation.plugins.branding
 import com.normation.plugins.LicensedPluginCheck
 import com.normation.rudder.facts.nodes.NodeFactRepository
 import com.normation.rudder.services.servers.InstanceIdService
+import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.*
 
 final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instanceIdService: InstanceIdService)
@@ -50,7 +51,7 @@ final class CheckRudderPluginEnableImpl(nodeFactRepo: NodeFactRepository, instan
   def pluginDeclaredVersion   = "${plugin-declared-version}"
   def pluginId                = "${plugin-fullname}"
 
-  override def getNumberOfNodes: Int = nodeFactRepo.getNumberOfManagedNodes().runNow
+  override def getNumberOfNodes: Int = nodeFactRepo.getNumberOfManagedNodes()(using QueryContext.systemQC).runNow
 
   override def getInstanceId: String = instanceIdService.instanceId.value
 }
