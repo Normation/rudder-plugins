@@ -36,6 +36,7 @@
 
 package com.normation.plugins.nodeexternalreports.extension
 
+import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginExtensionPoint
 import com.normation.plugins.PluginStatus
 import com.normation.plugins.nodeexternalreports.service.NodeExternalReport
@@ -71,12 +72,12 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
           val e = eb ?~! "Can not display external reports for that node"
           addTab(tabId, "External reports", <div class="error">{e.messageChain}</div>)
         case Full(config) =>
-          addTab(tabId, config.tabTitle, tabContent(config.reports)(myXml))
+        addTab(tabId, config.tabTitle, tabContent(snippet.nodeId, config.reports)(myXml))
       })(xml)
     }
   }
 
-  def tabContent(reports: Map[String, NodeExternalReport]): CssSel = {
+  def tabContent(nodeId: NodeId, reports: Map[String, NodeExternalReport]): CssSel = {
 
     ".nodeReports" #> reports.map {
       case (key, report) =>
@@ -86,9 +87,10 @@ class CreateNodeDetailsExtension(externalReport: ReadExternalReports, val status
           & ".reportLink" #> (report.fileName match {
             case None    =>
               <span>No report of that type is available</span>
-            case Some(f) =>
+            case Some(_) =>
+              // the file name is resolved server-side from the node id and report type
               <a href={
-                s"/secure/nodeManager/externalInformation/${urlEncode(key)}/${urlEncode(f)}/raw"
+                s"/secure/nodeManager/externalInformation/${urlEncode(nodeId.value)}/${urlEncode(key)}/raw"
               } target="_blank">Display report in a new window</a>
           })
         )
