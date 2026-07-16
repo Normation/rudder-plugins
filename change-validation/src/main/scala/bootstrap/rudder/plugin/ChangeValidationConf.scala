@@ -316,7 +316,9 @@ object ChangeValidationConf extends RudderPluginModule {
       roWorkflowRepository,
       workflowLevelService,
       commitAndDeployChangeRequest,
-      RudderConfig.userPropertyService
+      RudderConfig.userPropertyService,
+      () => RudderConfig.configService.rudder_workflow_self_validation(),
+      () => RudderConfig.configService.rudder_workflow_self_deployment()
     )
     val api3 = new ValidatedUserApiImpl(
       roValidatedUserRepository,
