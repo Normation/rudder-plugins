@@ -198,7 +198,7 @@ final case class RudderClientRegistration(
 
   // avoid that in logs etc, use only for interactive debugging sessions
   def toDebugStringWithSecret: String =
-    s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}, user provisioning enabled: ${provisioning}"""
+    s"""{${registration.toString}}, '${infoMsg}', roles: ${roles.toString}, tenants: ${tenants.toString}, user provisioning enabled: ${provisioning}"""
 }
 
 /*
