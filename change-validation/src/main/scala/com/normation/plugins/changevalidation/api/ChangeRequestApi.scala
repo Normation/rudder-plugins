@@ -47,6 +47,7 @@ import com.normation.errors.OptionToIoResult
 import com.normation.errors.OptionToPureResult
 import com.normation.errors.PureResult
 import com.normation.errors.PureToIoResult
+import com.normation.errors.SecurityError
 import com.normation.errors.Unexpected
 import com.normation.plugins.PluginLiftApiModuleProvider
 import com.normation.plugins.PluginStatus
@@ -55,6 +56,7 @@ import com.normation.plugins.changevalidation.ChangeRequestInfoJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
+import com.normation.plugins.changevalidation.SelfActionControl
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl
 import com.normation.plugins.changevalidation.TwoValidationStepsWorkflowServiceImpl.*
 import com.normation.plugins.changevalidation.WoChangeRequestRepository
@@ -89,6 +91,7 @@ import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.syntax.*
 import com.normation.rudder.services.modification.DiffService
+import com.normation.rudder.services.workflows.ChangeRequestAuthorship
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.tenants.QueryContext
@@ -168,6 +171,9 @@ object ChangeRequestApi extends Enum[ChangeRequestApi] with ApiModuleProvider[Ch
   def values = findValues
 }
 
+// a denial caused by the self-validation / self-deployment (segregation of duties) control
+final case class ChangeValidationSecurityError(msg: String) extends SecurityError
+
 class ChangeRequestApiImpl(
     diffService:          DiffService,
     readTechnique:        TechniqueRepository,
@@ -176,7 +182,9 @@ class ChangeRequestApiImpl(
     readWorkflow:         RoWorkflowRepository,
     workflowLevelService: WorkflowLevelService,
     commitRepository:     CommitAndDeployChangeRequestService,
-    userPropertyService:  UserPropertyService
+    userPropertyService:  UserPropertyService,
+    selfValidation:       () => IOResult[Boolean],
+    selfDeployment:       () => IOResult[Boolean]
 )(using status: PluginStatus)
     extends PluginLiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
@@ -213,6 +221,11 @@ class ChangeRequestApiImpl(
     }
   }
 
+  /*
+   * RBAC check for a workflow step transition. This is the API-level guard; the workflow
+   * service enforces the same rights (and the self-validation control) when building the
+   * available transitions. See `checkSelfAction` for the self-validation/self-deployment part.
+   */
   def checkUserAction(workflowNodeId: WorkflowNodeId, target: WorkflowNodeId)(implicit authz: AuthzToken): PureResult[String] = {
     if (workflowNodeId == Validation.id) {
       if (!authz.checkRights(AuthorizationType.Validator.Write)) {
@@ -230,6 +243,38 @@ class ChangeRequestApiImpl(
       Left(Inconsistency("User is not authorized to update a 'pending deployment' change"))
     } else {
       Right("user is authorized to do step")
+    }
+  }
+
+  /*
+   * Segregation-of-duties (four-eyes) enforcement, as a defense-in-depth layer independent
+   * from the workflow service: when the current user is the author of the change request and
+   * the relevant setting (self-validation for a validation step, self-deployment for a
+   * deployment step) is disabled, the transition is denied. We fail closed: if reading the
+   * setting fails, the self action is treated as forbidden.
+   */
+  def checkSelfAction(
+      workflowNodeId: WorkflowNodeId,
+      target:         WorkflowNodeId,
+      authorship:     ChangeRequestAuthorship
+  ): IOResult[Unit] = {
+    def denyIfForbidden(settingEnabled: () => IOResult[Boolean], action: String): IOResult[Unit] = {
+      SelfActionControl.isAllowed(authorship, settingEnabled).flatMap {
+        case true  => ZIO.unit
+        case false =>
+          ChangeValidationSecurityError(
+            s"You are not authorized to do that action on your own change request: self-${action} is disabled."
+          ).fail
+      }
+    }
+
+    (workflowNodeId, target) match {
+      // validate: move a pending-validation change forward to pending-deployment
+      case (Validation.id, Deployment.id) => denyIfForbidden(selfValidation, "validation")
+      // validate and deploy in one step, or deploy a pending-deployment change
+      case (Validation.id, Deployed.id)   => denyIfForbidden(selfDeployment, "deployment")
+      case (Deployment.id, Deployed.id)   => denyIfForbidden(selfDeployment, "deployment")
+      case _                              => ZIO.unit
     }
   }
 
@@ -299,7 +344,8 @@ class ChangeRequestApiImpl(
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          backSteps  <- workflowLevelService.getWorkflowService().findBackSteps(step).succeed
+          backSteps  <-
+            workflowLevelService.getWorkflowService().findBackSteps(step, ChangeRequestAuthorship.of(changeRequest, auth)).succeed
           optStep     = backSteps.find(_._1 == WorkflowNodeId("Cancelled"))
           stepFunc   <-
             optStep.notOptional(
@@ -338,7 +384,8 @@ class ChangeRequestApiImpl(
           techniqueByDirective: Map[DirectiveId, Technique]
       ): IOResult[ChangeRequestJson] = {
         for {
-          nextSteps  <- workflowLevelService.getWorkflowService().findNextSteps(step).succeed
+          nextSteps  <-
+            workflowLevelService.getWorkflowService().findNextSteps(step, ChangeRequestAuthorship.of(changeRequest, auth)).succeed
           optStep     = nextSteps.actions.find(_._1 == targetStep)
           stepFunc   <-
             optStep.notOptional(
@@ -359,6 +406,7 @@ class ChangeRequestApiImpl(
           withChangeRequestContext(id, "accept") { (changeRequest, currentState, techniqueByDirective) =>
             implicit val directiveCtx: Map[DirectiveId, Technique] = techniqueByDirective
             checkUserAction(currentState, targetStep).toIO *>
+            checkSelfAction(currentState, targetStep, ChangeRequestAuthorship.of(changeRequest, auth)) *>
             (currentState match {
               case Deployment.id | Validation.id =>
                 actualAccept(changeRequest, currentState, targetStep)
