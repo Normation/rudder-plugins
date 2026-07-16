@@ -863,7 +863,12 @@ object RudderTokenMapping {
         // override means: don't use user tenants configured in rudder-users.xml
         parsedTenants
       } else {
-        default.plus(parsedTenants)
+        default match {
+          // we don't want that None is absorbent in that case
+          case NodeSecurityContext.None => parsedTenants
+          // other cases are ok for plus
+          case _                        => default.plus(parsedTenants)
+        }
       }
       AuthBackendsLogger.debug(
         s"Principal '${principal}' final list of tenants: '${tenants.value}'"
@@ -987,15 +992,8 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           rudderUserDetailsService.loadUserByUsername(user.getName)
       }
     }
-    // for now, tenants are not configurable by OIDC
-    val tenants    = rudderUserDetailsService.authConfigProvider.getUserByName(user.getName) match {
-      // when the user is not defined in rudder-users.xml, we give it the whole perm on nodes for compatibility
-      case Left(_)  => TenantAccessGrant.All
-      // if the user is defined in rudder-users.xml, we get whatever is defined there.
-      case Right(u) => u.accessGrant
-    }
 
-    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails, tenants)
+    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails)
   }
 
   def buildUser(
@@ -1004,8 +1002,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       user:           U,
       roleApiMapping: RoleApiMapping,
       rudder:         RudderUserDetail,
-      userBuilder:    (U, RudderUserDetail) => T,
-      tenants:        TenantAccessGrant
+      userBuilder:    (U, RudderUserDetail) => T
   ): T = {
 
     val (roles, nsc) = optReg match {
@@ -1013,7 +1010,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
         AuthBackendsLogger.trace(
           s"No configuration found for ${protocolName} registration id: ${userRequest.getClientRegistration.getRegistrationId}"
         )
-        (rudder.roles, tenants) // if no registration, use defaults
+        (rudder.roles, rudder.nodePerms) // if no registration, use defaults
 
       case Some(reg) =>
         val getAttr = (attributeName: String) => {
@@ -1024,7 +1021,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
         }
 
         val roles = RudderTokenMapping.getRoles(reg, rudder.getUsername, protocolId, rudder.roles)(getAttr)
-        val nsc   = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, tenants)(getAttr)
+        val nsc   = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, rudder.nodePerms)(getAttr)
 
         (roles, nsc)
     }
