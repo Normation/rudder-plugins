@@ -37,15 +37,18 @@
 package com.normation.plugins.nodeexternalreports.service
 
 import com.normation.box.*
+import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.facts.nodes.NodeFactRepository
 import com.normation.rudder.tenants.QueryContext
+import com.normation.utils.FileUtils
 import com.typesafe.config.*
 import java.io.File
 import net.liftweb.common.*
 import net.liftweb.util.Helpers.tryo
 import scala.collection.immutable.SortedMap
 import scala.jdk.CollectionConverters.*
+import zio.syntax.*
 
 final case class ExternalReport(
     title:         String,
@@ -140,29 +143,56 @@ class ReadExternalReports(nodeFactRepo: NodeFactRepository, val reportConfigFile
         tabTitle = conf.tabTitle,
         reports = conf.reports.map {
           case (key, report) =>
-            val fileName = {
-              val uuidName     = report.reportName(node.id.value).toLowerCase
-              val hostnameName = report.reportName(node.fqdn).toLowerCase
-
-              if ((new File(report.rootDirectory, hostnameName)).exists) {
-                Some(hostnameName)
-              } else if ((new File(report.rootDirectory, uuidName)).exists) {
-                Some(uuidName)
-              } else None
-            }
-            (key, NodeExternalReport(report.title, report.description, fileName))
+            (key, NodeExternalReport(report.title, report.description, resolveExistingFileName(report, node.id.value, node.fqdn)))
         }
       )
     }
   }
 
-  def getFileContent(reportType: String, fileName: String): Box[(File, String)] = {
+  /**
+   * Resolve, server-side, the report file name for a node: try the hostname-based name first,
+   * then the uuid-based one, and only return a name whose file actually exists. The node uuid
+   * and fqdn are the only inputs used to build the name - never a client-supplied file name.
+   */
+  private def resolveExistingFileName(report: ExternalReport, nodeUuid: String, fqdn: String): Option[String] = {
+    val uuidName     = report.reportName(nodeUuid).toLowerCase
+    val hostnameName = report.reportName(fqdn).toLowerCase
+
+    if ((new File(report.rootDirectory, hostnameName)).exists) {
+      Some(hostnameName)
+    } else if ((new File(report.rootDirectory, uuidName)).exists) {
+      Some(uuidName)
+    } else None
+  }
+
+  /**
+   * Return the report file and its content type for the given node and report type.
+   *
+   * The file name is resolved server-side from the node (looked up through the fact repository,
+   * so tenant/node ACLs carried by `qc` are enforced) - the caller never supplies a file name.
+   * As defense in depth, the resolved name is still run through `sanitizePath` and fails closed
+   * on any attempt to escape the report root directory.
+   *
+   * `None` means either: the report type is unknown, the node is not visible to the caller, or no
+   * report file exists for that node.
+   */
+  def getReportFile(nodeId: NodeId, reportType: String)(implicit qc: QueryContext): IOResult[Option[(File, String)]] = {
+    if (config == null) loadAndUpdateConfig()
     for {
-      conf   <- config
-      report <- Box(conf.reports.get(reportType))
-    } yield {
-      (new File(report.rootDirectory, fileName), report.contentType)
-    }
+      conf <- config.toIO
+      opt  <- nodeFactRepo.get(nodeId)
+      res  <- (opt, conf.reports.get(reportType)) match {
+                case (Some(node), Some(report)) =>
+                  resolveExistingFileName(report, node.id.value, node.fqdn) match {
+                    case Some(fileName) =>
+                      FileUtils
+                        .sanitizePath(better.files.File(report.rootDirectory.getPath), fileName)
+                        .map(f => Some((f.toJava, report.contentType)))
+                    case None           => None.succeed
+                  }
+                case _                          => None.succeed
+              }
+    } yield res
   }
 
 }

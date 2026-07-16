@@ -36,9 +36,16 @@
 
 package com.normation.plugins.nodeexternalreports.service
 
+import com.normation.box.*
+import com.normation.inventory.domain.NodeId
+import com.normation.rudder.AuthorizationType
+import com.normation.rudder.facts.nodes.QueryContext
+import com.normation.rudder.users.CurrentUser
 import java.io.FileInputStream
 import net.liftweb.common.*
+import net.liftweb.http.ForbiddenResponse
 import net.liftweb.http.LiftResponse
+import net.liftweb.http.NotFoundResponse
 import net.liftweb.http.Req
 import net.liftweb.http.StreamingResponse
 import net.liftweb.http.rest.RestHelper
@@ -46,8 +53,11 @@ import net.liftweb.util.Helpers.tryo
 import net.liftweb.util.Helpers.urlDecode
 
 /**
- * Class in charge of generating the JSON from the
- * iTop compliance status and serving it to the API URL.
+ * Class in charge of serving external report files for a node.
+ *
+ * The endpoint is scoped to a `NodeId` and a report type; it requires `Node.Read` and resolves the
+ * file server-side under the caller's `QueryContext` (so node/tenant ACLs are enforced). It never
+ * accepts a client-supplied file name.
  */
 class NodeExternalReportApi(
     readReport: ReadExternalReports
@@ -55,26 +65,38 @@ class NodeExternalReportApi(
 
   val requestDispatch: PartialFunction[Req, () => Box[LiftResponse]] = {
 
-    case Get(reportType :: fileName :: "raw" :: Nil, req) => {
+    case Get(nodeId :: reportType :: "raw" :: Nil, req) => {
       // capture values
-      val tpe  = urlDecode(reportType)
-      val name = urlDecode(fileName)
+      val id  = urlDecode(nodeId)
+      val tpe = urlDecode(reportType)
 
-      () =>
-        for {
-          (file, contentType) <- readReport.getFileContent(tpe, name)
-          stream              <- tryo(new FileInputStream(file))
-          if null ne stream
-        } yield {
-          StreamingResponse(
-            stream,
-            () => stream.close,
-            stream.available.toLong,
-            List("Content-Type" -> contentType),
-            Nil,
-            200
-          )
+      () => {
+        // fail closed: any authenticated user without Node.Read (incl. no authenticated context) is denied
+        if (!CurrentUser.checkRights(AuthorizationType.Node.Read)) {
+          Full(ForbiddenResponse("You don't have sufficient rights to access node external reports"))
+        } else {
+          implicit val qc: QueryContext = CurrentUser.queryContext
+          readReport.getReportFile(NodeId(id), tpe).toBox match {
+            case Full(Some((file, contentType))) =>
+              tryo(new FileInputStream(file)).map { stream =>
+                StreamingResponse(
+                  stream,
+                  () => stream.close,
+                  stream.available.toLong,
+                  List("Content-Type" -> contentType),
+                  Nil,
+                  200
+                )
+              }
+            case Full(None)                      =>
+              Full(NotFoundResponse(s"No external report of type '${tpe}' is available for node '${id}'"))
+            case eb: EmptyBox =>
+              val e = eb ?~! s"Error when accessing external report '${tpe}' for node '${id}'"
+              logger.warn(e.messageChain)
+              Full(ForbiddenResponse("Could not access the requested external report"))
+          }
         }
+      }
     }
   }
 
