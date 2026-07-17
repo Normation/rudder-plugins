@@ -47,11 +47,11 @@ import com.normation.rudder.Rights
 import com.normation.rudder.api.ApiAuthorization
 import com.normation.rudder.batch.AsyncWorkflowInfo
 import com.normation.rudder.domain.workflows.WorkflowNodeId
-import com.normation.rudder.facts.nodes.NodeSecurityContext
 import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.services.modification.DiffServiceImpl
 import com.normation.rudder.services.workflows.ChangeRequestAuthorship
 import com.normation.rudder.services.workflows.ChangeRequestAuthorship.*
+import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserPassword
@@ -95,10 +95,11 @@ class SelfValidationWorkflowTest extends ZIOSpecDefault {
   // an authenticated user granted exactly `granted`; `name` is what a change request `owner` is matched against
   private def userWith(granted: Set[AuthorizationType], userLogin: String = "some-user"): AuthenticatedUser = {
     new AuthenticatedUser {
-      override val account:   RudderAccount       = RudderAccount.User(userLogin, UserPassword.fromSecret("pwd"))
-      override val authz:     Rights              = Rights.AnyRights
-      override val apiAuthz:  ApiAuthorization    = ApiAuthorization.RW
-      override val nodePerms: NodeSecurityContext = NodeSecurityContext.All
+      override val account:     RudderAccount     = RudderAccount.User(userLogin, UserPassword.fromSecret("pwd"))
+      override val authz:       Rights            = Rights.AnyRights
+      override val apiAuthz:    ApiAuthorization  = ApiAuthorization.RW
+      override def accessGrant: TenantAccessGrant = TenantAccessGrant.All
+      override def actorIp:     Option[String]    = None
 
       override def checkRights(auth: AuthorizationType): Boolean = granted.contains(auth)
     }
