@@ -35,41 +35,34 @@
 bundle agent variable_from_consul(variable_prefix, variable_name, path)
 {
   vars:
-      "old_class_prefix" string => canonify("variable_from_consul_${path}");
-      "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
-      "class_prefix" string => canonify(join("_", "promisers"));
-      "args" slist => {"${variable_prefix}", "${variable_name}", "${path}"};
-    
+      "class_prefix" string => canonify("variable_from_consul_${path}");
+
     pass1::
       "${variable_prefix}.${variable_name}" string => execresult('${ncf_paths.path[curl]} -s ${consul.auth} ${consul.config[server_addr]}/v1/kv/${path}?raw', "noshell");
 
   classes:
-      "pass2" expression => "pass1";
-      "pass1";
+      "pass2"            expression => "pass1";
+      "pass1"            expression => "any";
 
     pass2::
       "variable_defined" expression => isvariable("${variable_prefix}.${variable_name}");
-      "config_defined" expression => isvariable("consul.config");
-    
+      "config_defined"   expression => isvariable("consul.config");
+
   methods:
     pass2.variable_defined::
-      "success" usebundle => _classes_success("${old_class_prefix}");
-      "success" usebundle => _classes_success("${class_prefix}");
-      "report" usebundle => _log("Variable definition from the ${path} secret path in consul", "${old_class_prefix}", "${class_prefix}", @{args});
-
+      "${report_data.method_id}" usebundle => _classes_success("${report_data.method_id}");
+      "${report_data.method_id}" usebundle => _classes_success("${class_prefix}");
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Variable definition from the ${path} secret path in consul", "");
+    pass2.!variable_defined::
+      "${report_data.method_id}" usebundle => _classes_failure("${report_data.method_id}");
+      "${report_data.method_id}" usebundle => _classes_failure("${class_prefix}");
     pass2.!variable_defined.!consul_reachable::
-      "failure" usebundle => _classes_failure("${old_class_prefix}");
-      "failure" usebundle => _classes_failure("${class_prefix}");
-      "report" usebundle => _log("Consul server unreachable. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args}),
-        ifvarclass => "config_defined";
-      "report" usebundle => _log("Undefined configuration. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args}),
-        ifvarclass => "!config_defined";
-
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Consul server unreachable. Variable definition from the ${path} secret path in Consul", "");
+                                        if => "config_defined";
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Undefined configuration. Variable definition from the ${path} secret path in Consul", "");
+                                        if => "!config_defined";
     pass2.!variable_defined.consul_reachable::
-      "failure" usebundle => _classes_failure("${old_class_prefix}");
-      "failure" usebundle => _classes_failure("${class_prefix}");
-      "report" usebundle => _log("Consul server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Consul", "${old_class_prefix}", "${class_prefix}", @{args});
-	
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Consul server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Consul", "");
 }
 
 
