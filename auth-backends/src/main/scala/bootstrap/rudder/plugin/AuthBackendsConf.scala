@@ -865,9 +865,9 @@ object RudderTokenMapping {
       } else {
         default match {
           // we don't want that None is absorbent in that case
-          case NodeSecurityContext.None => parsedTenants
+          case TenantAccessGrant.None => parsedTenants
           // other cases are ok for plus
-          case _                        => default.plus(parsedTenants)
+          case _                      => default.plus(parsedTenants)
         }
       }
       AuthBackendsLogger.debug(
@@ -1010,7 +1010,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
         AuthBackendsLogger.trace(
           s"No configuration found for ${protocolName} registration id: ${userRequest.getClientRegistration.getRegistrationId}"
         )
-        (rudder.roles, rudder.nodePerms) // if no registration, use defaults
+        (rudder.roles, rudder.accessGrant) // if no registration, use defaults
 
       case Some(reg) =>
         val getAttr = (attributeName: String) => {
@@ -1021,7 +1021,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
         }
 
         val roles = RudderTokenMapping.getRoles(reg, rudder.getUsername, protocolId, rudder.roles)(getAttr)
-        val nsc   = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, rudder.nodePerms)(getAttr)
+        val nsc   = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, rudder.accessGrant)(getAttr)
 
         (roles, nsc)
     }
