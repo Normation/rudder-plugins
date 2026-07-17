@@ -35,10 +35,7 @@
 bundle agent variable_from_vault(prefix, name, path)
 {
   vars:
-      "old_class_prefix" string => canonify("variable_from_vault_${path}");
-      "promisers" slist => { @{this.callers_promisers}, cf_null }, policy => "ifdefined";
-      "class_prefix" string => canonify(join("_", "promisers"));
-      "args" slist => {"${prefix}", "${name}", "${path}"};
+      "class_prefix" string => canonify("variable_from_vault_${path}");
 
     pass2::
       "vault_apicall_output" string => execresult('${ncf_paths.path[curl]} ${vault.cert} -s -H "X-Vault-Token: ${vault.auth_token}" ${vault.server_addr}/v1/${path}', "noshell");
@@ -54,28 +51,26 @@ bundle agent variable_from_vault(prefix, name, path)
 
     pass3::
       "variable_defined" expression => isvariable("${prefix}.${name}");
-      "config_defined" expression => isvariable("vault.config");
+      "config_defined"   expression => isvariable("vault.config");
 
   methods:
     pass1::
       "Auth" usebundle => vault_get_token(),
-        ifvarclass => not(isvariable("vault.auth_token"));
+                    if => not(isvariable("vault.auth_token"));
 
     pass3.variable_defined::
-      "success" usebundle => _classes_success("${old_class_prefix}");
-      "success" usebundle => _classes_success("${class_prefix}");
-      "report" usebundle => _log("Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
+    "${report_data.method_id}"   usebundle => _classes_success("${report_data.method_id}");
+      "${report_data.method_id}" usebundle => _classes_success("${class_prefix}");
+      "${report_data.method_id}" usebundle => _log("Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
 
-    pass3.!variable_defined.!vault_reachable::
-      "failure" usebundle => _classes_failure("${old_class_prefix}");
-      "failure" usebundle => _classes_failure("${class_prefix}");
-      "report" usebundle => _log("Vault server unreachable. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args}),
-        ifvarclass => "config_defined";
-      "report" usebundle => _log("Undefined configuration. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args}),
-        ifvarclass => "!config_defined";
+    pass3.!variable_defined::
+      "${report_data.method_id}" usebundle => _classes_failure("${report_data.method_id}");
+      "${report_data.method_id}" usebundle => _classes_failure("${class_prefix}");
 
-    pass3.!variable_defined.vault_reachable::
-      "failure" usebundle => _classes_failure("${old_class_prefix}");
-      "failure" usebundle => _classes_failure("${class_prefix}");
-      "report" usebundle => _log("Vault server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Vault", "${old_class_prefix}", "${class_prefix}", @{args});
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Vault server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Vault", ""),
+                                        if => "vault_reachable";
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Vault server unreachable. Variable definition from the ${path} secret path in Vault", "");
+                                        if => "config_defined.!vault_reachable";
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Undefined configuration. Variable definition from the ${path} secret path in Vault", "");
+                                        if => "!config_defined.!vault_reachable";
 }
