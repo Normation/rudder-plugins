@@ -39,7 +39,7 @@ package com.normation.plugins.nodeexternalreports.service
 import com.normation.box.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.AuthorizationType
-import com.normation.rudder.facts.nodes.QueryContext
+import com.normation.rudder.tenants.QueryContext
 import com.normation.rudder.users.CurrentUser
 import java.io.FileInputStream
 import net.liftweb.common.*
@@ -75,25 +75,34 @@ class NodeExternalReportApi(
         if (!CurrentUser.checkRights(AuthorizationType.Node.Read)) {
           Full(ForbiddenResponse("You don't have sufficient rights to access node external reports"))
         } else {
-          implicit val qc: QueryContext = CurrentUser.queryContext
-          readReport.getReportFile(NodeId(id), tpe).toBox match {
-            case Full(Some((file, contentType))) =>
-              tryo(new FileInputStream(file)).map { stream =>
-                StreamingResponse(
-                  stream,
-                  () => stream.close,
-                  stream.available.toLong,
-                  List("Content-Type" -> contentType),
-                  Nil,
-                  200
+          CurrentUser.queryContext match {
+            case None     =>
+              Full(
+                ForbiddenResponse(
+                  "You don't have sufficient rights to access node external reports (missing session current user)"
                 )
+              )
+            case Some(cu) =>
+              given qc: QueryContext = cu
+              readReport.getReportFile(NodeId(id), tpe).toBox match {
+                case Full(Some((file, contentType))) =>
+                  tryo(new FileInputStream(file)).map { stream =>
+                    StreamingResponse(
+                      stream,
+                      () => stream.close,
+                      stream.available.toLong,
+                      List("Content-Type" -> contentType),
+                      Nil,
+                      200
+                    )
+                  }
+                case Full(None)                      =>
+                  Full(NotFoundResponse(s"No external report of type '${tpe}' is available for node '${id}'"))
+                case eb: EmptyBox =>
+                  val e = eb ?~! s"Error when accessing external report '${tpe}' for node '${id}'"
+                  logger.warn(e.messageChain)
+                  Full(ForbiddenResponse("Could not access the requested external report"))
               }
-            case Full(None)                      =>
-              Full(NotFoundResponse(s"No external report of type '${tpe}' is available for node '${id}'"))
-            case eb: EmptyBox =>
-              val e = eb ?~! s"Error when accessing external report '${tpe}' for node '${id}'"
-              logger.warn(e.messageChain)
-              Full(ForbiddenResponse("Could not access the requested external report"))
           }
         }
       }
