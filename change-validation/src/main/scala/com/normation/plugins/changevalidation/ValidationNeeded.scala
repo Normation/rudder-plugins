@@ -39,7 +39,7 @@ package com.normation.plugins.changevalidation
 
 import com.normation.errors.IOResult
 import com.normation.eventlog.EventActor
-import com.normation.inventory.domain.NodeId
+import com.normation.rudder.domain.nodes.NodeAndServerIds
 import com.normation.rudder.domain.policies.Rule
 import com.normation.rudder.domain.policies.SimpleTarget
 import com.normation.rudder.facts.nodes.NodeFactRepository
@@ -111,14 +111,14 @@ class NodeGroupValidationNeeded(
     // I think it's ok to have that, it will need a deeper change when we will want to have per-tenant change validation
     implicit val qc: QueryContext = QueryContext.systemQC
     for {
-      start           <- com.normation.zio.currentTimeMillis
-      groups          <- groupLib.getFullGroupLibrary()
-      arePolicyServer <- nodeFactRepo.getAll()
-      supervised      <- supervisedTargets()
-      targets          = Set(change.newRule) ++ change.previousRule.toSet
-      res              = checkNodeTargetByRule(groups, arePolicyServer.mapValues(_.rudderSettings.isPolicyServer).toMap, supervised, targets)
-      end             <- com.normation.zio.currentTimeMillis
-      _               <- {
+      start      <- com.normation.zio.currentTimeMillis
+      groups     <- groupLib.getFullGroupLibrary()
+      ids        <- nodeFactRepo.getNodeAndServerIds()
+      supervised <- supervisedTargets()
+      targets     = Set(change.newRule) ++ change.previousRule.toSet
+      res         = checkNodeTargetByRule(groups, ids, supervised, targets)
+      end        <- com.normation.zio.currentTimeMillis
+      _          <- {
         ChangeValidationLoggerPure.Metrics.debug(
           s"Check rule '${change.newRule.name}' [${change.newRule.id.serialize}]" +
           s"change requestion need for validation in ${end - start}ms"
@@ -134,18 +134,18 @@ class NodeGroupValidationNeeded(
    * is supervised.
    */
   def checkNodeTargetByRule(
-      groups:          FullNodeGroupCategory,
-      arePolicyServer: Map[NodeId, Boolean],
-      monitored:       Set[SimpleTarget],
-      rules:           Set[Rule]
+      groups:           FullNodeGroupCategory,
+      nodeAndServerIds: NodeAndServerIds,
+      monitored:        Set[SimpleTarget],
+      rules:            Set[Rule]
   ): Boolean = {
-    val monitoredNodes = groups.getNodeIds(monitored.map(identity), arePolicyServer)
+    val monitoredNodes = groups.getNodeIds(monitored.map(identity), nodeAndServerIds)
     val changes        = rules.flatMap(_.targets)
-    val exists         = groups.getNodeIds(changes, arePolicyServer).exists(nodeId => monitoredNodes.contains(nodeId))
+    val exists         = groups.getNodeIds(changes, nodeAndServerIds).exists(nodeId => monitoredNodes.contains(nodeId))
     // we want to let the log knows why the change request need validation
     if (exists && ChangeValidationLogger.isDebugEnabled) {
       rules.foreach { rule =>
-        groups.getNodeIds(rule.targets, arePolicyServer).find(nodeId => monitoredNodes.contains(nodeId)).foreach { node =>
+        groups.getNodeIds(rule.targets, nodeAndServerIds).find(nodeId => monitoredNodes.contains(nodeId)).foreach { node =>
           ChangeValidationLogger.debug(
             s"Node '${node.value}' belongs to both a supervised group and is a target of rule '${rule.name}' [${rule.id.serialize}]"
           )
@@ -176,11 +176,11 @@ class NodeGroupValidationNeeded(
     for {
       start      <- com.normation.zio.currentTimeMillis
       groups     <- groupLib.getFullGroupLibrary()
-      nodeFacts  <- nodeFactRepo.getAll()
+      ids        <- nodeFactRepo.getNodeAndServerIds()
       supervised <- supervisedTargets()
       targetNodes = change.newGroup.serverList ++ change.previousGroup.map(_.serverList).getOrElse(Set())
       exists      = groups
-                      .getNodeIds(supervised.map(identity), nodeFacts.mapValues(_.rudderSettings.isPolicyServer).toMap)
+                      .getNodeIds(supervised.map(identity), ids)
                       .find(nodeId => targetNodes.contains(nodeId))
       res        <-
         // we want to let the log know why the change request needs validation
@@ -220,11 +220,11 @@ class NodeGroupValidationNeeded(
       newRules    = change.updatedRules
       supervised <- supervisedTargets()
       groups     <- groupLib.getFullGroupLibrary()
-      nodeFacts  <- nodeFactRepo.getAll()
+      ids        <- nodeFactRepo.getNodeAndServerIds()
       res         = {
         checkNodeTargetByRule(
           groups,
-          nodeFacts.mapValues(_.rudderSettings.isPolicyServer).toMap,
+          ids,
           supervised,
           (rules ++ newRules).toSet
         )
