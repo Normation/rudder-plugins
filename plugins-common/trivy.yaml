@@ -1,0 +1,15 @@
+# skip LOW
+severity:
+    - UNKNOWN
+    - MEDIUM
+    - HIGH
+    - CRITICAL
+# exit code on problems
+exit-code: 1
+scan:
+  scanners: ["vuln"]
+  disable-telemetry: true
+pkg:
+  # ignored for now
+  include-dev-deps: false
+ignorefile: ../.trivyignore
