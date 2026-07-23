@@ -54,6 +54,7 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.changevalidation.ChangeRequestFilter
 import com.normation.plugins.changevalidation.ChangeRequestInfoJson
 import com.normation.plugins.changevalidation.ChangeRequestJson
+import com.normation.plugins.changevalidation.ChangeValidationLoggerPure
 import com.normation.plugins.changevalidation.RoChangeRequestRepository
 import com.normation.plugins.changevalidation.RoWorkflowRepository
 import com.normation.plugins.changevalidation.SelfActionControl
@@ -394,6 +395,11 @@ class ChangeRequestApiImpl(
           (_, func)   = stepFunc
           reason     <- extractReason(req).toIO
           result     <- func(changeRequest.id, authzToken.qc.actor, reason)
+          _          <- ZIO.when(changeRequest.owner == auth.name) {
+                          ChangeValidationLoggerPure.info(
+                            s"User '${changeRequest.owner}' has accepted their own change request (change request id #${changeRequest.id.value})"
+                          )
+                        }
           serialized <- serialize(changeRequest, result).toIO
         } yield {
           serialized
