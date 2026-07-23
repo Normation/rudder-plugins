@@ -14,7 +14,7 @@ pipeline {
 
     stages {
         stage('deps-plugins') {
-            //when { not { changeRequest() } }
+            when { not { changeRequest() } }
             agent {
                 dockerfile {
                     label 'generic-docker'
@@ -25,7 +25,7 @@ pipeline {
                 }
             }
             environment {
-                NVD_API_KEY = credentials('NVD_API_KEY')
+                TRIVY_DISABLE_VEX_NOTICE = '1'
             }
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -67,16 +67,15 @@ pipeline {
                                 try {
                                     dir("${it}") {
                                         sh script: 'make generate-pom', label: 'generate pom.xml'
-                                        sh script: 'mvn -U -Djansi.passthrough=true -Dstyle.color=always -DsuppressionFiles=../dependency-check-suppression.xml -DnvdApiKey=$NVD_API_KEY -DossindexAnalyzerEnabled=false -DskipProvidedScope=true -DfailBuildOnCVSS=7 -DcveValidForHours=48 org.owasp:dependency-check-maven:aggregate', label: "check plugins dependencies"
+                                        sh script: 'mvn --batch-mode -Djansi.passthrough=true -Dstyle.color=always dependency:resolve', label: "load ${it} mvn dependencies"
                                         script {
                                             if (fileExists('src/main/package.json')) {
-                                                dir("src/main") {
-                                                    sh script: 'npm_config_loglevel=error npm ci --no-audit', label: "install dependencies"
-                                                    sh script: 'npx better-npm-audit audit --level high', label: "check npm dependencies"
-                                                }
-                                            }
+                                                 dir("src/main") {
+                                                     sh script: "npm_config_loglevel=error npm ci --no-audit", label: "load ${it} npm dependencies"
+                                                 }
+                                             }
                                         }
-                                        sh script: 'mvn -U -Djansi.passthrough=true -Dstyle.color=always license:aggregate-third-party-report', label: 'list ${it} dependencies'
+                                        sh script: "trivy fs --no-progress --config ../plugins-common/trivy.yaml .", label: "scanning ${it} dependencies for vulnerabilities"
                                     }
                                 } catch (exc) {
                                     // Mark the build as failure since it's actually an error
