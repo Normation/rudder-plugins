@@ -96,6 +96,7 @@ import com.normation.rudder.services.workflows.ChangeRequestAuthorship
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import com.normation.rudder.tenants.QueryContext
+import com.normation.rudder.tenants.TenantCheckLogic
 import com.normation.rudder.users.AuthenticatedUser
 import enumeratum.*
 import net.liftweb.http.LiftResponse
@@ -185,7 +186,8 @@ class ChangeRequestApiImpl(
     commitRepository:     CommitAndDeployChangeRequestService,
     userPropertyService:  UserPropertyService,
     selfValidation:       () => IOResult[Boolean],
-    selfDeployment:       () => IOResult[Boolean]
+    selfDeployment:       () => IOResult[Boolean],
+    checkTenant:          TenantCheckLogic
 )(using status: PluginStatus)
     extends PluginLiftApiModuleProvider[ChangeRequestApi] {
   import com.normation.plugins.changevalidation.api.ChangeRequestApi as API
@@ -361,9 +363,11 @@ class ChangeRequestApiImpl(
         }
       }
 
-      withChangeRequestContext(id, "decline")((changeRequest, status, techniqueByDirective) =>
+      withChangeRequestContext(id, "decline")((changeRequest, status, techniqueByDirective) => {
+        // on top of the validator/deployer role, the actor must be allowed to modify every object the CR changes
+        checkTenant.checkChangeRequestModify(changeRequest, authzToken.qc.newCC(None)) *>
         actualRefuse(changeRequest, status)(using techniqueByDirective.toMap)
-      ).toLiftResponseOne(params, schema, Some(id))
+      }).toLiftResponseOne(params, schema, Some(id))
     }
   }
 
@@ -411,6 +415,8 @@ class ChangeRequestApiImpl(
         res        <- {
           withChangeRequestContext(id, "accept") { (changeRequest, currentState, techniqueByDirective) =>
             implicit val directiveCtx: Map[DirectiveId, Technique] = techniqueByDirective
+            // on top of the validator/deployer role, the actor must be allowed to modify every object the CR changes
+            checkTenant.checkChangeRequestModify(changeRequest, authzToken.qc.newCC(None)) *>
             checkUserAction(currentState, targetStep).toIO *>
             checkSelfAction(currentState, targetStep, ChangeRequestAuthorship.of(changeRequest, auth)) *>
             (currentState match {
@@ -479,6 +485,8 @@ class ChangeRequestApiImpl(
 
       withChangeRequestContext(id, "update")((changeRequest, status, techniqueByDirective) => {
         for {
+          // renaming a CR is a write on it: the actor must be allowed to modify every object it changes
+          _      <- checkTenant.checkChangeRequestModify(changeRequest, qc.newCC(None))
           json   <- req.fromJson[ChangeRequestInfoJson].toIO
           update <- updateInfo(changeRequest, status, json)(using techniqueByDirective.toMap)
         } yield {
@@ -493,7 +501,7 @@ class ChangeRequestApiImpl(
       actionDetail: String
   )(
       block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
-  ): IOResult[T] = {
+  )(implicit qc: QueryContext): IOResult[T] = {
 
     if (checkWorkflow) {
       (for {

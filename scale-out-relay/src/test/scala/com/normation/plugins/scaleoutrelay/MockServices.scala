@@ -19,6 +19,7 @@ import com.normation.rudder.services.servers.PolicyServerManagementService
 import com.normation.rudder.services.servers.PolicyServers
 import com.normation.rudder.services.servers.PolicyServersUpdateCommand
 import com.normation.rudder.tenants.ChangeContext
+import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.UnsafeRun
 import com.unboundid.ldap.sdk.DN
 import com.unboundid.ldif.LDIFChangeRecord
@@ -141,9 +142,9 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
         orderBy:        List[Fragment] = Nil,
         extendedFilter: Option[Fragment] = None
     ): IOResult[Seq[EventLog]] = ???
-    override def getEventLogByCriteria(filter: Option[EventLogRequest]): IOResult[Seq[EventLog]] = ???
-    override def getEventLogById(id:              Long):                    IOResult[EventLog]                                    = ???
-    override def getEventLogCount(filter:         Option[EventLogRequest]): IOResult[Long]                                        = ???
+    override def getEventLogByCriteria(filter: Option[EventLogRequest])(implicit qc: QueryContext): IOResult[Seq[EventLog]] = ???
+    override def getEventLogById(id:      Long)(implicit qc:                    QueryContext): IOResult[EventLog] = ???
+    override def getEventLogCount(filter: Option[EventLogRequest])(implicit qc: QueryContext): IOResult[Long]     = ???
     override def getEventLogByChangeRequest(
         changeRequest:   ChangeRequestId,
         xpath:           String,
@@ -151,6 +152,8 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
         orderBy:         Option[String],
         eventTypeFilter: List[EventLogFilter]
     ): IOResult[Vector[EventLog]] = ???
-    override def getEventLogWithChangeRequest(id: Int):                     IOResult[Option[(EventLog, Option[ChangeRequestId])]] = ???
+    override def getEventLogWithChangeRequest(id: Int)(implicit
+        qc: QueryContext
+    ): IOResult[Option[(EventLog, Option[ChangeRequestId])]] = ???
   }
 }

@@ -64,6 +64,8 @@ import com.normation.rudder.domain.workflows.RuleChanges
 import com.normation.rudder.domain.workflows.WorkflowNodeId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
 import com.normation.rudder.services.marshalling.ChangeRequestChangesUnserialisation
+import com.normation.rudder.tenants.QueryContext
+import com.normation.rudder.tenants.TenantCheckLogic
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
@@ -202,17 +204,19 @@ object WoChangeRequestJdbcRepositorySQL extends WoChangeRequestJdbcRepositorySQL
 
 class RoChangeRequestJdbcRepository(
     doobie:                           Doobie,
-    override val changeRequestMapper: ChangeRequestMapper
+    override val changeRequestMapper: ChangeRequestMapper,
+    checkTenant:                      TenantCheckLogic
 ) extends RoChangeRequestRepository with RoChangeRequestJdbcRepositorySQL with Loggable {
 
   import doobie.*
 
-  // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]]
-  private def execQuery(errMsg: String, q: Query0[ChangeRequest]): IOResult[Vector[ChangeRequest]] = {
-    transactIOResult(errMsg)(xa => { q.to[Vector].transact(xa) })
+  // utility method which correctly transform Doobie types towards Box[Vector[ChangeRequest]], keeping only
+  // the change requests the caller's tenant grant can fully see (fail closed - see TenantCheckLogic).
+  private def execQuery(errMsg: String, q: Query0[ChangeRequest])(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
+    transactIOResult(errMsg)(xa => { q.to[Vector].transact(xa) }).map(_.filter(cr => checkTenant.isChangeRequestVisible(cr)))
   }
 
-  override def getAll(): IOResult[Vector[ChangeRequest]] = {
+  override def getAll()(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
     transactIOResult("errMsg")(xa => {
       getAllSQL
         .to[List]
@@ -235,21 +239,23 @@ class RoChangeRequestJdbcRepository(
             }
             .as(success.toVector)
         })
-    })
+    }).map(_.filter(cr => checkTenant.isChangeRequestVisible(cr)))
   }
 
-  override def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = {
+  override def get(changeRequestId: ChangeRequestId)(implicit qc: QueryContext): IOResult[Option[ChangeRequest]] = {
     transactIOResult(s"Could not get change request with id ${changeRequestId} in database")(xa =>
       getSQL(changeRequestId).option.transact(xa)
-    )
+    ).map(_.filter(cr => checkTenant.isChangeRequestVisible(cr)))
   }
 
   // Get every change request where a user add a change
-  override def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = {
+  override def getByContributor(actor: EventActor)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
     execQuery(s"Could not get change requests that were modified by ${actor.name} in database", getByContributorSQL(actor))
   }
 
-  override def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
+  override def getByDirective(id: DirectiveUid, onlyPending: Boolean)(implicit
+      qc: QueryContext
+  ): IOResult[Vector[ChangeRequest]] = {
     execQuery(
       s"Could not get change requests for directive with id ${id.value} in database",
       getChangeRequestsByXpathContentSQL(
@@ -260,7 +266,9 @@ class RoChangeRequestJdbcRepository(
     )
   }
 
-  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
+  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean)(implicit
+      qc: QueryContext
+  ): IOResult[Vector[ChangeRequest]] = {
     execQuery(
       s"Could not get change requests for group with id ${id.serialize} in database",
       getChangeRequestsByXpathContentSQL(
@@ -271,7 +279,7 @@ class RoChangeRequestJdbcRepository(
     )
   }
 
-  override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
+  override def getByRule(id: RuleUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
     execQuery(
       s"Could not get change requests for rule with id ${id.value} in database",
       getChangeRequestsByXpathContentSQL(
@@ -282,7 +290,9 @@ class RoChangeRequestJdbcRepository(
     )
   }
 
-  override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
+  override def getByFilter(filter: ChangeRequestFilter)(implicit
+      qc: QueryContext
+  ): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
 
     import com.normation.plugins.changevalidation.ChangeRequestFilter.*
     val errorMsg = s"Could not get change request by filter ${filter}"
@@ -298,7 +308,10 @@ class RoChangeRequestJdbcRepository(
         getByFiltersSQL(statuses.map(_.toNonEmptyList), by.map(getXPathWithValue))
     }
 
-    transactIOResult(errorMsg)(filteredQuery.to[Vector].transact(_))
+    transactIOResult(errorMsg)(filteredQuery.to[Vector].transact(_)).map(_.filter {
+      case (cr, _) =>
+        checkTenant.isChangeRequestVisible(cr)
+    })
   }
 
 }

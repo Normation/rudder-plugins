@@ -45,25 +45,30 @@ import com.normation.rudder.domain.policies.RuleUid
 import com.normation.rudder.domain.workflows.ChangeRequest
 import com.normation.rudder.domain.workflows.ChangeRequestId
 import com.normation.rudder.domain.workflows.WorkflowNodeId
+import com.normation.rudder.tenants.QueryContext
 
 /**
- * Read access to change request
+ * Read access to change request.
+ *
+ * Every read carries the caller's `QueryContext`: a change request is only returned if the actor's tenant
+ * grant can see it, i.e. can see every configuration object it touches (see TenantCheckLogic). A
+ * request the actor can not fully see is filtered out (fail closed), exactly as if it did not exist.
  */
 trait RoChangeRequestRepository {
 
-  def getAll(): IOResult[Vector[ChangeRequest]]
+  def getAll()(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]]
 
-  def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]]
+  def get(changeRequestId: ChangeRequestId)(implicit qc: QueryContext): IOResult[Option[ChangeRequest]]
 
-  def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]]
+  def getByDirective(id: DirectiveUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]]
 
-  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]]
+  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]]
 
-  def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]]
+  def getByRule(id: RuleUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]]
 
-  def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]]
+  def getByContributor(actor: EventActor)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]]
 
-  def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]]
+  def getByFilter(filter: ChangeRequestFilter)(implicit qc: QueryContext): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]]
 
 }
 
@@ -80,25 +85,37 @@ class EitherRoChangeRequestRepository(
     cond().flatMap(if (_) method(whenTrue) else method(whenFalse))
   }
 
-  def getAll(): IOResult[Vector[ChangeRequest]] = condApply(_.getAll())
+  def getAll()(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = condApply(_.getAll())
 
-  def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = condApply(_.get(changeRequestId))
-
-  def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = condApply(
-    _.getByDirective(id, onlyPending)
+  def get(changeRequestId: ChangeRequestId)(implicit qc: QueryContext): IOResult[Option[ChangeRequest]] = condApply(
+    _.get(changeRequestId)
   )
 
-  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = condApply(
-    _.getByNodeGroup(id, onlyPending)
+  def getByDirective(id: DirectiveUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
+    condApply(
+      _.getByDirective(id, onlyPending)
+    )
+  }
+
+  def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
+    condApply(
+      _.getByNodeGroup(id, onlyPending)
+    )
+  }
+
+  def getByRule(id: RuleUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = condApply(
+    _.getByRule(id, onlyPending)
   )
 
-  def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = condApply(_.getByRule(id, onlyPending))
-
-  def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = condApply(_.getByContributor(actor))
-
-  def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = condApply(
-    _.getByFilter(filter)
+  def getByContributor(actor: EventActor)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = condApply(
+    _.getByContributor(actor)
   )
+
+  def getByFilter(filter: ChangeRequestFilter)(implicit qc: QueryContext): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
+    condApply(
+      _.getByFilter(filter)
+    )
+  }
 }
 
 /**

@@ -328,7 +328,7 @@ class WorkflowInternalApiImpl(
         actionDetail: String
     )(
         block:        (ChangeRequest, WorkflowNodeId, Map[DirectiveId, Technique]) => IOResult[T]
-    ): IOResult[T] = {
+    )(implicit qc: QueryContext): IOResult[T] = {
 
       (for {
         crId          <- sid.toIntOption
