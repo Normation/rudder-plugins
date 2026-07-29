@@ -95,7 +95,6 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
       node:              CoreNodeFact,
       policyServer:      CoreNodeFact,
       globalPolicyMode:  GlobalPolicyMode,
-      parameters:        Set[GlobalParameter],
       connectionTimeout: Duration,
       readTimeOut:       Duration
   ): IOResult[Option[NodeProperty]] = {
@@ -116,11 +115,9 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
 
     // actual logic
 
+    val expand = compiler.compileInput(node, policyServer, globalPolicyMode)
+
     for {
-      parameters <- ZIO
-                      .foreach(parameters)(compiler.compileParameters(_).toIO)
-                      .chainError("Error when transforming Rudder parameter for variable interpolation")
-      expand      = compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap)
       url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
       path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
       headers    <- expandMap(expand, datasource.headers)
@@ -231,15 +228,10 @@ object QueryHttp {
  */
 class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
-  def compileParameters(parameter: GlobalParameter): PureResult[(String, ParamInterpolationContext => IOResult[String])] = {
-    compiler.compileParam(serializeToHocon(parameter.value)).map(v => (parameter.name, v))
-  }
-
   def compileInput(
       node:             CoreNodeFact,
       policyServer:     CoreNodeFact,
-      globalPolicyMode: GlobalPolicyMode,
-      parameters:       Map[String, ParamInterpolationContext => IOResult[String]]
+      globalPolicyMode: GlobalPolicyMode
   )(input: String): IOResult[String] = {
 
     // we inject some props that are useful as identity pivot (like short name)
@@ -252,7 +244,7 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
       // build interpolation context from node:
       enhanced  =
         node.modify(_.properties).using(props => NodeProperty.apply("datasources-injected", injected, None, None) +: props)
-      context   = ParamInterpolationContext(enhanced, policyServer, globalPolicyMode, parameters, 5)
+      context   = ParamInterpolationContext(enhanced, policyServer, globalPolicyMode)
       bounded  <- compiled(context)
     } yield {
       bounded
