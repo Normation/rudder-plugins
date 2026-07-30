@@ -57,9 +57,9 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "${report_data.method_id}" usebundle => _classes_failure("${report_data.method_id}");
       "${report_data.method_id}" usebundle => _classes_failure("${class_prefix}");
     pass2.!variable_defined.!consul_reachable::
-      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Consul server unreachable. Variable definition from the ${path} secret path in Consul", "");
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Consul server unreachable. Variable definition from the ${path} secret path in Consul", ""),
                                         if => "config_defined";
-      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Undefined configuration. Variable definition from the ${path} secret path in Consul", "");
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Undefined configuration. Variable definition from the ${path} secret path in Consul", ""),
                                         if => "!config_defined";
     pass2.!variable_defined.consul_reachable::
       "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Consul server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Consul", "");
