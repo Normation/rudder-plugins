@@ -69,8 +69,8 @@ bundle agent variable_from_vault(prefix, name, path)
 
       "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Vault server is reachable, but your request failed. Check your auth and secret path. Variable definition from the ${path} secret path in Vault", ""),
                                         if => "vault_reachable";
-      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Vault server unreachable. Variable definition from the ${path} secret path in Vault", "");
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Vault server unreachable. Variable definition from the ${path} secret path in Vault", ""),
                                         if => "config_defined.!vault_reachable";
-      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Undefined configuration. Variable definition from the ${path} secret path in Vault", "");
+      "${report_data.method_id}" usebundle => log_rudder_v4("${path}", "Undefined configuration. Variable definition from the ${path} secret path in Vault", ""),
                                         if => "!config_defined.!vault_reachable";
 }
