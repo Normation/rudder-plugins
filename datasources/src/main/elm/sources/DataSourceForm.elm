@@ -259,7 +259,7 @@ urlForm httpData displayError =
         , urlError
         , div [ class "example-help" ]
             [ text "You can use Rudder variable expansion ("
-            , pre [] [ text "${rudder.node.xxx}, ${rudder.param.xxx}, ${node.properties[xxx]}" ]
+            , pre [] [ text "${rudder.node.xxx}, ${node.properties[xxx]}" ]
             , text ") here. They will be replaced by their values for each node at the time the HTTP query is run."
             ]
         ]

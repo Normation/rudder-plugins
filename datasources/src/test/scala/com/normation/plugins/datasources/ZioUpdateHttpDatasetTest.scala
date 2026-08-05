@@ -51,10 +51,8 @@ import com.normation.rudder.domain.policies.PolicyMode
 import com.normation.rudder.domain.policies.PolicyModeOverrides
 import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty.*
-import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.facts.nodes.*
-import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.services.nodes.PropertyEngineServiceImpl
 import com.normation.rudder.services.policies.InterpolatedValueCompilerImpl
 import com.normation.rudder.services.policies.NodeConfigData
@@ -345,13 +343,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
   )
   val fetch: GetDataset = new GetDataset(interpolation)
 
-  val parameterRepo = new RoParameterRepository() {
-    override def getGlobalParameter(parameterName: String)(using qc: QueryContext): IOResult[Option[GlobalParameter]] =
-      None.succeed
-
-    override def getAllGlobalParameters()(using qc: QueryContext): IOResult[Seq[GlobalParameter]] = Seq().succeed
-  }
-
   def buildNodeRepo(initNodeInfo: Map[NodeId, CoreNodeFact]): UIO[(Ref[Map[NodeId, Int]], NodeFactRepository)] = {
 
     // used for test
@@ -448,7 +439,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
       repo <- buildNodeRepo(NodeConfigData.allNodeFacts)
     } yield new HttpQueryDataSourceService(
       repo._2,
-      parameterRepo,
       interpolation,
       noPostHook,
       () => alwaysEnforce.succeed
@@ -517,7 +507,7 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
 
       for {
         (updates, infos) <- buildNodeRepo(NodeConfigData.allNodeFacts)
-        http              = new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
+        http              = new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
         _                <- updates.set(Map())
         res              <- http.queryAll(datasource, UpdateCause(modId, actor, None))
         // let hooks happens - this is magical, it tells zio to let finish things started
@@ -699,7 +689,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                               new MemoryDataSourceRepository(),
                               new HttpQueryDataSourceService(
                                 infos,
-                                parameterRepo,
                                 interpolation,
                                 noPostHook,
                                 () => alwaysEnforce.succeed
@@ -756,7 +745,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                               new MemoryDataSourceRepository(),
                               new HttpQueryDataSourceService(
                                 infos,
-                                parameterRepo,
                                 interpolation,
                                 noPostHook,
                                 () => alwaysEnforce.succeed
@@ -811,7 +799,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
         (updates, infos) <- buildNodeRepo(nodes)
         http              = new HttpQueryDataSourceService(
                               infos,
-                              parameterRepo,
                               interpolation,
                               noPostHook,
                               () => alwaysEnforce.succeed
@@ -947,7 +934,6 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                  n1,
                  root,
                  alwaysEnforce,
-                 Set(),
                  1.second,
                  5.seconds
                )
@@ -981,7 +967,7 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
     suite("The full http service")(
       for {
         (updates, infos) <- buildNodeRepo(NodeConfigData.allNodeFacts)
-        http              = new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
+        http              = new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
       } yield Chunk(
         test("correctly update all nodes") {
           val datasource = NewDataSource(
@@ -1112,7 +1098,7 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
       (for {
         (updates, infos) <- buildNodeRepo(initNodeFacts)
         http              =
-          new HttpQueryDataSourceService(infos, parameterRepo, interpolation, noPostHook, () => alwaysEnforce.succeed)
+          new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
         datasource        = NewDataSource(propName, url = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
         nodes  <- infos.getAll()

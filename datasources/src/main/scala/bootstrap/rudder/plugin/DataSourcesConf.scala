@@ -82,7 +82,6 @@ object DatasourcesConf extends RudderPluginModule {
     new DataSourceJdbcRepository(Cfg.doobie),
     new HttpQueryDataSourceService(
       Cfg.nodeFactRepository,
-      Cfg.roLDAPParameterRepository,
       Cfg.interpolationCompiler,
       regenerationHook.hook,
       () => Cfg.configService.rudder_global_policy_mode()
