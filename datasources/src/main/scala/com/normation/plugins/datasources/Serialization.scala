@@ -42,6 +42,7 @@ import com.normation.errors.*
 import com.normation.plugins.datasources.DataSourceJsonCodec.*
 import com.normation.rudder.domain.properties.GenericProperty.*
 import com.normation.rudder.rest.RudderJsonRequest.*
+import com.normation.rudder.tenants.SecurityTag
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValue
 import io.scalaland.chimney.Patcher
@@ -74,7 +75,9 @@ final case class DataSourceProperties(
     @jsonField("type") sourceType:             FullDataSourceType,
     @jsonField("runParameters") runParam:      FullDataSourceRunParameters,
     @jsonField("updateTimeout") updateTimeOut: Duration,
-    enabled:                                   Boolean
+    enabled:                                   Boolean,
+    // tenant tag read back from the stored JSON; absent on pre-tenant rows ⇒ None (admin-only)
+    security:                                  Option[SecurityTag] = None
 ) {
   def toDataSource(id: DataSourceId): DataSource = {
     DataSource(
@@ -84,7 +87,8 @@ final case class DataSourceProperties(
       runParam.transformInto[DataSourceRunParameters],
       description,
       enabled,
-      updateTimeOut
+      updateTimeOut,
+      security
     )
   }
 }
@@ -144,7 +148,9 @@ final case class FullDataSource(
     @jsonField("type") sourceType:             FullDataSourceType,
     @jsonField("runParameters") runParam:      FullDataSourceRunParameters,
     @jsonField("updateTimeout") updateTimeOut: Duration,
-    enabled:                                   Boolean
+    enabled:                                   Boolean,
+    // tenant tag, persisted in the stored JSON; absent on pre-tenant rows ⇒ decodes to None (admin-only)
+    security:                                  Option[SecurityTag] = None
 )
 
 object FullDataSource {

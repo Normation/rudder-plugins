@@ -63,6 +63,8 @@ import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rule.category.RuleCategoryId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
 import com.normation.rudder.services.marshalling.ChangeRequestChangesUnserialisation
+import com.normation.rudder.tenants.DefaultTenantCheckLogic
+import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.UnsafeRun
 import com.typesafe.config.ConfigValueFactory
 import doobie.Transactor
@@ -79,6 +81,9 @@ import zio.interop.catz.*
 class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with IOChecker with BoxSpecMatcher {
 
   val restTestSetUp = RestTestSetUp.newEnv
+
+  // admin context: these read tests are about SQL/unserialisation, tenant filtering is exercised elsewhere
+  implicit val qc: QueryContext = QueryContext.systemQC
 
   val changeRequestId = ChangeRequestId(1)
   val actor           = EventActor("actor")
@@ -256,7 +261,7 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
     changeRequestChangesSerialisation
   )
   lazy val roChangeRequestJdbcRepository =
-    new RoChangeRequestJdbcRepository(doobie, changeRequestMapper)
+    new RoChangeRequestJdbcRepository(doobie, changeRequestMapper, new DefaultTenantCheckLogic())
   lazy val woChangeRequestJdbcRepository =
     new WoChangeRequestJdbcRepository(doobie, changeRequestMapper, roChangeRequestJdbcRepository)
 

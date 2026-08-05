@@ -41,6 +41,9 @@ import com.normation.NamedZioLogger
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
+import com.normation.rudder.tenants.HasSecurityTag
+import com.normation.rudder.tenants.SecurityTag
+import com.normation.rudder.tenants.TenantTagLifecycle
 import com.typesafe.config.ConfigValue
 import enumeratum.*
 import zio.*
@@ -63,6 +66,18 @@ object DataSource {
   val defaultDuration: Duration = 5.minutes
 
   val providerName: PropertyProvider = PropertyProvider("datasources")
+
+  // a datasource is a configuration object: its tenant visibility may only grow (monotonic), like rules/groups,
+  // and it is never a system object.
+  implicit val hasSecurityTag: HasSecurityTag[DataSource] = new HasSecurityTag[DataSource] {
+    extension (a: DataSource) {
+      override def security:           Option[SecurityTag] = a.security
+      override def isSystem:           Boolean             = false
+      override def tenantTagLifecycle: TenantTagLifecycle  = TenantTagLifecycle.Monotonic
+      override def debugId:            String              = a.id.value
+      override def updateSecurityContext(security: Option[SecurityTag]): DataSource = a.copy(security = security)
+    }
+  }
 
   /*
    * Name used in both datasource id and "reload" place in
@@ -192,7 +207,11 @@ final case class DataSource(
     runParam:      DataSourceRunParameters,
     description:   String,
     enabled:       Boolean,
-    updateTimeOut: Duration
+    updateTimeOut: Duration,
+    // Tenant scoping of the datasource. `None` (the value existing serialized datasources decode to, since the
+    // field is absent from their JSON) means admin-only / unscoped: the datasource populates node properties on
+    // every node. A tenant tag restricts it to that tenant's nodes (set at create from the caller's write scope).
+    security:      Option[SecurityTag] = None
 )
 
 /*

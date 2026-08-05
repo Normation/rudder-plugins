@@ -51,6 +51,7 @@ import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.services.modification.DiffServiceImpl
 import com.normation.rudder.services.workflows.ChangeRequestAuthorship
 import com.normation.rudder.services.workflows.ChangeRequestAuthorship.*
+import com.normation.rudder.tenants.DefaultTenantCheckLogic
 import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
@@ -125,6 +126,7 @@ class SelfValidationWorkflowTest extends ZIOSpecDefault {
       mockServices.changeRequestRepository,
       mockServices.notificationService,
       mockServices.userService,
+      new DefaultTenantCheckLogic(),
       () => true.succeed,
       selfValidation,
       selfDeployment
@@ -145,7 +147,8 @@ class SelfValidationWorkflowTest extends ZIOSpecDefault {
       mockServices.commitAndDeployChangeRequest,
       mockServices.userPropertyService,
       selfValidation,
-      selfDeployment
+      selfDeployment,
+      new DefaultTenantCheckLogic()
     )(using AlwaysEnabledPluginStatus)
   }
 

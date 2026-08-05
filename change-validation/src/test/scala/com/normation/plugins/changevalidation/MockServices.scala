@@ -152,7 +152,9 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
 
   object changeRequestRepository extends RoChangeRequestRepository with WoChangeRequestRepository {
 
-    override def getByFilter(filter: ChangeRequestFilter): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
+    override def getByFilter(filter: ChangeRequestFilter)(implicit
+        qc: QueryContext
+    ): IOResult[Vector[(ChangeRequest, WorkflowNodeId)]] = {
       import ChangeRequestFilter.*
       changeRequestsByStatus.view
         .filterKeys(status => filter.status.forall(_.contains(status)))
@@ -180,7 +182,7 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
         .succeed
     }
 
-    override def get(changeRequestId: ChangeRequestId): IOResult[Option[ChangeRequest]] = {
+    override def get(changeRequestId: ChangeRequestId)(implicit qc: QueryContext): IOResult[Option[ChangeRequest]] = {
       changeRequestsByStatus.values.flatten.find(_.id == changeRequestId) match {
         case Some(cr) => Some(cr).succeed
         case None     => None.succeed
@@ -195,15 +197,19 @@ class MockServices(changeRequestsByStatus: Map[WorkflowNodeId, List[ChangeReques
       changeRequest.succeed
     }
 
-    override def getAll(): IOResult[Vector[ChangeRequest]] = ???
+    override def getAll()(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByDirective(id: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
+    override def getByDirective(id: DirectiveUid, onlyPending: Boolean)(implicit
+        qc: QueryContext
+    ): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
+    override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean)(implicit
+        qc: QueryContext
+    ): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = ???
+    override def getByRule(id: RuleUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = ???
 
-    override def getByContributor(actor: EventActor): IOResult[Vector[ChangeRequest]] = ???
+    override def getByContributor(actor: EventActor)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = ???
 
     override def createChangeRequest(
         changeRequest: ChangeRequest,
