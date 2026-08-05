@@ -57,6 +57,7 @@ import com.normation.rudder.services.workflows.WorkflowService
 import com.normation.rudder.services.workflows.WorkflowUpdate
 import com.normation.rudder.tenants.ChangeContext
 import com.normation.rudder.tenants.QueryContext
+import com.normation.rudder.tenants.TenantCheckLogic
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.UserService
 import com.normation.utils.StringUuidGenerator
@@ -155,6 +156,7 @@ class TwoValidationStepsWorkflowServiceImpl(
     woChangeRequestRepository:     WoChangeRequestRepository,
     notificationService:           NotificationService,
     userService:                   UserService,
+    checkTenant:                   TenantCheckLogic,
     workflowEnable:                () => IOResult[Boolean],
     selfValidation:                () => IOResult[Boolean],
     selfDeployment:                () => IOResult[Boolean]
@@ -290,6 +292,8 @@ class TwoValidationStepsWorkflowServiceImpl(
   def startWorkflow(changeRequest: ChangeRequest)(implicit cc: ChangeContext): IOResult[ChangeRequestId] = {
     ChangeValidationLogger.debug(s"${name}: start workflow for change request '${changeRequest.id.value}'")
     for {
+      // the author may only submit a change request whose every object they are allowed to modify
+      _     <- checkTenant.checkChangeRequestModify(changeRequest, cc)
       saved <- saveAndLogChangeRequest(AddChangeRequestDiff(changeRequest), cc.actor, cc.message)
       _     <- woWorkflowRepo.createWorkflow(saved.id, Validation.id)
       _      = notificationService.sendNotification(Validation, saved).catchEmailError("changeRequestCreated", Validation.id.value)
@@ -338,6 +342,9 @@ class TwoValidationStepsWorkflowServiceImpl(
    *  error displayed to user) BUT of course we log.
    */
   private def sendEmail(from: WorkflowNode, to: WorkflowNode, changeRequestId: ChangeRequestId): IOResult[Unit] = {
+    // notifications are a system-side side effect of an already-authorized workflow transition: fetch the
+    // change request with a full (system) context so email is not gated by the triggering actor's tenants.
+    given qc: QueryContext = QueryContext.systemQC
     for {
       cr <- roChangeRequestRepository
               .get(changeRequestId)

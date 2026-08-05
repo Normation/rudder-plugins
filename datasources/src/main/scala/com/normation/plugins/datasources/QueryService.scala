@@ -164,8 +164,22 @@ class HttpQueryDataSourceService(
       "fetch data for all node",
       datasource,
       cause,
-      (d: DataSourceType.HTTP) => queryAllByNode(datasource.id, d, globalPolicyMode, cause),
-      (d: DataSourceType.HTTP) => queryAllByNode(datasource.id, d, globalPolicyMode, cause),
+      (d: DataSourceType.HTTP) =>
+        queryAllByNode(
+          datasource.id,
+          d,
+          globalPolicyMode,
+          cause,
+          QueryContext(cause.actor, TenantAccessGrant.fromSecurityScope(datasource.security))
+        ),
+      (d: DataSourceType.HTTP) =>
+        queryAllByNode(
+          datasource.id,
+          d,
+          globalPolicyMode,
+          cause,
+          QueryContext(cause.actor, TenantAccessGrant.fromSecurityScope(datasource.security))
+        ),
       s"All nodes data updated from data source '${datasource.name.value}' (${datasource.id.value})",
       s"Error when fetching data from data source '${datasource.name.value}' (${datasource.id.value}) for all nodes"
     )
@@ -192,8 +206,24 @@ class HttpQueryDataSourceService(
       s"fetch data for node '${nodeId.value}'",
       datasource,
       cause,
-      (d: DataSourceType.HTTP) => queryNodeByNode(datasource.id, d, globalPolicyMode, nodeId, cause),
-      (d: DataSourceType.HTTP) => queryNodeByNode(datasource.id, d, globalPolicyMode, nodeId, cause),
+      (d: DataSourceType.HTTP) =>
+        queryNodeByNode(
+          datasource.id,
+          d,
+          globalPolicyMode,
+          nodeId,
+          cause,
+          QueryContext(cause.actor, TenantAccessGrant.fromSecurityScope(datasource.security))
+        ),
+      (d: DataSourceType.HTTP) =>
+        queryNodeByNode(
+          datasource.id,
+          d,
+          globalPolicyMode,
+          nodeId,
+          cause,
+          QueryContext(cause.actor, TenantAccessGrant.fromSecurityScope(datasource.security))
+        ),
       s"Data for node '${nodeId.value}' updated from data source '${datasource.name.value}' (${datasource.id.value})",
       s"Error when fetching data from data source '${datasource.name.value}' (${datasource.id.value}) for node '${nodeId.value}'"
     )
@@ -333,10 +363,15 @@ class HttpQueryDataSourceService(
       datasourceId:     DataSourceId,
       datasource:       DataSourceType.HTTP,
       globalPolicyMode: () => IOResult[GlobalPolicyMode],
-      cause:            UpdateCause
+      cause:            UpdateCause,
+      // node scope of the datasource: only nodes visible in this context are fetched (hence updated), so a
+      // tenant-scoped datasource populates properties only on its tenant's nodes (`All` = fleet-wide).
+      nodeScope:        QueryContext
   ): IOResult[Set[NodeUpdateResult]] = {
+    given qc: QueryContext = nodeScope
+
     for {
-      nodes        <- factRepository.getAll()(using QueryContext.systemQC)
+      nodes        <- factRepository.getAll()
       policyServers = nodes.filter(_._2.rudderSettings.isPolicyServer)
       updated      <- querySubsetByNode(
                         datasourceId,
@@ -367,11 +402,16 @@ class HttpQueryDataSourceService(
       datasource:       DataSourceType.HTTP,
       globalPolicyMode: () => IOResult[GlobalPolicyMode],
       nodeId:           NodeId,
-      cause:            UpdateCause
+      cause:            UpdateCause,
+      // node scope of the datasource (see queryAllByNode): a node outside it is not found here, so a
+      // tenant-scoped datasource can not populate a property on another tenant's node.
+      nodeScope:        QueryContext
   ): IOResult[NodeUpdateResult] = {
+    given qc: QueryContext = nodeScope
+
     for {
       mode         <- globalPolicyMode()
-      allNodes     <- factRepository.getAll()(using QueryContext.systemQC)
+      allNodes     <- factRepository.getAll()
       node         <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
       policyServers = allNodes.filter(_._1 == node.rudderSettings.policyServerId)
       updated      <-

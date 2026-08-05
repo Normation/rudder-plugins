@@ -62,8 +62,7 @@ import com.normation.rudder.rest.lift.DefaultParams
 import com.normation.rudder.rest.lift.LiftApiModule
 import com.normation.rudder.rest.lift.LiftApiModule0
 import com.normation.rudder.rest.syntax.*
-import com.normation.rudder.tenants.ChangeContext
-import com.normation.rudder.tenants.TenantAccessGrant
+import com.normation.rudder.tenants.*
 import com.normation.utils.StringUuidGenerator
 import io.scalaland.chimney.syntax.*
 import net.liftweb.http.LiftResponse
@@ -230,7 +229,8 @@ class DataSourceApiImpl(
       (for {
         sources <- dataSourceRepo.getAll
       } yield {
-        sources.values.map(_.transformInto[FullDataSource]).toList
+        // only return datasources the caller's tenant scope can see (tenant isolation)
+        sources.values.filter(ds => authzToken.qc.accessGrant.canSee(ds.security)).map(_.transformInto[FullDataSource]).toList
       })
         .chainError("Could not get data sources")
         .toLiftResponseList(params, schema)
@@ -248,7 +248,11 @@ class DataSourceApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        source <- dataSourceRepo.get(DataSourceId(sourceId)).notOptional(s"Data source ${sourceId} does not exist.")
+        // a datasource the caller can not see reads as "does not exist" (no existence oracle)
+        source <- dataSourceRepo
+                    .get(DataSourceId(sourceId))
+                    .map(_.filter(ds => authzToken.qc.accessGrant.canSee(ds.security)))
+                    .notOptional(s"Data source ${sourceId} does not exist.")
       } yield {
         List(source.transformInto[FullDataSource])
       }).chainError(s"Could not get data sources from '${sourceId}'")
@@ -267,6 +271,11 @@ class DataSourceApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
+        // refuse to delete a datasource the caller can not see (no cross-tenant delete, no existence oracle)
+        _      <- dataSourceRepo
+                    .get(DataSourceId(sourceId))
+                    .map(_.filter(ds => authzToken.qc.accessGrant.canSee(ds.security)))
+                    .notOptional(s"Data source ${sourceId} does not exist.")
         source <- dataSourceRepo.delete(
                     DataSourceId(sourceId),
                     UpdateCause(
@@ -287,9 +296,11 @@ class DataSourceApiImpl(
     def process0(version: ApiVersion, path: ApiPath, req: Req, params: DefaultParams, authzToken: AuthzToken): LiftResponse                        = {
       (for {
         source <- extractNewDataSource(req).toIO
-        _      <- dataSourceRepo.save(source)
+        // tag the new datasource with the caller's writable tenants (admin ⇒ None ⇒ unscoped/fleet-wide)
+        tagged  = source.copy(security = authzToken.qc.accessGrant.restrictToWrite.toSecurityTag)
+        _      <- dataSourceRepo.save(tagged)
       } yield {
-        source.transformInto[FullDataSource]
+        tagged.transformInto[FullDataSource]
       }).chainError(s"Could not create data source")
         .toLiftResponseOne(params, schema, None)
     }
@@ -306,15 +317,20 @@ class DataSourceApiImpl(
         authzToken: AuthzToken
     ): LiftResponse = {
       (for {
-        optBase <- dataSourceRepo
-                     .get(DataSourceId(sourceId))
-        base    <- optBase.notOptional(
-                     s"Cannot update data source '${sourceId}', because it does not exist"
-                   )
-        updated <- extractDataSource(req, base).toIO
-        _       <- dataSourceRepo.save(updated)
+        optBase  <- dataSourceRepo
+                      .get(DataSourceId(sourceId))
+        // a datasource the caller can not see reads as "does not exist" (no cross-tenant update / oracle)
+        base     <- optBase
+                      .filter(ds => authzToken.qc.accessGrant.canSee(ds.security))
+                      .notOptional(
+                        s"Cannot update data source '${sourceId}', because it does not exist"
+                      )
+        updated  <- extractDataSource(req, base).toIO
+        // the API never changes the tenant tag: preserve the existing one (set once, at create)
+        preserved = updated.copy(security = base.security)
+        _        <- dataSourceRepo.save(preserved)
       } yield {
-        updated.transformInto[FullDataSource]
+        preserved.transformInto[FullDataSource]
       }).chainError(s"Could not update data source '${sourceId}'")
         .toLiftResponseOne(params, schema, None)
     }

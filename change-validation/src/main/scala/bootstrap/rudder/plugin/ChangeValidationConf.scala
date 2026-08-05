@@ -183,7 +183,9 @@ class ChangeValidationWorkflowLevelService(
     combine[GlobalParamChangeRequest]((v, a, c) => v.forGlobalParam(a, c), validationNeeded, actor, change)
   }
 
-  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
+  override def getByDirective(uid: DirectiveUid, onlyPending: Boolean)(implicit
+      qc: QueryContext
+  ): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByDirective(uid, onlyPending)
     } else {
@@ -191,7 +193,9 @@ class ChangeValidationWorkflowLevelService(
     }
   }
 
-  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
+  override def getByNodeGroup(id: NodeGroupId, onlyPending: Boolean)(implicit
+      qc: QueryContext
+  ): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByNodeGroup(id, onlyPending)
     } else {
@@ -199,7 +203,7 @@ class ChangeValidationWorkflowLevelService(
     }
   }
 
-  override def getByRule(id: RuleUid, onlyPending: Boolean): IOResult[Vector[ChangeRequest]] = {
+  override def getByRule(id: RuleUid, onlyPending: Boolean)(implicit qc: QueryContext): IOResult[Vector[ChangeRequest]] = {
     if (workflowEnabled) {
       validationWorkflowService.roChangeRequestRepository.getByRule(id, onlyPending)
     } else {
@@ -245,6 +249,7 @@ object ChangeValidationConf extends RudderPluginModule {
     woChangeRequestRepository,
     notificationService,
     RudderConfig.userService,
+    RudderConfig.tenantCheckLogic,
     () => RudderConfig.workflowLevelService.workflowEnabled.succeed,
     () => RudderConfig.configService.rudder_workflow_self_validation(),
     () => RudderConfig.configService.rudder_workflow_self_deployment()
@@ -255,7 +260,7 @@ object ChangeValidationConf extends RudderPluginModule {
     filename = "unsupervised-targets.json"
   )
   lazy val roChangeRequestRepository: RoChangeRequestRepository = {
-    new RoChangeRequestJdbcRepository(doobie, changeRequestMapper)
+    new RoChangeRequestJdbcRepository(doobie, changeRequestMapper, RudderConfig.tenantCheckLogic)
   }
 
   lazy val woChangeRequestRepository: WoChangeRequestRepository = {
@@ -318,7 +323,8 @@ object ChangeValidationConf extends RudderPluginModule {
       commitAndDeployChangeRequest,
       RudderConfig.userPropertyService,
       () => RudderConfig.configService.rudder_workflow_self_validation(),
-      () => RudderConfig.configService.rudder_workflow_self_deployment()
+      () => RudderConfig.configService.rudder_workflow_self_deployment(),
+      RudderConfig.tenantCheckLogic
     )
     val api3 = new ValidatedUserApiImpl(
       roValidatedUserRepository,
