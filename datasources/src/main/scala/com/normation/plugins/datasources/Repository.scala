@@ -45,7 +45,6 @@ import com.normation.plugins.PluginStatus
 import com.normation.plugins.datasources.DataSourceSchedule.*
 import com.normation.rudder.db.Doobie
 import com.normation.rudder.domain.eventlog.*
-import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.utils.StringUuidGenerator
 import com.normation.zio.*
@@ -62,8 +61,7 @@ final case class PartialNodeUpdate(
     // the node to update
     nodes:         Map[NodeId, CoreNodeFact],
     // there policy servers
-    policyServers: Map[NodeId, CoreNodeFact],
-    parameters:    Set[GlobalParameter]
+    policyServers: Map[NodeId, CoreNodeFact]
 )
 
 object DataSourceRepository {

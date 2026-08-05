@@ -42,13 +42,11 @@ import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.CompareProperties
-import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.domain.properties.PropertyProvider
 import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.facts.nodes.NodeFactChangeEvent
 import com.normation.rudder.facts.nodes.NodeFactRepository
-import com.normation.rudder.repository.RoParameterRepository
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
 import com.normation.rudder.tenants.ChangeContext
 import com.normation.rudder.tenants.QueryContext
@@ -79,7 +77,7 @@ trait QueryDataSourceService {
   def queryAll(datasource: DataSource, cause: UpdateCause): IOResult[Set[NodeUpdateResult]]
 
   /**
-   * A version that use provided nodeinfo / parameters to only query a subpart of nodes
+   * A version that use provided nodeinfo to only query a subpart of nodes
    */
   def querySubset(datasource: DataSource, info: PartialNodeUpdate, cause: UpdateCause): IOResult[Set[NodeUpdateResult]]
 
@@ -149,7 +147,6 @@ object QueryService {
  */
 class HttpQueryDataSourceService(
     factRepository:   NodeFactRepository,
-    parameterRepo:    RoParameterRepository,
     interpolCompiler: InterpolatedValueCompiler,
     onUpdatedHook:    (Set[NodeId], UpdateCause) => IOResult[Unit],
     globalPolicyMode: () => IOResult[GlobalPolicyMode]
@@ -234,7 +231,6 @@ class HttpQueryDataSourceService(
       nodeInfo:         CoreNodeFact,
       policyServers:    Map[NodeId, CoreNodeFact],
       globalPolicyMode: GlobalPolicyMode,
-      parameters:       Set[GlobalParameter],
       cause:            UpdateCause
   ): IOResult[NodeUpdateResult] = {
     (for {
@@ -252,7 +248,6 @@ class HttpQueryDataSourceService(
                         nodeInfo,
                         policyServer,
                         globalPolicyMode,
-                        parameters,
                         datasource.requestTimeOut,
                         datasource.requestTimeOut
                       )
@@ -276,8 +271,7 @@ class HttpQueryDataSourceService(
     def tasks(
         nodes:            Map[NodeId, CoreNodeFact],
         policyServers:    Map[NodeId, CoreNodeFact],
-        globalPolicyMode: GlobalPolicyMode,
-        parameters:       Set[GlobalParameter]
+        globalPolicyMode: GlobalPolicyMode
     ): IOResult[List[Either[RudderError, NodeUpdateResult]]] = {
 
       /*
@@ -288,7 +282,7 @@ class HttpQueryDataSourceService(
        */
       ZIO
         .foreachPar(nodes.values.toList) { nodeInfo =>
-          buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, globalPolicyMode, parameters, cause).either
+          buildOneNodeTask(datasourceId, datasource, nodeInfo, policyServers, globalPolicyMode, cause).either
         }
         .withParallelism(datasource.maxParallelRequest)
     }
@@ -320,7 +314,7 @@ class HttpQueryDataSourceService(
     for {
       mode         <- globalPolicyMode()
       _            <- DataSourceLoggerPure.trace(s"Start querying data for ${nodes.size} nodes")
-      updated      <- tasks(nodes, info.policyServers, mode, info.parameters)
+      updated      <- tasks(nodes, info.policyServers, mode)
                         .timeout(timeout)
                         .notOptional(
                           s"Timeout error after ${zio.Duration.fromJava(timeout).render}"
@@ -341,18 +335,14 @@ class HttpQueryDataSourceService(
       globalPolicyMode: () => IOResult[GlobalPolicyMode],
       cause:            UpdateCause
   ): IOResult[Set[NodeUpdateResult]] = {
-    // datasources need all tenant access
-    given qc: QueryContext = QueryContext.systemQC
-
     for {
       nodes        <- factRepository.getAll()(using QueryContext.systemQC)
       policyServers = nodes.filter(_._2.rudderSettings.isPolicyServer)
-      parameters   <- parameterRepo.getAllGlobalParameters().map(_.toSet)
       updated      <- querySubsetByNode(
                         datasourceId,
                         datasource,
                         globalPolicyMode,
-                        PartialNodeUpdate(nodes.toMap, policyServers.toMap, parameters),
+                        PartialNodeUpdate(nodes.toMap, policyServers.toMap),
                         cause,
                         onUpdatedHook
                       )
@@ -379,17 +369,13 @@ class HttpQueryDataSourceService(
       nodeId:           NodeId,
       cause:            UpdateCause
   ): IOResult[NodeUpdateResult] = {
-    // datasources need all tenant access
-    given qc: QueryContext = QueryContext.systemQC
-
     for {
       mode         <- globalPolicyMode()
       allNodes     <- factRepository.getAll()(using QueryContext.systemQC)
       node         <- allNodes.get(nodeId).notOptional(s"The node with id '${nodeId.value}' was not found")
       policyServers = allNodes.filter(_._1 == node.rudderSettings.policyServerId)
-      parameters   <- parameterRepo.getAllGlobalParameters().map(_.toSet)
       updated      <-
-        buildOneNodeTask(datasourceId, datasource, node, policyServers.toMap, mode, parameters, cause)
+        buildOneNodeTask(datasourceId, datasource, node, policyServers.toMap, mode, cause)
           .timeout(datasource.requestTimeOut)
           .notOptional(
             s"Timeout error after ${datasource.requestTimeOut.asScala.toString()} for update of datasource '${datasourceId.value}'"
