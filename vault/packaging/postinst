@@ -5,6 +5,7 @@ set -e
 mkdir -p /var/rudder/plugin-resources
 
 su -s /bin/sh rudder-webapp <<EOF
+  set -e
   cp -a /opt/rudder/share/plugins/vault/* /var/rudder/configuration-repository/ncf/
   cd /var/rudder/configuration-repository/ncf/
   rm sample_vault.json
