@@ -2,6 +2,7 @@
 set -e
 
 su -s /bin/sh rudder-webapp <<EOF
+  set -e
   # Postinstall for Rudder datasource plugin
   RUDDER_OPT="/opt/rudder"
 
