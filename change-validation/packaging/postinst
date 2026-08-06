@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-su -s /bin/sh rudder-webapp <<EOF
+su -s /bin/sh rudder-webapp <<'EOF'
+  set -e
   SQL_CREDENTIALS=$(grep -c -E "^rudder.jdbc.(username|password)[ \t]*=" /opt/rudder/etc/rudder-web.properties || true)
 
   if [ -f /opt/rudder/etc/rudder-web.properties -a ${SQL_CREDENTIALS} -eq 2 ]; then
@@ -34,10 +35,10 @@ su -s /bin/sh rudder-webapp <<EOF
   echo " Done"
 
   # Notification's configuration file
-  cp /opt/rudder/share/plugins/change-validation/change-validation.conf /opt/rudder/etc/plugins/
   mkdir -p /var/rudder/plugins/change-validation
   cp /opt/rudder/share/plugins/change-validation/validation-mail.template /var/rudder/plugins/change-validation
   cp /opt/rudder/share/plugins/change-validation/deployment-mail.template /var/rudder/plugins/change-validation
   cp /opt/rudder/share/plugins/change-validation/cancelled-mail.template /var/rudder/plugins/change-validation
   cp /opt/rudder/share/plugins/change-validation/deployed-mail.template /var/rudder/plugins/change-validation
 EOF
+cp /opt/rudder/share/plugins/change-validation/change-validation.conf /opt/rudder/etc/plugins/
