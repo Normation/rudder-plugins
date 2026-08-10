@@ -810,9 +810,29 @@ object RudderTokenMapping {
   }
 
   /*
+   * Enforces that when tenants are disabled, give access by default to "all tenants".
+   *
+   * To be used when there are no known default tenants.
+   */
+  def getTenants(
+      reg:             RudderOAuth2Registration & RegistrationWithRoles,
+      principal:       String, // user name or token id
+      protocolName:    String  // oauth2Api, oauth2, oidc
+  )(
+      getTokenTenants: String => Option[Set[String]]
+  ): TenantAccessGrant = {
+    val defaultNsc = if (reg.tenants.enabled) {
+      TenantAccessGrant.None
+    } else {
+      TenantAccessGrant.All
+    }
+    getTenants(reg, principal, protocolName, defaultNsc)(getTokenTenants)
+  }
+
+  /*
    * This is the way to get the list of defined tenants given what an OAuth2 token gives.
    * - we have a notion of "default tenants" which are the one the user or the token have by default, without
-   *   token info
+   *   token info. When tenants are disabled, default is access to all tenants for compatibility
    * - we can map tenants to rudder ones so that IdP tenant names and Rudder ones are independent
    * - we can restrict the available tenants to the ones mapped so that a Rogue IdP can't use Rudder internal
    *   tenants names (and chaos ensues if those internal name change - even if tenants should be public names)
@@ -876,8 +896,12 @@ object RudderTokenMapping {
       tenants
 
     } else {
-      AuthBackendsLogger.debug(s"${protocolName} configuration is not configured to use token provided tenants")
-      default
+      // compatibility: disabled tenants configuration means access to all tenants
+      val fallback = TenantAccessGrant.All
+      AuthBackendsLogger.debug(
+        s"${protocolName} configuration is not configured to use token provided tenants, falling back to '${fallback.serialize}'"
+      )
+      fallback
     }
 
     tenants
@@ -1324,8 +1348,7 @@ class RudderJwtAuthenticationConverter(
       }
 
       val roles    = RudderTokenMapping.getRoles(registration, t.getName, PROTOCOL_ID, default = Set())(getAttr)
-      val nsc      =
-        RudderTokenMapping.getTenants(registration, t.getName, PROTOCOL_ID, default = TenantAccessGrant.None)(getAttr)
+      val nsc      = RudderTokenMapping.getTenants(registration, t.getName, PROTOCOL_ID)(getAttr)
       val apiAuthz = RudderTokenMapping.getApiAuthorization(roleApiMapping, roles)
 
       // create RudderUserDetails from token
