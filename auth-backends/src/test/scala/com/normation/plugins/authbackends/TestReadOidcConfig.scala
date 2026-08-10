@@ -111,7 +111,7 @@ class TestReadOidcConfig extends Specification {
     "work for simple tenants" in {
       val tokenValues = Set("rudder_TA", "rudder_TB")
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt")(_ => Some(tokenValues))
 
       tenants === NodeSecurityContext.ByTenants(Chunk(TenantId("TA"), TenantId("TB")))
     }
@@ -119,7 +119,7 @@ class TestReadOidcConfig extends Specification {
     "work for no tenants" in {
       val tokenValues = Set.empty[String]
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt")(_ => Some(tokenValues))
 
       tenants === NodeSecurityContext.None
     }
@@ -127,7 +127,7 @@ class TestReadOidcConfig extends Specification {
     "work for none" in {
       val tokenValues = Set("rudder_none", "rudder_TA")
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt")(_ => Some(tokenValues))
 
       tenants === NodeSecurityContext.None
     }
@@ -135,7 +135,14 @@ class TestReadOidcConfig extends Specification {
     "work for all" in {
       val tokenValues = Set("rudder_all", "rudder_TA")
       val tenants     =
-        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", NodeSecurityContext.None)(_ => Some(tokenValues))
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt")(_ => Some(tokenValues))
+
+      tenants === NodeSecurityContext.All
+    }
+
+    "fallback to '*' when tenants not enabled" in {
+      val tenants =
+        RudderTokenMapping.getTenants(regs("notenantsidp"), "user", "jwt")(_ => None)
 
       tenants === NodeSecurityContext.All
     }
