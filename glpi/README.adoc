@@ -14,6 +14,7 @@ other general information.
 This plugin provides integration between Rudder and GLPI. It will send
 to your GLPI server the up-to-date inventories processed by the Rudder
 server.
+You need to have GLPI version *10.0.0.6 or lower* for the plugin to run correctly.
 
 == Installation
 
