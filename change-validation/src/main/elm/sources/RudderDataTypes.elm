@@ -78,6 +78,7 @@ type alias ChangeRequestMainDetailsMetadata =
     , eventLogs : List EventLog
     , prevStatus : Maybe BackStatus
     , allNextSteps : List NextStatus
+    , isAuthor : Bool
     }
 
 
@@ -87,6 +88,7 @@ type alias ChangeRequestMainDetails =
     , eventLogs : List EventLog
     , prevStatus : Maybe BackStatus
     , reachableNextSteps : Maybe AllNextSteps
+    , isAuthor : Bool
     }
 
 
@@ -446,12 +448,13 @@ decodeChangeRequestMainDetails =
                 (field "changeRequest" decodeChangeRequestDetails
                     |> andThen
                         (\changeRequestDetails ->
-                            map5 ChangeRequestMainDetailsMetadata
+                            map6 ChangeRequestMainDetailsMetadata
                                 (succeed changeRequestDetails)
                                 (field "isPending" bool)
                                 (field "eventLogs" (decodeEventLogList changeRequestDetails.state))
                                 (maybe (field "backStatus" decodePrevStatus))
                                 (field "allNextSteps" (list decodeNextStatus))
+                                (field "isAuthor" bool)
                         )
                 )
             )
