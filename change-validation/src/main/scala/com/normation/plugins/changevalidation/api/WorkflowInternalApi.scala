@@ -74,6 +74,7 @@ import com.normation.rudder.services.eventlog.ChangeRequestEventLogService
 import com.normation.rudder.services.eventlog.EventLogDetailsService
 import com.normation.rudder.services.eventlog.WorkflowEventLogService
 import com.normation.rudder.services.modification.DiffService
+import com.normation.rudder.services.workflows.ChangeRequestAuthorship
 import com.normation.rudder.services.workflows.CommitAndDeployChangeRequestService
 import com.normation.rudder.services.workflows.WorkflowLevelService
 import enumeratum.Enum
@@ -254,6 +255,7 @@ class WorkflowInternalApiImpl(
         backStatus      = workflowService.findBackStatus(status)
         nextStatus      = workflowService.findNextStatus(status)
         allNextSteps    = findAllNextSteps(nextStatus)
+        isAuthor        = ChangeRequestAuthorship.of(changeRequest, authzToken.user) == ChangeRequestAuthorship.Author
         crEventLogs    <- changeRequestEventLogService.getChangeRequestHistory(changeRequest.id)
         wfEventLogs    <- workflowEventLogService.getChangeRequestHistory(changeRequest.id)
       } yield {
@@ -264,7 +266,8 @@ class WorkflowInternalApiImpl(
           wfEventLogs,
           crEventLogs,
           backStatus,
-          allNextSteps
+          allNextSteps,
+          isAuthor
         )(using
           eventLogDetailsService
         )
