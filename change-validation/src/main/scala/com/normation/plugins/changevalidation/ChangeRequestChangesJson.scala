@@ -765,7 +765,8 @@ final case class ChangeRequestMainDetailsJson(
     isPending:     Boolean,
     eventLogs:     Chunk[EventLogJson],
     backStatus:    Option[WorkflowNodeId],
-    allNextSteps:  Chunk[WorkflowNodeId]
+    allNextSteps:  Chunk[WorkflowNodeId],
+    isAuthor:      Boolean
 )
 
 object ChangeRequestMainDetailsJson {
@@ -794,7 +795,8 @@ object ChangeRequestMainDetailsJson {
       wfLogs:       Seq[WorkflowStepChanged],
       crLogs:       Seq[ChangeRequestEventLog],
       backStatus:   Option[WorkflowNodeId],
-      allNextSteps: Seq[WorkflowNodeId]
+      allNextSteps: Seq[WorkflowNodeId],
+      isAuthor:     Boolean
   )(implicit eventLogDetailsService: EventLogDetailsService): ChangeRequestMainDetailsJson = {
 
     val resourceChangeLogs = cr match {
@@ -821,7 +823,8 @@ object ChangeRequestMainDetailsJson {
       isPending,
       eventLogs,
       backStatus,
-      Chunk.from(allNextSteps)
+      Chunk.from(allNextSteps),
+      isAuthor
     )
   }
 }
