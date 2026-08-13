@@ -9,7 +9,7 @@ import Html.Attributes exposing (attribute, class, disabled, href, id, placehold
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error, emptyBody, header, request)
 import Http.Detailed as Detailed
-import Json.Decode exposing (Decoder, Value, at, bool, field, index, int, map2)
+import Json.Decode exposing (Decoder, Value, at, bool, field, index, int, map4)
 import List
 import List.Extra exposing (uniqueBy)
 import Ports exposing (errorNotification, readUrl, successNotification)
@@ -47,7 +47,7 @@ init flags =
                 (ChangesForm.initModel { contextPath = flags.contextPath })
                 NoView
                 NoView
-                (ChangeMessageSettings False False)
+                (ChangeMessageSettings False False False False)
     in
     ( initModel, getChangeMessageSettings initModel )
 
@@ -67,6 +67,8 @@ type alias ChangeStepForm =
 type alias ChangeMessageSettings =
     { changeMessageEnabled : Bool
     , changeMessageMandatory : Bool
+    , enableSelfDeployment : Bool
+    , enableSelfValidation : Bool
     }
 
 
@@ -201,9 +203,11 @@ decodeChangeMessageSettings : Decoder ChangeMessageSettings
 decodeChangeMessageSettings =
     at [ "data" ]
         (field "settings"
-            (map2 ChangeMessageSettings
+            (map4 ChangeMessageSettings
                 (field "enable_change_message" bool)
                 (field "mandatory_change_message" bool)
+                (field "enable_self_deployment" bool)
+                (field "enable_self_validation" bool)
             )
         )
 
@@ -268,6 +272,7 @@ update msg model =
                             , eventLogs = cr.eventLogs
                             , prevStatus = cr.prevStatus
                             , reachableNextSteps = next
+                            , isAuthor = cr.isAuthor
                             }
 
                         formDetails =
@@ -494,7 +499,7 @@ bannerView model cr =
                 [ div [ class "d-flex" ] [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ] ]
                 , div [ class "flex-container" ]
                     [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                    , actionButtons model cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps
+                    , displayActionButtons model cr canChangeStep
                     ]
                 ]
             ]
@@ -509,8 +514,27 @@ bannerView model cr =
         ]
 
 
-actionButtons : Model -> Int -> Bool -> Maybe BackStatus -> Maybe AllNextSteps -> Html Msg
-actionButtons model crId canChangeStep backStatus allNextSteps =
+displayActionButtons : Model -> ChangeRequestMainDetails -> Bool -> Html Msg
+displayActionButtons model cr canChangeStep =
+    let
+        enableSelfValidation =
+            model.changeMessageSettings.enableSelfValidation
+
+        enableSelfDeployment =
+            model.changeMessageSettings.enableSelfDeployment
+
+        changeRequestState =
+            cr.changeRequest.state
+    in
+    if cr.isAuthor && (changeRequestState == "Pending validation" && not enableSelfValidation) || (changeRequestState == "Pending deployment" && not enableSelfDeployment) then
+        text ""
+
+    else
+        actionButtons cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps model.changeStepPopup model.changeMessageSettings.changeMessageEnabled
+
+
+actionButtons : Int -> Bool -> Maybe BackStatus -> Maybe AllNextSteps -> ViewState ChangeStepForm -> Bool -> Html Msg
+actionButtons crId canChangeStep backStatus allNextSteps changeStepPopup changeMessageEnabled =
     let
         canChangeStepAttr =
             disabled (not canChangeStep)
@@ -561,7 +585,7 @@ actionButtons model crId canChangeStep backStatus allNextSteps =
     in
     div [ id "actionBtns" ]
         [ div [ class "header-buttons flex-nowrap", id "workflowActionButtons" ] buttons
-        , changeStepPopupView model.changeStepPopup model.changeMessageSettings.changeMessageEnabled crId
+        , changeStepPopupView changeStepPopup changeMessageEnabled crId
         ]
 
 
