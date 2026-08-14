@@ -5,7 +5,7 @@ import ChangeRequestChangesForm as ChangesForm
 import ChangeRequestEditForm as EditForm
 import ErrorMessages exposing (decodeErrorDetails)
 import Html exposing (Attribute, Html, a, b, button, div, form, h1, h2, h3, h4, h5, label, option, p, select, span, text, textarea)
-import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, selected, style, tabindex, type_, value)
+import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, selected, style, tabindex, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http exposing (Error, emptyBody, header, request)
 import Http.Detailed as Detailed
@@ -499,7 +499,7 @@ bannerView model cr =
                 [ div [ class "d-flex" ] [ h1 [] [ span [ id "nameTitle" ] [ text cr.changeRequest.title ] ] ]
                 , div [ class "flex-container" ]
                     [ div [ id "CRStatus" ] [ text cr.changeRequest.state ]
-                    , displayActionButtons model cr canChangeStep
+                    , actionButtons model cr canChangeStep
                     ]
                 ]
             ]
@@ -514,8 +514,8 @@ bannerView model cr =
         ]
 
 
-displayActionButtons : Model -> ChangeRequestMainDetails -> Bool -> Html Msg
-displayActionButtons model cr canChangeStep =
+actionButtons : Model -> ChangeRequestMainDetails -> Bool -> Html Msg
+actionButtons model cr canChangeStep =
     let
         enableSelfValidation =
             model.changeMessageSettings.enableSelfValidation
@@ -523,19 +523,16 @@ displayActionButtons model cr canChangeStep =
         enableSelfDeployment =
             model.changeMessageSettings.enableSelfDeployment
 
-        changeRequestState =
-            cr.changeRequest.state
-    in
-    if cr.isAuthor && (changeRequestState == "Pending validation" && not enableSelfValidation || changeRequestState == "Pending deployment" && not enableSelfDeployment) then
-        text ""
+        getDisabledAttributes : Bool -> String -> List (Attribute Msg)
+        getDisabledAttributes enabledAction action =
+            if cr.isAuthor && not enabledAction then
+                [ disabled True
+                , title ("You are not authorized to do that action on your own change request: self-" ++ action ++ " is disabled.")
+                ]
 
-    else
-        actionButtons cr.changeRequest.id canChangeStep cr.prevStatus cr.reachableNextSteps model.changeStepPopup model.changeMessageSettings.changeMessageEnabled
+            else
+                [ canChangeStepAttr ]
 
-
-actionButtons : Int -> Bool -> Maybe BackStatus -> Maybe AllNextSteps -> ViewState ChangeStepForm -> Bool -> Html Msg
-actionButtons crId canChangeStep backStatus allNextSteps changeStepPopup changeMessageEnabled =
-    let
         canChangeStepAttr =
             disabled (not canChangeStep)
 
@@ -543,34 +540,42 @@ actionButtons crId canChangeStep backStatus allNextSteps changeStepPopup changeM
             case back of
                 Cancelled ->
                     button
-                        [ id "backStep"
-                        , class backStepBtnClass
-                        , canChangeStepAttr
-                        , onClick (OpenChangeStepPopup (BackSteps back))
-                        ]
+                        (List.append
+                            (getDisabledAttributes (cr.changeRequest.state == "Pending validation" || cr.changeRequest.state == "Pending deployment" && enableSelfDeployment) "deployment")
+                            [ id "backStep"
+                            , class backStepBtnClass
+                            , onClick (OpenChangeStepPopup (BackSteps back))
+                            ]
+                        )
                         [ text "Decline" ]
 
         nextStepButton next =
             let
-                action =
+                ( action, disabledAttributes ) =
                     case next.selected of
                         PendingDeployment ->
-                            "Validate"
+                            ( "Validate"
+                            , getDisabledAttributes enableSelfValidation "validation"
+                            )
 
                         Deployed ->
-                            "Deploy"
+                            ( "Deploy"
+                            , getDisabledAttributes enableSelfDeployment "deployment"
+                            )
             in
             button
-                [ id "nextStep"
-                , style "float" "right"
-                , class "btn btn-success"
-                , canChangeStepAttr
-                , onClick (OpenChangeStepPopup (NextSteps next))
-                ]
+                (List.append
+                    disabledAttributes
+                    [ id "nextStep"
+                    , style "float" "right"
+                    , class "btn btn-success"
+                    , onClick (OpenChangeStepPopup (NextSteps next))
+                    ]
+                )
                 [ text action ]
 
         buttons =
-            case ( backStatus, allNextSteps ) of
+            case ( cr.prevStatus, cr.reachableNextSteps ) of
                 ( Just back, Just next ) ->
                     [ backStepButton back, nextStepButton next ]
 
@@ -585,7 +590,7 @@ actionButtons crId canChangeStep backStatus allNextSteps changeStepPopup changeM
     in
     div [ id "actionBtns" ]
         [ div [ class "header-buttons flex-nowrap", id "workflowActionButtons" ] buttons
-        , changeStepPopupView changeStepPopup changeMessageEnabled crId
+        , changeStepPopupView model.changeStepPopup model.changeMessageSettings.changeMessageEnabled cr.changeRequest.id
         ]
 
 
