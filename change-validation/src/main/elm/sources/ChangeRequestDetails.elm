@@ -526,7 +526,7 @@ displayActionButtons model cr canChangeStep =
         changeRequestState =
             cr.changeRequest.state
     in
-    if cr.isAuthor && (changeRequestState == "Pending validation" && not enableSelfValidation) || (changeRequestState == "Pending deployment" && not enableSelfDeployment) then
+    if cr.isAuthor && (changeRequestState == "Pending validation" && not enableSelfValidation || changeRequestState == "Pending deployment" && not enableSelfDeployment) then
         text ""
 
     else
