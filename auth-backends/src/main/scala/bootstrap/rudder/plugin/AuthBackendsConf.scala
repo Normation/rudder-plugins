@@ -812,6 +812,8 @@ object RudderTokenMapping {
    * Enforces that when tenants are disabled, give access by default to "all tenants", if no tenants are found in token.
    *
    * To be used when there are no known default tenants.
+   * E.g. for JWT, if tenants are not provisioned, keep the same behavior as an API account with no tenant attribute,
+   * that is '*'
    */
   def getTenants(
       reg:             RudderOAuth2Registration & RegistrationWithRoles,
@@ -840,7 +842,7 @@ object RudderTokenMapping {
       reg:             RudderOAuth2Registration & RegistrationWithRoles,
       principal:       String, // user name or token id
       protocolName:    String, // oauth2Api, oauth2, oidc
-      default:         NodeSecurityContext
+      default:         => NodeSecurityContext
   )(
       getTokenTenants: String => Option[Set[String]]
   ): NodeSecurityContext = {
@@ -1016,7 +1018,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
       }
     }
     // tenants compatibility because of non-optional tenant model in RudderUserDetail: we may need user tenant from file
-    val resolvedUser = if (optReg.map(_.tenants.enabled).getOrElse(false)) {
+    def resolvedUser = if (optReg.map(_.tenants.enabled).getOrElse(false)) {
       // ok because tenants in file are ignored/merged, see `RudderTokenMapping.getTenants` for the tenant provisioning
       rudderUser
     } else {
@@ -1029,7 +1031,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           def invalidTenant = NodeSecurityContext.None
 
           def baseTenants = fileUsers.parsedUsers
-            .get(user.getName)
+            .get(rudderUser.getUsername)
             .map(u => {
               NodeSecurityContext.parseList(u.tenants) match {
                 case Left(err)    =>
@@ -1060,12 +1062,13 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
     buildUser(optReg, userRequest, user, roleApiMapping, resolvedUser, newUserDetails)
   }
 
+  // resolved user can have default fields that we don't want to compute
   def buildUser(
       optReg:         Option[RudderOAuth2Registration & RegistrationWithRoles],
       userRequest:    R,
       user:           U,
       roleApiMapping: RoleApiMapping,
-      rudder:         RudderUserDetail,
+      rudder:         => RudderUserDetail,
       userBuilder:    (U, RudderUserDetail) => T
   ): T = {
 
@@ -1083,9 +1086,9 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
             Some(user.getAttribute[java.util.ArrayList[String]](attributeName).asScala.toSet)
           } else None
         }
-
-        val roles = RudderTokenMapping.getRoles(reg, rudder.getUsername, protocolId, rudder.roles)(getAttr)
-        val nsc   = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, rudder.nodePerms)(getAttr)
+        def tenants = rudder.nodePerms
+        val roles   = RudderTokenMapping.getRoles(reg, rudder.getUsername, protocolId, rudder.roles)(getAttr)
+        val nsc     = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, tenants)(getAttr)
 
         (roles, nsc)
     }
