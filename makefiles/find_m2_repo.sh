@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # 
 # This file help find M2_REPO. 
 # This is not trivial as M2_REPO can be defined in a multitude of
