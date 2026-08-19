@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 errors=0
 
 for filename in preinst postinst prerm postrm; do
