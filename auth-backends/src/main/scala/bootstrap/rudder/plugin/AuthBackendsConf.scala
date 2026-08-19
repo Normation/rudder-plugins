@@ -809,7 +809,7 @@ object RudderTokenMapping {
   }
 
   /*
-   * Enforces that when tenants are disabled, give access by default to "all tenants".
+   * Enforces that when tenants are disabled, give access by default to "all tenants", if no tenants are found in token.
    *
    * To be used when there are no known default tenants.
    */
@@ -895,8 +895,8 @@ object RudderTokenMapping {
       tenants
 
     } else {
-      // compatibility: disabled tenants configuration means access to all tenants
-      val fallback = NodeSecurityContext.All
+      // disabled tenants configuration means tenant should be resolved as the default
+      val fallback = default
       AuthBackendsLogger.debug(
         s"${protocolName} configuration is not configured to use token provided tenants, falling back to '${fallback.serialize}'"
       )
@@ -991,7 +991,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
     val optReg = registrationRepository.registrations.get(userRequest.getClientRegistration.getRegistrationId)
 
     // check that we know that user in our DB, else if "provisioning" is enabled, create it
-    val rudderUser = {
+    val rudderUser   = {
       try {
         rudderUserDetailsService.loadUserByUsername(user.getName)
       } catch {
@@ -1015,8 +1015,49 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           rudderUserDetailsService.loadUserByUsername(user.getName)
       }
     }
+    // tenants compatibility because of non-optional tenant model in RudderUserDetail: we may need user tenant from file
+    val resolvedUser = if (optReg.map(_.tenants.enabled).getOrElse(false)) {
+      // ok because tenants in file are ignored/merged, see `RudderTokenMapping.getTenants` for the tenant provisioning
+      rudderUser
+    } else {
+      // tenants in base, if present, are the only source of truth since tenant are not provisioned:
+      // - default tenant, if absent (even from file), is '*'
+      // - invalid tenants should be resolved as '-'
+      rudderUserDetailsService.authConfigProvider.authConfig match {
+        case fileUsers: ValidatedUserList =>
+          def defaultTenant = NodeSecurityContext.All
+          def invalidTenant = NodeSecurityContext.None
 
-    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails)
+          def baseTenants = fileUsers.parsedUsers
+            .get(user.getName)
+            .map(u => {
+              NodeSecurityContext.parseList(u.tenants) match {
+                case Left(err)    =>
+                  AuthBackendsLogger.info(
+                    s"User '${user.getName}' tenants are invalid, fallback to '${invalidTenant.serialize}': ${err.fullMsg}"
+                  )
+                  rudderUser.copy(nodePerms = invalidTenant)
+                case Right(value) =>
+                  AuthBackendsLogger.debug(
+                    s"User '${user.getName}' has resolved tenants from file: ${value.serialize}"
+                  )
+                  // provided user already has the right tenant, no need for copy
+                  rudderUser
+              }
+            })
+          baseTenants.getOrElse {
+            AuthBackendsLogger.debug(
+              s"User '${user.getName}' is not in file or has no 'tenants' defined, falling back to ${defaultTenant.serialize}"
+            )
+            rudderUser.copy(nodePerms = defaultTenant)
+          }
+
+        // unreachable for OIDC/OAuth2
+        case _:         SingleUserList    => rudderUser
+      }
+    }
+
+    buildUser(optReg, userRequest, user, roleApiMapping, resolvedUser, newUserDetails)
   }
 
   def buildUser(
