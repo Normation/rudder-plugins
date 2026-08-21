@@ -541,7 +541,7 @@ actionButtons model cr canChangeStep =
                 Cancelled ->
                     button
                         (List.append
-                            (getDisabledAttributes (cr.changeRequest.state == "Pending validation" || cr.changeRequest.state == "Pending deployment" && enableSelfDeployment) "deployment")
+                            (getDisabledAttributes (cr.changeRequest.state == "Pending validation" || (cr.changeRequest.state == "Pending deployment" && enableSelfDeployment)) "deployment")
                             [ id "backStep"
                             , class backStepBtnClass
                             , onClick (OpenChangeStepPopup (BackSteps back))
