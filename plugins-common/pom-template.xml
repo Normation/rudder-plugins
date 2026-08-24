@@ -259,7 +259,6 @@
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-io_3</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum_3</artifactId><scope>provided</scope><version>${enumeratum-version}</version></dependency>
     <dependency><groupId>com.beachape</groupId><artifactId>enumeratum-macros_3</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>com.codacy</groupId><artifactId>scalaj-http_3</artifactId><scope>provided</scope><version>${scalaj-version}</version></dependency>
     <dependency><groupId>com.comcast</groupId><artifactId>ip4s-core_3</artifactId><scope>provided</scope><version>${ip4s-version}</version></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-atto_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>
     <dependency><groupId>com.github.alonsodomin.cron4s</groupId><artifactId>cron4s-core_3</artifactId><scope>provided</scope><version>${cron4s-version}</version></dependency>

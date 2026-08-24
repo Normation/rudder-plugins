@@ -54,6 +54,16 @@
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
 
+    <!--
+      Datasources is the last user of scalaj-http: we removed it in https://issues.rudder.io/issues/29583
+      from core. In consequence, we need to declare the dep here.
+    -->
+    <dependency>
+      <groupId>com.codacy</groupId>
+      <artifactId>scalaj-http_${scala-binary-version}</artifactId>
+      <version>2.5.0</version>
+    </dependency>
+
     <!-- YAML parser, for REST API test -->
     <dependency>
       <groupId>org.yaml</groupId>
