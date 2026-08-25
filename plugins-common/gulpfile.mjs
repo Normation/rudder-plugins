@@ -30,7 +30,18 @@ var grep = function(regex) {
 
 const __dirname = path.resolve();
 
+let VENDOR_JS = [];
+try {
+    VENDOR_JS = (await import('./dependencies.mjs')).vendor_js ?? [];
+} catch (e) {
+    if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e;
+}
+
 const paths = {
+    'vendor_js': {
+        'src': VENDOR_JS,
+        'dest': 'resources/toserve/',
+    },
     'elm': {
         'src': 'elm',
         'watch': 'elm/sources/*.elm',
@@ -69,6 +80,17 @@ function clean(cb) {
     deleteSync(cleanPaths);
     cb();
 }
+
+function vendor_js(cb) {
+    if (!paths.vendor_js.src.length) return cb();
+    src(paths.vendor_js.src, { allowEmpty: true })
+        // flatten file hierarchy
+        .pipe(rename({
+            dirname: ''
+        }))
+        .pipe(dest(paths.vendor_js.dest))
+    cb();
+};
 
 function elm(cb) {
     src(paths.elm.watch)
@@ -123,4 +145,4 @@ task('watch', series(clean, function() {
     watch(paths.scss.src, { ignoreInitial: false }, scss);
 }));
 
-task('default', series(clean, parallel(elm, scss)));
+task('default', series(clean, parallel(vendor_js, elm, scss)));
