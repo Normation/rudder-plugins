@@ -451,6 +451,11 @@ body.sidebar-mini.sidebar-collapse #supervised-targets-app .toolbar {
   margin-top: 16px;
 }
 
+.btn.btn-success:disabled[title] {
+  pointer-events: auto;
+  cursor: help;
+}
+
 // KEYFRAMES
 @keyframes bounceH {
   0%   {transform: translateX(0);}
