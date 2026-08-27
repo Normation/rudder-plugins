@@ -71,7 +71,7 @@ class TestReadOidcConfig extends Specification {
 
       (regs("someidp").roles.mapping === Map(
         "rudder_admin"    -> "administrator",
-        "rudder_readonly" -> "readonly"
+        "rudder_readonly" -> "read_only"
       )) and (regs("someidp").tenants.mapping === Map(
         "rudder_TA" -> "TA",
         "rudder_TB" -> "TB"
@@ -166,7 +166,7 @@ class TestReadOidcConfig extends Specification {
 
       (regs("someidp").roles.mapping === Map(
         "rudder_admin"    -> "administrator",
-        "rudder_readonly" -> "readonly"
+        "rudder_readonly" -> "read_only"
       )) and (regs("someidp").tenants.mapping === Map(
         "rudder_TA" -> "TA",
         "rudder_TB" -> "TB"

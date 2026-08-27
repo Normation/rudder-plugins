@@ -675,7 +675,7 @@ rudder.auth.oauth2.provider.keycloak.roles.override=true
 #
 # Check the list of pre-defined roles: https://docs.rudder.io/reference/current/administration/users.html#_pre_defined_roles
 rudder.auth.oauth2.provider.keycloak.roles.mapping.entitlements.rudder_admin=administrator
-rudder.auth.oauth2.provider.keycloak.roles.mapping.entitlements.rudder_readonly=readonly
+rudder.auth.oauth2.provider.keycloak.roles.mapping.entitlements.rudder_readonly=read_only
 # By default, there are restrictions to roles that The IdP can assign, to match only the role mapped in above entitlements.
 # When the following property is true, roles that don't appear in `mapping.entitlements` will be filtered-out (default).
 # When it is false, any role from the IdP is mapped to a Rudder role if the same role name exists.
@@ -688,8 +688,8 @@ rudder.auth.oauth2.provider.keycloak.roles.mapping.restricted=true
 # In the following example, OIDC role `rudder_readonly` will be mapped to local `readonly2` role,
 # overriding the value previously defined above:
 #rudder.auth.oauth2.provider.keycloak.roles.mapping.reverseEntitlements.readonly2=rudder_readonly
-# And here, we map the IdP role "name=Alice,ou=users" to Rudder role "readonly"
-#rudder.auth.oauth2.provider.keycloak.roles.mapping.reverseEntitlements.readonly=name=Alice,ou=users
+# And here, we map the IdP role "name=Alice,ou=users" to Rudder role "read_only"
+#rudder.auth.oauth2.provider.keycloak.roles.mapping.reverseEntitlements.read_only=name=Alice,ou=users
 
 # enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
 # Users provisioned through that channel don't have roles, you will need to also
