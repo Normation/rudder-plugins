@@ -49,6 +49,11 @@ bundle agent variable_from_consul(variable_prefix, variable_name, path)
       "config_defined"   expression => isvariable("consul.config");
 
   methods:
+    pass1.!pass2::
+      "${report_data.method_id}" usebundle => consul_fetch_config,
+                                        if => not(isvariable("consul.config"));
+
+
     pass2.variable_defined::
       "${report_data.method_id}" usebundle => _classes_success("${report_data.method_id}");
       "${report_data.method_id}" usebundle => _classes_success("${class_prefix}");
