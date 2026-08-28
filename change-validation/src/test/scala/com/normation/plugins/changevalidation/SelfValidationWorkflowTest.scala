@@ -52,10 +52,12 @@ import com.normation.rudder.services.modification.DiffServiceImpl
 import com.normation.rudder.services.workflows.ChangeRequestAuthorship
 import com.normation.rudder.services.workflows.ChangeRequestAuthorship.*
 import com.normation.rudder.tenants.DefaultTenantCheckLogic
+import com.normation.rudder.tenants.InMemoryTenantService
 import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.AuthenticatedUser
 import com.normation.rudder.users.RudderAccount
 import com.normation.rudder.users.UserPassword
+import com.normation.zio.UnsafeRun
 import org.junit.runner.RunWith
 import zio.*
 import zio.syntax.*
@@ -126,7 +128,7 @@ class SelfValidationWorkflowTest extends ZIOSpecDefault {
       mockServices.changeRequestRepository,
       mockServices.notificationService,
       mockServices.userService,
-      new DefaultTenantCheckLogic(),
+      new DefaultTenantCheckLogic(InMemoryTenantService.make(Nil).runNow),
       () => true.succeed,
       selfValidation,
       selfDeployment
@@ -148,7 +150,7 @@ class SelfValidationWorkflowTest extends ZIOSpecDefault {
       mockServices.userPropertyService,
       selfValidation,
       selfDeployment,
-      new DefaultTenantCheckLogic()
+      new DefaultTenantCheckLogic(InMemoryTenantService.make(Nil).runNow)
     )(using AlwaysEnabledPluginStatus)
   }
 
