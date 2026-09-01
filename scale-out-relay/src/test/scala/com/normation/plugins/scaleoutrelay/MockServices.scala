@@ -57,7 +57,8 @@ class MockServices(nodeGroups: Map[NodeGroupId, NodeGroup]) {
       policyServer.succeed
     }
 
-    override def update(group: NodeGroup)(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
+    override def restore(group: NodeGroup)(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
+    override def update(group:  NodeGroup)(implicit cc: ChangeContext): IOResult[Option[ModifyNodeGroupDiff]] = ???
     override def updateDiffNodes(
         group:  NodeGroupId,
         add:    List[NodeId],
