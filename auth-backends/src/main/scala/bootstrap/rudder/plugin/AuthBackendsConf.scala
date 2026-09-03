@@ -1024,17 +1024,17 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
     } else {
       // tenants in base, if present, are the only source of truth since tenant are not provisioned
       // default tenant, if absent (even from file), is '*'
-      def defaultTenant = NodeSecurityContext.All
+      def defaultTenant = TenantAccessGrant.All
 
       rudderUserDetailsService.authConfigProvider.getUserByName(rudderUser.getUsername) match {
         case Left(_)  => // user not in XML file, use default
           AuthBackendsLogger.debug(
             s"User '${user.getName}' is not in file or has no 'tenants' defined, falling back to ${defaultTenant.serialize}"
           )
-          rudderUser.copy(nodePerms = defaultTenant)
+          rudderUser.copy(accessGrant = defaultTenant)
         case Right(u) => // user in XML file, use its tenants
           AuthBackendsLogger.debug(
-            s"User '${user.getName}' has resolved tenants from file: ${u.nodePerms.serialize}"
+            s"User '${user.getName}' has resolved tenants from file: ${u.accessGrant.serialize}"
           )
           // provided user already has the right tenant, no need for copy
           rudderUser
