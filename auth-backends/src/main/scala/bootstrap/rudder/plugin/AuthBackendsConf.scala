@@ -810,9 +810,11 @@ object RudderTokenMapping {
   }
 
   /*
-   * Enforces that when tenants are disabled, give access by default to "all tenants".
+   * Enforces that when tenants are disabled, give access by default to "all tenants", if no tenants are found in token.
    *
    * To be used when there are no known default tenants.
+   * E.g. for JWT, if tenants are not provisioned, keep the same behavior as an API account with no tenant attribute,
+   * that is '*'
    */
   def getTenants(
       reg:             RudderOAuth2Registration & RegistrationWithRoles,
@@ -896,8 +898,8 @@ object RudderTokenMapping {
       tenants
 
     } else {
-      // compatibility: disabled tenants configuration means access to all tenants
-      val fallback = TenantAccessGrant.All
+      // disabled tenants configuration means tenant should be resolved as the default
+      val fallback = default
       AuthBackendsLogger.debug(
         s"${protocolName} configuration is not configured to use token provided tenants, falling back to '${fallback.serialize}'"
       )
@@ -992,7 +994,7 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
     val optReg = registrationRepository.registrations.get(userRequest.getClientRegistration.getRegistrationId)
 
     // check that we know that user in our DB, else if "provisioning" is enabled, create it
-    val rudderUser = {
+    val rudderUser   = {
       try {
         rudderUserDetailsService.loadUserByUsername(user.getName)
       } catch {
@@ -1016,10 +1018,33 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
           rudderUserDetailsService.loadUserByUsername(user.getName)
       }
     }
+    val resolvedUser = if (optReg.map(_.tenants.enabled).getOrElse(false)) {
+      // ok because tenants in file are ignored/merged, see `RudderTokenMapping.getTenants` for the tenant provisioning
+      rudderUser
+    } else {
+      // tenants in base, if present, are the only source of truth since tenant are not provisioned
+      // default tenant, if absent (even from file), is '*'
+      def defaultTenant = NodeSecurityContext.All
 
-    buildUser(optReg, userRequest, user, roleApiMapping, rudderUser, newUserDetails)
+      rudderUserDetailsService.authConfigProvider.getUserByName(rudderUser.getUsername) match {
+        case Left(_)  => // user not in XML file, use default
+          AuthBackendsLogger.debug(
+            s"User '${user.getName}' is not in file or has no 'tenants' defined, falling back to ${defaultTenant.serialize}"
+          )
+          rudderUser.copy(nodePerms = defaultTenant)
+        case Right(u) => // user in XML file, use its tenants
+          AuthBackendsLogger.debug(
+            s"User '${user.getName}' has resolved tenants from file: ${u.nodePerms.serialize}"
+          )
+          // provided user already has the right tenant, no need for copy
+          rudderUser
+      }
+    }
+
+    buildUser(optReg, userRequest, user, roleApiMapping, resolvedUser, newUserDetails)
   }
 
+  // resolved user can have default fields that we don't want to compute
   def buildUser(
       optReg:         Option[RudderOAuth2Registration & RegistrationWithRoles],
       userRequest:    R,
@@ -1043,9 +1068,9 @@ trait RudderUserServerMapping[R <: OAuth2UserRequest, U <: OAuth2User, T <: Rudd
             Some(user.getAttribute[java.util.ArrayList[String]](attributeName).asScala.toSet)
           } else None
         }
-
-        val roles = RudderTokenMapping.getRoles(reg, rudder.getUsername, protocolId, rudder.roles)(getAttr)
-        val nsc   = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, rudder.accessGrant)(getAttr)
+        val tenants = rudder.accessGrant
+        val roles   = RudderTokenMapping.getRoles(reg, rudder.getUsername, protocolId, rudder.roles)(getAttr)
+        val nsc     = RudderTokenMapping.getTenants(reg, rudder.getUsername, protocolId, tenants)(getAttr)
 
         (roles, nsc)
     }

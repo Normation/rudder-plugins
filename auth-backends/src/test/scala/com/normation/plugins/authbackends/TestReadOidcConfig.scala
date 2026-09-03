@@ -140,11 +140,27 @@ class TestReadOidcConfig extends Specification {
       tenants === TenantAccessGrant.All
     }
 
-    "fallback to '*' when tenants not enabled" in {
+    "override user tenant" in {
+      def defaultTenant = NodeSecurityContext.ByTenants(Chunk(TenantId("TC"))) // gets ignored
+      val tenants       =
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "jwt", defaultTenant)(_ => None)
+
+      tenants === NodeSecurityContext.None
+    }
+
+    "fallback to '*' when user has no defined tenant and tenants provisioning is not enabled" in {
       val tenants =
         RudderTokenMapping.getTenants(regs("notenantsidp"), "user", "jwt")(_ => None)
 
       tenants === TenantAccessGrant.All
+    }
+
+    "fallback to user tenant when tenants provisioning is not enabled" in {
+      val defaultTenant = NodeSecurityContext.ByTenants(Chunk(TenantId("TC")))
+      val tenants       =
+        RudderTokenMapping.getTenants(regs("notenantsidp"), "user", "jwt", defaultTenant)(_ => None)
+
+      tenants === defaultTenant
     }
   }
 
