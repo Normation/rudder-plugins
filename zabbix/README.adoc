@@ -19,7 +19,16 @@ Generate the Rudder package if you do not already have the .rpkg file:
 // Everything after this line goes into Rudder documentation
 // ====doc====
 [zabbix-plugin]
-= Zabbix
+= Zabbix (deprecated)
+
+[WARNING]
+
+====
+
+This plugin is no longer maintained.
+
+====
+
 
 This plugin aims at providing Rudder integration with Zabbix. It can automatically add hosts to Zabbix
 when the corresponding node is set up for monitoring in Rudder.
@@ -29,7 +38,7 @@ when the corresponding node is set up for monitoring in Rudder.
 
 * Install the plugin on your Rudder server
 
-* Install the dependances
+* Install the dependencies
 ```
 $ apt install python3-packaging python3-requests
 ```
@@ -74,7 +83,7 @@ Removing hosts:
 
 on the Rudder server.
 
-In order to configure the monitoring to the Rudder nodes, you can provide Zabbix with templates and parameters (macros) associated to Zabbix hosts and will be synchronized with zabbix using its API.
+In order to configure the monitoring to the Rudder nodes, you can provide Zabbix with templates and parameters (macros) associated to Zabbix hosts and will be synchronized with Zabbix using its API.
 
 
 This operation can be manually executed by running:
