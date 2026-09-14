@@ -64,6 +64,7 @@ import com.normation.rudder.rule.category.RuleCategoryId
 import com.normation.rudder.services.marshalling.ChangeRequestChangesSerialisation
 import com.normation.rudder.services.marshalling.ChangeRequestChangesUnserialisation
 import com.normation.rudder.tenants.DefaultTenantCheckLogic
+import com.normation.rudder.tenants.InMemoryTenantService
 import com.normation.rudder.tenants.QueryContext
 import com.normation.zio.UnsafeRun
 import com.typesafe.config.ConfigValueFactory
@@ -260,8 +261,13 @@ class ChangeRequestJdbcRepositoryTest extends Specification with DBCommon with I
     changeRequestChangesUnserialisation,
     changeRequestChangesSerialisation
   )
-  lazy val roChangeRequestJdbcRepository =
-    new RoChangeRequestJdbcRepository(doobie, changeRequestMapper, new DefaultTenantCheckLogic())
+  lazy val roChangeRequestJdbcRepository = {
+    new RoChangeRequestJdbcRepository(
+      doobie,
+      changeRequestMapper,
+      new DefaultTenantCheckLogic(InMemoryTenantService.make(Nil).runNow)
+    )
+  }
   lazy val woChangeRequestJdbcRepository =
     new WoChangeRequestJdbcRepository(doobie, changeRequestMapper, roChangeRequestJdbcRepository)
 

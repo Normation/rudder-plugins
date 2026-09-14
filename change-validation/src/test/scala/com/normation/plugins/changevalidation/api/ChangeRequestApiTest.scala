@@ -97,6 +97,8 @@ import com.normation.rudder.rest.RestTestSetUp
 import com.normation.rudder.rest.TraitTestApiFromYamlFiles
 import com.normation.rudder.services.modification.DiffServiceImpl
 import com.normation.rudder.tenants.DefaultTenantCheckLogic
+import com.normation.rudder.tenants.InMemoryTenantService
+import com.normation.zio.UnsafeRun
 import java.nio.file.Files
 import org.joda.time.DateTime
 import org.junit.runner.RunWith
@@ -613,7 +615,7 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
       mockServices.userPropertyService,
       () => true.succeed,
       () => true.succeed,
-      new DefaultTenantCheckLogic()
+      new DefaultTenantCheckLogic(InMemoryTenantService.make(Nil).runNow)
     )(using AlwaysEnabledPluginStatus)
   )
 
@@ -629,7 +631,7 @@ class ChangeRequestApiTest extends ZIOSpecDefault {
     mockServices.changeRequestRepository,
     mockServices.notificationService,
     mockServices.userService,
-    new DefaultTenantCheckLogic(),
+    new DefaultTenantCheckLogic(InMemoryTenantService.make(Nil).runNow),
     () => true.succeed,
     () => true.succeed,
     () => true.succeed
