@@ -1102,7 +1102,11 @@ rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_admin=*
 First you will need to obtain a bearer token from your IdP, for example with Okta using the https://xxxx.okta.com/oauth2/v1/authorize?client_id=...&scope=openid&response_type=token&...
 
 Then you will need to create an API account in Rudder, without a token (because it is used to identify opaque bearer tokens and to declare authorizations, tenants, etc.).
-When creating the API account, The `Account ID` field should have the value of the `cid` (client id) attribute of the opaque bearer token that needs to be identified.
+
+An API account may be created:
+
+- for each user, which are identified with their `sub` token attribute. This attribute is the default that Rudder reads from the token attributes, to match an existing API account. The `sub` is generally the user ID on the IdP (it can be found in logs of the token attributes, at the `trace` log level)
+- for the OIDC client ID, in which case an API account that has the OIDC client ID as account ID must exist on Rudder. The token attribute in that case is `client_id`, and must be configured (see the example configuration below). Such token can be obtained with _client credentials_ grant type.
 
 Once the API account is created and as long as it is not expired, the access token that was obtained above should directly be usable with the Rudder REST API as a `Bearer` token i.e. with the header `Authorization: Bearer the_access_token`.
 
@@ -1213,7 +1217,13 @@ The different types of token have an expiration policy, so a new token will need
 
 *API account in Rudder does not exist or has expired*
 
-In the case of opaque bearer tokens, an API account with a specific account ID is needed (it should have the value of the client ID attribute of the generated opaque token). The API account also has an expiration date, that can be modified in Rudder if needed. The error log corresponding to an invalid API account is :
+In the case of opaque bearer tokens, an API account with a specific account ID is needed, depending on the `rudder.auth.oauth2.opaque.provider.<provider>.userNameAttributeName` configuration property:
+
+- with `sub` (default), one API account per user is needed, and the account ID is the `sub`, i.e. the user ID
+- with the OIDC client ID attribute (`client_id`, `cid`...), one API account corresponding to the OIDC client is needed, and the account ID is the client ID.
+
+The API account also has an expiration date, that can be modified in Rudder if needed. The error log corresponding to an invalid API account is :
+
 ----
 [timestamp] INFO  application.authentication - Rudder authentication attempt for principal '[token]' with backend 'oauth2ApiOpaqueToken': failure: An opaque Bearer token was received but No token with ID [accountID] is configured in Rudder
 ----
