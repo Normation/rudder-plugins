@@ -133,10 +133,13 @@ trait LicensedPluginCheck extends PluginStatus {
     }) match {
       case Right(x) => RudderPluginLicenseStatus.EnabledWithLicense(x.content.transformInto[PluginLicense])
       case Left(y)  =>
-        RudderPluginLicenseStatus.Disabled(
-          y.msg,
-          maybeLicense.toOption.map { case (l, _) => l.content.transformInto[PluginLicense] }
-        )
+        val license = (maybeLicense match {
+          case Right((license, _))             => Some(license)
+          case Left(e: LicenseError.Validity)  => Some(e.license)
+          case Left(e: LicenseError.Signature) => Some(e.license)
+          case Left(_)                         => None // other types have no license at all
+        }).map(x => x.content.transformInto[PluginLicense])
+        RudderPluginLicenseStatus.Disabled(y.msg, license)
     }
   }
 }
