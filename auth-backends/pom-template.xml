@@ -73,10 +73,11 @@
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
     <!-- undeclared needed dependency - be careful, check compat of nimbus-jose with spring version too! -->
+    <!-- jackson-databind 2.18 is LTS (2.19 is not), see https://github.com/FasterXML/jackson/wiki/Jackson-Releases#open-branches -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-       <version>2.18.9</version>
+       <version>2.18.11</version>
     </dependency>
     <dependency>
       <groupId>com.nimbusds</groupId>
