@@ -3,4 +3,5 @@
   <description>
     Techniques from the OpenSCAP Policies plugin
   </description>
+  <security><open-ro/></security>
 </xml>
