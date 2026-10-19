@@ -37,6 +37,7 @@
 package com.normation.plugins.authbackends
 
 import bootstrap.rudder.plugin.RudderTokenMapping
+import com.normation.rudder.Role
 import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.tenants.TenantId
 import com.normation.zio.*
@@ -70,11 +71,11 @@ class TestReadOidcConfig extends Specification {
       val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
       (regs("someidp").roles.mapping === Map(
-        "rudder_admin"    -> "administrator",
-        "rudder_readonly" -> "read_only"
+        "rudder_admin"    -> List("administrator"),
+        "rudder_readonly" -> List("read_only")
       )) and (regs("someidp").tenants.mapping === Map(
-        "rudder_TA" -> "TA",
-        "rudder_TB" -> "TB"
+        "rudder_TA" -> List("TA"),
+        "rudder_TB" -> List("TB")
       ))
     }
 
@@ -83,19 +84,19 @@ class TestReadOidcConfig extends Specification {
       val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
       (regs("someidp").roles.mapping === Map(
-        "rudder_admin"                                                                       -> "administrator",
-        "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
-        "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
+        "rudder_admin"                                                                       -> List("administrator"),
+        "rudder_readonly"                                                                    -> List("readonlyOVERRIDDEN"),
+        "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> List("administrator")
       )) and (
         regs("someidp").tenants.mapping.toList must containTheSameElementsAs(
           List(
-            "rudder_all"                                                                         -> "*",
-            "rudder_none"                                                                        -> "-",
-            "rudder_TA"                                                                          -> "TA",
-            "rudder_TB"                                                                          -> "TB_OVERRIDDEN",
-            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "TA",
-            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=Admin"                                   -> "*",
-            "CN=CCCC-DDDDD,OU=Groups,OU=_IT,OU=BB-DD,OU=Nobody"                                  -> "-"
+            "rudder_all"                                                                         -> List("*"),
+            "rudder_none"                                                                        -> List("-"),
+            "rudder_TA"                                                                          -> List("TA"),
+            "rudder_TB"                                                                          -> List("TB_OVERRIDDEN"),
+            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> List("TA"),
+            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=Admin"                                   -> List("*"),
+            "CN=CCCC-DDDDD,OU=Groups,OU=_IT,OU=BB-DD,OU=Nobody"                                  -> List("-")
           )
         )
       )
@@ -164,6 +165,59 @@ class TestReadOidcConfig extends Specification {
     }
   }
 
+  /*
+   * A HOCON configuration file allows to use an entitlement that can't be a java properties key (an LDAP DN)
+   * and to map one entitlement to several Rudder roles/tenants.
+   */
+  "HOCON mapping" should {
+    val dn           = "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu"
+    val config       = ConfigFactory.parseResources("oidc/oidc_hocon_mapping.conf")
+    val registration = RudderPropertyBasedOAuth2RegistrationDefinition.make().runNow
+    val regs         = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
+
+    "read a mapping with quoted keys and both scalar and list values" in {
+      (regs("someidp").roles.mapping === Map(
+        dn                -> List("administrator", "read_only"),
+        "rudder_readonly" -> List("read_only")
+      )) and (
+        regs("someidp").tenants.mapping.toList must containTheSameElementsAs(
+          List(
+            dn                                                  -> List("TA", "TB"),
+            "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=Admin"  -> List("*"),
+            "CN=CCCC-DDDDD,OU=Groups,OU=_IT,OU=BB-DD,OU=Nobody" -> List("-"),
+            "rudder_TA"                                         -> List("TA"),
+            // the two Rudder tenants granted by that entitlement in `reverseEntitlements` are merged, not overridden
+            "CN=EEEE-FFFFF,OU=Groups,OU=_IT,OU=BB-DD,OU=Dev"    -> List("TC", "TD")
+          )
+        )
+      )
+    }
+
+    "grant all the tenants of one entitlement" in {
+      val tenants =
+        RudderTokenMapping.getTenants(regs("someidp"), "user", "oidc", TenantAccessGrant.None)(_ => Some(Set(dn)))
+
+      tenants === TenantAccessGrant.ByTenants(
+        Chunk(TenantId("TA"), TenantId("TB"))
+      )
+    }
+
+    "grant all the tenants of a deprecated reverse entitlement" in {
+      val tenants = RudderTokenMapping.getTenants(regs("someidp"), "user", "oidc", TenantAccessGrant.None)(_ =>
+        Some(Set("CN=EEEE-FFFFF,OU=Groups,OU=_IT,OU=BB-DD,OU=Dev"))
+      )
+
+      tenants === TenantAccessGrant.ByTenants(Chunk(TenantId("TC"), TenantId("TD")))
+    }
+
+    "grant all the roles of one entitlement" in {
+      val roles = RudderTokenMapping.getRoles(regs("someidp"), "user", "oidc", Set.empty)(_ => Some(Set(dn)))
+
+      (roles.map(_.name) === Set("administrator", "read_only")) and
+      (roles.collect { case a: Role.Alias => a.aliasName } === Set(dn))
+    }
+  }
+
   "reading a JWT configuration" should {
     val registration = RudderPropertyBasedJwtRegistrationDefinition.make().runNow
 
@@ -181,11 +235,11 @@ class TestReadOidcConfig extends Specification {
       val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
       (regs("someidp").roles.mapping === Map(
-        "rudder_admin"    -> "administrator",
-        "rudder_readonly" -> "read_only"
+        "rudder_admin"    -> List("administrator"),
+        "rudder_readonly" -> List("read_only")
       )) and (regs("someidp").tenants.mapping === Map(
-        "rudder_TA" -> "TA",
-        "rudder_TB" -> "TB"
+        "rudder_TA" -> List("TA"),
+        "rudder_TB" -> List("TB")
       ))
     }
 
@@ -194,14 +248,14 @@ class TestReadOidcConfig extends Specification {
       val regs   = registration.readAllRegistrations(config, registration.readOneRegistration).runNow.toMap
 
       (regs("someidp").roles.mapping === Map(
-        "rudder_admin"                                                                       -> "administrator",
-        "rudder_readonly"                                                                    -> "readonlyOVERRIDDEN",
-        "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "administrator"
+        "rudder_admin"                                                                       -> List("administrator"),
+        "rudder_readonly"                                                                    -> List("readonlyOVERRIDDEN"),
+        "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> List("administrator")
       )) and (
         regs("someidp").tenants.mapping === Map(
-          "rudder_TA"                                                                          -> "TA",
-          "rudder_TB"                                                                          -> "TB_OVERRIDDEN",
-          "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> "TA"
+          "rudder_TA"                                                                          -> List("TA"),
+          "rudder_TB"                                                                          -> List("TB_OVERRIDDEN"),
+          "CN=AAAA-BBBBB,OU=Groups,OU=_IT,OU=BB-DD,OU=UUU-XXXX-YY,DC=ee,DC=if,DC=ttttt,DC=uuu" -> List("TA")
         )
       )
     }

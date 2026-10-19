@@ -756,26 +756,27 @@ object RudderTokenMapping {
       val filteredRoles = getProvidedList(reg.roles, principal)(getTokenRoles)
 
       AuthBackendsLogger.trace(
-        s"IdP configuration has registered role mapping: [${reg.roles.mapping.toList.sorted.map(x => s"${x._1 -> x._2}").mkString("; ")}]"
+        s"IdP configuration has registered role mapping: [${reg.roles.debugMapping}]"
       )
       val mappedRoles: Set[Role] = filteredRoles.flatMap { r =>
-        val role = reg.roles.mapping.get(r) match {
+        val roles = reg.roles.mapping.get(r) match {
           // if the role is not in the mapping, use the provided name as is.
-          case None    => RudderRoles.findRoleByName(r)
-          case Some(m) =>
+          case None     => RudderRoles.findRoleByName(r).map(_.toList)
+          case Some(ms) =>
             AuthBackendsLogger.debug(
-              s"Principal '${principal}': mapping IdP provided role '${r}' to Rudder role '${m}' "
+              s"Principal '${principal}': mapping IdP provided role '${r}' to Rudder role(s) [${ms.mkString(", ")}]"
             )
-            RudderRoles
-              .findRoleByName(m)
-              .map(_.map(x => Role.Alias(x, r, s"Alias from ${reg.registrationId} IdP")))
+            ZIO
+              .foreach(ms)(RudderRoles.findRoleByName(_))
+              .map(_.flatten.map(x => Role.Alias(x, r, s"Alias from ${reg.registrationId} IdP")))
         }
-        role.runNow.orElse {
+        val found = roles.runNow
+        if (found.isEmpty) {
           AuthBackendsLogger.debug(
             s"Role '${r}' does not match any Rudder role, ignoring it for user ${principal}"
           )
-          None
         }
+        found
       }
 
       if (mappedRoles.nonEmpty) {
@@ -851,20 +852,20 @@ object RudderTokenMapping {
       val filteredTenants = getProvidedList(reg.tenants, principal)(getTokenTenants)
 
       AuthBackendsLogger.trace(
-        s"IdP configuration has registered tenant mapping: [${reg.tenants.mapping.toList.sorted.map(x => s"${x._1 -> x._2}").mkString("; ")}]"
+        s"IdP configuration has registered tenant mapping: [${reg.tenants.debugMapping}]"
       )
 
       // for the tenant mapping, we don't check with existing tenants because the real list
       // will be checked at each request (ie, the intersection is done for each node access)
-      val mappedTenants = filteredTenants.toList.map { t =>
+      val mappedTenants = filteredTenants.toList.flatMap { t =>
         reg.tenants.mapping.get(t) match {
           // if the tenant is not in the mapping, use the provided name as is.
-          case None    => t
-          case Some(m) =>
+          case None     => List(t)
+          case Some(ms) =>
             AuthBackendsLogger.debug(
-              s"Principal '${principal}': mapping IdP provided tenant '${t}' to Rudder tenant '${m}' "
+              s"Principal '${principal}': mapping IdP provided tenant '${t}' to Rudder tenant(s) [${ms.mkString(", ")}]"
             )
-            m
+            ms
         }
       }
 
