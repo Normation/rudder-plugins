@@ -544,16 +544,51 @@ The same structure of properties applies to **tenants**:
 
 xref:plugins:multi-tenants.adoc[Multi-tenants plugin] documentation explains more details about tenants configuration.
 
-The special `*` and `-` can be used for tenants mapping, the following way (notice the additional quotes for reverse mapping):
-
-```
-rudder.auth.oauth2.provider.someidp.tenants.mapping.entitlements.rudder_all=*
-rudder.auth.oauth2.provider.someidp.tenants.mapping.reverseEntitlements."*"=rudder_all
-```
-
 ====
 
 See an example configuration file below for details about these property values.
+
+[#_mapping_idp_entitlements]
+==== Mapping IdP entitlements to Rudder roles and tenants
+
+`roles.mapping.entitlements` and `tenants.mapping.entitlements` map the names sent by the IdP in the token (the entitlements) to Rudder role and tenant names. Each sub-key is an IdP entitlement, and its value is either one Rudder name or a list of Rudder names. The special tenants `*` (all tenants) and `-` (no tenant) are valid values:
+
+```
+rudder.auth.oauth2.provider.someidp.roles.mapping.entitlements.rudder_admin=administrator
+rudder.auth.oauth2.provider.someidp.tenants.mapping.entitlements.rudder_all=*
+```
+
+The java properties syntax can't express a list value, nor an entitlement that contains `=`, `,` or `.`, typically an LDAP DN. For these cases, write the mapping in HOCON syntax: Rudder reads any file with the `.conf` extension in `/opt/rudder/etc/rudder-web.properties.d` as HOCON, and merges it with the `.properties` files.
+Quote the entitlement, the quotes are not part of the name:
+
+```
+# /opt/rudder/etc/rudder-web.properties.d/31-oidc-someidp-mapping.conf
+rudder.auth.oauth2.provider.someidp {
+  roles.mapping.entitlements {
+    # one entitlement grants several Rudder roles
+    "CN=rudder-operators,OU=Groups,DC=example,DC=com" = ["configuration", "compliance"]
+    # a single value is still accepted
+    rudder_readonly = read_only
+  }
+  tenants.mapping.entitlements {
+    # one entitlement grants several Rudder tenants
+    "CN=team-a,OU=Groups,DC=example,DC=com" = ["tenantA", "tenantB"]
+    # special tenants `*` and `-` must be quoted
+    "CN=rudder-admins,OU=Groups,DC=example,DC=com" = "*"
+  }
+}
+```
+
+Rudder parses each file of `rudder-web.properties.d` on its own, so a `${...}` substitution can't refer to a value defined in another file.
+
+In HOCON, quote any value that contains `//` (it starts a comment, so every URL), `,`, `{`, `}`, `*` or a leading `-`.
+
+*NOTE*: `roles.mapping.reverseEntitlements` and `tenants.mapping.reverseEntitlements` are deprecated, the HOCON syntax above replaces them.
+Rudder still reads them, with following constraints:
+- the sub-key is the Rudder name and the value is the IdP entitlement, or a list of entitlements,
+- when several Rudder names have the same entitlement, the user gets all of them,
+- for a given entitlement, the `reverseEntitlements` mapping replaces the `entitlements` one
+- in java properties syntax, the special tenants need quotes in the key: `tenants.mapping.reverseEntitlements."*"=rudder_all`.
 
 === IdP provisioning for Rudder users
 
@@ -640,7 +675,7 @@ rudder.auth.oauth2.provider.keycloak.userNameAttributeName=email
 #    the IdP towards its own login form. It then redirect to Rudder with a code to process.
 #    If you need to use extra information like an `acr_values` property, just happen it to that URL
 # - `uri.token`: Rudder returned the code processed with its client secret. The IdP process it
-     and return an authentication token to Rudder.
+#    and return an authentication token to Rudder.
 # - `uri.userInfo`: Rudder uses the authentication token to get user information on that URL
 # - `uri.jwkSet`: in the case of OIDC, the token is a signed JWT token. That last url is the
 #   URL where Rudder can get the IdP public key to sign the token.
@@ -695,21 +730,57 @@ rudder.auth.oauth2.provider.keycloak.roles.mapping.entitlements.rudder_readonly=
 # When the following property is true, roles that don't appear in `mapping.entitlements` will be filtered-out (default).
 # When it is false, any role from the IdP is mapped to a Rudder role if the same role name exists.
 rudder.auth.oauth2.provider.keycloak.roles.mapping.restricted=true
-# In some case, you OIDC provided roles will contains illegal character that can't be use in the
-# left part of the `entitlement` key - typically an equal. You can reverse the order of mapping with
-# the `reverseEntitlements`, in which the Rudder role name is on the left and the OIDC IdP role
-# name is on the right. If the same key is defined in both `entitlements` and `reverseEntitlements`,
-# then the value defined in `reverseEntitlements` is used.
-# In the following example, OIDC role `rudder_readonly` will be mapped to local `readonly2` role,
-# overriding the value previously defined above:
-#rudder.auth.oauth2.provider.keycloak.roles.mapping.reverseEntitlements.readonly2=rudder_readonly
-# And here, we map the IdP role "name=Alice,ou=users" to Rudder role "read_only"
-#rudder.auth.oauth2.provider.keycloak.roles.mapping.reverseEntitlements.read_only=name=Alice,ou=users
+# An entitlement that maps to several Rudder roles, or that contains `=`, `,` or `.` (typically
+# an LDAP DN), needs the HOCON syntax in a `.conf` file, see "Mapping IdP entitlements to Rudder
+# roles and tenants" above. `reverseEntitlements` is deprecated.
 
 # enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
 # Users provisioned through that channel don't have roles, you will need to also
 # provisioned roles thanks to IdP.
 rudder.auth.oauth2.provider.keycloak.enableProvisioning=true
+```
+
+The same configuration in HOCON syntax, to copy into `/opt/rudder/etc/rudder-web.properties.d/30-oidc-keycloak-authentication.conf` instead of the properties file:
+
+```
+# See the properties file above for the meaning of each property.
+rudder.auth.oauth2.provider {
+  registrations = "keycloak,okta"
+
+  keycloak {
+    name = Keycloak
+    ui.infoMessage = "OpenID Connect SSO (Keycloak)"
+    client {
+      id = my-client-id
+      secret = "PCdHxhMKXkVo5D353O9L1ffkI8KlUYdu"
+      redirect = "https://my-external-rudder-hostname/rudder/login/oauth2/code/{registrationId}"
+    }
+    scope = "openid email profile"
+    userNameAttributeName = email
+    uri {
+      auth     = "https://my-keycloak.com/realms/<realm>/protocol/openid-connect/auth"
+      token    = "https://my-keycloak.com/realms/<realm>/protocol/openid-connect/token"
+      userInfo = "https://my-keycloak.com/realms/<realm>/protocol/openid-connect/userinfo"
+      jwkSet   = "https://my-keycloak.com/realms/<realm>/protocol/openid-connect/certs"
+    }
+    grantType = authorization_code
+    authMethod = client_secret_basic
+
+    roles {
+      enabled = true
+      attribute = rudderroles
+      override = true
+      mapping {
+        restricted = true
+        entitlements {
+          rudder_admin = administrator
+          rudder_readonly = read_only
+        }
+      }
+    }
+    enableProvisioning = true
+  }
+}
 ```
 
 
@@ -778,7 +849,7 @@ rudder.auth.oauth2.provider.okta.userNameAttributeName=email
 #    the IdP towards its own login form. It then redirect to Rudder with a code to process.
 #    If you need to use extra information like an `acr_values` property, just happen it to that URL
 # - `uri.token`: Rudder returned the code processed with its client secret. The IdP process it
-     and return an authentication token to Rudder.
+#    and return an authentication token to Rudder.
 # - `uri.userInfo`: Rudder uses the authentication token to get user information on that URL
 # - `uri.jwkSet`: in the case of OIDC, the token is a signed JWT token. That last url is the
 #   URL where Rudder can get the IdP public key to sign the token.
@@ -830,26 +901,64 @@ rudder.auth.oauth2.provider.okta.roles.override=true
 #
 # Check the list of pre-defined roles: https://docs.rudder.io/reference/current/administration/users.html#_pre_defined_roles
 rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
-rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
+rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.rudder_readonly=read_only
 # By default, there are restrictions to roles that The IdP can assign, to match only the role mapped in above entitlements.
 # When the following property is true, roles that don't appear in `mapping.entitlements` will be filtered-out (default).
 # When it is false, any role from the IdP is mapped to a Rudder role if the same role name exists.
 rudder.auth.oauth2.provider.okta.roles.mapping.restricted=true
-# In some case, you OIDC provided roles will contains illegal character that can't be use in the
-# left part of the `entitlement` key - typically an equal. You can reverse the order of mapping with
-# the `reverseEntitlements`, in which the Rudder role name is on the left and the OIDC IdP role
-# name is on the right. If the same key is defined in both `entitlements` and `reverseEntitlements`,
-# then the value defined in `reverseEntitlements` is used.
-# In the following example, OIDC role `rudder_readonly` will be mapped to local `readonly2` role,
-# overriding the value previously defined above:
-#rudder.auth.oauth2.provider.okta.roles.mapping.reverseEntitlements.readonly2=rudder_readonly
-# And here, we map the IdP role "name=Alice,ou=users" to Rudder role "readonly"
-#rudder.auth.oauth2.provider.okta.roles.mapping.reverseEntitlements.readonly=name=Alice,ou=users
+# An entitlement that maps to several Rudder roles, or that contains `=`, `,` or `.` (typically
+# an LDAP DN), needs the HOCON syntax in a `.conf` file, see "Mapping IdP entitlements to Rudder
+# roles and tenants" above. `reverseEntitlements` is deprecated.
 
 # enable Rudder user provisioning by the OIDC IdP. Use `true` or `false` (default).
 # Users provisioned through that channel don't have roles, you will need to also
 # provisioned roles thanks to IdP.
 rudder.auth.oauth2.provider.okta.enableProvisioning=true
+```
+
+The same configuration in HOCON syntax, to copy into `/opt/rudder/etc/rudder-web.properties.d/40-oidc-okta-authentication.conf` instead of the properties file:
+
+```
+# See the properties file above for the meaning of each property.
+rudder.auth.oauth2.provider {
+  registrations = "okta,keycloak"
+
+  okta {
+    name = Okta
+    ui.infoMessage = "OpenID Connect SSO (Okta)"
+    client {
+      id = 0oa3snkopsIRIIHb35d7
+      secret = "-0Q5jGbdvV5WkfGNJwHfkOP0FdZ5vhqPYav7icYb"
+      redirect = "https://my-external-rudder-hostname/rudder/login/oauth2/code/{registrationId}"
+    }
+    scope = "openid  email profile"
+    userNameAttributeName = email
+    uri {
+      auth     = "https://xxxx.okta.com/oauth2/v1/authorize"
+      # with an acr_values:
+      # auth   = "https://xxxx.okta.com/oauth2/v1/authorize?acr_values=strongAuthRequired"
+      token    = "https://xxxx.okta.com/oauth2/v1/token"
+      userInfo = "https://xxxx.okta.com/oauth2/v1/userinfo"
+      jwkSet   = "https://xxxx.okta.com/oauth2/v1/keys"
+    }
+    grantType = authorization_code
+    authMethod = client_secret_basic
+
+    roles {
+      enabled = true
+      attribute = rudderroles
+      override = true
+      mapping {
+        restricted = true
+        entitlements {
+          rudder_admin = administrator
+          rudder_readonly = read_only
+        }
+      }
+    }
+    enableProvisioning = true
+  }
+}
 ```
 
 
@@ -1104,7 +1213,7 @@ rudder.auth.oauth2.jwt.provider.okta.roles.attribute=customroles
 rudder.auth.oauth2.jwt.provider.okta.roles.override=true
 rudder.auth.oauth2.jwt.provider.okta.roles.mapping.restricted=true
 rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_admin=administrator
-rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_readonly=readonly
+rudder.auth.oauth2.jwt.provider.okta.roles.mapping.entitlements.rudder_readonly=read_only
 rudder.auth.oauth2.jwt.provider.okta.enableProvisioning=true
 
 # tenants
@@ -1115,6 +1224,49 @@ rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.restricted=true
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_ta=tenantA
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_tb=tenantB
 rudder.auth.oauth2.jwt.provider.okta.tenants.mapping.entitlements.rudder_admin=*
+```
+
+The same configuration in HOCON syntax, to copy into `/opt/rudder/etc/rudder-web.properties.d/oauth2-api-jwt.conf` instead of the properties file:
+
+```
+# See the properties file above for the meaning of each property.
+rudder.auth.oauth2.jwt.provider {
+  registrations = okta
+
+  okta {
+    name = Okta
+    scope = "openid email profile groups"
+    uri.jwkSet = "https://xxxx.okta.com/oauth2/xxx/v1/keys"
+
+    roles {
+      enabled = true
+      attribute = customroles
+      override = true
+      mapping {
+        restricted = true
+        entitlements {
+          rudder_admin = administrator
+          rudder_readonly = read_only
+        }
+      }
+    }
+    enableProvisioning = true
+
+    tenants {
+      enabled = true
+      attribute = customroles
+      override = true
+      mapping {
+        restricted = true
+        entitlements {
+          rudder_ta = tenantA
+          rudder_tb = tenantB
+          rudder_admin = "*"
+        }
+      }
+    }
+  }
+}
 ```
 
 
@@ -1180,7 +1332,7 @@ rudder.auth.oauth2.opaque.provider.okta.uri.introspect=https://xxxx.okta.com/oau
 # An opaque access token is just used for validating the authentication. A corresponding
 # API token must exist in Rudder to define things like token authorization, tenants
 # access, etc. The mapping is done thanks to an attribute value of the token.
-# By default, we use the value of the attribute `sub` 
+# By default, we use the value of the attribute `sub`
 # but some OIDC configuration use something else
 # (`client_id`, `cid`... ) so this can be changed with that property.
 #
@@ -1202,6 +1354,26 @@ rudder.auth.oauth2.opaque.provider.okta.userNameAttributeName=sub
 # Value below 1 ms are ignored.
 #
 #rudder.auth.oauth2.opaque.provider.okta.validationCacheDuration=1 min
+```
+
+The same configuration in HOCON syntax, to copy into `/opt/rudder/etc/rudder-web.properties.d/oauth2-api-opaque.conf` instead of the properties file:
+
+```
+# See the properties file above for the meaning of each property.
+rudder.auth.oauth2.opaque.provider {
+  registrations = okta
+
+  okta {
+    name = Okta
+    client {
+      id = xxxx
+      secret = xxxx
+    }
+    uri.introspect = "https://xxxx.okta.com/oauth2/v1/introspect"
+    userNameAttributeName = sub
+    # validationCacheDuration = "1 min"
+  }
+}
 ```
 
 ==== Common errors during token authentication
