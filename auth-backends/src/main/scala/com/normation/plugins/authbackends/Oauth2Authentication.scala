@@ -40,6 +40,9 @@ import bootstrap.rudder.plugin.BuildLogout
 import com.normation.errors.*
 import com.normation.plugins.authbackends.RudderRegistrationPropertyCommon.readProviders
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigList
+import com.typesafe.config.ConfigValue
+import com.typesafe.config.ConfigValueType
 import java.time.format.DateTimeParseException
 import java.util.concurrent.TimeUnit
 import org.springframework.security.oauth2.client.registration.ClientRegistration
@@ -78,10 +81,14 @@ sealed trait ProvidedList {
   def attributeName:     String
   def overrides:         Boolean
   def restrictToMapping: Boolean
-  def mapping:           Map[String, String]
+  // one IdP entitlement can grant several Rudder roles/tenants, see `RudderRegistrationPropertyCommon.readMultiMap`
+  // and https://issues.rudder.io/issues/29427
+  def mapping:           Map[String, List[String]]
 
   override def toString: String = if (enabled) s"enabled, list obtained from attribute: ${attributeName} (override: ${overrides})"
   else "disabled"
+
+  def debugMapping: String = mapping.toList.sortBy(_._1).map { case (k, v) => s"${k} -> [${v.mkString(", ")}]" }.mkString("; ")
 }
 
 final case class ProvidedRoles(
@@ -89,7 +96,7 @@ final case class ProvidedRoles(
     attributeName:     String,
     overrides:         Boolean,
     restrictToMapping: Boolean,
-    mapping:           Map[String, String]
+    mapping:           Map[String, List[String]]
 ) extends ProvidedList {
   val debugName = "roles"
 }
@@ -99,7 +106,7 @@ final case class ProvidedTenants(
     attributeName:     String,
     overrides:         Boolean,
     restrictToMapping: Boolean,
-    mapping:           Map[String, String]
+    mapping:           Map[String, List[String]]
 ) extends ProvidedList {
   val debugName = "tenants"
 }
@@ -262,8 +269,8 @@ object RudderRegistrationPropertyCommon {
     A_TENANTS_ENABLED         -> "(default false) if enable, restrict the authentication to the provided list of tenants",
     A_TENANTS_ATTRIBUTE       -> "(default '') the name of the attribute containing the list of authorized tenants",
     A_TENANTS_OVERRIDE        -> "(default false) keep user configured tenants in rudder-user.xml or override them with the one provided in the token",
-    A_TENANTS_MAPPING         -> s"(optional) provides a map of alias `IdP tenant name` -> `Rudder tenant name`, where each IdP tenant name is a sub-key of '${A_TENANTS_MAPPING}'",
-    A_TENANTS_REVERSE_MAPPING -> s"(optional) provides a map of alias `Rudder tenant name` -> `IdP tenant name`, where each IdP tenant name is a sub-key of '${A_TENANTS_MAPPING}', useful when the IdP tenant name contains '='",
+    A_TENANTS_MAPPING         -> s"(optional) provides a map of alias `IdP tenant name` -> `Rudder tenant name(s)`, where each IdP tenant name is a sub-key of '${A_TENANTS_MAPPING}'. The value is either one Rudder tenant name or a list of them. In a HOCON configuration file, the IdP tenant name can be quoted and then contain any character (typically an LDAP DN)",
+    A_TENANTS_REVERSE_MAPPING -> s"(deprecated, use quoted keys in '${A_TENANTS_MAPPING}' in a HOCON configuration file) provides a map of alias `Rudder tenant name` -> `IdP tenant name(s)`, useful when the IdP tenant name contains '=' and the configuration file uses the java properties syntax",
     A_ENFORCE_TENANTS_MAPPING -> "(default true) if true, restricts tenants available by the IdP to the tenants defined in mapping entitlement. Else the map provides id for Rudder tenants.",
     A_URI_AUTH                -> "provider URL to contact for main authentication (see provider documentation)",
     A_URI_TOKEN               -> "provider URL to contact for token verification (see provider documentation)",
@@ -278,8 +285,8 @@ object RudderRegistrationPropertyCommon {
     A_ROLES_ATTRIBUTE         -> "the attribute to use for list of custom role name. It's content in token must be a array of strings.",
     A_ROLES_OVERRIDE          -> "(default false) keep user configured roles in rudder-user.xml or override them with the one provided in the token",
     A_PROVISIONING            -> "(default false) allows the automatic creation of users in Rudder in they successfully authenticate with OIDC",
-    A_ROLES_MAPPING           -> s"(optional) provides a map of alias `IdP role name` -> `Rudder role name`, where each IdP role name is a sub-key of '${A_ROLES_MAPPING}'",
-    A_ROLES_REVERSE_MAPPING   -> s"(optional) provides a map of alias `Rudder role name` -> `IdP role name`, where each IdP role name is a sub-key of '${A_ROLES_MAPPING}', useful when the IdP role name contains '='",
+    A_ROLES_MAPPING           -> s"(optional) provides a map of alias `IdP role name` -> `Rudder role name(s)`, where each IdP role name is a sub-key of '${A_ROLES_MAPPING}'. The value is either one Rudder role name or a list of them. In a HOCON configuration file, the IdP role name can be quoted and then contain any character (typically an LDAP DN)",
+    A_ROLES_REVERSE_MAPPING   -> s"(deprecated, use quoted keys in '${A_ROLES_MAPPING}' in a HOCON configuration file) provides a map of alias `Rudder role name` -> `IdP role name(s)`, useful when the IdP role name contains '=' and the configuration file uses the java properties syntax",
     A_ENFORCE_ROLES_MAPPING   -> "(default true) if true, restricts roles available by the IdP to the role defined in mapping entitlement. Else the map provides alias for Rudder internal role names."
   )
 
@@ -366,34 +373,87 @@ object RudderRegistrationPropertyCommon {
     )
   }
 
-  protected[authbackends] def readMap(
+  /*
+   * Read a mapping between a key and a list of values, for example `IdP entitlement` -> `Rudder tenants`.
+   *
+   * A value can be either one string or a list of strings, so that one IdP entitlement can grant several
+   * Rudder roles/tenants:
+   *
+   *   roles.mapping.entitlements.someIdpGroup = rudder_role
+   *   roles.mapping.entitlements."CN=xxx,OU=Groups,DC=example,DC=com" = [ "rudder_role1", "rudder_role2" ]
+   *
+   * The second form needs a key with characters forbidden in a java properties file ('=', ',', '.'), and so
+   * a configuration file in HOCON syntax (any `.conf` file in `/opt/rudder/etc/rudder-web.properties.d`).
+   *
+   * Values are read from the parent object and not with `config.getString(path + "." + key)`, because that path
+   * expression is invalid as soon as the key contains an '=' or a ',' (ie for any LDAP/AD DN).
+   */
+  protected[authbackends] def readMultiMap(
       key: String
-  )(implicit base: BasePath, config: Config): IOResult[Map[String, String]] = {
+  )(implicit base: BasePath, config: Config): IOResult[Map[String, List[String]]] = {
     val path = base.path(key)
     import scala.jdk.CollectionConverters.*
     for {
-      keySet <- IOResult
-                  .attempt(s"Missing key '${path}' for OAUTH2 registration '${base.id}' (${registrationAttributes(key)})")(
-                    config.getObject(path).keySet().asScala.toList
-                  )
-                  // in that case, we suppose that the key is just missing so we return a default empty value for mapping
-                  .catchAll(_ => List().succeed)
-      values <- ZIO.foreach(keySet) { key =>
-                  val wholeKey = path + "." + key
-                  IOResult.attempt(s"Error when reading role entitlement mapping '${wholeKey}'") {
-                    val (k, v) = {
-                      // see https://issues.rudder.io/issues/28890:
-                      // tenants can use special config for 'reverseEntitlements."*"' (resp. '-') key, but typesafe config would keep the double quotes
-                      key match {
-                        case "\"*\"" => ("*", config.getObject(path).get("\"*\"").unwrapped().asInstanceOf[String])
-                        case "\"-\"" => ("-", config.getObject(path).get("\"-\"").unwrapped().asInstanceOf[String])
-                        case _       => (key, config.getString(wholeKey))
-                      }
-                    }
-                    (k, v)
-                  }
-                }
-    } yield values.toMap
+      entries <- IOResult
+                   .attempt(s"Missing key '${path}' for OAUTH2 registration '${base.id}' (${registrationAttributes(key)})")(
+                     config.getObject(path).entrySet().asScala.toList
+                   )
+                   // in that case, we suppose that the key is just missing so we return a default empty value for mapping
+                   .catchAll(_ => List().succeed)
+      values  <- ZIO.foreach(entries) { entry =>
+                   val entitlement = unquoteKey(entry.getKey)
+                   readMappedValues(entry.getValue).toIO
+                     .chainError(s"Error when reading entitlement mapping '${path}' for key '${entitlement}'")
+                     .map((entitlement, _))
+                 }
+    } yield unionMapping(values)
+  }
+
+  /*
+   * See https://issues.rudder.io/issues/28890: special entitlements '*' and '-' must be quoted to be a valid key,
+   * but contrary to HOCON, java properties syntax keeps the double quotes in the key name.
+   */
+  private def unquoteKey(key: String): String = {
+    if (key.length > 1 && key.startsWith("\"") && key.endsWith("\"")) key.substring(1, key.length - 1) else key
+  }
+
+  private def readScalar(value: ConfigValue): PureResult[String] = {
+    value.valueType() match {
+      // numbers and booleans are accepted: an id like `2024` is a valid Rudder tenant name but is parsed as a number
+      case ConfigValueType.STRING | ConfigValueType.NUMBER | ConfigValueType.BOOLEAN => Right(value.unwrapped().toString)
+      case t                                                                         =>
+        Left(Inconsistency(s"Expected a string or a list of strings but got a value of type '${t}'"))
+    }
+  }
+
+  private def readMappedValues(value: ConfigValue): PureResult[List[String]] = {
+    import scala.jdk.CollectionConverters.*
+    value.valueType() match {
+      case ConfigValueType.LIST => value.asInstanceOf[ConfigList].asScala.toList.accumulatePure(readScalar)
+      case _                    => readScalar(value).map(List(_))
+    }
+  }
+
+  /*
+   * Merge entries sharing the same key instead of letting the last one win.
+   */
+  private def unionMapping(entries: List[(String, List[String])]): Map[String, List[String]] = {
+    entries.groupMapReduce(_._1)(_._2)(_ ::: _).view.mapValues(_.distinct).toMap
+  }
+
+  /*
+   * `reverseEntitlements` is a `Rudder id` -> `IdP entitlements` mapping, needed when the IdP entitlement can't be
+   * used as a key (typically an LDAP DN in a java properties file). It is deprecated in favor of a HOCON
+   * `entitlements` mapping with quoted keys, which is the same relation in the direction actually used at login.
+   *
+   * Several Rudder ids can be granted by the same IdP entitlement, so inverting must merge them: with a plain
+   * `Map` inversion, all but one would be silently lost.
+   * Values are sorted.
+   */
+  protected[authbackends] def invertMapping(reverse: Map[String, List[String]]): Map[String, List[String]] = {
+    unionMapping(reverse.toList.flatMap { case (rudderId, entitlements) => entitlements.map(e => (e, List(rudderId))) }).view
+      .mapValues(_.sorted)
+      .toMap
   }
 
   protected[authbackends] def readRoles()(implicit base: BasePath, config: Config): IOResult[ProvidedRoles] = {
@@ -402,15 +462,16 @@ object RudderRegistrationPropertyCommon {
       rolesAttr          <- read(A_ROLES_ATTRIBUTE).catchAll(_ => "".succeed)
       rolesOverride      <- readBool(A_ROLES_OVERRIDE)(false)
       enforceRoleMapping <- readBool(A_ENFORCE_ROLES_MAPPING)(true)
-      mapping            <- readMap(A_ROLES_MAPPING)
-      reverseMapping     <- readMap(A_ROLES_REVERSE_MAPPING)
+      mapping            <- readMultiMap(A_ROLES_MAPPING)
+      reverseMapping     <- readMultiMap(A_ROLES_REVERSE_MAPPING)
     } yield {
       ProvidedRoles(
         rolesEnabled,
         rolesAttr,
         rolesOverride,
         enforceRoleMapping,
-        mapping ++ reverseMapping.map { case (a, b) => (b, a) }
+        // as documented, the reverse mapping takes precedence over the direct one for a given entitlement
+        mapping ++ invertMapping(reverseMapping)
       )
     }
   }
@@ -421,15 +482,16 @@ object RudderRegistrationPropertyCommon {
       tenantsAttr          <- read(A_TENANTS_ATTRIBUTE).catchAll(_ => "".succeed)
       tenantsOverride      <- readBool(A_TENANTS_OVERRIDE)(false)
       enforceTenantMapping <- readBool(A_ENFORCE_TENANTS_MAPPING)(true)
-      mapping              <- readMap(A_TENANTS_MAPPING)
-      reverseMapping       <- readMap(A_TENANTS_REVERSE_MAPPING)
+      mapping              <- readMultiMap(A_TENANTS_MAPPING)
+      reverseMapping       <- readMultiMap(A_TENANTS_REVERSE_MAPPING)
     } yield {
       ProvidedTenants(
         tenantsEnabled,
         tenantsAttr,
         tenantsOverride,
         enforceTenantMapping,
-        mapping ++ reverseMapping.map { case (a, b) => (b, a) }
+        // as documented, the reverse mapping takes precedence over the direct one for a given entitlement
+        mapping ++ invertMapping(reverseMapping)
       )
     }
   }
