@@ -887,9 +887,11 @@ object RudderTokenMapping {
       } else {
         default match {
           // we don't want that None is absorbent in that case
-          case TenantAccessGrant.None => parsedTenants
+          case TenantAccessGrant.None     => parsedTenants
+          // no tenant provided by IdP: we also don't want absorbent `plus` on the right-hand side
+          case _ if mappedTenants.isEmpty => default
           // other cases are ok for plus
-          case _                      => default.plus(parsedTenants)
+          case _                          => default.plus(parsedTenants)
         }
       }
       AuthBackendsLogger.debug(
