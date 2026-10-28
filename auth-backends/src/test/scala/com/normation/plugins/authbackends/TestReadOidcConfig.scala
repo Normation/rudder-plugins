@@ -162,6 +162,17 @@ class TestReadOidcConfig extends Specification {
 
       tenants === defaultTenant
     }
+    "get not overridden user tenants" in {
+      val regNoOverride = {
+        val reg = regs("someidp")
+        reg.copy(tenants = reg.tenants.copy(overrides = false))
+      }
+      val tenants       =
+        RudderTokenMapping.getTenants(regNoOverride, "user", "jwt", TenantAccessGrant.All)(_ => None)
+
+      tenants === TenantAccessGrant.All
+    }
+
   }
 
   "reading a JWT configuration" should {
