@@ -58,3 +58,20 @@ else
   rm "$fail"
   exit 1
 fi
+
+
+echo "----------------------------------------"
+plugin="${PWD#*rudder-plugins-private/}" # get the current plugin directory
+plugin="${plugin%%/*}"
+plugin=$(printf '%s' "$plugin" | tr -d '-' | tr '[:upper:]' '[:lower:]') # remove dashes and put to lower case
+
+echo "> Copy generated elm and css files in build output 'resources/toserve/$plugin/'"
+
+PS4='> '
+set -x
+cp elm/generated/* resources/toserve/$plugin/
+ls -lh resources/toserve/$plugin/
+
+{ set +x; } 2>/dev/null
+echo "----------------------------------------"
+
