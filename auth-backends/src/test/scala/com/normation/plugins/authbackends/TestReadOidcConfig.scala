@@ -207,6 +207,13 @@ class TestReadOidcConfig extends Specification {
 
         tenants === TenantAccessGrant.ByTenants(Chunk(TenantId("TC"), TenantId("TA")))
       }
+
+      "be removed when IdP provides the none tenant" in {
+        val tenants =
+          RudderTokenMapping.getTenants(regNoOverride, "user", "oidc", userTenants)(_ => Some(Set("rudder_none")))
+
+        tenants === TenantAccessGrant.None
+      }
     }
 
   }
