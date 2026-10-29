@@ -162,6 +162,60 @@ class TestReadOidcConfig extends Specification {
 
       tenants === defaultTenant
     }
+    "get not overridden user tenants" in {
+      val regNoOverride = {
+        val reg = regs("someidp")
+        reg.copy(tenants = reg.tenants.copy(overrides = false))
+      }
+      val tenants       =
+        RudderTokenMapping.getTenants(regNoOverride, "user", "jwt", TenantAccessGrant.All)(_ => None)
+
+      tenants === TenantAccessGrant.All
+    }
+
+    "with override disabled, user tenants from users file" should {
+      val regNoOverride = {
+        val reg = regs("someidp")
+        reg.copy(tenants = reg.tenants.copy(overrides = false))
+      }
+      val userTenants   = TenantAccessGrant.ByTenants(Chunk(TenantId("TC")))
+
+      "be kept when IdP does not provide the tenant attribute" in {
+        val tenants =
+          RudderTokenMapping.getTenants(regNoOverride, "user", "oidc", userTenants)(_ => None)
+
+        tenants === userTenants
+      }
+
+      "be kept when IdP provides an empty tenant list" in {
+        val tenants =
+          RudderTokenMapping.getTenants(regNoOverride, "user", "oidc", userTenants)(_ => Some(Set.empty))
+
+        tenants === userTenants
+      }
+
+      "be kept when all IdP tenants are filtered out by the enforced mapping" in {
+        val tenants =
+          RudderTokenMapping.getTenants(regNoOverride, "user", "oidc", userTenants)(_ => Some(Set("unknown")))
+
+        tenants === userTenants
+      }
+
+      "be extended with IdP provided tenants" in {
+        val tenants =
+          RudderTokenMapping.getTenants(regNoOverride, "user", "oidc", userTenants)(_ => Some(Set("rudder_TA")))
+
+        tenants === TenantAccessGrant.ByTenants(Chunk(TenantId("TC"), TenantId("TA")))
+      }
+
+      "be removed when IdP provides the none tenant" in {
+        val tenants =
+          RudderTokenMapping.getTenants(regNoOverride, "user", "oidc", userTenants)(_ => Some(Set("rudder_none")))
+
+        tenants === TenantAccessGrant.None
+      }
+    }
+
   }
 
   "reading a JWT configuration" should {
