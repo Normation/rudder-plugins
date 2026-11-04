@@ -4,7 +4,7 @@
         "elm-stuff/gitdeps/github.com/Normation/rudder-elm-library.git/src",
         "sources"
     ],
-    "elm-version": "0.19.1",
+    "elm-version": "0.19.3",
     "dependencies": {
         "direct": {
             "BrianHicks/elm-csv": "4.0.1",

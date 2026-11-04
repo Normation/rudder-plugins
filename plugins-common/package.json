@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "del": "^8.0.1",
-    "elm": "^0.19.1-6",
+    "elm": "^0.19.3-0",
     "elm-format": "^0.8.8",
     "elm-git-install": "^0.1.4",
     "elm-review": "^2.13.5",
@@ -19,8 +19,8 @@
     "gulp-sourcemaps": "^3.0.0",
     "gulp-terser": "^2.1.0",
     "merge-stream": "^2.0.0",
-    "through2": "^4.0.2",
-    "sass": "^1.93.3"
+    "sass": "^1.93.3",
+    "through2": "^4.0.2"
   },
   "overrides": {
     "postcss": "^8.4.38",
