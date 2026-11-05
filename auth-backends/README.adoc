@@ -564,6 +564,21 @@ To allow IdP provisioning of users, set property `enableProvisioning` to `true` 
 
 See an example configuration file below for details about that property.
 
+[#_deleted_provisioned_users]
+==== Deleting or disabling provisioned users
+
+With `OAuth2` and `OIDC`, the IdP is the source of truth for user identity. Rudder handles the user account with a lifecycle of its own
+(Rudder have no support for `SCIM`: System for Cross-domain Identity Management).
+When provisioning is enabled, each time an authenticated user is unknown to Rudder, it is created.
+
+This means that *if you delete a provisioned user in Rudder, it will be created again on its next login*. This is the expected behavior:
+deleting the user in Rudder does not remove it from the IdP, which still allows it to be authenticated and provisioned.
+
+To prevent a user from logging into Rudder, you can either:
+
+* *disable* the user in Rudder, so the user login will be refused (a disabled user still exists in Rudder)
+* remove the user's access to the Rudder application in your IdP.
+
 === Example configuration for `keycloak` provider
 
 In this section, we use `keycloak` as OIDC provider, with the name `keycloak` configured to identify that provider in the Rudder properties configuration file.
@@ -992,6 +1007,12 @@ It means that the role `node_all` is not recognized. It is because it is not a x
 In this case you should create a custom role (let's say `access_to_node`) with the permission `node_all`
 that you will map to your IdP role `role-oidc-a` and modifying the parameter `mapping.entitlements` in the OIDC config file like so:
 `rudder.auth.oauth2.provider.okta.roles.mapping.entitlements.role-oidc-a=access_to_node`.
+
+*I see deleted users being recreated, what's happening?*
+
+If IdP provisioning is enabled, this is the expected behavior: a user deleted in Rudder is created again on its next login, since it is still valid on the IdP.
+To prevent the user from logging in, disable it in Rudder instead of deleting it.
+See <<_deleted_provisioned_users,Deleting or disabling provisioned users>> for details.
 
 
 === OAuth2 tokens : JWT and opaque bearer tokens
