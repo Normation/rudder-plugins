@@ -606,10 +606,6 @@ object Action {
       action:       ActionChangeJson
   ) extends Action
 
-  implicit def changeToAction[A, B, C <: ChangeItem[B]]: Transformer[Change[A, B, C], Action] = {
-    Transformer.derive[Change[A, B, C], Action]
-  }
-
   object ResourceChangeEvent {
     implicit val encoder: JsonEncoder[ResourceChangeEvent] = DeriveJsonEncoder.gen[ResourceChangeEvent]
 
