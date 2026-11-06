@@ -51,6 +51,7 @@ import java.util.Base64
 import net.liftweb.common.Full
 import net.liftweb.common.Loggable
 import net.liftweb.http.SHtml
+import net.liftweb.http.js.JE
 import net.liftweb.http.js.JsCmds.Run
 import net.liftweb.util.CssSel
 import net.liftweb.util.Helpers.*
@@ -158,9 +159,10 @@ class OpenScapNodeDetailsExtension(
   private def downloadReportButton(report: OpenScapReport) = {
     import report.*
     val base64   = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8))
-    val fileName = s"OpenSCAP report for ${hostname} (${nodeId.value}).html"
+    // hostname comes from the node inventory: it must be JS-encoded, never interpolated raw
+    val fileName = JE.Str(s"OpenSCAP report for ${hostname} (${nodeId.value}).html").toJsCmd
     val download = Run(
-      s"""saveByteArray("${fileName}", "application/zip", base64ToArrayBuffer("${base64}"));"""
+      s"""saveByteArray(${fileName}, "application/zip", base64ToArrayBuffer(${JE.Str(base64).toJsCmd}));"""
     )
 
     SHtml.ajaxButton(
@@ -171,12 +173,19 @@ class OpenScapNodeDetailsExtension(
   }
 
   private def openNewTabReportButton(sanitizedReport: String) = {
-    // since report has many lines, use template literals, there could also be escape sequences
-    // we can use String.raw safely because the report is already sanitized
+    // The report comes from the node: never interpolate it raw in JS (sanitization does not escape
+    // JS syntax), pass it as an encoded JS string literal. Render it in a sandboxed iframe (opaque
+    // origin, no script), since the about:blank new window inherits the Rudder origin.
+    val report     = JE.Str(sanitizedReport).toJsCmd
     val openNewTab = Run(
       s"""
       var newWindow = window.open();
-      newWindow.document.write(String.raw`${sanitizedReport}`);
+      var frame = newWindow.document.createElement('iframe');
+      frame.setAttribute('sandbox', '');
+      frame.style.cssText = 'width:100%;height:100vh;border:0';
+      frame.srcdoc = ${report};
+      newWindow.document.body.style.margin = 0;
+      newWindow.document.body.appendChild(frame);
       """
     )
     SHtml.ajaxButton(
@@ -198,7 +207,7 @@ class OpenScapNodeDetailsExtension(
           <p><a class="sanitized"></a></p>
           <p><a class="original"></a></p>
         </div>
-        <iframe width="100%" height="600" srcdoc="">
+        <iframe width="100%" height="600" sandbox="" srcdoc="">
         </iframe>
       </div>
   }
