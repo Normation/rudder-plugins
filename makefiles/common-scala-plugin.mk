@@ -24,16 +24,28 @@ plugins-common-private:plugins-common
 	cd ../plugins-common-private && make
 	cd ../$(NAME)
 
-build-files:   
-	$(MVN_CMD) package
+# `$(SBT_SHUTDOWN)` (defined in global-vars.mk) brackets each build: before, so the sbtn quick-start
+# client doesn't reuse a server with stale -D / -Dlimited (sbt 2.0 binds -D at server startup); after,
+# to leave a clean state. Its output is suppressed (it hides a benign sbtn JNI shutdown race).
+#
+# unlicensed (OSS) build: sbt assembly without -Dlimited (Maven profile internal-default).
+# sbt runs from the repo root and writes <plugin>/target/<name>-<version>-jar-with-dependencies.jar.
+build-files:
+	$(SBT_SHUTDOWN)
+	cd .. && $(SBT_CMD) "$(NAME)/assembly"
+	$(SBT_SHUTDOWN)
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
 std-files: plugins-common generate-pom build-files
 	echo "${VERSION}"
 
+# licensed build: same flags Maven received (-Dlimited + the three resource properties), which
+# the sbt license toggle (project/PluginBuild.scala) reads (Maven profile internal-limited).
 build-licensed-files:
-	$(MVN_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) package
+	$(SBT_SHUTDOWN)
+	cd .. && $(SBT_CMD) -Dlimited -Dplugin-resource-publickey=$(TARGET_KEY_PATH) -Dplugin-resource-license=$(TARGET_LICENSE_PATH) -Dplugin-declared-version=$(VERSION) "$(NAME)/assembly"
+	$(SBT_SHUTDOWN)
 	mkdir -p target/$(NAME)
 	mv target/$(NAME)-*-jar-with-dependencies.jar target/$(NAME)/$(NAME).jar
 
