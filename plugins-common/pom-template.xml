@@ -252,7 +252,6 @@
      Ideally, that section should be provided by a project in Rudder with a script to autogenerate it, name it "rudder-libs-bom", and
      be imported in each plugin project.
     -->
-    <dependency><groupId>antlr</groupId><artifactId>antlr</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
     <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-core</artifactId><scope>provided</scope><version>${logback-version}</version></dependency>
     <dependency><groupId>co.fs2</groupId><artifactId>fs2-core_3</artifactId><scope>provided</scope></dependency>
@@ -322,7 +321,6 @@
     <dependency><groupId>net.minidev</groupId><artifactId>accessors-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>net.minidev</groupId><artifactId>json-smart</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>nu.validator</groupId><artifactId>htmlparser</artifactId><scope>provided</scope></dependency>
-    <dependency><groupId>org.antlr</groupId><artifactId>stringtemplate</artifactId><scope>provided</scope></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-csv</artifactId><scope>provided</scope><version>${commons-csv-version}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-core</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
     <dependency><groupId>org.apache.commons</groupId><artifactId>commons-fileupload2-jakarta-servlet6</artifactId><scope>provided</scope><version>${commons-fileupload}</version></dependency>
