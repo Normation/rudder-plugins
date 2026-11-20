@@ -1,5 +1,5 @@
-ARG JDK_VERSION=17
-FROM maven:3-amazoncorretto-${JDK_VERSION}-debian
+ARG JDK_VERSION=25
+FROM maven:3-eclipse-temurin-${JDK_VERSION}
 LABEL ci=rudder/ci/plugins.Dockerfile
 
 ARG USER_ID=1000
