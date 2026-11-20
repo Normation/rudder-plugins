@@ -217,7 +217,7 @@ response:
                 "headers" : [],
                 "params" : [],
                 "path" : "",
-                "checkSsl" : false,
+                "checkSsl" : true,
                 "maxParallelReq" : 10,
                 "requestTimeout" : 300,
                 "requestMethod" : "GET",
@@ -348,7 +348,7 @@ response:
                 "headers" : [],
                 "params" : [],
                 "path" : "",
-                "checkSsl" : false,
+                "checkSsl" : true,
                 "maxParallelReq" : 10,
                 "requestTimeout" : 300,
                 "requestMethod" : "GET",
@@ -602,7 +602,7 @@ response:
                 "headers" : [],
                 "params" : [],
                 "path" : "",
-                "checkSsl" : false,
+                "checkSsl" : true,
                 "maxParallelReq" : 10,
                 "requestTimeout" : 300,
                 "requestMethod" : "GET",
@@ -704,7 +704,7 @@ response:
                 "headers" : [],
                 "params" : [],
                 "path" : "",
-                "checkSsl" : false,
+                "checkSsl" : true,
                 "maxParallelReq" : 10,
                 "requestTimeout" : 300,
                 "requestMethod" : "GET",
@@ -801,4 +801,85 @@ response:
       "action" : "clearValueOneDatasourceOneNode",
       "result" : "success",
       "data" : "Data for node 'node1', for data source 'datasource1', cleared"
+    }
+---
+description: Create datasource without checkSsl, SSL is checked by default
+method: PUT
+url: /api/latest/datasources
+headers:
+  - "Content-Type: application/json"
+body: >-
+  {
+    "id" : "datasource4",
+    "type" : {
+      "name" : "HTTP",
+      "parameters" : {
+        "url" : "https://cmdb.example.com"
+      }
+    },
+    "runParameters" : {}
+  }
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "createDataSource",
+      "result" : "success",
+      "data" : {
+        "datasources" : [
+          {
+            "id" : "datasource4",
+            "name" : "",
+            "description" : "",
+            "type" : {
+              "name" : "HTTP",
+              "parameters" : {
+                "url" : "https://cmdb.example.com",
+                "headers" : [],
+                "params" : [],
+                "path" : "",
+                "checkSsl" : true,
+                "maxParallelReq" : 10,
+                "requestTimeout" : 300,
+                "requestMethod" : "GET",
+                "requestMode" : {
+                  "name" : "byNode"
+                },
+                "onMissing" : {
+                  "name" : "delete"
+                }
+              }
+            },
+            "runParameters" : {
+              "onGeneration" : false,
+              "onNewNode" : false,
+              "schedule" : {
+                "type" : "notscheduled",
+                "duration" : 300
+              }
+            },
+            "updateTimeout" : 300,
+            "enabled" : false
+          }
+        ]
+      }
+    }
+---
+description: Delete datasource created without checkSsl
+method: DELETE
+url: /api/latest/datasources/datasource4
+response:
+  code: 200
+  content: >-
+    {
+      "action" : "deleteDataSource",
+      "result" : "success",
+      "data" : {
+        "datasources" : [
+          {
+            "id" : "datasource4",
+            "message" : "Data source datasource4 deleted"
+          }
+        ]
+      }
     }

@@ -38,6 +38,7 @@
 package bootstrap.rudder.plugin
 
 import bootstrap.liftweb.RudderConfig
+import bootstrap.liftweb.RudderProperties
 import com.normation.errors.*
 import com.normation.inventory.domain.NodeId
 import com.normation.plugins.PluginStatus
@@ -51,6 +52,7 @@ import com.normation.rudder.facts.nodes.CoreNodeFactChangeEventCallback
 import com.normation.rudder.facts.nodes.NodeFactChangeEvent
 import com.normation.rudder.services.policies.PromiseGenerationHooks
 import com.normation.zio.*
+import com.typesafe.config.ConfigException
 import org.joda.time.DateTime
 import zio.*
 
@@ -73,6 +75,23 @@ object DatasourcesConf extends RudderPluginModule {
 
   import bootstrap.liftweb.RudderConfig as Cfg
 
+  val ESCAPE_URL_VARIABLES_PROP = "rudder.plugin.datasources.escapeUrlVariables"
+
+  lazy val escapeUrlVariables: Boolean = {
+    try {
+      RudderProperties.config.getBoolean(ESCAPE_URL_VARIABLES_PROP)
+    } catch {
+      case _:  ConfigException.Missing =>
+        DataSourceLoggerPure.logEffect.info(s"Property '${ESCAPE_URL_VARIABLES_PROP}' is not defined, using default value 'true'")
+        true
+      case ex: ConfigException         =>
+        DataSourceLoggerPure.logEffect.error(
+          s"Error when reading property '${ESCAPE_URL_VARIABLES_PROP}', using default value 'true': ${ex.getMessage}"
+        )
+        true
+    }
+  }
+
   // by build convention, we have only one of that on the classpath
   lazy val pluginStatusService = new CheckRudderPluginEnableImpl(RudderConfig.nodeFactRepository, RudderConfig.instanceIdService)
 
@@ -85,7 +104,8 @@ object DatasourcesConf extends RudderPluginModule {
       Cfg.roLDAPParameterRepository,
       Cfg.interpolationCompiler,
       regenerationHook.hook,
-      () => Cfg.configService.rudder_global_policy_mode()
+      () => Cfg.configService.rudder_global_policy_mode(),
+      escapeUrlVariables
     ),
     Cfg.stringUuidGenerator,
     pluginStatusService
