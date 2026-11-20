@@ -148,14 +148,15 @@ object QueryService {
  * actually updated (== property's value actually changed) nodes
  */
 class HttpQueryDataSourceService(
-    factRepository:   NodeFactRepository,
-    parameterRepo:    RoParameterRepository,
-    interpolCompiler: InterpolatedValueCompiler,
-    onUpdatedHook:    (Set[NodeId], UpdateCause) => IOResult[Unit],
-    globalPolicyMode: () => IOResult[GlobalPolicyMode]
+    factRepository:     NodeFactRepository,
+    parameterRepo:      RoParameterRepository,
+    interpolCompiler:   InterpolatedValueCompiler,
+    onUpdatedHook:      (Set[NodeId], UpdateCause) => IOResult[Unit],
+    globalPolicyMode:   () => IOResult[GlobalPolicyMode],
+    escapeUrlVariables: Boolean
 ) extends QueryDataSourceService {
 
-  val getHttp = new GetDataset(interpolCompiler)
+  val getHttp = new GetDataset(interpolCompiler, escapeUrlVariables)
 
   /*
    * We need a scheduler tailored for I/O, we are mostly doing http requests and

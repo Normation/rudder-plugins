@@ -41,8 +41,6 @@ import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.DocumentContext
 import com.jayway.jsonpath.JsonPath
 import com.normation.errors.*
-import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty.*
@@ -54,12 +52,17 @@ import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.normation.zio.*
 import com.softwaremill.quicklens.*
 import com.typesafe.config.ConfigValue
+import java.net.URI
+import java.net.URISyntaxException
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONStyle
 import net.minidev.json.JSONValue
+import org.springframework.web.util.UriComponentsBuilder
+import scala.annotation.tailrec
 import scalaj.http.Http
 import scalaj.http.HttpOptions
 import zio.*
+import zio.json.*
 import zio.syntax.*
 
 /*
@@ -79,9 +82,35 @@ import zio.syntax.*
  * - parse the json result,
  * - return a rudder property with the content.
  */
-class GetDataset(valueCompiler: InterpolatedValueCompiler) {
+class GetDataset(valueCompiler: InterpolatedValueCompiler, escapeUrlVariables: Boolean) {
 
   val compiler = new InterpolateNode(valueCompiler)
+
+  /*
+   * Interpolate the URL template, and check that the result stays on the scheme, host and port
+   * of the template base URL (part before the path, interpolated on its own).
+   * The check is skipped when the base URL starts with a variable.
+   */
+  private[datasources] def expandUrl(expand: String => IOResult[String], template: String): IOResult[String] = {
+    def escape(url: String): IOResult[String] = {
+      if (escapeUrlVariables) InterpolatedUrl.escapeIllegalChars(url).toIO else url.succeed
+    }
+
+    for {
+      url <- expand(template).flatMap(escape).chainError(s"Error when trying to parse URL ${template}")
+      _   <- InterpolatedUrl.baseUrl(template) match {
+               case None       =>
+                 DataSourceLoggerPure.debug(
+                   s"URL '${template}' does not start with a literal scheme and host, skipping the check of the host after interpolation"
+                 )
+               case Some(base) =>
+                 expand(base)
+                   .flatMap(escape)
+                   .flatMap(InterpolatedUrl.checkSameOrigin(_, url).toIO)
+                   .chainError(s"Error when checking interpolated URL of ${template}")
+             }
+    } yield url
+  }
 
   /**
    * Get the node property for the configured datasource.
@@ -121,7 +150,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
                       .foreach(parameters)(compiler.compileParameters(_).toIO)
                       .chainError("Error when transforming Rudder parameter for variable interpolation")
       expand      = compiler.compileInput(node, policyServer, globalPolicyMode, parameters.toMap)
-      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
+      url        <- expandUrl(expand, datasource.url)
       path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
@@ -154,19 +183,62 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     }
   }
 
-  /**
-   * Get information for many nodes.
-   * Policy servers for each node must be in the map.
-   */
-  def getMany(
-      datasource:    DataSource,
-      nodes:         Seq[NodeId],
-      policyServers: Map[NodeId, NodeInfo],
-      parameters:    Set[GlobalParameter]
-  ): Seq[IOResult[NodeProperty]] = {
-    ???
+}
+
+object InterpolatedUrl {
+
+  // Percent-encode what is illegal in each URL component, '%' included
+  def escapeIllegalChars(url: String): PureResult[String] = {
+    try {
+      Right(UriComponentsBuilder.fromUriString(url).encode().toUriString)
+    } catch {
+      case e: IllegalArgumentException => Left(Inconsistency(s"'${url}' is not a valid URL: ${e.getMessage}"))
+    }
   }
 
+  /*
+   * The template prefix up to the first '/', '?' or '#' after "://" that is not inside a variable.
+   * None when there is no literal scheme and the host part does not start with a literal.
+   */
+  def baseUrl(template: String): Option[String] = {
+    val schemeEnd = template.indexOf("://")
+    val varStart  = template.indexOf("${")
+    if (schemeEnd < 0 || (varStart >= 0 && varStart <= schemeEnd + 3)) None
+    else {
+      @tailrec def end(i: Int, depth: Int): Int = {
+        if (i >= template.length) template.length
+        else if (template.startsWith("${", i)) end(i + 2, depth + 1)
+        else {
+          template.charAt(i) match {
+            case '}' if depth > 0              => end(i + 1, depth - 1)
+            case '/' | '?' | '#' if depth == 0 => i
+            case _                             => end(i + 1, depth)
+          }
+        }
+      }
+      Some(template.substring(0, end(schemeEnd + 3, 0)))
+    }
+  }
+
+  def checkSameOrigin(base: String, url: String): PureResult[Unit] = {
+    def parse(s: String): PureResult[URI] = {
+      try { Right(new URI(s)) }
+      catch { case e: URISyntaxException => Left(Inconsistency(s"'${s}' is not a valid URL: ${e.getMessage}")) }
+    }
+    // URI.getHost is null for hosts that are not valid DNS names (e.g. with '_'), fall back to the whole authority
+    def origin(u: URI) = (
+      Option(u.getScheme).map(_.toLowerCase),
+      Option(u.getHost).orElse(Option(u.getRawAuthority)).map(_.toLowerCase),
+      u.getPort
+    )
+
+    for {
+      b <- parse(base)
+      u <- parse(url)
+      _ <- if (origin(b) == origin(u)) Right(())
+           else Left(Inconsistency(s"URL '${url}' does not have the same scheme, host and port as its base URL '${base}'"))
+    } yield ()
+  }
 }
 
 /*
@@ -244,7 +316,7 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
     // we inject some props that are useful as identity pivot (like short name)
     // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}
-    val injectedPropsJson = s"""{"short-hostname": "${node.fqdn.split("\\.")(0)}"}"""
+    val injectedPropsJson = s"""{"short-hostname": ${node.fqdn.split("\\.")(0).toJson}}"""
 
     for {
       compiled <- compiler.compileParam(input).toIO
