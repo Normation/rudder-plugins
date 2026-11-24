@@ -124,7 +124,7 @@ object NewDataSource {
     Map(),
     HttpMethod.GET,
     Map(),
-    false,
+    true,
     "",
     DataSourceType.HTTP.defaultMaxParallelRequest,
     HttpRequestMode.OneRequestByNode,

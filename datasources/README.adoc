@@ -146,7 +146,8 @@ Key name:: the node property key that will be set by that data source. It is als
 Description:: A human readable description.
 
 Method:: Choose between `GET` or `POST` HTTP request.
-URL:: The data source URL which must return JSON content. You can use Rudder variable expansion in that URL, for example: `http://my.cmdb.com/rudder-endpoint/${rudder.node.id}`
+URL:: The data source URL which must return JSON content. You can use Rudder variable expansion in that URL, for example: `http://my.cmdb.com/rudder-endpoint/${rudder.node.id}`.
+Characters not allowed in a URL (e.g. spaces) in the expanded URL are percent-encoded, including `%`, so values already encoded (e.g. `%20` for a space) would break: if you already have parameters with URL-encoded values, set `rudder.plugin.datasources.escapeUrlVariables=false` in `/opt/rudder/etc/rudder-web.properties` and restart Rudder.
 Headers (optional):: A set of headers, defined by the header name and the header value.
 JSON path (optional):: An xpath-like path to only use a sub-part of the JSON content returned by the endpoint. By default, `$.` (which mean the whole content) is used. Documentation on `json-path` is available at: https://github.com/jayway/JsonPath/#getting-started.
 
