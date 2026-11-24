@@ -103,26 +103,6 @@
               </resources>
             </configuration>
           </execution>
-          <!-- copy elm stuff -->
-          <execution>
-            <id>copy-elm-toserve</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>target/classes/toserve/${destDirectory}</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>src/main/elm/generated</directory>
-                  <includes>
-                    <include>*.css</include>
-                    <include>*.js</include>
-                  </includes>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>

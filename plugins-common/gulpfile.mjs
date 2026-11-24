@@ -29,26 +29,24 @@ var grep = function(regex) {
 }
 
 const __dirname = path.resolve();
+const dirs = __dirname.split(path.sep);
+const plugin_name = dirs[dirs.length - 3].replace('-', '');
+ 
+
+const dev_mode = process.argv.indexOf('--dev');
+const dest_path = (dev_mode > -1 ? "../../target/classes/" : "resources/") + "toserve/" + plugin_name;
 
 const paths = {
     'elm': {
         'src': 'elm',
         'watch': 'elm/sources/*.elm',
-        'dest': 'elm/generated',
     },
     'scss': {
         'src': [
           'style/*',
         ],
-        'dest': 'resources/toserve/',
     },
 };
-
-function gestScssDest(dirname){
-    let dir = dirname.split(path.sep);
-    dir = dir[dir.length - 3].replace('-', '');
-    return paths.scss.dest + dir
-}
 
 function clean(cb) {
     let mergeCleanPaths = function(){
@@ -61,8 +59,8 @@ function clean(cb) {
             return [files, parent];
         }
         return [].concat(
-            getCleanPaths(paths.elm.dest),
-            getCleanPaths(gestScssDest(__dirname), 'css')
+            getCleanPaths(dest_path),
+            getCleanPaths(dest_path, 'css')
         );
     }
     let cleanPaths = mergeCleanPaths();
@@ -81,7 +79,7 @@ function elm(cb) {
         .pipe(rename(function (path) {
             return {
                 dirname: '',
-                basename: 'rudder-' + path.basename.toLowerCase(),
+                basename: 'rudder-' + plugin_name,
                 extname: '.js'
             };
         }))
@@ -100,7 +98,7 @@ function elm(cb) {
         .pipe(profile.production(terser({
             mangle: true,
         })))
-        .pipe(dest(paths.elm.dest));
+        .pipe(dest(dest_path));
     cb();
 };
 
@@ -112,7 +110,7 @@ function scss(cb) {
       .pipe(sourcemaps.init())
       .pipe(sass.sync({style: 'compressed', silenceDeprecations: deprecations}))
       .pipe(sourcemaps.write())
-      .pipe(dest(gestScssDest(__dirname)));
+      .pipe(dest(dest_path));
     cb();
 };
 

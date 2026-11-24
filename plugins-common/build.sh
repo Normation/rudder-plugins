@@ -7,11 +7,16 @@ set -e
 
 RELEASE=false
 WATCH=false
+DEV=
 if [ "$1" = "--release" ]; then
   RELEASE=true
 fi
 if [ "$1" = "--watch" ]; then
   WATCH=true
+  DEV=--dev
+fi
+if [ "$1" = "--dev" ]; then
+  DEV=--dev
 fi
 
 # Work locally
@@ -41,9 +46,9 @@ fi
 if [ "$RELEASE" = true ]; then
   npx gulp --production
 elif [ "$WATCH" = true ]; then
-  npx gulp watch
+  npx gulp watch $DEV
 else
-  npx gulp
+  npx gulp $DEV
 fi
 
 # elm-format check
