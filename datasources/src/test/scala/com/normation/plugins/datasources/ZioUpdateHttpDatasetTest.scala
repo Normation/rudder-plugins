@@ -341,7 +341,7 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
       List.empty
     )
   )
-  val fetch: GetDataset = new GetDataset(interpolation)
+  val fetch: GetDataset = new GetDataset(interpolation, escapeUrlVariables = true)
 
   def buildNodeRepo(initNodeInfo: Map[NodeId, CoreNodeFact]): UIO[(Ref[Map[NodeId, Int]], NodeFactRepository)] = {
 
@@ -441,7 +441,8 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
       repo._2,
       interpolation,
       noPostHook,
-      () => alwaysEnforce.succeed
+      () => alwaysEnforce.succeed,
+      escapeUrlVariables = true
       //   , realClock // this one need a real clock to be able to do the requests
     )
 
@@ -507,7 +508,8 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
 
       for {
         (updates, infos) <- buildNodeRepo(NodeConfigData.allNodeFacts)
-        http              = new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
+        http              =
+          new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed, escapeUrlVariables = true)
         _                <- updates.set(Map())
         res              <- http.queryAll(datasource, UpdateCause(modId, actor, None))
         // let hooks happens - this is magical, it tells zio to let finish things started
@@ -691,7 +693,8 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                                 infos,
                                 interpolation,
                                 noPostHook,
-                                () => alwaysEnforce.succeed
+                                () => alwaysEnforce.succeed,
+                                escapeUrlVariables = true
                               ),
                               MyDatasource.uuidGen,
                               AlwaysEnabledPluginStatus
@@ -747,7 +750,8 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                                 infos,
                                 interpolation,
                                 noPostHook,
-                                () => alwaysEnforce.succeed
+                                () => alwaysEnforce.succeed,
+                                escapeUrlVariables = true
                               ),
                               MyDatasource.uuidGen,
                               AlwaysEnabledPluginStatus
@@ -801,7 +805,8 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
                               infos,
                               interpolation,
                               noPostHook,
-                              () => alwaysEnforce.succeed
+                              () => alwaysEnforce.succeed,
+                              escapeUrlVariables = true
                             )
       } yield Chunk(
         test("comply with the limit of parallel queries") {
@@ -967,7 +972,8 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
     suite("The full http service")(
       for {
         (updates, infos) <- buildNodeRepo(NodeConfigData.allNodeFacts)
-        http              = new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
+        http              =
+          new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed, escapeUrlVariables = true)
       } yield Chunk(
         test("correctly update all nodes") {
           val datasource = NewDataSource(
@@ -1097,8 +1103,9 @@ class ZioUpdateHttpDatasetTest extends ZIOSpecDefault {
 
       (for {
         (updates, infos) <- buildNodeRepo(initNodeFacts)
-        http              =
-          new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed)
+        http              = {
+          new HttpQueryDataSourceService(infos, interpolation, noPostHook, () => alwaysEnforce.succeed, escapeUrlVariables = true)
+        }
         datasource        = NewDataSource(propName, url = s"${REST_SERVER_URL}/404", path = "$.some.prop", onMissing = onMissing)
 
         nodes  <- infos.getAll()
