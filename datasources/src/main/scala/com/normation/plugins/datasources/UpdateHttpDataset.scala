@@ -37,16 +37,14 @@
 
 package com.normation.plugins.datasources
 
+import cats.syntax.all.*
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.DocumentContext
 import com.jayway.jsonpath.JsonPath
 import com.normation.errors.*
-import com.normation.inventory.domain.NodeId
-import com.normation.rudder.domain.nodes.NodeInfo
 import com.normation.rudder.domain.policies.GlobalPolicyMode
 import com.normation.rudder.domain.properties.GenericProperty
 import com.normation.rudder.domain.properties.GenericProperty.*
-import com.normation.rudder.domain.properties.GlobalParameter
 import com.normation.rudder.domain.properties.NodeProperty
 import com.normation.rudder.facts.nodes.CoreNodeFact
 import com.normation.rudder.services.policies.InterpolatedValueCompiler
@@ -54,12 +52,16 @@ import com.normation.rudder.services.policies.ParamInterpolationContext
 import com.normation.zio.*
 import com.softwaremill.quicklens.*
 import com.typesafe.config.ConfigValue
+import java.net.URI
+import java.net.URISyntaxException
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONStyle
 import net.minidev.json.JSONValue
+import org.springframework.web.util.UriComponentsBuilder
 import scalaj.http.Http
 import scalaj.http.HttpOptions
 import zio.*
+import zio.json.*
 import zio.syntax.*
 
 /*
@@ -79,9 +81,24 @@ import zio.syntax.*
  * - parse the json result,
  * - return a rudder property with the content.
  */
-class GetDataset(valueCompiler: InterpolatedValueCompiler) {
+class GetDataset(valueCompiler: InterpolatedValueCompiler, escapeUrlVariables: Boolean) {
 
   val compiler = new InterpolateNode(valueCompiler)
+
+  /*
+   * Interpolate the URL template, and default its scheme to https.
+   */
+  private[datasources] def expandUrl(expand: String => IOResult[String], template: String): IOResult[String] = {
+    def escape(url: String): IOResult[String] = {
+      if (escapeUrlVariables) InterpolatedUrl.escapeIllegalChars(url).toIO else url.succeed
+    }
+
+    expand(template)
+      .flatMap(escape)
+      .map(InterpolatedUrl.normalize)
+      .tap(InterpolatedUrl.checkSameOrigin(template)(_).toIO)
+      .chainError(s"Error when trying to parse URL: ${template}")
+  }
 
   /**
    * Get the node property for the configured datasource.
@@ -118,7 +135,7 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     val expand = compiler.compileInput(node, policyServer, globalPolicyMode)
 
     for {
-      url        <- expand(datasource.url).chainError(s"Error when trying to parse URL ${datasource.url}")
+      url        <- expandUrl(expand, datasource.url)
       path       <- expand(datasource.path).chainError(s"Error when trying to compile JSON path ${datasource.path}")
       headers    <- expandMap(expand, datasource.headers)
       httpParams <- expandMap(expand, datasource.params)
@@ -151,19 +168,58 @@ class GetDataset(valueCompiler: InterpolatedValueCompiler) {
     }
   }
 
-  /**
-   * Get information for many nodes.
-   * Policy servers for each node must be in the map.
-   */
-  def getMany(
-      datasource:    DataSource,
-      nodes:         Seq[NodeId],
-      policyServers: Map[NodeId, NodeInfo],
-      parameters:    Set[GlobalParameter]
-  ): Seq[IOResult[NodeProperty]] = {
-    ???
+}
+
+object InterpolatedUrl {
+
+  // Percent-encode what is illegal in each URL component, '%' included
+  def escapeIllegalChars(url: String): PureResult[String] = {
+    try {
+      Right(UriComponentsBuilder.fromUriString(url).encode().toUriString)
+    } catch {
+      case e: IllegalArgumentException => Left(Inconsistency(s"'${url}' is not a valid URL: ${e.getMessage}"))
+    }
   }
 
+  def normalize(url: String): String = {
+    if (url.contains("://")) url else s"https://${url}"
+  }
+
+  /**
+   * Attempt checking valid URI, against an initial one to compare base.
+   * If reference is not a valid URI, it may be interpolated which is something we don't support checking against.
+   */
+  def checkSameOrigin(ref: String)(url: String): PureResult[Unit] = {
+    def parse(s: String): Either[URISyntaxException, URI] = {
+      Either.catchOnly[URISyntaxException](URI(normalize(s)))
+    }
+    // URI.getHost is null for hosts that are not valid DNS names (e.g. with '_'), fall back to the whole authority
+    def origin(u: URI) = (
+      Option(u.getScheme).map(_.toLowerCase),
+      Option(u.getHost).orElse(Option(u.getRawAuthority)).map(_.toLowerCase),
+      u.getPort
+    )
+
+    (parse(ref), parse(url)).flatMapN { (r, u) =>
+      Either.cond(
+        origin(u) == origin(r),
+        (),
+        Inconsistency(
+          s"URL '${u}': ${origin(u)} does not have the same scheme, host and port as its base URL '${r}': ${origin(r)}"
+        )
+      )
+    }.leftFlatMap { // handleErrorWith but eliminates the URI syntax error
+      case e: URISyntaxException =>
+        DataSourceLoggerPure.logEffect.info(
+          s"The supplied URL '${url}' is not valid or is using variables, which are not safe to use within URL domains." +
+          s"Skipping check against the base origin '${ref}'.\n" +
+          s"Details: ${e.getMessage}"
+        )
+        Right(())
+      case e: RudderError        =>
+        Left(e)
+    }
+  }
 }
 
 /*
@@ -236,7 +292,7 @@ class InterpolateNode(compiler: InterpolatedValueCompiler) {
 
     // we inject some props that are useful as identity pivot (like short name)
     // accessible with for ex: ${node.properties[datasources-injected][short-hostname]}
-    val injectedPropsJson = s"""{"short-hostname": "${node.fqdn.split("\\.")(0)}"}"""
+    val injectedPropsJson = s"""{"short-hostname": ${node.fqdn.split("\\.")(0).toJson}}"""
 
     for {
       compiled <- compiler.compileParam(input).toIO
