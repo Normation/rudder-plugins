@@ -39,7 +39,7 @@ package com.normation.plugins
 
 import com.normation.license.*
 import com.normation.license.MaybeLicenseError.Maybe
-import com.normation.rudder.domain.logger.PluginLogger
+import com.normation.rudder.domain.logger.ApplicationLoggerPure
 import io.scalaland.chimney.Transformer
 import io.scalaland.chimney.syntax.*
 import java.nio.file.Files
@@ -98,8 +98,8 @@ trait LicensedPluginCheck extends PluginStatus {
     )
     // log
     lic.fold(
-      error => PluginLogger.error(s"Plugin '${pluginId}' license error: ${error.msg}"),
-      ok => PluginLogger.info(s"Plugin '${pluginId}' has a license and the license signature is valid.")
+      error => ApplicationLoggerPure.error(s"Plugin '${pluginId}' license error: ${error.msg}"),
+      ok => ApplicationLoggerPure.info(s"Plugin '${pluginId}' has a license and the license signature is valid.")
     )
     lic
   }

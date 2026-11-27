@@ -54,7 +54,6 @@ import com.normation.rudder.api.*
 import com.normation.rudder.api.ApiAccountExpirationPolicy.ExpireAtDate
 import com.normation.rudder.domain.eventlog.RudderEventActor
 import com.normation.rudder.domain.logger.ApplicationLoggerPure
-import com.normation.rudder.domain.logger.PluginLogger
 import com.normation.rudder.rest.RoleApiMapping
 import com.normation.rudder.tenants.TenantAccessGrant
 import com.normation.rudder.users.*
@@ -216,7 +215,7 @@ object AuthBackendsConf extends RudderPluginModule {
       LoginFormRendering.parse(RudderProperties.config.getString(DISPLAY_LOGIN_FORM_PROP)) match {
         case Right(v)  => v
         case Left(err) =>
-          PluginLogger.warn(s"Error for property '${DISPLAY_LOGIN_FORM_PROP}': ${err}")
+          ApplicationLoggerPure.warn(s"Error for property '${DISPLAY_LOGIN_FORM_PROP}': ${err}")
           LoginFormRendering.Show
       }
     } catch {
@@ -227,7 +226,7 @@ object AuthBackendsConf extends RudderPluginModule {
 
   // oauth2 button on login page
   if (isOauthConfiguredByUser) {
-    PluginLogger.info(s"Oauthv2 or OIDC authentication backend is enabled, updating login form")
+    ApplicationLoggerPure.info(s"Oauthv2 or OIDC authentication backend is enabled, updating login form")
     RudderConfig.snippetExtensionRegister.register(
       new Oauth2LoginBanner(pluginStatusService, oauth2registrations)
     )
